@@ -13,6 +13,7 @@ const TILE_COLORS := {
 	"fork": Color("3a4466"),
 	"treasure": Color("c9a227"),
 	"battle": Color("d9702b"),
+	"ambush": Color("a8323e"),
 	"forward": Color("7cb342"),
 	"warp": Color("1ba39c"),
 	"luck": Color("e6c84a"),
@@ -35,6 +36,7 @@ const TILE_LABELS := {
 	"fork": "갈림길",
 	"treasure": "보물",
 	"battle": "전투",
+	"ambush": "습격",
 	"forward": "전진",
 	"warp": "워프",
 	"luck": "행운",
@@ -46,7 +48,7 @@ const TILE_LABELS := {
 }
 const PLAYER_COLORS := [Color("4fc3f7"), Color("ff7043")]
 const ICON_NAMES := {
-	"start": "start", "fork": "fork", "treasure": "treasure", "battle": "battle",
+	"start": "start", "fork": "fork", "treasure": "treasure", "battle": "battle", "ambush": "ambush",
 	"forward": "forward", "warp": "warp", "luck": "luck", "curse": "curse",
 	"prison": "prison", "fate": "fate", "checkpoint": "checkpoint", "goal": "goal",
 }
@@ -68,7 +70,7 @@ var _timer := 0.0
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	for icon_name in ["start", "fork", "treasure", "battle", "forward", "warp", "luck", "curse", "prison",
+	for icon_name in ["start", "fork", "treasure", "battle", "ambush", "forward", "warp", "luck", "curse", "prison",
 			"fate", "checkpoint", "goal", "hidden", "pawn", "attr_hero", "attr_great", "attr_myth", "attr_modern"]:
 		var path := "res://assets/icons/%s.png" % icon_name
 		if ResourceLoader.exists(path):

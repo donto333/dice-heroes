@@ -412,7 +412,19 @@ func _show_battle(event: Dictionary) -> void:
 	await _wait_for_board()
 	var who := int(event["player"])
 	var other := 1 - who
-	var against_player: bool = event["defender"] == game.char_of(other, "defense")["name"]
+	if str(event.get("target", "")) == "ambush":
+		await _battle_overlay.play(event, {
+			"attacker_side": "습격 · 몬스터",
+			"defender_side": "방어 · %s" % game.players[who]["name"],
+			"attacker_color": Color("ff6b6b"),
+			"defender_color": PLAYER_TEXT_COLORS[who],
+			"winner_text": "막지 못했다... 거점으로",
+			"loser_text": "%s 방어 성공!" % game.players[who]["name"],
+			"good_for_me": (not event["won"]) if who == 0 else event["won"],
+		})
+		_add_battle_result(event)
+		return
+	var against_player: bool = str(event.get("target", "")) == "player"
 	var me_attacking := who == 0
 	var info := {
 		"attacker_side": "공격 · %s" % game.players[who]["name"],
@@ -486,11 +498,18 @@ func _add_battle_result(event: Dictionary) -> void:
 	var title := _make_label(20, "전투! %s vs %s" % [event["attacker"], event["defender"]])
 	title.add_theme_color_override("font_color", Color("ffcf66"))
 	block.add_child(title)
-	block.add_child(_dice_row("공격", event["attack_rolls"], "= %d" % int(event["attack_total"]), PLAYER_TEXT_COLORS[who]))
-	block.add_child(_dice_row("방어", event["defense_rolls"], "= %d" % int(event["defense_total"]), Color(1, 1, 1, 0.8)))
+	var ambushed: bool = str(event.get("target", "")) == "ambush"
+	var attack_color: Color = Color(1, 1, 1, 0.8) if ambushed else PLAYER_TEXT_COLORS[who]
+	var defense_color: Color = PLAYER_TEXT_COLORS[who] if ambushed else Color(1, 1, 1, 0.8)
+	block.add_child(_dice_row("공격", event["attack_rolls"], "= %d" % int(event["attack_total"]), attack_color))
+	block.add_child(_dice_row("방어", event["defense_rolls"], "= %d" % int(event["defense_total"]), defense_color))
 	var verdict := "%s 승리!" % game.players[who]["name"]
 	var verdict_color := Color("7ee081")
-	if not event["won"]:
+	var success: bool = event["won"]
+	if ambushed:
+		success = not event["won"]
+		verdict = "%s 방어 성공!" % game.players[who]["name"]
+	if not success:
 		verdict = "%s 패배... 직전 거점으로" % game.players[who]["name"]
 		verdict_color = Color("ff6b6b")
 	var verdict_label := _make_label(22, verdict)

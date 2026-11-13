@@ -60,6 +60,10 @@ var pending_choice: Dictionary = {}
 var traps: Dictionary = {}
 ## 후공 보정으로 둘째 플레이어가 받는 첫 게이지
 var second_player_gauge := 0
+## 게이지 수치. data/rules.json에서 읽는다.
+var gauge_base := 10
+var gauge_per_intellect := 5
+var start_gauge_per_intellect := 0
 
 var card_played := false
 var ability_used := false
@@ -76,7 +80,11 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	cards = data.get("cards", {})
 	abilities = data.get("abilities", {})
 	move_weights = data.get("rules", {}).get("move_dice_weights", {})
-	second_player_gauge = int(data.get("rules", {}).get("second_player_gauge", 0))
+	var rules: Dictionary = data.get("rules", {})
+	second_player_gauge = int(rules.get("second_player_gauge", 0))
+	gauge_base = int(rules.get("gauge_base", 10))
+	gauge_per_intellect = int(rules.get("gauge_per_intellect", 5))
+	start_gauge_per_intellect = int(rules.get("start_gauge_per_intellect", 0))
 	characters = {}
 	for character in data.get("characters", []):
 		characters[character["id"]] = character
@@ -112,6 +120,9 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	for index in players.size():
 		for i in START_HAND:
 			_draw_card(index, false)
+	# 지력이 높은 SUPPORT는 게이지를 채운 채로 시작한다.
+	for index in players.size():
+		_add_gauge(index, start_gauge_per_intellect * int(char_of(index, "support")["intellect"]))
 	# 먼저 하는 쪽이 유리하므로 나중에 하는 쪽은 게이지를 채워 두고 시작한다.
 	if players.size() > 1 and second_player_gauge > 0:
 		_add_gauge(1, second_player_gauge)
@@ -318,7 +329,7 @@ func begin_turn() -> bool:
 	var intellect := int(support["intellect"])
 	if map_attr == "위인" and support["category"] == "위인":
 		intellect += ATTR_BONUS
-	_add_gauge(current, 10 + 5 * intellect)
+	_add_gauge(current, gauge_base + gauge_per_intellect * intellect)
 	return true
 
 
@@ -562,6 +573,10 @@ func _resolve_tile(depth: int) -> void:
 		"battle":
 			if _battle_keeper(int(tile["dice"]), tile["name"]):
 				_draw_card(current, true)
+		"ambush":
+			say("  습격! [%s]이(가) 덤벼듭니다." % tile["name"])
+			if _battle_ambush(int(tile["dice"]), tile["name"]):
+				_draw_card(current, true)
 		"treasure":
 			say("  보물 칸!")
 			_draw_card(current, true)
@@ -693,7 +708,7 @@ func _battle_players() -> bool:
 		result = resolve_battle(
 			attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current))
 	_say_battle(result)
-	_battle_event(attacker["name"], defender["name"], result)
+	_battle_event(attacker["name"], defender["name"], result, "player")
 	if result["attacker_won"]:
 		say("  %s 승리! %s은(는) 직전 거점으로 돌아갑니다." % [player["name"], opponent["name"]])
 		_return_to_checkpoint(1 - current)
@@ -722,11 +737,35 @@ func _battle_keeper(keeper_dice: int, keeper_name: String) -> bool:
 		say("  재도전! 한 번 더 굴립니다.")
 		result = resolve_battle(attack_dice, defense_dice, _attack_bonus(current), 0)
 	_say_battle(result)
-	_battle_event(attacker["name"], keeper_name, result)
+	_battle_event(attacker["name"], keeper_name, result, "keeper")
 	if result["attacker_won"]:
 		say("  %s 승리!" % player["name"])
 		return true
 	say("  패배... %s은(는) 직전 거점으로 돌아갑니다." % player["name"])
+	_return_to_checkpoint(current)
+	return false
+
+
+## 몬스터가 현재 플레이어를 공격한다. 몬스터 주사위 대 내 DEFENSE 캐릭터의 방어 주사위.
+## 막으면 true, 뚫리면 직전 거점으로 돌아간다.
+func _battle_ambush(monster_dice: int, monster_name: String) -> bool:
+	var player: Dictionary = players[current]
+	var defender: Dictionary = char_of(current, "defense")
+	say("  전투! 몬스터 [%s] vs %s(방어)" % [monster_name, defender["name"]])
+	var attack_dice := monster_dice - effect_sum(current, "enemy_dice_minus")
+	var defense_dice := _defense_dice(current)
+	var defense_bonus := _defense_bonus(current)
+	var result := resolve_battle(attack_dice, defense_dice, 0, defense_bonus)
+	if result["attacker_won"] and _consume_effect(current, "retry"):
+		_say_battle(result)
+		say("  재도전! 한 번 더 굴립니다.")
+		result = resolve_battle(attack_dice, defense_dice, 0, defense_bonus)
+	_say_battle(result)
+	_battle_event(monster_name, defender["name"], result, "ambush")
+	if not result["attacker_won"]:
+		say("  %s 방어 성공!" % player["name"])
+		return true
+	say("  막지 못했습니다... %s은(는) 직전 거점으로 돌아갑니다." % player["name"])
 	_return_to_checkpoint(current)
 	return false
 
@@ -737,9 +776,11 @@ func _say_battle(result: Dictionary) -> void:
 		str(result["defense_rolls"]), int(result["defense_total"])])
 
 
-func _battle_event(attacker_name: String, defender_name: String, result: Dictionary) -> void:
+## target: "player"(상대 말과 싸움), "keeper"(키퍼를 공격), "ambush"(몬스터의 습격을 막음)
+func _battle_event(attacker_name: String, defender_name: String, result: Dictionary, target: String) -> void:
 	_event({
 		"kind": "battle",
+		"target": target,
 		"player": current,
 		"attacker": attacker_name,
 		"defender": defender_name,

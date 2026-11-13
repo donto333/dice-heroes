@@ -15,7 +15,7 @@ const PartySelect := preload("res://scripts/ui/party_select.gd")
 
 const CATEGORIES := ["영웅", "위인", "신화", "근현대"]
 const TILE_TYPES := [
-	"start", "normal", "fork", "random", "attr", "battle", "treasure", "forward",
+	"start", "normal", "fork", "random", "attr", "battle", "ambush", "treasure", "forward",
 	"warp", "luck", "curse", "prison", "fate", "checkpoint", "goal",
 ]
 const PARTIES := [
@@ -23,7 +23,7 @@ const PARTIES := [
 	{"name": "B", "attack": "machao", "defense": "zeus", "support": "houdini"},
 ]
 const SIM_GAMES := 400
-const BALANCE_GAMES := 2000
+const BALANCE_GAMES := 15000
 ## 카드와 어빌리티가 쓸 수 있는 효과 종류. game.gd의 _apply_effect()와 맞춘다.
 const EFFECT_TYPES := [
 	"move_fixed", "move_dice", "move_plus", "move_best", "atk_dice", "def_dice",
@@ -120,7 +120,7 @@ func _test_board_data() -> void:
 		match node.get("type", ""):
 			"attr":
 				_check(node.get("attr", "") in CATEGORIES, "속성 칸의 분류가 잘못됨: %d번" % id)
-			"battle", "goal":
+			"battle", "ambush", "goal":
 				_check(int(node.get("dice", 0)) >= 1, "키퍼 주사위 수가 없음: %d번" % id)
 	for node in raw_nodes:
 		for next_id in node.get("next", []):
@@ -317,9 +317,12 @@ func _test_cards() -> void:
 
 	# 후공 보정: 나중에 하는 쪽은 게이지를 채우고 시작한다.
 	var fresh = _new_game(42)
-	var expected := int(_data["rules"].get("second_player_gauge", 0))
-	_check(int(fresh.players[1]["gauge"]["attack"]) == expected, "후공 게이지 보정이 들어가지 않음")
-	_check(int(fresh.players[0]["gauge"]["attack"]) == 0, "선공 게이지가 0이 아님")
+	var rules: Dictionary = _data["rules"]
+	var per_intellect := int(rules.get("start_gauge_per_intellect", 0))
+	var first_expected: int = min(100, per_intellect * int(fresh.char_of(0, "support")["intellect"]))
+	var second_expected: int = min(100, per_intellect * int(fresh.char_of(1, "support")["intellect"]) + int(rules.get("second_player_gauge", 0)))
+	_check(int(fresh.players[0]["gauge"]["attack"]) == first_expected, "선공 시작 게이지가 지력과 맞지 않음")
+	_check(int(fresh.players[1]["gauge"]["attack"]) == second_expected, "후공 게이지 보정이 들어가지 않음")
 
 
 ## 이동 중에 상대 말을 지나치면 싸울지 고르고, 고른 대로 되는지 확인한다.
@@ -470,8 +473,8 @@ func _test_full_games() -> void:
 					shown[int(event["player"])] = int(event["to"])
 					_check(game.nodes.has(int(event["to"])), "없는 칸으로 이동함")
 				elif event["kind"] == "battle":
-					var other_names := [game.char_of(0, "defense")["name"], game.char_of(1, "defense")["name"]]
-					if event["defender"] in other_names:
+					_check(str(event.get("target", "")) in ["player", "keeper", "ambush"], "전투 사건의 target이 잘못됨")
+					if event["target"] == "player":
 						player_battles += 1
 					else:
 						keeper_battles += 1
