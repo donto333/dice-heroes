@@ -4,6 +4,8 @@ extends Control
 
 signal confirmed(party: Dictionary)
 
+const Portrait := preload("res://scripts/ui/portrait.gd")
+
 const SLOTS := ["attack", "defense", "support"]
 const SLOT_LABELS := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
 const SLOT_HINTS := {"attack": "이동 · 공격", "defense": "방어", "support": "지력 · 게이지"}
@@ -25,6 +27,9 @@ var party := {"attack": "", "defense": "", "support": ""}
 var _active_slot := "attack"
 var _slot_buttons: Dictionary = {}
 var _card_buttons: Dictionary = {}
+## 버튼마다 안에 넣은 초상화와 글자 {"portrait": Control, "text": Label}
+var _slot_parts: Dictionary = {}
+var _card_parts: Dictionary = {}
 var _points_label: Label
 var _start_button: Button
 var _styles: Dictionary = {}
@@ -74,17 +79,13 @@ func _build() -> void:
 	column.add_child(slot_row)
 	for slot in SLOTS:
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0, 132)
+		button.custom_minimum_size = Vector2(0, 236)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.add_theme_font_size_override("font_size", 20)
-		button.add_theme_color_override("font_color", Color.WHITE)
-		button.add_theme_color_override("font_hover_color", Color.WHITE)
-		button.add_theme_color_override("font_pressed_color", Color.WHITE)
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		button.pressed.connect(_on_slot_pressed.bind(slot))
 		slot_row.add_child(button)
 		_slot_buttons[slot] = button
+		_slot_parts[slot] = _fill_card(button, 120.0, 18)
 
 	_points_label = _label("", 24, Color.WHITE)
 	column.add_child(_points_label)
@@ -124,18 +125,16 @@ func _build() -> void:
 	scroll.add_child(grid)
 	for character in characters:
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0, 150)
+		button.custom_minimum_size = Vector2(0, 290)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.add_theme_font_size_override("font_size", 18)
-		button.add_theme_color_override("font_color", Color.WHITE)
-		button.add_theme_color_override("font_hover_color", Color.WHITE)
-		button.add_theme_color_override("font_pressed_color", Color.WHITE)
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-		button.text = _card_text(character)
 		button.pressed.connect(_on_character_pressed.bind(character["id"]))
 		grid.add_child(button)
 		_card_buttons[character["id"]] = button
+		var parts := _fill_card(button, 170.0, 17)
+		parts["text"].text = _card_text(character)
+		parts["portrait"].show_character(character, CATEGORY_COLORS.get(character["category"], Color("3a4466")))
+		_card_parts[character["id"]] = parts
 
 	var bottom := HBoxContainer.new()
 	bottom.add_theme_constant_override("separation", 8)
@@ -147,6 +146,31 @@ func _build() -> void:
 	_start_button.size_flags_stretch_ratio = 2.0
 	_start_button.pressed.connect(_on_start_pressed)
 	bottom.add_child(_start_button)
+
+
+## 버튼 안을 위쪽 초상화 + 아래쪽 글자로 채운다. 버튼 자체 글자는 쓰지 않는다.
+func _fill_card(button: Button, portrait_height: float, font_size: int) -> Dictionary:
+	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 7)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	button.add_child(margin)
+	var column := VBoxContainer.new()
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_theme_constant_override("separation", 4)
+	margin.add_child(column)
+	var portrait := Portrait.new()
+	portrait.custom_minimum_size = Vector2(0, portrait_height)
+	portrait.border_width = 2.0
+	column.add_child(portrait)
+	var text := _label("", font_size, Color.WHITE)
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	column.add_child(text)
+	return {"portrait": portrait, "text": text}
 
 
 func _label(text: String, font_size: int, color: Color) -> Label:
@@ -319,13 +343,15 @@ func _refresh() -> void:
 		var button: Button = _slot_buttons[slot]
 		var character := _character(party[slot])
 		var stat: String = SLOT_STAT[slot]
+		var parts: Dictionary = _slot_parts[slot]
 		if character.is_empty():
-			button.text = "%s\n(%s)\n비어 있음" % [SLOT_LABELS[slot], SLOT_HINTS[slot]]
+			parts["text"].text = "%s\n(%s)\n비어 있음" % [SLOT_LABELS[slot], SLOT_HINTS[slot]]
 		else:
-			button.text = "%s\n%s %s\n%s %d" % [
+			parts["text"].text = "%s\n%s %s\n%s %d" % [
 				SLOT_LABELS[slot], "★".repeat(int(character["grade"])), character["name"],
 				STAT_NAMES[stat], int(character[stat])]
 		var fill: Color = Color("2a2f4a") if character.is_empty() else CATEGORY_COLORS.get(character["category"], Color("3a4466"))
+		parts["portrait"].show_character(character, fill)
 		var border: Color = Color.WHITE if slot == _active_slot else fill.lightened(0.3)
 		var width := 4 if slot == _active_slot else 2
 		for state in ["normal", "hover", "pressed"]:
@@ -339,6 +365,8 @@ func _refresh() -> void:
 		for slot in SLOTS:
 			if party[slot] == id:
 				chosen = true
+		_card_parts[id]["portrait"].dim = chosen
+		_card_parts[id]["portrait"].queue_redraw()
 		if chosen:
 			fill = fill.darkened(0.45)
 		var border := GOLD if chosen else fill.lightened(0.3)

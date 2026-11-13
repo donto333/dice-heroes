@@ -3,6 +3,7 @@ extends Control
 ## play()가 끝날 때까지 기다렸다가 다음 연출로 넘어간다. 화면을 누르면 빨리 넘긴다.
 
 const DiceView := preload("res://scripts/ui/dice_view.gd")
+const Portrait := preload("res://scripts/ui/portrait.gd")
 
 const GOLD := Color("ffcf4d")
 const WIN_COLOR := Color("7ee081")
@@ -67,6 +68,11 @@ func _ready() -> void:
 		side_box.add_theme_constant_override("separation", 6)
 		side_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var role := _label("", 22, Color.WHITE)
+		var portrait_holder := CenterContainer.new()
+		portrait_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var portrait := Portrait.new()
+		portrait.custom_minimum_size = Vector2(170, 170)
+		portrait_holder.add_child(portrait)
 		var who := _label("", 30, Color.WHITE)
 		var total := _label("00", 76, Color.WHITE)
 		total.add_theme_constant_override("outline_size", 8)
@@ -78,12 +84,13 @@ func _ready() -> void:
 		dice_holder.add_child(dice)
 		var bonus := _label("", 20, GOLD)
 		side_box.add_child(role)
+		side_box.add_child(portrait_holder)
 		side_box.add_child(who)
 		side_box.add_child(total)
 		side_box.add_child(dice_holder)
 		side_box.add_child(bonus)
 		row.add_child(side_box)
-		_sides.append({"role": role, "who": who, "total": total, "dice": dice, "bonus": bonus})
+		_sides.append({"role": role, "portrait": portrait, "who": who, "total": total, "dice": dice, "bonus": bonus})
 		if side == 0:
 			var versus := _label("VS", 48, LOSE_COLOR)
 			versus.add_theme_constant_override("outline_size", 8)
@@ -118,7 +125,8 @@ func _gui_input(event: InputEvent) -> void:
 
 ## battle: 규칙 엔진의 "battle" 사건. info: 화면에 보일 이름과 색.
 ## {"attacker_side": "공격 · 나", "defender_side": "방어 · 키퍼", "attacker_color": Color, "defender_color": Color,
-##  "winner_text": "나 승리!", "loser_text": "나 패배..."}
+##  "winner_text": "나 승리!", "loser_text": "나 패배...",
+##  "attacker_character": {캐릭터}, "defender_character": {캐릭터}}  (몬스터·키퍼는 빈 사전)
 func play(battle: Dictionary, info: Dictionary) -> void:
 	_skip = false
 	var attack_rolls: Array = battle["attack_rolls"]
@@ -133,9 +141,11 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 	left["role"].text = info.get("attacker_side", "공격")
 	left["role"].add_theme_color_override("font_color", info.get("attacker_color", Color.WHITE))
 	left["who"].text = battle["attacker"]
+	_show_portrait(left, info.get("attacker_character", {}), str(battle["attacker"]), info.get("attacker_color", Color.WHITE))
 	right["role"].text = info.get("defender_side", "방어")
 	right["role"].add_theme_color_override("font_color", info.get("defender_color", Color.WHITE))
 	right["who"].text = battle["defender"]
+	_show_portrait(right, info.get("defender_character", {}), str(battle["defender"]), info.get("defender_color", Color.WHITE))
 	for side in _sides:
 		side["total"].text = "??"
 		side["total"].add_theme_color_override("font_color", Color.WHITE)
@@ -175,6 +185,10 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 	var winner_side: Dictionary = left if won else right
 	var loser_side: Dictionary = right if won else left
 	winner_side["total"].add_theme_color_override("font_color", WIN_COLOR)
+	loser_side["portrait"].dim = true
+	loser_side["portrait"].queue_redraw()
+	winner_side["portrait"].border = WIN_COLOR
+	winner_side["portrait"].queue_redraw()
 	loser_side["total"].add_theme_color_override("font_color", LOSE_COLOR)
 	_verdict.text = info.get("winner_text", "승리!") if won else info.get("loser_text", "패배...")
 	_verdict.add_theme_color_override("font_color", WIN_COLOR if info.get("good_for_me", won) else LOSE_COLOR)
@@ -190,6 +204,16 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 	fade.tween_property(self, "modulate", Color(1, 1, 1, 0), 0.15)
 	await fade.finished
 	visible = false
+
+
+func _show_portrait(side: Dictionary, character: Dictionary, fallback_name: String, color: Color) -> void:
+	var portrait = side["portrait"]
+	portrait.dim = false
+	portrait.border = color
+	if character.is_empty():
+		portrait.show_text(fallback_name, Color("5a2a2a"))
+	else:
+		portrait.show_character(character, color.darkened(0.3))
 
 
 func _die_size(count: int) -> float:
