@@ -68,6 +68,9 @@ func _run() -> void:
 	_app.go("settings")
 	await _wait(0.4)
 	await _shot("11_settings")
+	_app.go("help", {"back": "lobby"})
+	await _wait(0.4)
+	await _shot("11b_help")
 
 	_app.start_mode("rank")
 	await _wait(0.4)

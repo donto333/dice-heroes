@@ -36,9 +36,14 @@ func setup(main_app, params: Dictionary) -> void:
 	var friend := Kit.button("친구 대전\n(한 기기 2인)", Color("2a7d4f"), 24, 96)
 	friend.pressed.connect(_on_mode.bind("local"))
 	modes.add_child(Kit.expand(friend))
-	var online := Kit.button("온라인 대전 · 준비 중 (서버 연결 후 열림)", Kit.PANEL_LIGHT, 20, 64)
+	var extra := Kit.hbox(10)
+	column.add_child(extra)
+	var online := Kit.button("온라인 대전 · 준비 중", Kit.PANEL_LIGHT, 20, 64)
 	online.disabled = true
-	column.add_child(online)
+	extra.add_child(Kit.expand(online, 1.6))
+	var help := Kit.button("게임 방법", Color("6f43a6"), 22, 64)
+	help.pressed.connect(_on_help)
+	extra.add_child(Kit.expand(help))
 
 	var nav := BottomNav.new()
 	column.add_child(nav)
@@ -165,7 +170,7 @@ func _maybe_attendance() -> void:
 		cell.add_theme_stylebox_override("normal", Kit.box(fill, border, 3 if now else 1, 12, 6))
 		grid.add_child(cell)
 	var body := Kit.vbox(12)
-	body.add_child(Kit.label("매일 접속하면 보상을 받아요. 7일마다 다시 시작합니다.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	body.add_child(Kit.para("매일 접속하면 보상을 받아요. 7일마다 다시 시작합니다.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var center := CenterContainer.new()
 	center.add_child(grid)
 	body.add_child(center)
@@ -180,6 +185,11 @@ func _claim_attendance() -> void:
 	app.play("win")
 	app.toast("출석 보상: %s" % Kit.reward_line(reward))
 	app.go("lobby")
+
+
+func _on_help() -> void:
+	app.play("click")
+	app.go("help", {"back": "lobby"})
 
 
 func _on_mode(mode: String) -> void:

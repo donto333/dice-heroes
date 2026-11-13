@@ -13,6 +13,8 @@ var border_width := 3.0
 var letter := ""
 ## 골라 둔 카드처럼 어둡게 보일 때
 var dim := false
+## 아직 가지지 않은 영웅. 흑백에 가깝게 아주 어둡게 그린다.
+var locked := false
 
 
 func _init() -> void:
@@ -49,7 +51,8 @@ func _draw() -> void:
 		return
 	draw_rect(rect, fill.darkened(0.35))
 	if texture != null:
-		draw_texture_rect_region(texture, rect, _crop(texture.get_size()))
+		var tint := Color(0.32, 0.33, 0.4) if locked else Color.WHITE
+		draw_texture_rect_region(texture, rect, _crop(texture.get_size()), tint)
 	elif letter != "":
 		# 위쪽이 밝은 바탕에 첫 글자
 		draw_rect(Rect2(0, 0, size.x, size.y * 0.5), fill.darkened(0.15))

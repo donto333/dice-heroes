@@ -30,7 +30,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	scroll.add_child(body)
 	body.add_child(_summon_panel())
 	body.add_child(_exchange_panel())
-	body.add_child(Kit.label("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
 	var nav := BottomNav.new()
 	column.add_child(nav)
@@ -54,10 +54,10 @@ func _summon_panel() -> Control:
 		face.border = Kit.GOLD
 		faces.add_child(Kit.expand(face))
 	var rates: Dictionary = summon.get("rates", {})
-	column.add_child(Kit.label("확률  ★★★ %s%%  ·  ★★ %s%%  ·  ★ %s%%" % [str(rates.get("3", 0)), str(rates.get("2", 0)), str(rates.get("1", 0))], 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(Kit.para("확률  ★★★ %s%%  ·  ★★ %s%%  ·  ★ %s%%" % [str(rates.get("3", 0)), str(rates.get("2", 0)), str(rates.get("1", 0))], 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	var pity_left: int = int(summon.get("pity_3", 0)) - int(app.profile.get("pity", 0))
-	column.add_child(Kit.label("10회 소환은 ★★ 이상 1명 보장  ·  ★★★ 확정까지 %d회" % max(pity_left, 1), 20, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
-	column.add_child(Kit.label("이미 가진 영웅이 나오면 강화 조각으로 바뀌어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(Kit.para("10회 소환은 ★★ 이상 1명 보장  ·  ★★★ 확정까지 %d회" % max(pity_left, 1), 20, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(Kit.para("이미 가진 영웅이 나오면 강화 조각으로 바뀌어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var buttons := Kit.hbox(8)
 	column.add_child(buttons)
 	var free_left := Profile.free_summons_left(app.profile, app.eco)

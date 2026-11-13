@@ -62,16 +62,16 @@ func setup(main_app, _params: Dictionary) -> void:
 	var stats: Dictionary = app.profile["stats"]
 	var played := int(stats["played"])
 	var rate := 0 if played == 0 else int(round(100.0 * float(stats["wins"]) / float(played)))
-	record_column.add_child(Kit.label("대전 %d판  ·  %d승 %d패 %d무  ·  승률 %d%%" % [played, int(stats["wins"]), int(stats["losses"]), int(stats["draws"]), rate], 20))
-	record_column.add_child(Kit.label("랭크전 승리 %d  ·  최고 트로피 %d (%s)" % [int(stats["rank_wins"]), int(app.profile["best_trophies"]), Profile.tier_of(app.eco, int(app.profile["best_trophies"]))["name"]], 20))
-	record_column.add_child(Kit.label("영웅 %d / %d명 보유  ·  플레이어 레벨 %d" % [app.profile["owned"].size(), app.data["characters"].size(), int(app.profile["level"])], 20))
+	record_column.add_child(Kit.para("대전 %d판  ·  %d승 %d패 %d무  ·  승률 %d%%" % [played, int(stats["wins"]), int(stats["losses"]), int(stats["draws"]), rate], 20))
+	record_column.add_child(Kit.para("랭크전 승리 %d  ·  최고 트로피 %d (%s)" % [int(stats["rank_wins"]), int(app.profile["best_trophies"]), Profile.tier_of(app.eco, int(app.profile["best_trophies"]))["name"]], 20))
+	record_column.add_child(Kit.para("영웅 %d / %d명 보유  ·  플레이어 레벨 %d" % [app.profile["owned"].size(), app.data["characters"].size(), int(app.profile["level"])], 20))
 
 	var account := Kit.panel()
 	body.add_child(account)
 	var account_column := Kit.vbox(8)
 	account.add_child(account_column)
 	account_column.add_child(Kit.label("계정", 26))
-	account_column.add_child(Kit.label("지금은 이 기기에 저장되는 게스트 계정이에요. 온라인 서버가 열리면 구글·애플 계정에 연결해 다른 기기에서도 이어 할 수 있어요.", 18, Kit.MUTED))
+	account_column.add_child(Kit.para("지금은 이 기기에 저장되는 게스트 계정이에요. 온라인 서버가 열리면 구글·애플 계정에 연결해 다른 기기에서도 이어 할 수 있어요.", 18, Kit.MUTED))
 	var link := Kit.button("계정 연결 (준비 중)", Kit.PANEL_LIGHT, 22, 64)
 	link.disabled = true
 	account_column.add_child(link)
@@ -84,7 +84,10 @@ func setup(main_app, _params: Dictionary) -> void:
 	var about_column := Kit.vbox(6)
 	about.add_child(about_column)
 	about_column.add_child(Kit.label("주사위 영웅전  버전 %s" % app.VERSION, 22))
-	about_column.add_child(Kit.label("글꼴: Noto Sans KR (SIL Open Font License)\n엔진: Godot Engine (MIT)\n영웅 그림: AI 도구로 만든 창작 일러스트", 17, Kit.MUTED))
+	about_column.add_child(Kit.para("글꼴: Noto Sans KR (SIL Open Font License)\n엔진: Godot Engine (MIT)\n영웅 그림: AI 도구로 만든 창작 일러스트", 17, Kit.MUTED))
+	var help := Kit.button("게임 방법", Color("6f43a6"), 22, 64)
+	help.pressed.connect(_on_help)
+	about_column.add_child(help)
 	var to_title := Kit.button("타이틀로", Kit.PANEL_LIGHT, 22, 64)
 	to_title.pressed.connect(func(): app.go("title"))
 	about_column.add_child(to_title)
@@ -93,6 +96,11 @@ func setup(main_app, _params: Dictionary) -> void:
 	column.add_child(nav)
 	nav.setup("settings", app.badges())
 	nav.tab_pressed.connect(_on_tab)
+
+
+func _on_help() -> void:
+	app.play("click")
+	app.go("help", {"back": "settings"})
 
 
 func _on_sound() -> void:
