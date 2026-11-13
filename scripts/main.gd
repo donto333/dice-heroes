@@ -213,6 +213,7 @@ func _start_game() -> void:
 		game.char_of(1, "attack")["name"], game.char_of(1, "defense")["name"], game.char_of(1, "support")["name"]],
 		PLAYER_TEXT_COLORS[1])
 	_add_result_text("주사위 굴리기를 눌러 시작하세요.\n먼저 골(분홍 칸)의 메두사를 이기고 들어가면 승리!\n갈림길에서는 갈 길을 직접 고릅니다.", Color.WHITE)
+	_refresh()
 	_advance()
 
 
