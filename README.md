@@ -1,5 +1,7 @@
 # 주사위 영웅전 (dice-heroes)
 
+**플레이 주소**: https://donto333.github.io/dice-heroes/
+
 주사위로 보드를 달리고, 길에서 마주친 상대와 주사위로 싸워 먼저 골에 도착하면 이기는 2D 도트 보드 RPG.
 역사와 신화 속 인물 200명을 모아 ATTACK / DEFENSE / SUPPORT 3인 파티를 꾸린다.
 
