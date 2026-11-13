@@ -103,6 +103,8 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 			"trail": [start_id],
 			"hand": [],
 			"gauge": {"attack": 0, "defense": 0, "support": 0},
+			## 게이지가 가득 차서 넘친 양. 100이 모이면 카드 1장이 된다.
+			"overflow": 0,
 			"skip": 0,
 			"effects": [],
 			"cursed": false,
@@ -329,7 +331,7 @@ func begin_turn() -> bool:
 	var intellect := int(support["intellect"])
 	if map_attr == "위인" and support["category"] == "위인":
 		intellect += ATTR_BONUS
-	_add_gauge(current, gauge_base + gauge_per_intellect * intellect)
+	_gain_turn_gauge(current, gauge_base + gauge_per_intellect * intellect)
 	return true
 
 
@@ -889,6 +891,23 @@ func _consume_effect(player_index: int, key: String) -> bool:
 
 func _add_effect(player_index: int, key: String, amount: int, turns: int) -> void:
 	players[player_index]["effects"].append({"key": key, "amount": amount, "turns": turns})
+
+
+## 턴마다 차는 게이지. 어빌리티는 한 턴에 하나만 쓸 수 있어서 게이지가 가득 차 넘치기 쉽다.
+## 넘친 양(세 자리 평균)을 모아 두었다가 100이 되면 카드 1장으로 바꾼다. 지력이 높을수록 이득이다.
+func _gain_turn_gauge(player_index: int, amount: int) -> void:
+	var player: Dictionary = players[player_index]
+	var gauge: Dictionary = player["gauge"]
+	var spilled := 0
+	for slot in SLOTS:
+		spilled += max(0, int(gauge[slot]) + amount - 100)
+	_add_gauge(player_index, amount)
+	player["overflow"] = int(player["overflow"]) + spilled / SLOTS.size()
+	if int(player["overflow"]) >= 100 and player["hand"].size() < HAND_LIMIT:
+		player["overflow"] = int(player["overflow"]) - 100
+		say("  %s: 넘친 게이지가 모여 카드가 됩니다." % player["name"])
+		_draw_card(player_index, true)
+	player["overflow"] = min(int(player["overflow"]), 100)
 
 
 func _add_gauge(player_index: int, amount: int) -> void:
