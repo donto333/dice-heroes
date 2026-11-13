@@ -17,7 +17,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	var column := Kit.screen_frame(self, 32)
 	column.add_child(Kit.spacer(40, false))
 	column.add_child(Kit.title("주사위 영웅전", 72))
-	column.add_child(Kit.label("영웅을 모으고, 주사위를 굴려 골을 향해 달리세요.", 24, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(Kit.para("영웅을 모으고, 주사위를 굴려 골을 향해 달리세요.", 24, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
 	var heroes := Kit.hbox(10)
 	heroes.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -28,14 +28,14 @@ func setup(main_app, _params: Dictionary) -> void:
 		var info: Dictionary = app.character(id)
 		face.show_character(info, Kit.CATEGORY_COLORS.get(info.get("category", ""), Kit.LINE))
 		heroes.add_child(face)
-	column.add_child(Kit.label("처음 함께할 영웅: 여포 · 아테나 · 최치원 외 9명", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(Kit.para("처음 함께할 영웅: 여포 · 아테나 · 최치원 외 9명", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	column.add_child(Kit.spacer(0))
 
 	var card := Kit.panel(Kit.PANEL, Kit.LINE, 24)
 	column.add_child(card)
 	var inside := Kit.vbox(14)
 	card.add_child(inside)
-	inside.add_child(Kit.label("닉네임을 정해 주세요 (2~10글자)", 26))
+	inside.add_child(Kit.para("닉네임을 정해 주세요 (2~10글자)", 26))
 	_name_edit = LineEdit.new()
 	_name_edit.placeholder_text = "예: 주사위왕"
 	_name_edit.max_length = 10
@@ -54,7 +54,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	var online := Kit.button("구글 · 애플 계정으로 시작 (준비 중)", Kit.PANEL_LIGHT, 22, 70)
 	online.disabled = true
 	inside.add_child(online)
-	inside.add_child(Kit.label("게스트 기록은 이 기기에 저장됩니다. 온라인 서버가 열리면 계정에 옮길 수 있습니다.", 18, Kit.MUTED))
+	inside.add_child(Kit.para("게스트 기록은 이 기기에 저장됩니다. 온라인 서버가 열리면 계정에 옮길 수 있습니다.", 18, Kit.MUTED))
 	column.add_child(Kit.spacer(30, false))
 	_on_text_changed("")
 

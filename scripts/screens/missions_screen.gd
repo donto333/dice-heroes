@@ -71,7 +71,7 @@ func _missions_panel() -> Control:
 	var all_claimed := bool(app.profile["daily"].get("all_claimed", false))
 	var all_row := Kit.hbox(10)
 	column.add_child(all_row)
-	all_row.add_child(Kit.expand(Kit.label("모든 미션 완료 보너스  %s" % Kit.reward_line(all_reward), 22, Kit.GOLD)))
+	all_row.add_child(Kit.expand(Kit.para("모든 미션 완료 보너스  %s" % Kit.reward_line(all_reward), 22, Kit.GOLD)))
 	var button := Kit.button("받음" if all_claimed else "받기", Color("c4861c"), 22, 64)
 	button.custom_minimum_size = Vector2(130, 64)
 	button.disabled = all_claimed or not all_done

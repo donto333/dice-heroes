@@ -43,6 +43,14 @@ static func label(text: String, font_size: int = 22, color: Color = TEXT, align:
 	return result
 
 
+## 여러 줄로 감기는 글. 긴 설명은 이것을 써야 화면 밖으로 넘치지 않는다.
+static func para(text: String, font_size: int = 20, color: Color = MUTED, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+	var result := label(text, font_size, color, align)
+	result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	result.custom_minimum_size = Vector2(80, 0)
+	return result
+
+
 static func title(text: String, font_size: int = 44) -> Label:
 	var result := label(text, font_size, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	result.add_theme_constant_override("outline_size", 10)

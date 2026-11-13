@@ -122,7 +122,7 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	face.custom_minimum_size = Vector2(0, 138)
 	face.border_width = 0.0
 	face.show_character(character, Kit.CATEGORY_COLORS.get(character["category"], Kit.LINE))
-	face.dim = not owned
+	face.locked = not owned
 	column.add_child(face)
 	var stars := Kit.label("★".repeat(grade), 16, Kit.GRADE_COLORS[grade], HORIZONTAL_ALIGNMENT_CENTER)
 	stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -157,7 +157,7 @@ func show_hero(id: String) -> void:
 	var face := Portrait.new()
 	face.custom_minimum_size = Vector2(240, 240)
 	face.show_character(character, Kit.CATEGORY_COLORS.get(character["category"], Kit.LINE))
-	face.dim = not owned
+	face.locked = not owned
 	top.add_child(face)
 	var info := Kit.vbox(6)
 	top.add_child(Kit.expand(info))
@@ -186,18 +186,18 @@ func show_hero(id: String) -> void:
 		var cost := Profile.upgrade_cost(app.profile, app.eco, id)
 		var bonus_table: Array = app.data["rules"].get("level_battle_bonus", [])
 		var bonus: int = int(bonus_table[clampi(level - 1, 0, bonus_table.size() - 1)]) if not bonus_table.is_empty() else 0
-		body.add_child(Kit.label("레벨 %d / %d   ·   전투 합계 보너스 +%d" % [level, int(app.eco["upgrade"]["max_level"]), bonus], 22, Kit.GOLD))
+		body.add_child(Kit.para("레벨 %d / %d   ·   전투 합계 보너스 +%d" % [level, int(app.eco["upgrade"]["max_level"]), bonus], 22, Kit.GOLD))
 		if cost.is_empty():
 			body.add_child(Kit.label("최고 레벨입니다.", 20, Kit.MUTED))
 		else:
 			var need := int(cost["shards"])
-			body.add_child(Kit.label("조각 %d / %d  ·  강화 비용 %s" % [shards, need, Kit.money_text("gold", int(cost["gold"]))], 20))
+			body.add_child(Kit.para("조각 %d / %d  ·  강화 비용 %s" % [shards, need, Kit.money_text("gold", int(cost["gold"]))], 20))
 			body.add_child(Kit.bar(float(shards) / float(max(need, 1)), Kit.GEM, 16))
-			body.add_child(Kit.label("조각은 같은 영웅을 또 소환하면 얻어요.", 18, Kit.MUTED))
+			body.add_child(Kit.para("조각은 같은 영웅을 또 소환하면 얻어요.", 18, Kit.MUTED))
 			var can := Profile.can_upgrade(app.profile, app.eco, id)
 			buttons.append(["강화하기" if can else "강화 불가", Color("c4861c") if can else Kit.DISABLED, _upgrade.bind(id) if can else Callable()])
 	else:
-		body.add_child(Kit.label("아직 없는 영웅이에요. 상점에서 소환하면 얻을 수 있어요.", 20, Kit.MUTED))
+		body.add_child(Kit.para("아직 없는 영웅이에요. 상점에서 소환하면 얻을 수 있어요.", 20, Kit.MUTED))
 		buttons.append(["상점으로", Color("c4861c"), func(): app.go("shop")])
 	buttons.append(["닫기", Kit.PANEL_LIGHT])
 	app.dialog("", body, buttons, 660)
