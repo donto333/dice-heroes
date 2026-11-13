@@ -62,20 +62,24 @@ static func card_useful(game, card: Dictionary) -> bool:
 ## AI 파티를 고른다. 포인트 제한 안에서 무작위로 세 명을 뽑고,
 ## 공격이 가장 높은 캐릭터를 ATTACK, 남은 중 방어가 높은 쪽을 DEFENSE, 나머지를 SUPPORT에 앉힌다.
 static func pick_party(characters: Array, point_limit: int, rng: RandomNumberGenerator) -> Dictionary:
-	var combos: Array = []
-	for i in characters.size():
-		for j in range(i + 1, characters.size()):
-			for k in range(j + 1, characters.size()):
-				var trio: Array = [characters[i], characters[j], characters[k]]
-				var total := 0
-				for character in trio:
-					total += int(character["grade"])
-				# 너무 약한 조합은 빼고, 포인트를 거의 다 쓰는 조합만 쓴다.
-				if total <= point_limit and total >= point_limit - 1:
-					combos.append(trio)
-	if combos.is_empty():
+	# 캐릭터가 많아 모든 조합을 만들면 느리므로, 무작위로 뽑아 조건에 맞을 때까지 다시 뽑는다.
+	# 너무 약한 조합은 빼고, 포인트를 거의 다 쓰는 조합만 쓴다.
+	var count := characters.size()
+	if count < 3:
 		return {}
-	var trio: Array = combos[rng.randi_range(0, combos.size() - 1)].duplicate()
+	var trio: Array = []
+	for attempt in 5000:
+		var i := rng.randi_range(0, count - 1)
+		var j := rng.randi_range(0, count - 1)
+		var k := rng.randi_range(0, count - 1)
+		if i == j or i == k or j == k:
+			continue
+		var total := int(characters[i]["grade"]) + int(characters[j]["grade"]) + int(characters[k]["grade"])
+		if total <= point_limit and total >= point_limit - 1:
+			trio = [characters[i], characters[j], characters[k]]
+			break
+	if trio.is_empty():
+		return {}
 	trio.sort_custom(func(a, b): return int(a["attack"]) > int(b["attack"]))
 	var attacker: Dictionary = trio.pop_front()
 	trio.sort_custom(func(a, b): return int(a["defense"]) > int(b["defense"]))
