@@ -900,14 +900,14 @@ func _gain_turn_gauge(player_index: int, amount: int) -> void:
 	var gauge: Dictionary = player["gauge"]
 	var spilled := 0
 	for slot in SLOTS:
-		spilled += max(0, int(gauge[slot]) + amount - 100)
+		spilled += maxi(0, int(gauge[slot]) + amount - 100)
 	_add_gauge(player_index, amount)
-	player["overflow"] = int(player["overflow"]) + spilled / SLOTS.size()
+	player["overflow"] = int(player["overflow"]) + int(float(spilled) / float(SLOTS.size()))
 	if int(player["overflow"]) >= 100 and player["hand"].size() < HAND_LIMIT:
 		player["overflow"] = int(player["overflow"]) - 100
 		say("  %s: 넘친 게이지가 모여 카드가 됩니다." % player["name"])
 		_draw_card(player_index, true)
-	player["overflow"] = min(int(player["overflow"]), 100)
+	player["overflow"] = mini(int(player["overflow"]), 100)
 
 
 func _add_gauge(player_index: int, amount: int) -> void:
