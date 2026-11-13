@@ -25,3 +25,28 @@ static func take_turn(game) -> void:
 ## 갈림길에서 고를 길의 순번.
 static func choose(game) -> int:
 	return game.best_option(game.pending_choice["options"])
+
+
+## AI 파티를 고른다. 포인트 제한 안에서 무작위로 세 명을 뽑고,
+## 공격이 가장 높은 캐릭터를 ATTACK, 남은 중 방어가 높은 쪽을 DEFENSE, 나머지를 SUPPORT에 앉힌다.
+static func pick_party(characters: Array, point_limit: int, rng: RandomNumberGenerator) -> Dictionary:
+	var combos: Array = []
+	for i in characters.size():
+		for j in range(i + 1, characters.size()):
+			for k in range(j + 1, characters.size()):
+				var trio: Array = [characters[i], characters[j], characters[k]]
+				var total := 0
+				for character in trio:
+					total += int(character["grade"])
+				# 너무 약한 조합은 빼고, 포인트를 거의 다 쓰는 조합만 쓴다.
+				if total <= point_limit and total >= point_limit - 1:
+					combos.append(trio)
+	if combos.is_empty():
+		return {}
+	var trio: Array = combos[rng.randi_range(0, combos.size() - 1)].duplicate()
+	trio.sort_custom(func(a, b): return int(a["attack"]) > int(b["attack"]))
+	var attacker: Dictionary = trio.pop_front()
+	trio.sort_custom(func(a, b): return int(a["defense"]) > int(b["defense"]))
+	var defender: Dictionary = trio.pop_front()
+	var supporter: Dictionary = trio.pop_front()
+	return {"attack": attacker["id"], "defense": defender["id"], "support": supporter["id"]}
