@@ -16,9 +16,12 @@ var _time := 0.0
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_STOP
 	var background := ColorRect.new()
 	background.color = Color("0a0c1c")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# 배경이 터치를 가로채면 화면을 눌러도 넘어가지 않는다. 터치는 이 화면(self)이 받는다.
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
 	# 초상화 두 줄이 서로 반대로 흐른다.
