@@ -27,7 +27,24 @@ PALETTE = {
 }
 
 ICONS = {
-    "battle": """
+    "ambush": """
+..ssssssssssss..
+.sgggggggggggrs.
+.sggwwggggggrgs.
+.sgwggggggrrggs.
+.sgggggggrrgrgs.
+.sggggggrrgrrgs.
+.sgggggrrgrrggs.
+.sggggrrgrrgggs.
+..sgggrgrrggds..
+..sggggrrgggds..
+...sgggrggggs...
+....sggggdds....
+.....sggdds.....
+......sdds......
+.......ss.......
+................
+""",    "battle": """
 s..............s
 ss............ss
 .ss..........ss.

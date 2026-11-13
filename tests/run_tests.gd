@@ -15,7 +15,7 @@ const PartySelect := preload("res://scripts/ui/party_select.gd")
 
 const CATEGORIES := ["영웅", "위인", "신화", "근현대"]
 const TILE_TYPES := [
-	"start", "normal", "fork", "random", "attr", "battle", "treasure", "forward",
+	"start", "normal", "fork", "random", "attr", "battle", "ambush", "treasure", "forward",
 	"warp", "luck", "curse", "prison", "fate", "checkpoint", "goal",
 ]
 const PARTIES := [
@@ -120,7 +120,7 @@ func _test_board_data() -> void:
 		match node.get("type", ""):
 			"attr":
 				_check(node.get("attr", "") in CATEGORIES, "속성 칸의 분류가 잘못됨: %d번" % id)
-			"battle", "goal":
+			"battle", "ambush", "goal":
 				_check(int(node.get("dice", 0)) >= 1, "키퍼 주사위 수가 없음: %d번" % id)
 	for node in raw_nodes:
 		for next_id in node.get("next", []):
@@ -470,8 +470,8 @@ func _test_full_games() -> void:
 					shown[int(event["player"])] = int(event["to"])
 					_check(game.nodes.has(int(event["to"])), "없는 칸으로 이동함")
 				elif event["kind"] == "battle":
-					var other_names := [game.char_of(0, "defense")["name"], game.char_of(1, "defense")["name"]]
-					if event["defender"] in other_names:
+					_check(str(event.get("target", "")) in ["player", "keeper", "ambush"], "전투 사건의 target이 잘못됨")
+					if event["target"] == "player":
 						player_battles += 1
 					else:
 						keeper_battles += 1
