@@ -66,8 +66,13 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           export SHOT_DIR="${RUNNER_TEMP}/screenshots"
           LIBGL_ALWAYS_SOFTWARE=1 timeout 180 xvfb-run -a -s "-screen 0 800x1400x24" \
-            godot --rendering-driver opengl3 --resolution 720x1280 --script res://tools/capture.gd 2>&1 | tail -40
+            godot --rendering-driver opengl3 --resolution 720x1280 --script res://tools/capture.gd 2>&1 | grep -v "^SHOT" | tail -40
           ls -la "${SHOT_DIR}" || true
+          # 사진을 글자(base64)로 로그에 남긴다. 작업 공간에서 로그로 사진을 되살려 볼 수 있다.
+          for f in "${SHOT_DIR}"/*.png; do
+            name=$(basename "$f")
+            base64 -w 3000 "$f" | sed "s/^/SHOT ${name} /"
+          done
 
       - name: 화면 사진 보관
         if: always()
