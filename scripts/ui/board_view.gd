@@ -160,11 +160,22 @@ func _draw() -> void:
 	var cell: float = layout["cell"]
 	var small: int = int(clamp(cell * 0.18, 9.0, 20.0))
 
+	# 맵마다 다른 바탕색
+	var theme: Dictionary = game.board_theme
+	var line_color := Color(1, 1, 1, 0.25)
+	if theme.has("bg"):
+		var bg := StyleBoxFlat.new()
+		bg.bg_color = Color(str(theme["bg"]))
+		bg.set_corner_radius_all(14)
+		draw_style_box(bg, Rect2(Vector2.ZERO, size))
+	if theme.has("line"):
+		line_color = Color(str(theme["line"]))
+		line_color.a = 0.35
 	# 칸 사이 연결선
 	for id in game.nodes:
 		for next_id in game.nodes[id]["next"]:
 			if game.nodes.has(next_id):
-				draw_line(_center(id, layout), _center(next_id, layout), Color(1, 1, 1, 0.25), max(3.0, cell * 0.08))
+				draw_line(_center(id, layout), _center(next_id, layout), line_color, max(3.0, cell * 0.08))
 
 	for id in game.nodes:
 		var tile: Dictionary = game.nodes[id]

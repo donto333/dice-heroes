@@ -4,6 +4,8 @@ extends RefCounted
 
 const CHARACTERS_PATH := "res://data/characters.json"
 const BOARD_PATH := "res://data/board.json"
+## 대전마다 이 중 하나를 고른다. 첫 번째가 기본 맵.
+const BOARD_PATHS := ["res://data/board.json", "res://data/boards/desert.json", "res://data/boards/frost.json"]
 const CARDS_PATH := "res://data/cards.json"
 const ABILITIES_PATH := "res://data/abilities.json"
 const RULES_PATH := "res://data/rules.json"
@@ -26,11 +28,19 @@ static func load_characters() -> Array:
 	return load_json(CHARACTERS_PATH).get("characters", [])
 
 
+static func load_boards() -> Array:
+	var boards: Array = []
+	for path in BOARD_PATHS:
+		boards.append(load_json(path))
+	return boards
+
+
 ## 규칙 엔진에 넘길 데이터 묶음.
 static func load_all() -> Dictionary:
 	return {
 		"characters": load_characters(),
 		"board": load_json(BOARD_PATH),
+		"boards": load_boards(),
 		"cards": load_json(CARDS_PATH).get("cards", {}),
 		"abilities": load_json(ABILITIES_PATH).get("abilities", {}),
 		"rules": load_json(RULES_PATH),
