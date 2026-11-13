@@ -9,10 +9,17 @@
 - 규칙 로직은 화면 코드와 분리해 `scripts/rules/`에 두고, `tests/run_tests.gd`에서 검사한다.
 - 게임 수치는 코드에 박지 말고 `data/`의 JSON에 둔다.
 - 주사위는 반드시 한 곳(규칙 코드)에서만 굴린다. 7단계에서 서버가 굴리도록 옮기기 위해서다.
-- 그래픽은 2D 도트. 원작(주사위의 잔영)과 창세기전의 이름, 아이콘, 캐릭터는 쓰지 않는다.
+- 그래픽: 영웅은 반실사 채색 일러스트(assets/portraits, 사용자 결정), 보드 칸 아이콘은 2D 도트. 원작(주사위의 잔영)과 창세기전의 이름, 아이콘, 캐릭터는 쓰지 않는다.
 - `main`에 직접 올리지 않고 `claude/`로 시작하는 브랜치와 PR로 올린다.
   Build가 통과하면 `.github/workflows/auto-merge.yml`이 자동으로 합치고 배포한다. 사용자가 승인할 필요는 없다.
   Build가 실패하면 합쳐지지 않으므로, 실패 원인을 고쳐 같은 브랜치에 다시 올린다.
+
+## 구조
+
+- `scripts/main.gd`: 화면 전환 틀(app). `scripts/screens/`: 타이틀·로그인·로비·영웅·상점·미션·설정·파티·대전 화면.
+- `scripts/rules/game.gd`: 판 규칙. `scripts/rules/profile.gd`: 게임 밖 성장(재화·소환·강화·보상·랭크·미션·출석). 수치는 `data/economy.json`.
+- 저장은 `scripts/save_store.gd`(기기 안 user://). 온라인 서버(Nakama)는 아직 없음.
+- 화면 확인은 CI의 `tools/capture.gd` 자동 사진(로그에 base64로 남음).
 
 ## 게임 요약
 

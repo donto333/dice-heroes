@@ -1,0 +1,63 @@
+extends Control
+## 화면 가운데 뜨는 창. 뒤를 어둡게 덮고, 제목·내용·버튼을 보여 준다.
+## 쓰는 법: var d := Dialog.new(); parent.add_child(d); d.open("제목", 내용_컨트롤, [["확인", 색, 콜백], ...])
+## 버튼을 누르면 콜백을 부르고 창이 닫힌다. 콜백이 없으면 그냥 닫힌다.
+
+const Kit := preload("res://scripts/ui/kit.gd")
+
+signal closed
+
+var _column: VBoxContainer
+var _panel: PanelContainer
+
+
+func _ready() -> void:
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_STOP
+
+
+func open(title_text: String, body: Control, buttons: Array, width: float = 640.0) -> void:
+	for child in get_children():
+		child.queue_free()
+	var dim := ColorRect.new()
+	dim.color = Color(0.02, 0.03, 0.08, 0.78)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(center)
+	_panel = PanelContainer.new()
+	_panel.custom_minimum_size = Vector2(width, 0)
+	_panel.add_theme_stylebox_override("panel", Kit.box(Color("1a1f40"), Kit.GOLD.darkened(0.25), 3, 18, 24))
+	center.add_child(_panel)
+	_column = Kit.vbox(16)
+	_panel.add_child(_column)
+	if title_text != "":
+		_column.add_child(Kit.title(title_text, 38))
+	if body != null:
+		_column.add_child(body)
+	if not buttons.is_empty():
+		var row := Kit.hbox(10)
+		_column.add_child(row)
+		for spec in buttons:
+			var button := Kit.button(str(spec[0]), spec[1] if spec.size() > 1 else Kit.ACCENT, 26, 84)
+			Kit.expand(button)
+			var callback: Callable = spec[2] if spec.size() > 2 else Callable()
+			button.pressed.connect(_on_button.bind(callback))
+			row.add_child(button)
+	_panel.pivot_offset = Vector2(width * 0.5, 120)
+	_panel.scale = Vector2(0.85, 0.85)
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(_panel, "scale", Vector2.ONE, 0.22)
+
+
+func _on_button(callback: Callable) -> void:
+	close()
+	if callback.is_valid():
+		callback.call()
+
+
+func close() -> void:
+	closed.emit()
+	queue_free()

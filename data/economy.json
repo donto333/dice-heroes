@@ -1,0 +1,62 @@
+{
+  "_comment": "게임 밖 성장 규칙의 수치. 재화(골드·보석), 영웅 소환, 강화, 보상, 랭크, 미션, 출석. 규칙 코드는 scripts/rules/profile.gd.",
+  "start": {
+    "gold": 1500,
+    "gems": 300,
+    "characters": ["lubu", "athena", "machao", "zhouyu", "choichiwon", "ganning", "choiyoung", "dokkaebi", "haetae", "libai", "houdini", "mulan"],
+    "party": {"attack": "lubu", "defense": "athena", "support": "choichiwon"}
+  },
+  "summon": {
+    "_comment": "rates는 등급별 확률(%). 10회 소환의 마지막 한 장은 ★★ 이상 보장. pity_3번 안에 ★★★가 안 나오면 다음은 ★★★ 확정.",
+    "cost_one": 100,
+    "cost_ten": 900,
+    "free_per_day": 1,
+    "rates": {"3": 6, "2": 30, "1": 64},
+    "pity_3": 40,
+    "shards_on_duplicate": {"1": 5, "2": 10, "3": 25}
+  },
+  "upgrade": {
+    "_comment": "레벨 1→2, 2→3, 3→4, 4→5에 드는 조각과 골드. 전투 보너스는 data/rules.json의 level_battle_bonus.",
+    "max_level": 5,
+    "shards": [10, 20, 40, 80],
+    "gold": [500, 1000, 2000, 4000]
+  },
+  "player_level": {
+    "_comment": "레벨 n에서 다음 레벨까지 필요한 경험치 = base + per_level × (n-1). 레벨이 오르면 보석을 준다.",
+    "base": 100,
+    "per_level": 50,
+    "level_up_gems": 50
+  },
+  "rewards": {
+    "_comment": "판이 끝나면 받는 보상. 오늘 첫 승리에는 first_win_gems를 더 준다.",
+    "rank": {"win": {"gold": 150, "exp": 40, "trophies": 30}, "lose": {"gold": 50, "exp": 20, "trophies": -20}, "draw": {"gold": 80, "exp": 25, "trophies": 0}},
+    "ai": {"win": {"gold": 80, "exp": 25}, "lose": {"gold": 30, "exp": 10}, "draw": {"gold": 50, "exp": 15}},
+    "local": {"win": {"gold": 30, "exp": 10}, "lose": {"gold": 30, "exp": 10}, "draw": {"gold": 30, "exp": 10}},
+    "first_win_gems": 30
+  },
+  "tiers": [
+    {"name": "브론즈", "min": 0, "color": "c08457", "ai_level": 1},
+    {"name": "실버", "min": 200, "color": "c0c7d1", "ai_level": 2},
+    {"name": "골드", "min": 500, "color": "ffcf4d", "ai_level": 2},
+    {"name": "플래티넘", "min": 900, "color": "5fd3c6", "ai_level": 3},
+    {"name": "다이아", "min": 1400, "color": "7aa8ff", "ai_level": 4},
+    {"name": "마스터", "min": 2000, "color": "d17bff", "ai_level": 5}
+  ],
+  "missions": [
+    {"id": "play_1", "text": "아무 대전이나 1판 하기", "event": "play", "goal": 1, "reward": {"gold": 100}},
+    {"id": "play_3", "text": "대전 3판 하기", "event": "play", "goal": 3, "reward": {"gold": 200}},
+    {"id": "win_2", "text": "AI전·랭크전에서 2번 이기기", "event": "win", "goal": 2, "reward": {"gems": 30}},
+    {"id": "battle_5", "text": "전투에서 5번 이기기", "event": "battle_win", "goal": 5, "reward": {"gold": 150}},
+    {"id": "card_5", "text": "아이템 카드 5장 쓰기", "event": "card", "goal": 5, "reward": {"gold": 100}},
+    {"id": "summon_1", "text": "영웅 소환 1번 하기", "event": "summon", "goal": 1, "reward": {"gold": 100}}
+  ],
+  "missions_all_clear": {"gems": 50},
+  "attendance": [
+    {"gold": 300}, {"gems": 30}, {"gold": 500}, {"gems": 50}, {"gold": 800}, {"gems": 80}, {"gems": 150}
+  ],
+  "exchange": [
+    {"gems": 30, "gold": 600},
+    {"gems": 100, "gold": 2200},
+    {"gems": 300, "gold": 7000}
+  ]
+}
