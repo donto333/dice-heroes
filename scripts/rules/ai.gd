@@ -12,8 +12,9 @@ static func take_turn(game) -> void:
 			if game.can_use_ability(slot):
 				game.use_ability(slot)
 				break
-		if game.can_play_card(0):
-			game.play_card(0)
+		var card_index := pick_card(game)
+		if card_index >= 0:
+			game.play_card(card_index)
 		game.roll_move()
 		var guard := 0
 		while game.awaiting_choice() and guard < 10:
@@ -22,9 +23,40 @@ static func take_turn(game) -> void:
 	game.end_turn()
 
 
-## 갈림길에서 고를 길의 순번.
+## 고르기의 답. 갈림길이면 골에 가까운 길,
+## 상대를 지나칠 때는 내 공격 주사위가 상대 방어 주사위보다 많으면 싸운다.
 static func choose(game) -> int:
+	if game.choice_kind() == "fight":
+		var me: int = game.current
+		var attack := int(game.char_of(me, "attack")["attack"])
+		var defense := int(game.char_of(1 - me, "defense")["defense"])
+		return 0 if attack > defense else 1
 	return game.best_option(game.pending_choice["options"])
+
+
+## 이번 턴에 쓸 카드의 순번. 쓸 만한 카드가 없으면 -1.
+static func pick_card(game) -> int:
+	var hand: Array = game.players[game.current]["hand"]
+	for index in hand.size():
+		if game.can_play_card(index) and card_useful(game, game.cards[hand[index]]):
+			return index
+	return -1
+
+
+## 지금 쓰면 손해이거나 아무 일도 없는 카드를 거른다.
+static func card_useful(game, card: Dictionary) -> bool:
+	var me: int = game.current
+	var other_hand: Array = game.players[1 - me]["hand"]
+	match str(card["effect"].get("type", "")):
+		"swap":
+			return game.distance_of(1 - me) < game.distance_of(me)
+		"discard_enemy":
+			return not other_hand.is_empty()
+		"steal_card":
+			return not other_hand.is_empty() and game.players[me]["hand"].size() < game.HAND_LIMIT
+		"draw_card":
+			return game.players[me]["hand"].size() < game.HAND_LIMIT
+	return true
 
 
 ## AI 파티를 고른다. 포인트 제한 안에서 무작위로 세 명을 뽑고,

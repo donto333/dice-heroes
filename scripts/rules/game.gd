@@ -4,7 +4,7 @@ extends RefCounted
 ##
 ## 한 턴의 순서:
 ##   begin_turn() → (play_card / use_ability, 각 1회까지) → roll_move()
-##   → (갈림길이면 choose_path()를 길이 정해질 때까지) → end_turn()
+##   → (갈림길이나 상대를 지나칠 때 choose_path()로 고르기) → end_turn()
 ##
 ## 보드는 칸(node)과 다음 칸(next) 연결로 이뤄진다. next가 2개 이상이면 갈림길이다.
 ## 말이 지나온 길은 trail에 쌓아 두고, 뒤로 물러날 때는 그 길을 거꾸로 되짚는다.
@@ -25,6 +25,7 @@ const COUNTER_STEPS := 3
 const TIMED_EFFECTS := [
 	"atk_dice", "def_dice", "atk_bonus", "def_bonus",
 	"move_dice", "enemy_dice_minus", "chase", "counter",
+	"move_plus", "move_best", "retry",
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -51,8 +52,14 @@ var messages: Array = []
 ## 화면이 연출에 쓰는 사건 기록. take_events()로 가져가면 비워진다.
 ## kind: "pos"(말이 한 칸 이동), "move"(이동 주사위), "battle"(전투), "fate"(운명의 판정)
 var events: Array = []
-## 갈림길에서 길을 골라야 할 때 채워진다. {"options": [칸 id...], "steps": 남은 칸 수}
+## 고르기가 필요할 때 채워진다.
+##   갈림길: {"kind": "path", "options": [칸 id...], "steps": 남은 칸 수}
+##   상대를 지나칠 때: {"kind": "fight", "options": [0 싸운다, 1 지나간다], "steps": 남은 칸 수}
 var pending_choice: Dictionary = {}
+## 덫이 놓인 칸 id → 덫을 놓은 플레이어
+var traps: Dictionary = {}
+## 후공 보정으로 둘째 플레이어가 받는 첫 게이지
+var second_player_gauge := 0
 
 var card_played := false
 var ability_used := false
@@ -69,6 +76,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	cards = data.get("cards", {})
 	abilities = data.get("abilities", {})
 	move_weights = data.get("rules", {}).get("move_dice_weights", {})
+	second_player_gauge = int(data.get("rules", {}).get("second_player_gauge", 0))
 	characters = {}
 	for character in data.get("characters", []):
 		characters[character["id"]] = character
@@ -100,9 +108,13 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	events = []
 	pending_choice = {}
 	revealed = {}
+	traps = {}
 	for index in players.size():
 		for i in START_HAND:
 			_draw_card(index, false)
+	# 먼저 하는 쪽이 유리하므로 나중에 하는 쪽은 게이지를 채워 두고 시작한다.
+	if players.size() > 1 and second_player_gauge > 0:
+		_add_gauge(1, second_player_gauge)
 	say("게임 시작! 먼저 골에 들어가면 승리합니다.")
 
 
@@ -207,6 +219,20 @@ func can_act() -> bool:
 
 func awaiting_choice() -> bool:
 	return not pending_choice.is_empty()
+
+
+## 지금 고르기의 종류. "path" 또는 "fight". 고를 게 없으면 "".
+func choice_kind() -> String:
+	if pending_choice.is_empty():
+		return ""
+	return str(pending_choice.get("kind", "path"))
+
+
+## 고르기 버튼에 쓸 이름.
+func choice_label(option_index: int) -> String:
+	if choice_kind() == "fight":
+		return "싸운다" if option_index == 0 else "지나간다"
+	return route_name(int(pending_choice["options"][option_index]))
 
 
 func can_use_ability(slot: String) -> bool:
@@ -338,33 +364,67 @@ func roll_move() -> void:
 	else:
 		var count: int = max(1, int(mover["move"]) + effect_sum(current, "move_dice"))
 		rolls = roll_weighted_dice(count, move_weights_for(count))
+		if effect_sum(current, "move_best") > 0:
+			var again := roll_weighted_dice(count, move_weights_for(count))
+			say("  길잡이 별: %s와 %s 중 큰 쪽" % [str(rolls), str(again)])
+			if _sum(again) > _sum(rolls):
+				rolls = again
 		total = _sum(rolls)
 		say("%s: 이동 주사위 %s → %d칸" % [player["name"], str(rolls), total])
-	var bonus := 0
-	if map_attr == "근현대" and mover["category"] == "근현대":
-		bonus = ATTR_BONUS
+	var bonus := effect_sum(current, "move_plus")
+	if bonus > 0:
 		total += bonus
+		say("  %d칸 더 이동" % bonus)
+	if map_attr == "근현대" and mover["category"] == "근현대":
+		bonus += ATTR_BONUS
+		total += ATTR_BONUS
 		say("  맵 속성 보너스로 %d칸 더 이동" % ATTR_BONUS)
 	_event({"kind": "move", "player": current, "rolls": rolls, "total": total, "bonus": bonus})
 
-	if _walk(current, total, true):
-		_resolve_tile(0)
+	_continue_walk(total)
 
 
-## 갈림길에서 길을 고른다. option_index는 pending_choice["options"]의 순번이다.
+## 고르기에 답한다. option_index는 pending_choice["options"]의 순번이다.
+## 갈림길이면 그 길로 가고, 상대를 지나칠 때면 0은 싸우기, 1은 그냥 지나가기다.
 func choose_path(option_index: int) -> bool:
 	if pending_choice.is_empty():
 		return false
 	var options: Array = pending_choice["options"]
 	if option_index < 0 or option_index >= options.size():
 		return false
+	var kind := choice_kind()
 	var steps := int(pending_choice["steps"])
 	pending_choice = {}
+	if kind == "fight":
+		if option_index == 1:
+			say("  %s: 싸우지 않고 지나갑니다." % players[current]["name"])
+			_continue_walk(steps)
+		elif _battle_players():
+			# 이기면 남은 칸을 마저 간다. 지면 거점으로 돌아가 이동이 끝난다.
+			_continue_walk(steps)
+		return true
 	say("  %s: %s(으)로 갑니다." % [players[current]["name"], route_name(int(options[option_index]))])
 	_step(current, int(options[option_index]))
-	if _walk(current, steps - 1, true):
-		_resolve_tile(0)
+	if steps - 1 > 0 and _can_fight_passing(current):
+		pending_choice = {"kind": "fight", "options": [0, 1], "steps": steps - 1}
+		return true
+	_continue_walk(steps - 1)
 	return true
+
+
+## 남은 칸을 걸어가고, 길이 다 정해지면 도착한 칸을 처리한다.
+func _continue_walk(steps: int) -> void:
+	if _walk(current, steps, true):
+		_resolve_tile(0)
+
+
+## 지나가는 칸에 상대가 있어서 싸울 수 있는지. 출발 칸과 골에서는 싸우지 않는다.
+func _can_fight_passing(player_index: int) -> bool:
+	var pos := int(players[player_index]["pos"])
+	if int(players[1 - player_index]["pos"]) != pos:
+		return false
+	var kind: String = node_of(pos).get("type", "")
+	return kind != "start" and kind != "goal"
 
 
 ## 갈림길에서 보여 줄 길 이름.
@@ -422,11 +482,15 @@ func _walk(player_index: int, steps: int, interactive: bool) -> bool:
 		var chosen := 0
 		if options.size() > 1:
 			if interactive:
-				pending_choice = {"options": options.duplicate(), "steps": remaining}
+				pending_choice = {"kind": "path", "options": options.duplicate(), "steps": remaining}
 				return false
 			chosen = best_option(options)
 		_step(player_index, int(options[chosen]))
 		remaining -= 1
+		# 가는 길에 상대를 지나치면 싸울지 고른다. 마지막 칸이면 도착해서 싸운다.
+		if interactive and remaining > 0 and _can_fight_passing(player_index):
+			pending_choice = {"kind": "fight", "options": [0, 1], "steps": remaining}
+			return false
 	return true
 
 
@@ -478,6 +542,14 @@ func _resolve_tile(depth: int) -> void:
 		if not _battle_players():
 			return
 		pos = int(player["pos"])
+
+	if traps.has(pos) and int(traps[pos]) != current:
+		traps.erase(pos)
+		if _consume_charm(current):
+			say("  덫이 있었지만 부적이 막아 줬습니다.")
+		else:
+			player["skip"] = int(player["skip"]) + 1
+			say("  덫에 걸렸습니다! 다음 턴을 쉽니다.")
 
 	var tile: Dictionary = node_of(pos)
 	if is_hidden(pos):
@@ -611,9 +683,15 @@ func _battle_players() -> bool:
 	var attacker: Dictionary = char_of(current, "attack")
 	var defender: Dictionary = char_of(1 - current, "defense")
 	say("  전투! %s(공격) vs %s(방어)" % [attacker["name"], defender["name"]])
+	var attack_dice := _attack_dice(current)
+	var defense_dice := _defense_dice(1 - current)
 	var result := resolve_battle(
-		_attack_dice(current), _defense_dice(1 - current),
-		_attack_bonus(current), _defense_bonus(1 - current))
+		attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current))
+	if not result["attacker_won"] and _consume_effect(current, "retry"):
+		_say_battle(result)
+		say("  재도전! 한 번 더 굴립니다.")
+		result = resolve_battle(
+			attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current))
 	_say_battle(result)
 	_battle_event(attacker["name"], defender["name"], result)
 	if result["attacker_won"]:
@@ -636,9 +714,13 @@ func _battle_keeper(keeper_dice: int, keeper_name: String) -> bool:
 	var player: Dictionary = players[current]
 	var attacker: Dictionary = char_of(current, "attack")
 	say("  전투! %s vs 키퍼 [%s]" % [attacker["name"], keeper_name])
-	var result := resolve_battle(
-		_attack_dice(current), keeper_dice - effect_sum(current, "enemy_dice_minus"),
-		_attack_bonus(current), 0)
+	var attack_dice := _attack_dice(current)
+	var defense_dice := keeper_dice - effect_sum(current, "enemy_dice_minus")
+	var result := resolve_battle(attack_dice, defense_dice, _attack_bonus(current), 0)
+	if not result["attacker_won"] and _consume_effect(current, "retry"):
+		_say_battle(result)
+		say("  재도전! 한 번 더 굴립니다.")
+		result = resolve_battle(attack_dice, defense_dice, _attack_bonus(current), 0)
 	_say_battle(result)
 	_battle_event(attacker["name"], keeper_name, result)
 	if result["attacker_won"]:
@@ -690,7 +772,36 @@ func _apply_effect(effect: Dictionary, player_index: int) -> void:
 		"gauge_enemy":
 			_add_gauge(opponent_index, amount)
 		"draw_card":
-			_draw_card(player_index, true)
+			for i in max(amount, 1):
+				_draw_card(player_index, true)
+		"enemy_move_dice":
+			# 상대의 다음 이동까지 남도록 2턴으로 건다.
+			if _consume_charm(opponent_index):
+				say("  %s의 부적이 막아 냈습니다." % opponent["name"])
+			else:
+				_add_effect(opponent_index, "move_dice", amount, 2)
+		"trap":
+			traps[int(player["pos"])] = player_index
+			say("  %d번 칸에 덫을 숨겨 두었습니다." % int(player["pos"]))
+		"swap":
+			_swap_positions(player_index)
+		"discard_enemy":
+			var their_hand: Array = opponent["hand"]
+			if their_hand.is_empty():
+				say("  %s의 손에 카드가 없습니다." % opponent["name"])
+			elif _consume_charm(opponent_index):
+				say("  %s의 부적이 막아 냈습니다." % opponent["name"])
+			else:
+				var lost: String = their_hand.pop_at(rng.randi_range(0, their_hand.size() - 1))
+				say("  %s의 카드 [%s]이(가) 사라졌습니다." % [opponent["name"], cards[lost]["name"]])
+		"steal_card":
+			var their_cards: Array = opponent["hand"]
+			if their_cards.is_empty() or player["hand"].size() >= HAND_LIMIT:
+				say("  훔칠 카드가 없습니다.")
+			else:
+				var taken: String = their_cards.pop_at(rng.randi_range(0, their_cards.size() - 1))
+				player["hand"].append(taken)
+				say("  %s의 카드 [%s]을(를) 훔쳤습니다." % [opponent["name"], cards[taken]["name"]])
 		"skip_enemy":
 			if _consume_charm(opponent_index):
 				say("  %s의 부적이 막아 냈습니다." % opponent["name"])
@@ -706,6 +817,30 @@ func _apply_effect(effect: Dictionary, player_index: int) -> void:
 			say("  맵 속성이 [%s](으)로 바뀌었습니다." % map_attr)
 		_:
 			push_warning("알 수 없는 효과: %s" % kind)
+
+
+## 두 말의 자리와 지나온 길을 서로 바꾼다.
+func _swap_positions(player_index: int) -> void:
+	var me: Dictionary = players[player_index]
+	var other: Dictionary = players[1 - player_index]
+	var my_trail: Array = me["trail"]
+	me["trail"] = other["trail"]
+	other["trail"] = my_trail
+	me["pos"] = int(me["trail"].back())
+	other["pos"] = int(other["trail"].back())
+	_event({"kind": "pos", "player": player_index, "to": me["pos"]})
+	_event({"kind": "pos", "player": 1 - player_index, "to": other["pos"]})
+	say("  운명이 뒤바뀌었습니다! 두 말의 자리가 바뀝니다.")
+
+
+## 지속 효과 하나를 써서 없앤다. 있었으면 true.
+func _consume_effect(player_index: int, key: String) -> bool:
+	var effects: Array = players[player_index]["effects"]
+	for index in effects.size():
+		if effects[index]["key"] == key:
+			effects.remove_at(index)
+			return true
+	return false
 
 
 func _add_effect(player_index: int, key: String, amount: int, turns: int) -> void:

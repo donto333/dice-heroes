@@ -1,13 +1,167 @@
 {
-  "_comment": "프로토타입용 아이템 카드 8종. 기획안의 20종 중 규칙 검증에 필요한 것만 먼저 넣었다.",
+  "_comment": "아이템 카드 20종. effect.type은 scripts/rules/game.gd의 _apply_effect()에서 처리한다.",
   "cards": {
-    "swift_horse": {"name": "천리마", "text": "이번 이동을 6칸으로 고정", "effect": {"type": "move_fixed", "amount": 6}},
-    "tailwind": {"name": "순풍", "text": "이번 턴 이동 주사위 +1개", "effect": {"type": "move_dice", "amount": 1, "turns": 1}},
-    "banner": {"name": "필승의 깃발", "text": "이번 턴 공격 주사위 +1개", "effect": {"type": "atk_dice", "amount": 1, "turns": 1}},
-    "fortress": {"name": "철옹성", "text": "다음 내 차례까지 방어 주사위 +1개", "effect": {"type": "def_dice", "amount": 1, "turns": 1}},
-    "inspiration": {"name": "영감", "text": "우리 팀 게이지 +50%", "effect": {"type": "gauge_team", "amount": 50}},
-    "shackle": {"name": "족쇄", "text": "상대 1턴 쉬기", "effect": {"type": "skip_enemy", "amount": 1}},
-    "charm": {"name": "부적", "text": "저주·감옥·판정·족쇄를 한 번 무효", "effect": {"type": "charm"}},
-    "attr_wind": {"name": "속성의 바람", "text": "맵 속성을 내 ATTACK 캐릭터의 분류로 변경", "effect": {"type": "set_attr"}}
+    "swift_horse": {
+      "name": "천리마",
+      "text": "이번 이동을 6칸으로 고정",
+      "effect": {
+        "type": "move_fixed",
+        "amount": 6
+      }
+    },
+    "tailwind": {
+      "name": "순풍",
+      "text": "이번 턴 이동 주사위 +1개",
+      "effect": {
+        "type": "move_dice",
+        "amount": 1,
+        "turns": 1
+      }
+    },
+    "banner": {
+      "name": "필승의 깃발",
+      "text": "이번 턴 공격 주사위 +1개",
+      "effect": {
+        "type": "atk_dice",
+        "amount": 1,
+        "turns": 1
+      }
+    },
+    "fortress": {
+      "name": "철옹성",
+      "text": "다음 내 차례까지 방어 주사위 +1개",
+      "effect": {
+        "type": "def_dice",
+        "amount": 1,
+        "turns": 1
+      }
+    },
+    "inspiration": {
+      "name": "영감",
+      "text": "우리 팀 게이지 +50%",
+      "effect": {
+        "type": "gauge_team",
+        "amount": 50
+      }
+    },
+    "shackle": {
+      "name": "족쇄",
+      "text": "상대 1턴 쉬기",
+      "effect": {
+        "type": "skip_enemy",
+        "amount": 1
+      }
+    },
+    "charm": {
+      "name": "부적",
+      "text": "저주·감옥·판정·족쇄를 한 번 무효",
+      "effect": {
+        "type": "charm"
+      }
+    },
+    "attr_wind": {
+      "name": "속성의 바람",
+      "text": "맵 속성을 내 ATTACK 캐릭터의 분류로 변경",
+      "effect": {
+        "type": "set_attr"
+      }
+    },
+    "shrink_road": {
+      "name": "축지법",
+      "text": "이번 이동 +3칸",
+      "effect": {
+        "type": "move_plus",
+        "amount": 3,
+        "turns": 1
+      }
+    },
+    "guide_star": {
+      "name": "길잡이 별",
+      "text": "이동 주사위를 두 번 굴려 큰 쪽으로",
+      "effect": {
+        "type": "move_best",
+        "amount": 1,
+        "turns": 1
+      }
+    },
+    "mirror_shield": {
+      "name": "거울 방패",
+      "text": "다음 내 차례까지 방어 합계 +3",
+      "effect": {
+        "type": "def_bonus",
+        "amount": 3,
+        "turns": 1
+      }
+    },
+    "second_try": {
+      "name": "재도전",
+      "text": "이번 턴 전투에서 지면 한 번 다시 굴림",
+      "effect": {
+        "type": "retry",
+        "amount": 1,
+        "turns": 1
+      }
+    },
+    "sandstorm": {
+      "name": "모래폭풍",
+      "text": "상대의 다음 이동 주사위 -1개",
+      "effect": {
+        "type": "enemy_move_dice",
+        "amount": -1
+      }
+    },
+    "snare": {
+      "name": "덫",
+      "text": "지금 칸에 덫. 상대가 멈추면 1턴 쉬기",
+      "effect": {
+        "type": "trap"
+      }
+    },
+    "gatekeeper": {
+      "name": "수문장",
+      "text": "다음 내 차례까지 방어 주사위 +2개",
+      "effect": {
+        "type": "def_dice",
+        "amount": 2,
+        "turns": 1
+      }
+    },
+    "twisted_fate": {
+      "name": "뒤바뀐 운명",
+      "text": "상대와 말의 자리를 바꿈",
+      "effect": {
+        "type": "swap"
+      }
+    },
+    "oblivion": {
+      "name": "망각",
+      "text": "상대 팀 게이지 -30%",
+      "effect": {
+        "type": "gauge_enemy",
+        "amount": -30
+      }
+    },
+    "deep_oblivion": {
+      "name": "깊은 망각",
+      "text": "상대 카드 1장을 없앰",
+      "effect": {
+        "type": "discard_enemy"
+      }
+    },
+    "sage_ring": {
+      "name": "현자의 반지",
+      "text": "카드 2장 받기",
+      "effect": {
+        "type": "draw_card",
+        "amount": 2
+      }
+    },
+    "magpie": {
+      "name": "도둑 까치",
+      "text": "상대 카드 1장을 훔침",
+      "effect": {
+        "type": "steal_card"
+      }
+    }
   }
 }
