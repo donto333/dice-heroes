@@ -59,30 +59,58 @@ static func card_useful(game, card: Dictionary) -> bool:
 	return true
 
 
-## AI 파티를 고른다. 포인트 제한 안에서 무작위로 세 명을 뽑고,
-## 공격이 가장 높은 캐릭터를 ATTACK, 남은 중 방어가 높은 쪽을 DEFENSE, 나머지를 SUPPORT에 앉힌다.
+## AI 파티를 고른다. 포인트 제한 안의 조합을 무작위로 여러 개 뽑아,
+## 자리 배치까지 따져 가장 점수가 높은 조합을 쓴다. 매번 뽑는 조합이 달라서 상대가 다양하다.
+const PARTY_SAMPLES := 12
+
 static func pick_party(characters: Array, point_limit: int, rng: RandomNumberGenerator) -> Dictionary:
-	# 캐릭터가 많아 모든 조합을 만들면 느리므로, 무작위로 뽑아 조건에 맞을 때까지 다시 뽑는다.
-	# 너무 약한 조합은 빼고, 포인트를 거의 다 쓰는 조합만 쓴다.
 	var count := characters.size()
 	if count < 3:
 		return {}
-	var trio: Array = []
+	var best := {}
+	var best_score := -1
+	var found := 0
 	for attempt in 5000:
+		if found >= PARTY_SAMPLES:
+			break
 		var i := rng.randi_range(0, count - 1)
 		var j := rng.randi_range(0, count - 1)
 		var k := rng.randi_range(0, count - 1)
 		if i == j or i == k or j == k:
 			continue
 		var total := int(characters[i]["grade"]) + int(characters[j]["grade"]) + int(characters[k]["grade"])
-		if total <= point_limit and total >= point_limit - 1:
-			trio = [characters[i], characters[j], characters[k]]
-			break
-	if trio.is_empty():
-		return {}
-	trio.sort_custom(func(a, b): return int(a["attack"]) > int(b["attack"]))
-	var attacker: Dictionary = trio.pop_front()
-	trio.sort_custom(func(a, b): return int(a["defense"]) > int(b["defense"]))
-	var defender: Dictionary = trio.pop_front()
-	var supporter: Dictionary = trio.pop_front()
-	return {"attack": attacker["id"], "defense": defender["id"], "support": supporter["id"]}
+		# 너무 약한 조합은 빼고, 포인트를 거의 다 쓰는 조합만 쓴다.
+		if total > point_limit or total < point_limit - 1:
+			continue
+		found += 1
+		var placed := best_placement([characters[i], characters[j], characters[k]])
+		if int(placed["score"]) > best_score:
+			best_score = int(placed["score"])
+			best = placed["party"]
+	return best
+
+
+## 세 명을 자리에 앉히는 6가지 방법 중 점수가 가장 높은 배치.
+static func best_placement(trio: Array) -> Dictionary:
+	var orders := [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
+	var best := {}
+	var best_score := -1
+	for order in orders:
+		var a: Dictionary = trio[order[0]]
+		var d: Dictionary = trio[order[1]]
+		var s: Dictionary = trio[order[2]]
+		var score := slot_score(a, "attack") + slot_score(d, "defense") + slot_score(s, "support")
+		if score > best_score:
+			best_score = score
+			best = {"attack": a["id"], "defense": d["id"], "support": s["id"]}
+	return {"party": best, "score": best_score}
+
+
+## 캐릭터가 그 자리에서 얼마나 쓸모 있는지 대강 매긴 점수.
+static func slot_score(character: Dictionary, slot: String) -> int:
+	match slot:
+		"attack":
+			return int(character["attack"]) * 4 + int(character["move"]) * 3
+		"defense":
+			return int(character["defense"]) * 3
+	return int(character["intellect"]) * 2
