@@ -34,6 +34,9 @@ var map_attr := ""
 ## -1 진행 중, 0 또는 1 승자, 2 무승부
 var winner := -1
 var messages: Array = []
+## 화면이 연출에 쓰는 사건 기록. take_events()로 가져가면 비워진다.
+## kind: "pos"(말 이동), "move"(이동 주사위), "battle"(전투), "fate"(운명의 판정)
+var events: Array = []
 
 var card_played := false
 var ability_used := false
@@ -76,6 +79,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	map_attr = ""
 	winner = -1
 	messages = []
+	events = []
 	for index in players.size():
 		for i in START_HAND:
 			_draw_card(index, false)
@@ -219,20 +223,24 @@ func roll_move() -> void:
 	var mover: Dictionary = char_of(current, "attack")
 
 	var total := 0
+	var rolls: Array = []
 	var fixed := effect_sum(current, "move_fixed")
 	if fixed > 0:
 		total = fixed
 		say("%s: 이동 %d칸 (고정)" % [player["name"], total])
 	else:
 		var count: int = max(1, int(mover["move"]) + effect_sum(current, "move_dice"))
-		var rolls := roll_dice(count)
+		rolls = roll_dice(count)
 		total = _sum(rolls)
 		say("%s: 이동 주사위 %s → %d칸" % [player["name"], str(rolls), total])
+	var bonus := 0
 	if map_attr == "근현대" and mover["category"] == "근현대":
-		total += ATTR_BONUS
+		bonus = ATTR_BONUS
+		total += bonus
 		say("  맵 속성 보너스로 %d칸 더 이동" % ATTR_BONUS)
+	_event({"kind": "move", "player": current, "rolls": rolls, "total": total, "bonus": bonus})
 
-	player["pos"] = min(int(player["pos"]) + total, goal_index())
+	_set_pos(current, min(int(player["pos"]) + total, goal_index()))
 	_resolve_tile(0)
 
 
@@ -288,11 +296,11 @@ func _resolve_tile(depth: int) -> void:
 		"forward":
 			if depth < 3:
 				var amount := int(tile["amount"])
-				player["pos"] = min(pos + amount, goal_index())
+				_set_pos(current, min(pos + amount, goal_index()))
 				say("  전진 칸! %d칸 더 나아갑니다." % amount)
 				_resolve_tile(depth + 1)
 		"warp":
-			player["pos"] = int(tile["to"])
+			_set_pos(current, int(tile["to"]))
 			say("  워프! %d번 칸으로 이동합니다." % int(tile["to"]))
 		"luck":
 			_add_gauge(current, 25)
@@ -326,11 +334,17 @@ func _resolve_fate() -> void:
 	var rolls := roll_dice(2)
 	var diff: int = abs(int(rolls[0]) - int(rolls[1]))
 	var pos := int(player["pos"])
+	var outcome := "무사 통과"
 	if diff >= 3:
-		player["pos"] = checkpoint_before(pos)
+		outcome = "직전 거점으로"
+	elif diff > 0:
+		outcome = "%d칸 후퇴" % diff
+	_event({"kind": "fate", "player": current, "rolls": rolls, "text": outcome})
+	if diff >= 3:
+		_set_pos(current, checkpoint_before(pos))
 		say("  운명의 판정 %s: 차이 %d → 직전 거점으로!" % [str(rolls), diff])
 	elif diff > 0:
-		player["pos"] = max(0, pos - diff)
+		_set_pos(current, max(0, pos - diff))
 		say("  운명의 판정 %s: %d칸 후퇴" % [str(rolls), diff])
 	else:
 		say("  운명의 판정 %s: 무사 통과" % str(rolls))
@@ -405,17 +419,18 @@ func _battle_players() -> bool:
 		_attack_dice(current), _defense_dice(1 - current),
 		_attack_bonus(current), _defense_bonus(1 - current))
 	_say_battle(result)
+	_battle_event(attacker["name"], defender["name"], result)
 	if result["attacker_won"]:
-		opponent["pos"] = checkpoint_before(int(opponent["pos"]))
+		_set_pos(1 - current, checkpoint_before(int(opponent["pos"])))
 		say("  %s 승리! %s은(는) 직전 거점으로 돌아갑니다." % [player["name"], opponent["name"]])
 		if effect_sum(current, "chase") > 0:
-			player["pos"] = min(int(player["pos"]) + 3, goal_index())
+			_set_pos(current, min(int(player["pos"]) + 3, goal_index()))
 			say("  추격! 3칸 더 전진합니다.")
 		return true
-	player["pos"] = checkpoint_before(int(player["pos"]))
+	_set_pos(current, checkpoint_before(int(player["pos"])))
 	say("  %s 방어 성공! %s은(는) 직전 거점으로 돌아갑니다." % [opponent["name"], player["name"]])
 	if effect_sum(1 - current, "counter") > 0:
-		player["pos"] = max(0, int(player["pos"]) - 3)
+		_set_pos(current, max(0, int(player["pos"]) - 3))
 		say("  반격! 3칸 더 물러납니다.")
 	return false
 
@@ -429,10 +444,11 @@ func _battle_keeper(keeper_dice: int, keeper_name: String) -> bool:
 		_attack_dice(current), keeper_dice - effect_sum(current, "enemy_dice_minus"),
 		_attack_bonus(current), 0)
 	_say_battle(result)
+	_battle_event(attacker["name"], keeper_name, result)
 	if result["attacker_won"]:
 		say("  %s 승리!" % player["name"])
 		return true
-	player["pos"] = checkpoint_before(int(player["pos"]))
+	_set_pos(current, checkpoint_before(int(player["pos"])))
 	say("  패배... %s은(는) 직전 거점으로 돌아갑니다." % player["name"])
 	return false
 
@@ -510,6 +526,39 @@ func _draw_card(player_index: int, announce: bool) -> void:
 	hand.append(card_id)
 	if announce:
 		say("  %s: 카드 [%s] 획득" % [players[player_index]["name"], cards[card_id]["name"]])
+
+
+func _set_pos(player_index: int, value: int) -> void:
+	value = clamp(value, 0, goal_index())
+	if int(players[player_index]["pos"]) == value:
+		return
+	players[player_index]["pos"] = value
+	_event({"kind": "pos", "player": player_index, "to": value})
+
+
+func _battle_event(attacker_name: String, defender_name: String, result: Dictionary) -> void:
+	_event({
+		"kind": "battle",
+		"player": current,
+		"attacker": attacker_name,
+		"defender": defender_name,
+		"attack_rolls": result["attack_rolls"],
+		"defense_rolls": result["defense_rolls"],
+		"attack_total": result["attack_total"],
+		"defense_total": result["defense_total"],
+		"won": result["attacker_won"],
+	})
+
+
+func _event(data: Dictionary) -> void:
+	events.append(data)
+
+
+## 쌓인 사건을 꺼내고 비운다. 화면 쪽에서 부른다.
+func take_events() -> Array:
+	var taken := events
+	events = []
+	return taken
 
 
 func say(text: String) -> void:
