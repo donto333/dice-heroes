@@ -278,14 +278,22 @@ func _after_my_move() -> void:
 
 func _show_path_choice() -> void:
 	var options: Array = game.pending_choice["options"]
-	_board_view.highlight = options.duplicate()
+	var fighting: bool = game.choice_kind() == "fight"
+	if fighting:
+		_board_view.highlight = [int(game.players[0]["pos"])]
+		_add_result_text("상대 말을 지나칩니다! 싸울까요? (남은 이동 %d칸)" % int(game.pending_choice["steps"]), Color("ff8a6a"))
+	else:
+		_board_view.highlight = options.duplicate()
+		_add_result_text("갈림길! 갈 길을 고르세요. (남은 이동 %d칸)" % int(game.pending_choice["steps"]), Color("ffcf66"))
 	_board_view.queue_redraw()
-	_add_result_text("갈림길! 갈 길을 고르세요. (남은 이동 %d칸)" % int(game.pending_choice["steps"]), Color("ffcf66"))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	for index in options.size():
-		var button := _make_button(18, 72, Color("1ba39c"))
-		button.text = game.route_name(int(options[index]))
+		var color := Color("1ba39c")
+		if fighting:
+			color = Color("c0392b") if index == 0 else Color("5d6d7e")
+		var button := _make_button(18, 72, color)
+		button.text = game.choice_label(index)
 		button.pressed.connect(_on_path_chosen.bind(index))
 		row.add_child(button)
 	_result_box.add_child(row)
@@ -299,7 +307,10 @@ func _on_path_chosen(index: int) -> void:
 	_board_view.highlight = []
 	_clear_results()
 	_add_result_header("내 차례", PLAYER_TEXT_COLORS[0])
-	_add_result_text("%s(으)로 갑니다." % game.route_name(int(game.pending_choice["options"][index])), Color.WHITE)
+	if game.choice_kind() == "fight":
+		_add_result_text("싸웁니다!" if index == 0 else "그냥 지나갑니다.", Color.WHITE)
+	else:
+		_add_result_text("%s(으)로 갑니다." % game.choice_label(index), Color.WHITE)
 	_sfx.play("click")
 	var playing = game
 	game.choose_path(index)

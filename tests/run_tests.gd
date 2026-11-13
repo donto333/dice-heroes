@@ -39,6 +39,8 @@ func _init() -> void:
 	_test_move_dice()
 	_test_fork_choice()
 	_test_checkpoints()
+	_test_cards()
+	_test_pass_by_fight()
 	_test_full_games()
 	if _failures.is_empty():
 		print("모든 검사 통과")
@@ -256,6 +258,86 @@ func _test_checkpoints() -> void:
 	_place(game, 0, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
 	game._move_back(0, 4)
 	_check(int(game.players[0]["pos"]) == 12, "험한 길에서 4칸 물러나면 12번이어야 함")
+
+
+## 카드 20종이 모두 알려진 효과를 쓰고, 써도 판이 깨지지 않는지 확인한다.
+func _test_cards() -> void:
+	var known := [
+		"move_fixed", "move_dice", "move_plus", "move_best", "atk_dice", "def_dice",
+		"atk_bonus", "def_bonus", "retry", "gauge_team", "gauge_enemy", "draw_card",
+		"skip_enemy", "enemy_move_dice", "trap", "swap", "discard_enemy", "steal_card",
+		"cure", "charm", "set_attr",
+	]
+	var cards: Dictionary = _data["cards"]
+	_check(cards.size() == 20, "카드가 20종이 아님: %d" % cards.size())
+	for card_id in cards:
+		var card: Dictionary = cards[card_id]
+		_check(str(card.get("name", "")) != "" and str(card.get("text", "")) != "", "카드 이름이나 설명이 없음: " + card_id)
+		_check(str(card.get("effect", {}).get("type", "")) in known, "모르는 카드 효과: " + card_id)
+		var game = _new_game(40)
+		game.begin_turn()
+		game.players[0]["hand"] = [card_id]
+		_check(game.play_card(0), "카드를 쓸 수 없음: " + card_id)
+		game.roll_move()
+		while game.awaiting_choice():
+			game.choose_path(1)
+		_check(int(game.players[0]["trail"].back()) == int(game.players[0]["pos"]), "카드를 쓴 뒤 위치가 어긋남: " + card_id)
+
+	# 뒤바뀐 운명: 두 말의 자리가 바뀐다.
+	var swap_game = _new_game(41)
+	swap_game.begin_turn()
+	_place(swap_game, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8])
+	swap_game.players[0]["hand"] = ["twisted_fate"]
+	swap_game.play_card(0)
+	_check(int(swap_game.players[0]["pos"]) == 8 and int(swap_game.players[1]["pos"]) == 0, "뒤바뀐 운명으로 자리가 바뀌지 않음")
+
+	# 후공 보정: 나중에 하는 쪽은 게이지를 채우고 시작한다.
+	var fresh = _new_game(42)
+	var expected := int(_data["rules"].get("second_player_gauge", 0))
+	_check(int(fresh.players[1]["gauge"]["attack"]) == expected, "후공 게이지 보정이 들어가지 않음")
+	_check(int(fresh.players[0]["gauge"]["attack"]) == 0, "선공 게이지가 0이 아님")
+
+
+## 이동 중에 상대 말을 지나치면 싸울지 고르고, 고른 대로 되는지 확인한다.
+func _test_pass_by_fight() -> void:
+	for answer in 2:
+		var game = _new_game(50 + answer)
+		game.begin_turn()
+		_place(game, 0, [0, 1, 2, 3, 4, 5])
+		_place(game, 1, [0, 1, 2, 3, 4, 5, 6, 7])
+		game.players[0]["effects"].append({"key": "move_fixed", "amount": 4, "turns": 1})
+		game.take_events()
+		game.roll_move()
+		_check(game.choice_kind() == "fight", "상대를 지나치는데 싸울지 묻지 않음")
+		_check(int(game.pending_choice.get("steps", 0)) == 2, "상대를 지나칠 때 남은 칸이 2가 아님")
+		game.choose_path(answer)
+		var reached_nine := false
+		var fought := false
+		for event in game.take_events():
+			if event["kind"] == "pos" and int(event["player"]) == 0 and int(event["to"]) == 9:
+				reached_nine = true
+			if event["kind"] == "battle":
+				fought = true
+		if answer == 1:
+			_check(not fought, "지나가기를 골랐는데 싸움")
+			_check(reached_nine, "지나가기를 골랐는데 9번까지 가지 않음")
+		else:
+			_check(fought, "싸우기를 골랐는데 전투가 없음")
+
+	# 마지막 칸에서 만나면 묻지 않고 도착해서 싸운다.
+	var arrive = _new_game(52)
+	arrive.begin_turn()
+	_place(arrive, 0, [0, 1, 2, 3, 4, 5])
+	_place(arrive, 1, [0, 1, 2, 3, 4, 5, 6, 7])
+	arrive.players[0]["effects"].append({"key": "move_fixed", "amount": 2, "turns": 1})
+	arrive.take_events()
+	arrive.roll_move()
+	_check(arrive.choice_kind() != "fight", "도착 칸에서 만났는데 싸울지 물음")
+	var arrive_fought := false
+	for event in arrive.take_events():
+		if event["kind"] == "battle":
+			arrive_fought = true
+	_check(arrive_fought, "도착 칸에서 만났는데 싸우지 않음")
 
 
 ## AI끼리 여러 판을 끝까지 돌린다.
