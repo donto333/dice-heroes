@@ -38,6 +38,8 @@ var revealed: Dictionary = {}
 var cards: Dictionary = {}
 var abilities: Dictionary = {}
 var characters: Dictionary = {}
+## 이동 주사위 눈의 비율. "1"은 주사위 1개일 때, "2"는 2개 이상일 때.
+var move_weights: Dictionary = {}
 
 var players: Array = []
 var current := 0
@@ -66,6 +68,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 		rng.randomize()
 	cards = data.get("cards", {})
 	abilities = data.get("abilities", {})
+	move_weights = data.get("rules", {}).get("move_dice_weights", {})
 	characters = {}
 	for character in data.get("characters", []):
 		characters[character["id"]] = character
@@ -230,6 +233,31 @@ func roll_dice(count: int) -> Array:
 	return rolls
 
 
+## 눈마다 나올 비율을 정한 주사위. weights는 눈 1~6의 비율 6개. 비어 있으면 보통 주사위.
+func roll_weighted_dice(count: int, weights: Array) -> Array:
+	if weights.size() != 6:
+		return roll_dice(count)
+	var total := 0
+	for weight in weights:
+		total += int(weight)
+	var rolls: Array = []
+	for i in max(count, 0):
+		var pick := rng.randi_range(1, max(total, 1))
+		var face := 6
+		for index in 6:
+			pick -= int(weights[index])
+			if pick <= 0:
+				face = index + 1
+				break
+		rolls.append(face)
+	return rolls
+
+
+## 이동 주사위 개수에 맞는 눈 비율.
+func move_weights_for(count: int) -> Array:
+	return move_weights.get("1" if count <= 1 else "2", [])
+
+
 func _sum(values: Array) -> int:
 	var total := 0
 	for value in values:
@@ -309,7 +337,7 @@ func roll_move() -> void:
 		say("%s: 이동 %d칸 (고정)" % [player["name"], total])
 	else:
 		var count: int = max(1, int(mover["move"]) + effect_sum(current, "move_dice"))
-		rolls = roll_dice(count)
+		rolls = roll_weighted_dice(count, move_weights_for(count))
 		total = _sum(rolls)
 		say("%s: 이동 주사위 %s → %d칸" % [player["name"], str(rolls), total])
 	var bonus := 0

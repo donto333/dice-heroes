@@ -32,6 +32,7 @@ func _init() -> void:
 	_test_references()
 	_test_random_tiles()
 	_test_battle_odds()
+	_test_move_dice()
 	_test_fork_choice()
 	_test_checkpoints()
 	_test_full_games()
@@ -49,9 +50,9 @@ func _check(condition: bool, message: String) -> void:
 		_failures.append(message)
 
 
-func _new_game(seed_value: int):
+func _new_game(seed_value: int, parties: Array = PARTIES):
 	var game = Game.new()
-	game.setup(_data, PARTIES, seed_value)
+	game.setup(_data, parties, seed_value)
 	return game
 
 
@@ -163,6 +164,27 @@ func _test_battle_odds() -> void:
 	_check(even_rate > 0.65 and even_rate < 0.90, "주사위 4대3 승률이 예상 범위를 벗어남: %.2f" % even_rate)
 
 
+## 이동 주사위의 눈 비율이 데이터대로 나오는지 확인한다. 1개는 큰 눈, 2개는 작은 눈이 잘 나와야 한다.
+func _test_move_dice() -> void:
+	var game = _new_game(21)
+	var trials := 6000
+	var one_total := 0
+	var two_total := 0
+	for i in trials:
+		one_total += game._sum(game.roll_weighted_dice(1, game.move_weights_for(1)))
+		two_total += game._sum(game.roll_weighted_dice(2, game.move_weights_for(2)))
+	var one_mean := float(one_total) / trials
+	var two_mean := float(two_total) / trials
+	print("[이동 주사위] 1개 평균 %.2f칸 · 2개 평균 %.2f칸" % [one_mean, two_mean])
+	_check(one_mean > 3.6, "주사위 1개의 평균이 보통 주사위(3.5)보다 크지 않음: %.2f" % one_mean)
+	_check(two_mean < 6.8, "주사위 2개의 평균이 보통 주사위(7)보다 작지 않음: %.2f" % two_mean)
+	var faces := {}
+	for value in game.roll_weighted_dice(500, game.move_weights_for(1)):
+		_check(int(value) >= 1 and int(value) <= 6, "이동 주사위 눈이 1~6을 벗어남")
+		faces[int(value)] = true
+	_check(faces.size() == 6, "이동 주사위에서 나오지 않는 눈이 있음")
+
+
 ## 갈림길(13번)에서 멈추고, 고른 길로 남은 칸만큼 가는지 확인한다.
 func _test_fork_choice() -> void:
 	var game = _new_game(11)
@@ -221,8 +243,10 @@ func _test_full_games() -> void:
 	var total_rounds := 0
 	var player_battles := 0
 	var keeper_battles := 0
+	var team_wins := {}
 	for seed_value in SIM_GAMES:
-		var game = _new_game(seed_value + 100)
+		var parties: Array = PARTIES if seed_value % 2 == 0 else [PARTIES[1], PARTIES[0]]
+		var game = _new_game(seed_value + 100, parties)
 		game.take_events()
 		var shown := [game.start_id, game.start_id]
 		var steps := 0
@@ -256,9 +280,13 @@ func _test_full_games() -> void:
 			first_wins += 1
 		elif game.winner == 1:
 			second_wins += 1
+		if game.winner == 0 or game.winner == 1:
+			var team: String = game.char_of(game.winner, "attack")["name"] + " 팀"
+			team_wins[team] = int(team_wins.get(team, 0)) + 1
 		if game.winner >= 0 and game.winner < 2 and game.nodes[int(game.players[game.winner]["pos"])]["type"] == "goal":
 			goal_wins += 1
 	print("[통계] %d판 · 평균 %.1f턴 · 골인으로 끝남 %d판 · 선공 승 %d · 후공 승 %d · 무승부 %d · 판당 전투: 플레이어끼리 %.2f회, 키퍼 %.2f회" % [
 		SIM_GAMES, float(total_rounds) / SIM_GAMES, goal_wins, first_wins, second_wins, draws,
 		float(player_battles) / SIM_GAMES, float(keeper_battles) / SIM_GAMES])
+	print("[팀별 승리] %s (두 팀이 번갈아 먼저 시작)" % str(team_wins))
 	_check(goal_wins > 0, "골인으로 끝난 판이 하나도 없음")
