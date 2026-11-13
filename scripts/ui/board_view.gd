@@ -55,6 +55,8 @@ const ATTR_ICONS := {"영웅": "attr_hero", "위인": "attr_great", "신화": "a
 var _icons: Dictionary = {}
 var _styles: Dictionary = {}
 
+signal stepped
+
 var game = null
 ## 화면에 그려지는 말의 위치(칸 id). 규칙상 위치를 따라 한 칸씩 움직인다.
 var shown_pos: Array = [0, 0]
@@ -66,11 +68,11 @@ var _timer := 0.0
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	for name in ["start", "fork", "treasure", "battle", "forward", "warp", "luck", "curse", "prison",
+	for icon_name in ["start", "fork", "treasure", "battle", "forward", "warp", "luck", "curse", "prison",
 			"fate", "checkpoint", "goal", "hidden", "pawn", "attr_hero", "attr_great", "attr_myth", "attr_modern"]:
-		var path := "res://assets/icons/%s.png" % name
+		var path := "res://assets/icons/%s.png" % icon_name
 		if ResourceLoader.exists(path):
-			_icons[name] = load(path)
+			_icons[icon_name] = load(path)
 
 
 ## 칸 바탕: 둥근 모서리에 아래쪽이 어두운 입체 테두리.
@@ -121,6 +123,7 @@ func _process(delta: float) -> void:
 		return
 	var move: Dictionary = _queue.pop_front()
 	shown_pos[int(move["player"])] = int(move["to"])
+	stepped.emit()
 	_timer = STEP_TIME
 	# 다음 움직임이 다른 말이면 잠깐 쉬어서 누가 움직이는지 보이게 한다.
 	if _queue.is_empty() or int(_queue[0]["player"]) != int(move["player"]):
