@@ -79,8 +79,16 @@ func _draw_strip() -> void:
 				_strip.draw_texture_rect(texture, Rect2(i * tile + offset, y, tile - 6, tile - 6), false, Color(1, 1, 1, 0.9))
 
 
-func _gui_input(event: InputEvent) -> void:
+## 화면 어디를 눌러도 넘어가도록, 다른 상자보다 먼저 입력을 받는다(_input).
+var _leaving := false
+
+
+func _input(event: InputEvent) -> void:
+	if _leaving or not is_visible_in_tree():
+		return
 	if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.is_pressed():
+		_leaving = true
+		get_viewport().set_input_as_handled()
 		app.play("click")
 		if app.has_profile():
 			app.go("lobby")
