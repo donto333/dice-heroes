@@ -13,6 +13,8 @@ const BattleOverlay := preload("res://scripts/ui/battle_overlay.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
 
 const PartySelect := preload("res://scripts/ui/party_select.gd")
+const Portrait := preload("res://scripts/ui/portrait.gd")
+const ABILITY_PORTRAIT_WIDTH := 76.0
 const TurnBanner := preload("res://scripts/ui/turn_banner.gd")
 const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 
@@ -42,6 +44,7 @@ var _card_buttons: Array = []
 var _roll_button: Button
 var _log_label: Label
 var _battle_overlay: Control
+var _ability_portraits: Dictionary = {}
 var _party_select: Control
 var _my_party: Dictionary = DEFAULT_PARTY.duplicate()
 var _ui_rng := RandomNumberGenerator.new()
@@ -99,10 +102,11 @@ func _build_ui() -> void:
 	ability_row.add_theme_constant_override("separation", 8)
 	column.add_child(ability_row)
 	for slot in Game.SLOTS:
-		var button := _make_button(18, 100, SLOT_COLORS[slot])
+		var button := _make_button(15, 120, SLOT_COLORS[slot])
 		button.pressed.connect(_on_ability_pressed.bind(slot))
 		ability_row.add_child(button)
 		_ability_buttons[slot] = button
+		_ability_portraits[slot] = _add_side_portrait(button)
 
 	var card_row := HBoxContainer.new()
 	card_row.add_theme_constant_override("separation", 8)
@@ -146,6 +150,24 @@ func _make_label(font_size: int, text: String = "") -> Label:
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
 	return label
+
+
+## 버튼 왼쪽에 초상화를 붙이고, 글자가 초상화와 겹치지 않게 왼쪽 여백을 늘린다.
+func _add_side_portrait(button: Button) -> Control:
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var box: StyleBoxFlat = button.get_theme_stylebox(state).duplicate()
+		box.content_margin_left = ABILITY_PORTRAIT_WIDTH + 12.0
+		button.add_theme_stylebox_override(state, box)
+	var portrait := Portrait.new()
+	portrait.border_width = 2.0
+	portrait.anchor_top = 0.0
+	portrait.anchor_bottom = 1.0
+	portrait.offset_left = 7.0
+	portrait.offset_right = 7.0 + ABILITY_PORTRAIT_WIDTH
+	portrait.offset_top = 7.0
+	portrait.offset_bottom = -9.0
+	button.add_child(portrait)
+	return portrait
 
 
 func _box(fill: Color, border: Color, border_width: int) -> StyleBoxFlat:
@@ -439,6 +461,7 @@ func _show_battle(event: Dictionary) -> void:
 			"winner_text": "막지 못했다... 거점으로",
 			"loser_text": "%s 방어 성공!" % game.players[who]["name"],
 			"good_for_me": (not event["won"]) if who == 0 else event["won"],
+			"defender_character": _character_named(str(event["defender"])),
 		})
 		_add_battle_result(event)
 		return
@@ -458,8 +481,18 @@ func _show_battle(event: Dictionary) -> void:
 		info["good_for_me"] = not event["won"]
 	else:
 		info["good_for_me"] = not event["won"]
+	info["attacker_character"] = _character_named(str(event["attacker"]))
+	info["defender_character"] = _character_named(str(event["defender"]))
 	await _battle_overlay.play(event, info)
 	_add_battle_result(event)
+
+
+## 전투 사건에는 이름만 있으므로 이름으로 캐릭터를 찾는다. 키퍼·몬스터면 빈 사전.
+func _character_named(character_name: String) -> Dictionary:
+	for character in _data["characters"]:
+		if character["name"] == character_name:
+			return character
+	return {}
 
 
 func _clear_results() -> void:
@@ -617,6 +650,8 @@ func _refresh() -> void:
 			Game.SLOT_LABELS[slot], character["name"],
 			ability.get("name", "-"), gauge_text, ability.get("text", "")]
 		button.disabled = not is_ready
+		var portrait = _ability_portraits[slot]
+		portrait.show_character(character, SLOT_COLORS[slot])
 
 	var hand: Array = me["hand"]
 	for index in _card_buttons.size():

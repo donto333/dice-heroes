@@ -36,5 +36,22 @@ static func load_all() -> Dictionary:
 	}
 
 
+const PORTRAIT_PATH := "res://assets/portraits/%s.jpg"
+
+static var _portraits: Dictionary = {}
+
+
+## 캐릭터 초상화. 아직 그림이 없는 캐릭터면 null.
+static func portrait(id: String) -> Texture2D:
+	if _portraits.has(id):
+		return _portraits[id]
+	var path := PORTRAIT_PATH % id
+	var texture: Texture2D = null
+	if id != "" and ResourceLoader.exists(path):
+		texture = load(path)
+	_portraits[id] = texture
+	return texture
+
+
 static func grade_stars(grade: int) -> String:
 	return "★".repeat(grade)
