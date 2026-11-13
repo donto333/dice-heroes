@@ -24,6 +24,7 @@
 ## 빌드와 실행
 
 - **자동 빌드**: `main`에 올리거나 PR을 열면 GitHub Actions가 Godot 4.7로 웹 버전을 빌드한다. 결과는 실행 기록의 `web-build`에서 내려받을 수 있다.
+- **자동 합치기**: `claude/`로 시작하는 브랜치의 PR은 Build가 통과하면 자동으로 `main`에 합쳐지고 배포된다. 멈추려면 `.github/workflows/auto-merge.yml`을 지운다.
 - **웹에서 해 보기**: 저장소 Settings → Pages → Source를 "GitHub Actions"로 두면 `main` 빌드가 Pages 주소로 배포된다.
 - **PC에서 열기**: Godot 4.7을 설치하고 이 폴더의 `project.godot`를 연다.
 
