@@ -45,6 +45,15 @@ const TILE_LABELS := {
 	"goal": "골",
 }
 const PLAYER_COLORS := [Color("4fc3f7"), Color("ff7043")]
+const ICON_NAMES := {
+	"start": "start", "fork": "fork", "treasure": "treasure", "battle": "battle",
+	"forward": "forward", "warp": "warp", "luck": "luck", "curse": "curse",
+	"prison": "prison", "fate": "fate", "checkpoint": "checkpoint", "goal": "goal",
+}
+const ATTR_ICONS := {"영웅": "attr_hero", "위인": "attr_great", "신화": "attr_myth", "근현대": "attr_modern"}
+
+var _icons: Dictionary = {}
+var _styles: Dictionary = {}
 
 var game = null
 ## 화면에 그려지는 말의 위치(칸 id). 규칙상 위치를 따라 한 칸씩 움직인다.
@@ -53,6 +62,35 @@ var shown_pos: Array = [0, 0]
 var highlight: Array = []
 var _queue: Array = []
 var _timer := 0.0
+
+
+func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	for name in ["start", "fork", "treasure", "battle", "forward", "warp", "luck", "curse", "prison",
+			"fate", "checkpoint", "goal", "hidden", "pawn", "attr_hero", "attr_great", "attr_myth", "attr_modern"]:
+		var path := "res://assets/icons/%s.png" % name
+		if ResourceLoader.exists(path):
+			_icons[name] = load(path)
+
+
+## 칸 바탕: 둥근 모서리에 아래쪽이 어두운 입체 테두리.
+func _tile_style(color: Color) -> StyleBoxFlat:
+	var key := color.to_html()
+	if _styles.has(key):
+		return _styles[key]
+	var box := StyleBoxFlat.new()
+	box.bg_color = color
+	box.set_corner_radius_all(6)
+	box.border_color = color.darkened(0.45)
+	box.border_width_bottom = 4
+	box.border_width_left = 1
+	box.border_width_right = 1
+	box.border_width_top = 1
+	box.shadow_color = Color(0, 0, 0, 0.35)
+	box.shadow_size = 2
+	box.shadow_offset = Vector2(0, 2)
+	_styles[key] = box
+	return box
 
 
 func reset_pieces() -> void:
@@ -115,8 +153,7 @@ func _draw() -> void:
 	var font := get_theme_default_font()
 	var layout := _layout()
 	var cell: float = layout["cell"]
-	var small: int = int(clamp(cell * 0.19, 10.0, 22.0))
-	var big: int = int(clamp(cell * 0.22, 11.0, 24.0))
+	var small: int = int(clamp(cell * 0.18, 9.0, 20.0))
 
 	# 칸 사이 연결선
 	for id in game.nodes:
@@ -130,28 +167,42 @@ func _draw() -> void:
 		var rect := Rect2(_center(id, layout) - half, half * 2.0)
 		var color: Color = TILE_COLORS.get(tile["type"], Color("3a4466"))
 		var label: String = TILE_LABELS.get(tile["type"], "")
+		var icon_name: String = ICON_NAMES.get(tile["type"], "")
 		if tile["type"] == "attr":
 			color = ATTR_COLORS.get(tile["attr"], color)
 			label = tile["attr"]
+			icon_name = ATTR_ICONS.get(tile["attr"], "")
 		if game.is_hidden(id):
 			color = HIDDEN_COLOR
-			label = "?"
-		draw_rect(rect, color)
+			label = ""
+			icon_name = "hidden"
+		draw_style_box(_tile_style(color), rect)
 		if id in highlight:
 			draw_rect(rect.grow(3.0), Color.WHITE, false, 4.0)
-		draw_string(font, rect.position + Vector2(4, small + 2), str(id),
-			HORIZONTAL_ALIGNMENT_LEFT, -1, small, Color(1, 1, 1, 0.7))
+		if _icons.has(icon_name):
+			var icon_size := rect.size.x * 0.62
+			var icon_rect := Rect2(rect.position + Vector2((rect.size.x - icon_size) / 2.0, rect.size.y * 0.10),
+				Vector2(icon_size, icon_size))
+			draw_texture_rect(_icons[icon_name], icon_rect, false)
+		draw_string(font, rect.position + Vector2(3, small), str(id),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, int(small * 0.8), Color(1, 1, 1, 0.55))
 		if label != "":
-			draw_string(font, rect.position + Vector2(0, rect.size.y * 0.55), label,
-				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, big, Color.WHITE)
+			draw_string_outline(font, rect.position + Vector2(0, rect.size.y - 6), label,
+				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, small, 4, Color(0, 0, 0, 0.8))
+			draw_string(font, rect.position + Vector2(0, rect.size.y - 6), label,
+				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, small, Color.WHITE)
 
-	# 말. 같은 칸에 있으면 좌우로 나눠 그린다. 칸 아래쪽에 그려 글자를 가리지 않게 한다.
+	# 말. 같은 칸에 있으면 좌우로 나눠 그린다.
 	for player_index in shown_pos.size():
 		var id := int(shown_pos[player_index])
 		if not game.nodes.has(id):
 			continue
 		var center := _center(id, layout)
-		center.x += (player_index * 2 - 1) * cell * 0.20
-		center.y += cell * 0.25
-		draw_circle(center, cell * 0.14, Color.BLACK)
-		draw_circle(center, cell * 0.11, PLAYER_COLORS[player_index])
+		center.x += (player_index * 2 - 1) * cell * 0.22
+		center.y += cell * 0.06
+		var pawn_size := cell * 0.62
+		var pawn_rect := Rect2(center - Vector2(pawn_size, pawn_size) / 2.0, Vector2(pawn_size, pawn_size))
+		if _icons.has("pawn"):
+			draw_texture_rect(_icons["pawn"], pawn_rect, false, PLAYER_COLORS[player_index])
+		else:
+			draw_circle(center, cell * 0.14, PLAYER_COLORS[player_index])
