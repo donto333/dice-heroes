@@ -67,7 +67,7 @@ func _on_confirmed(party: Dictionary) -> void:
 		first["name"] = "플레이어 1"
 		var second := party.duplicate()
 		second["name"] = "플레이어 2"
-		app.go("match", {"mode": "local", "parties": [first, second], "humans": [true, true]})
+		app.go("match", {"mode": "local", "parties": [first, second], "humans": [true, true], "map": _random_map()})
 		return
 	if not Profile.party_ok(app.profile, app.data["characters"], party, Game.POINT_LIMIT):
 		app.toast("가진 영웅으로만 파티를 짤 수 있어요.")
@@ -81,7 +81,11 @@ func _on_confirmed(party: Dictionary) -> void:
 	if mode == "rank":
 		ai_level = Profile.rank_ai_level(app.eco, int(app.profile["trophies"]))
 	theirs["levels"] = {"attack": ai_level, "defense": ai_level, "support": ai_level}
-	app.go("match", {"mode": mode, "parties": [mine, theirs], "humans": [true, false]})
+	app.go("match", {"mode": mode, "parties": [mine, theirs], "humans": [true, false], "map": _random_map()})
+
+
+func _random_map() -> int:
+	return app.rng.randi_range(0, app.data["boards"].size() - 1)
 
 
 func _on_cancelled() -> void:

@@ -49,6 +49,7 @@ var app
 var _mode := "ai"
 var _parties: Array = []
 var _humans: Array = [true, false]
+var _map_index := 0
 var _cards_used := 0
 var _recorded := false
 var _result_text := ""
@@ -63,6 +64,12 @@ var _my_battles := [0, 0]
 func setup(main_app, params: Dictionary) -> void:
 	app = main_app
 	_data = app.data
+	var boards: Array = app.data.get("boards", [])
+	var map_index := int(params.get("map", 0))
+	if map_index > 0 and map_index < boards.size():
+		_data = app.data.duplicate()
+		_data["board"] = boards[map_index]
+	_map_index = map_index
 	_mode = str(params.get("mode", "ai"))
 	_parties = params.get("parties", [])
 	_humans = params.get("humans", [true, false])
@@ -245,7 +252,7 @@ func _start_game() -> void:
 	_reward_lines = PackedStringArray()
 	_clear_results()
 	_add_result_text("%s 파티: %s" % [game.players[1]["name"], _party_names(1)], PLAYER_TEXT_COLORS[1])
-	_add_result_text("먼저 골(분홍 칸)의 메두사를 이기고 들어가면 승리!\n갈림길에서는 갈 길을 직접 고릅니다.", Color.WHITE)
+	_add_result_text("맵: %s  ·  골의 수호자: %s\n먼저 골(분홍 칸)의 수호자를 이기고 들어가면 승리!" % [game.board_name, _goal_name()], Color.WHITE)
 	_refresh()
 	_advance()
 
@@ -286,6 +293,13 @@ func _advance() -> void:
 	_show_game_over()
 	_play("win" if game.winner == 0 or _is_local() else "lose")
 	_refresh()
+
+
+func _goal_name() -> String:
+	for id in game.nodes:
+		if game.nodes[id].get("type", "") == "goal":
+			return str(game.nodes[id].get("name", "수호자"))
+	return "수호자"
 
 
 func _turn_title(index: int) -> String:
@@ -665,7 +679,7 @@ func _record(outcome: String) -> PackedStringArray:
 func _on_retry_pressed() -> void:
 	_play("click")
 	if _is_local():
-		app.go("match", {"mode": _mode, "parties": _parties, "humans": _humans})
+		app.go("match", {"mode": _mode, "parties": _parties, "humans": _humans, "map": app.rng.randi_range(0, app.data["boards"].size() - 1)})
 	else:
 		app.start_mode(_mode)
 

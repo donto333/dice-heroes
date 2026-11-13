@@ -114,7 +114,40 @@ func _test_character_data() -> void:
 
 ## 맵 파일이 올바른지: 칸 종류, 연결, 좌표 겹침, 출발에서 골까지 길.
 func _test_board_data() -> void:
-	var board: Dictionary = _data["board"]
+	var boards: Array = _data.get("boards", [])
+	_check(boards.size() >= 3, "맵이 3개보다 적음")
+	for index in boards.size():
+		_check_board(boards[index], index)
+		_simulate_board(boards[index])
+
+
+## 맵 하나에서 AI끼리 여러 판을 돌려 끝까지 가는지, 평균 몇 턴인지 본다.
+func _simulate_board(board: Dictionary) -> void:
+	var data := _data.duplicate()
+	data["board"] = board
+	var turns := 0
+	var finished := 0
+	var first_wins := 0
+	var games := 300
+	for index in games:
+		var game = Game.new()
+		game.setup(data, PARTIES, 9000 + index)
+		var steps := 0
+		while game.winner < 0 and steps < 200:
+			AI.take_turn(game)
+			steps += 1
+		game.take_events()
+		_check(game.winner >= 0, "맵 [%s]에서 판이 끝나지 않음" % board.get("name", "?"))
+		if game.winner >= 0:
+			finished += 1
+			turns += min(game.round_number, Game.MAX_ROUNDS)
+			if game.winner == 0:
+				first_wins += 1
+	print("[맵 %s] %d판 · 평균 %.1f턴 · 먼저 하는 쪽 승 %d" % [board.get("name", "?"), finished, float(turns) / max(finished, 1), first_wins])
+
+
+func _check_board(board: Dictionary, board_index: int) -> void:
+	_check(str(board.get("name", "")) != "", "맵 이름이 없음: %d번 맵" % board_index)
 	var raw_nodes: Array = board.get("nodes", [])
 	_check(not raw_nodes.is_empty(), "맵에 칸이 없음")
 	var ids := {}
@@ -147,9 +180,15 @@ func _test_board_data() -> void:
 	_check(fork_count >= 1, "시험용 맵에 갈림길이 없음")
 	_check(ids.has(int(board.get("start", -1))), "출발 칸이 없음")
 
-	var game = _new_game(1)
+	var data := _data.duplicate()
+	data["board"] = board
+	var game = Game.new()
+	game.setup(data, PARTIES, 1)
 	for id in game.nodes:
-		_check(game.dist_to_goal.has(id), "골로 갈 수 없는 칸: %d번" % id)
+		_check(game.dist_to_goal.has(id), "골로 갈 수 없는 칸: [%s] %d번" % [board.get("name", "?"), id])
+	for node in raw_nodes:
+		if node.get("type", "") == "warp":
+			_check(ids.has(int(node.get("to", -1))), "워프 도착 칸이 없음: %d번" % int(node["id"]))
 
 
 func _test_references() -> void:
