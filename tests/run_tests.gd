@@ -8,6 +8,7 @@ const AI := preload("res://scripts/rules/ai.gd")
 # 화면 코드는 실행하지 않지만, 문법 오류를 잡으려고 불러 둔다.
 const MainScreen := preload("res://scripts/main.gd")
 const BoardView := preload("res://scripts/ui/board_view.gd")
+const DiceView := preload("res://scripts/ui/dice_view.gd")
 
 const CATEGORIES := ["영웅", "위인", "신화", "근현대"]
 const PARTIES := [
@@ -27,6 +28,7 @@ func _init() -> void:
 	_test_battle_odds()
 	_test_checkpoints()
 	_test_full_games()
+	_test_events()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -141,3 +143,25 @@ func _test_full_games() -> void:
 			goal_wins += 1
 	print("골인으로 끝난 판: %d / %d" % [goal_wins, games])
 	_check(goal_wins > 0, "300판 중 골인으로 끝난 판이 하나도 없음")
+
+
+## 화면 연출용 사건 기록이 말 위치와 맞는지 확인한다.
+func _test_events() -> void:
+	for seed_value in 50:
+		var game = _new_game(seed_value + 1000)
+		game.take_events()
+		var shown := [0, 0]
+		var steps := 0
+		while game.winner < 0 and steps < 200:
+			AI.take_turn(game)
+			for event in game.take_events():
+				if event["kind"] == "pos":
+					shown[int(event["player"])] = int(event["to"])
+				elif event["kind"] == "move":
+					_check(int(event["total"]) >= 1, "이동 칸 수가 1 미만")
+				elif event["kind"] == "battle":
+					_check(event["attack_rolls"].size() >= 1, "전투 주사위 기록이 비어 있음")
+			for index in 2:
+				_check(shown[index] == int(game.players[index]["pos"]), "사건 기록의 말 위치가 실제 위치와 다름")
+			steps += 1
+		_check(game.events.is_empty(), "take_events 후 사건 기록이 남아 있음")
