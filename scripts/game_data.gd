@@ -28,7 +28,7 @@ static func load_characters() -> Array:
 static func load_all() -> Dictionary:
 	return {
 		"characters": load_characters(),
-		"board": load_json(BOARD_PATH).get("tiles", []),
+		"board": load_json(BOARD_PATH),
 		"cards": load_json(CARDS_PATH).get("cards", {}),
 		"abilities": load_json(ABILITIES_PATH).get("abilities", {}),
 	}
