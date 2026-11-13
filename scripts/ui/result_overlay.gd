@@ -3,6 +3,7 @@ extends Control
 ## 승패, 걸린 턴, 전투 기록, 두 파티를 보여 주고 "다시 하기"와 "파티 바꾸기"를 고르게 한다.
 
 signal retry_pressed
+## 왼쪽 버튼(로비로)
 signal change_party_pressed
 
 const GOLD := Color("ffcf4d")
@@ -67,7 +68,7 @@ func _ready() -> void:
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
 	column.add_child(buttons)
-	var change := _button("파티 바꾸기", Color("3a4466"))
+	var change := _button("로비로", Color("3a4466"))
 	change.pressed.connect(_on_change_pressed)
 	buttons.add_child(change)
 	var again := _button("다시 하기", Color("2f80ed"))

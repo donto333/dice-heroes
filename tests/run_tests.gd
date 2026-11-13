@@ -5,8 +5,14 @@ extends SceneTree
 const GameData := preload("res://scripts/game_data.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const AI := preload("res://scripts/rules/ai.gd")
+const Profile := preload("res://scripts/rules/profile.gd")
 # 화면 코드는 실행하지 않지만, 문법 오류를 잡으려고 불러 둔다.
 const MainScreen := preload("res://scripts/main.gd")
+const MatchScreen := preload("res://scripts/screens/match_screen.gd")
+const LobbyScreen := preload("res://scripts/screens/lobby_screen.gd")
+const ShopScreen := preload("res://scripts/screens/shop_screen.gd")
+const HeroesScreen := preload("res://scripts/screens/heroes_screen.gd")
+const SaveStore := preload("res://scripts/save_store.gd")
 const BoardView := preload("res://scripts/ui/board_view.gd")
 const DiceView := preload("res://scripts/ui/dice_view.gd")
 const BattleOverlay := preload("res://scripts/ui/battle_overlay.gd")
@@ -53,6 +59,12 @@ func _init() -> void:
 	_test_pass_by_fight()
 	_test_balance()
 	_test_full_games()
+	_test_level_bonus()
+	_test_profile_basics()
+	_test_summon()
+	_test_upgrade_and_level()
+	_test_match_rewards()
+	_test_missions_and_attendance()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -507,3 +519,169 @@ func _test_full_games() -> void:
 		float(player_battles) / SIM_GAMES, float(keeper_battles) / SIM_GAMES])
 	print("[팀별 승리] %s (두 팀이 번갈아 먼저 시작)" % str(team_wins))
 	_check(goal_wins > 0, "골인으로 끝난 판이 하나도 없음")
+
+
+# ---------------------------------------------------------------- 게임 밖 성장 규칙
+
+## 영웅 레벨이 전투 합계에 더해지는지.
+func _test_level_bonus() -> void:
+	var low := PARTIES[0].duplicate()
+	low["levels"] = {"attack": 1, "defense": 1, "support": 1}
+	var high := PARTIES[1].duplicate()
+	high["levels"] = {"attack": 5, "defense": 3, "support": 1}
+	var game = Game.new()
+	game.setup(_data, [low, high], 7)
+	var table: Array = _data["rules"].get("level_battle_bonus", [])
+	_check(table.size() == 5, "level_battle_bonus는 레벨 1~5의 5칸이어야 함")
+	_check(game.level_bonus(0, "attack") == 0, "레벨 1 보너스가 0이 아님")
+	_check(game.level_bonus(1, "attack") == int(table[4]), "레벨 5 공격 보너스가 표와 다름")
+	_check(game.level_bonus(1, "defense") == int(table[2]), "레벨 3 방어 보너스가 표와 다름")
+	_check(game._attack_bonus(1) >= int(table[4]), "레벨 보너스가 공격 합계에 들어가지 않음")
+
+
+func _test_profile_basics() -> void:
+	var eco: Dictionary = _data["economy"]
+	_check(not eco.is_empty(), "economy.json을 읽지 못함")
+	var profile := Profile.new_profile("테스터", eco)
+	var chars: Array = _data["characters"]
+	_check(Profile.party_ok(profile, chars, profile["party"], Game.POINT_LIMIT), "시작 파티가 규칙에 맞지 않음")
+	for id in profile["owned"]:
+		_check(_char_exists(id), "시작 영웅이 캐릭터 목록에 없음: " + str(id))
+	_check(profile["owned"].size() >= 9, "시작 영웅이 너무 적음")
+	_check(Profile.nickname_ok("용사") and not Profile.nickname_ok(" a "), "닉네임 검사가 이상함")
+	# 없는 영웅으로 파티를 짜면 거절
+	var bad := {"attack": "zeus", "defense": "athena", "support": "choichiwon"}
+	_check(not Profile.party_ok(profile, chars, bad, Game.POINT_LIMIT) or Profile.owns(profile, "zeus"), "가지지 않은 영웅을 파티에 넣을 수 있음")
+	var repaired := Profile.repair({"nickname": "옛날"}, eco)
+	_check(repaired.has("owned") and repaired.has("daily") and repaired["nickname"] == "옛날", "옛 저장 데이터 고치기가 안 됨")
+	_check(Profile.exchange(profile, eco, 0) and int(profile["gems"]) < int(eco["start"]["gems"]), "보석→골드 교환이 안 됨")
+
+
+func _char_exists(id: String) -> bool:
+	for character in _data["characters"]:
+		if str(character["id"]) == id:
+			return true
+	return false
+
+
+## 확률, 10회 보장, 천장(pity), 중복 조각.
+func _test_summon() -> void:
+	var eco: Dictionary = _data["economy"]
+	var chars: Array = _data["characters"]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 99
+	var profile := Profile.new_profile("소환", eco)
+	var counts := {1: 0, 2: 0, 3: 0}
+	var pulls := 6000
+	var longest_dry := 0
+	var dry := 0
+	for index in pulls:
+		var result: Array = Profile.summon(profile, chars, eco, 1, rng)
+		var grade := int(result[0]["grade"])
+		counts[grade] += 1
+		dry = 0 if grade == 3 else dry + 1
+		longest_dry = max(longest_dry, dry)
+	var rates: Dictionary = eco["summon"]["rates"]
+	var rate3 := float(counts[3]) / pulls * 100.0
+	var rate2 := float(counts[2]) / pulls * 100.0
+	print("[소환] %d회: ★★★ %.1f%% (표 %s%%), ★★ %.1f%% (표 %s%%), 가장 긴 ★★★ 가뭄 %d회" % [
+		pulls, rate3, str(rates["3"]), rate2, str(rates["2"]), longest_dry])
+	_check(rate3 >= float(rates["3"]) - 2.0 and rate3 <= float(rates["3"]) + 4.0, "★★★ 확률이 표와 너무 다름")
+	_check(abs(rate2 - float(rates["2"])) < 4.0, "★★ 확률이 표와 너무 다름")
+	_check(longest_dry < int(eco["summon"]["pity_3"]), "천장(pity)이 작동하지 않음")
+	_check(profile["owned"].size() == chars.size(), "많이 소환했는데 모든 영웅을 얻지 못함")
+	var any_shards := false
+	for id in profile["owned"]:
+		if int(profile["owned"][id]["shards"]) > 0:
+			any_shards = true
+	_check(any_shards, "중복 영웅이 조각으로 바뀌지 않음")
+	# 10회 소환에는 ★★ 이상이 하나는 있다
+	for trial in 200:
+		var ten: Array = Profile.summon(Profile.new_profile("열번", eco), chars, eco, 10, rng)
+		var best := 0
+		for entry in ten:
+			best = max(best, int(entry["grade"]))
+		_check(ten.size() == 10 and best >= 2, "10회 소환에 ★★ 이상 보장이 안 됨")
+	# 무료 소환은 하루 정해진 횟수만
+	var free_profile := Profile.new_profile("무료", eco)
+	Profile.ensure_daily(free_profile, "2026-01-01")
+	var per_day := int(eco["summon"]["free_per_day"])
+	for index in per_day:
+		_check(Profile.use_free_summon(free_profile, eco), "무료 소환을 쓸 수 없음")
+	_check(not Profile.use_free_summon(free_profile, eco), "무료 소환을 정해진 횟수보다 많이 씀")
+	Profile.ensure_daily(free_profile, "2026-01-02")
+	_check(Profile.free_summons_left(free_profile, eco) == per_day, "다음 날 무료 소환이 다시 생기지 않음")
+
+
+func _test_upgrade_and_level() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("강화", eco)
+	var id := "lubu"
+	_check(not Profile.can_upgrade(profile, eco, id), "조각 없이 강화할 수 있음")
+	profile["owned"][id]["shards"] = 1000
+	profile["gold"] = 100000
+	var max_level := int(eco["upgrade"]["max_level"])
+	for step in max_level - 1:
+		_check(Profile.upgrade(profile, eco, id), "강화가 안 됨 (레벨 %d)" % Profile.level_of(profile, id))
+	_check(Profile.level_of(profile, id) == max_level, "최고 레벨까지 오르지 않음")
+	_check(not Profile.upgrade(profile, eco, id), "최고 레벨을 넘어 강화됨")
+	var battle := Profile.battle_party(profile, profile["party"], "나")
+	_check(int(battle["levels"]["attack"]) == max_level, "대전 파티에 영웅 레벨이 안 들어감")
+	# 플레이어 레벨
+	var fresh := Profile.new_profile("레벨", eco)
+	var gems := int(fresh["gems"])
+	var ups := Profile.add_exp(fresh, eco, Profile.exp_to_next(fresh, eco) + 1)
+	_check(ups == 1 and int(fresh["level"]) == 2 and int(fresh["exp"]) == 1, "경험치로 레벨이 제대로 오르지 않음")
+	_check(int(fresh["gems"]) > gems, "레벨업 보석을 주지 않음")
+
+
+func _test_match_rewards() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("랭크", eco)
+	Profile.ensure_daily(profile, "2026-01-01")
+	var first := Profile.record_match(profile, eco, "rank", "win", {"battle_wins": 2, "cards": 1})
+	_check(int(first["trophies"]) > 0 and int(profile["trophies"]) == int(first["trophies"]), "랭크 승리 트로피가 안 들어감")
+	_check(bool(first["first_win"]) and int(first["gems"]) > 0, "오늘 첫 승리 보너스가 없음")
+	var second := Profile.record_match(profile, eco, "rank", "win", {})
+	_check(not bool(second["first_win"]), "첫 승리 보너스를 두 번 줌")
+	for index in 20:
+		Profile.record_match(profile, eco, "rank", "lose", {})
+	_check(int(profile["trophies"]) == 0, "트로피가 0 아래로 내려감")
+	_check(int(profile["stats"]["played"]) == 22 and int(profile["stats"]["wins"]) == 2, "전적 기록이 틀림")
+	var tiers: Array = eco["tiers"]
+	_check(Profile.tier_of(eco, 0)["name"] == tiers[0]["name"], "0 트로피 티어가 첫 티어가 아님")
+	var last: Dictionary = tiers[tiers.size() - 1]
+	_check(Profile.tier_of(eco, int(last["min"]) + 999)["name"] == last["name"], "가장 높은 티어 계산이 틀림")
+	_check(Profile.trophies_to_next(eco, 0) == int(tiers[1]["min"]), "다음 티어까지 남은 트로피가 틀림")
+	var local := Profile.record_match(Profile.new_profile("친구", eco), eco, "local", "win", {})
+	_check(int(local["trophies"]) == 0 and not bool(local["first_win"]), "친구 대전이 랭크·첫 승리에 들어감")
+
+
+func _test_missions_and_attendance() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("미션", eco)
+	Profile.ensure_daily(profile, "2026-03-01")
+	var missions: Array = eco["missions"]
+	_check(not Profile.has_claimable(profile, eco), "아무것도 안 했는데 받을 보상이 있음")
+	for index in 3:
+		Profile.record_match(profile, eco, "ai", "win", {"battle_wins": 2, "cards": 2})
+	Profile.summon(profile, _data["characters"], eco, 1, RandomNumberGenerator.new())
+	_check(Profile.has_claimable(profile, eco), "미션을 깼는데 받을 보상이 없음")
+	var gold_before := int(profile["gold"])
+	for mission in missions:
+		var reward := Profile.claim_mission(profile, eco, str(mission["id"]))
+		_check(not reward.is_empty(), "미션 보상을 받을 수 없음: " + str(mission["id"]))
+		_check(Profile.claim_mission(profile, eco, str(mission["id"])).is_empty(), "미션 보상을 두 번 받음")
+	_check(int(profile["gold"]) > gold_before, "미션 골드가 들어오지 않음")
+	_check(not Profile.claim_all_clear(profile, eco).is_empty(), "모든 미션 완료 보상을 받을 수 없음")
+	_check(Profile.claim_all_clear(profile, eco).is_empty(), "모든 미션 완료 보상을 두 번 받음")
+	_check(Profile.ensure_daily(profile, "2026-03-02") and int(profile["daily"]["progress"].size()) == 0, "다음 날 미션이 새로 시작되지 않음")
+	# 출석: 하루 한 번, 7일 표가 돌아간다
+	var att := Profile.new_profile("출석", eco)
+	var table: Array = eco["attendance"]
+	for day in table.size() + 2:
+		var today := "2026-04-%02d" % (day + 1)
+		_check(Profile.can_check_in(att, today), "출석할 수 없음: " + today)
+		var reward := Profile.check_in(att, eco, today)
+		_check(reward == table[day % table.size()], "출석 보상 순서가 틀림")
+		_check(Profile.check_in(att, eco, today).is_empty(), "하루에 두 번 출석됨")

@@ -1,8 +1,10 @@
 extends Control
-## 시작 화면 겸 파티 고르기. 캐릭터 카드를 눌러 ATTACK / DEFENSE / SUPPORT 자리에 앉힌다.
-## 소환 포인트(★ 수) 합계가 6을 넘으면 시작할 수 없다.
+## 파티 고르기. 캐릭터 카드를 눌러 ATTACK / DEFENSE / SUPPORT 자리에 앉힌다.
+## 소환 포인트(★ 수) 합계가 6을 넘으면 정할 수 없다.
+## 파티 편성(영웅 화면)과 대전 직전 모두에서 쓴다. 보여 줄 캐릭터 목록과 글자는 setup()의 options로 바꾼다.
 
 signal confirmed(party: Dictionary)
+signal cancelled
 
 const Portrait := preload("res://scripts/ui/portrait.gd")
 
@@ -36,11 +38,14 @@ var _styles: Dictionary = {}
 var _filter := ""
 var _filter_buttons: Dictionary = {}
 var _info_label: Label
+## {"title", "subtitle", "confirm_text", "cancel_text", "levels": {id: 레벨}}
+var _options: Dictionary = {}
 
 
-func setup(character_list: Array, ability_table: Dictionary, initial: Dictionary) -> void:
+func setup(character_list: Array, ability_table: Dictionary, initial: Dictionary, options: Dictionary = {}) -> void:
 	characters = character_list
 	abilities = ability_table
+	_options = options
 	for slot in SLOTS:
 		party[slot] = initial.get(slot, "")
 	_build()
@@ -68,11 +73,11 @@ func _build() -> void:
 	column.add_theme_constant_override("separation", 12)
 	margin.add_child(column)
 
-	var title := _label("주사위 영웅전", 60, GOLD)
+	var title := _label(str(_options.get("title", "파티 편성")), 46, GOLD)
 	title.add_theme_constant_override("outline_size", 10)
 	title.add_theme_color_override("font_outline_color", Color("5a3a00"))
 	column.add_child(title)
-	column.add_child(_label("파티를 꾸리세요. 자리를 누른 뒤 아래 캐릭터를 고르면 그 자리에 앉습니다.", 19, Color(1, 1, 1, 0.75)))
+	column.add_child(_label(str(_options.get("subtitle", "자리를 누른 뒤 아래 영웅을 고르면 그 자리에 앉습니다.")), 19, Color(1, 1, 1, 0.75)))
 
 	var slot_row := HBoxContainer.new()
 	slot_row.add_theme_constant_override("separation", 8)
@@ -139,10 +144,14 @@ func _build() -> void:
 	var bottom := HBoxContainer.new()
 	bottom.add_theme_constant_override("separation", 8)
 	column.add_child(bottom)
+	if str(_options.get("cancel_text", "")) != "":
+		var back_button := _plain_button(str(_options["cancel_text"]), Color("3a4466"))
+		back_button.pressed.connect(_on_cancel_pressed)
+		bottom.add_child(back_button)
 	var auto_button := _plain_button("자동 추천", Color("3a4466"))
 	auto_button.pressed.connect(_on_auto_pressed)
 	bottom.add_child(auto_button)
-	_start_button = _plain_button("게임 시작", Color("2f80ed"))
+	_start_button = _plain_button(str(_options.get("confirm_text", "결정")), Color("2f80ed"))
 	_start_button.size_flags_stretch_ratio = 2.0
 	_start_button.pressed.connect(_on_start_pressed)
 	bottom.add_child(_start_button)
@@ -224,8 +233,12 @@ func _character(id: String) -> Dictionary:
 
 func _card_text(character: Dictionary) -> String:
 	var ability: Dictionary = abilities.get(character.get("ability", ""), {})
-	return "%s %s\n%s · %s\n이동%d 공%d 방%d 지%d" % [
-		"★".repeat(int(character["grade"])), character["name"],
+	var levels: Dictionary = _options.get("levels", {})
+	var level_text := ""
+	if levels.has(character["id"]):
+		level_text = " Lv%d" % int(levels[character["id"]])
+	return "%s %s%s\n%s · %s\n이동%d 공%d 방%d 지%d" % [
+		"★".repeat(int(character["grade"])), character["name"], level_text,
 		character["category"], ability.get("name", "-"),
 		int(character["move"]), int(character["attack"]), int(character["defense"]), int(character["intellect"])]
 
@@ -318,6 +331,10 @@ func _top_by_grade(score_of: Callable) -> Array:
 		group.sort_custom(func(x, y): return int(score_of.call(x)) > int(score_of.call(y)))
 		picked.append_array(group.slice(0, 4))
 	return picked
+
+
+func _on_cancel_pressed() -> void:
+	cancelled.emit()
 
 
 func _on_start_pressed() -> void:

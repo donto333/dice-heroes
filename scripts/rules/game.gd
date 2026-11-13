@@ -64,6 +64,8 @@ var second_player_gauge := 0
 var gauge_base := 10
 var gauge_per_intellect := 5
 var start_gauge_per_intellect := 0
+## 영웅 레벨에 따른 전투 합계 보너스. 칸 순번 = 레벨 - 1. data/rules.json의 level_battle_bonus.
+var level_battle_bonus: Array = []
 
 var card_played := false
 var ability_used := false
@@ -85,6 +87,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	gauge_base = int(rules.get("gauge_base", 10))
 	gauge_per_intellect = int(rules.get("gauge_per_intellect", 5))
 	start_gauge_per_intellect = int(rules.get("start_gauge_per_intellect", 0))
+	level_battle_bonus = rules.get("level_battle_bonus", [])
 	characters = {}
 	for character in data.get("characters", []):
 		characters[character["id"]] = character
@@ -99,6 +102,8 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 				"defense": party["defense"],
 				"support": party["support"],
 			},
+			## 자리별 영웅 레벨. 없으면 1.
+			"levels": (party.get("levels", {}) as Dictionary).duplicate(),
 			"pos": start_id,
 			"trail": [start_id],
 			"hand": [],
@@ -679,15 +684,24 @@ func _defense_dice(player_index: int) -> int:
 	return count
 
 
+## 자리의 영웅 레벨 보너스. 레벨 3이면 +1처럼 전투 합계에 더한다.
+func level_bonus(player_index: int, slot: String) -> int:
+	var level := int(players[player_index].get("levels", {}).get(slot, 1))
+	if level_battle_bonus.is_empty():
+		return 0
+	var index := clampi(level - 1, 0, level_battle_bonus.size() - 1)
+	return int(level_battle_bonus[index])
+
+
 func _attack_bonus(player_index: int) -> int:
-	var bonus := effect_sum(player_index, "atk_bonus")
+	var bonus := effect_sum(player_index, "atk_bonus") + level_bonus(player_index, "attack")
 	if map_attr == "영웅" and char_of(player_index, "attack")["category"] == "영웅":
 		bonus += ATTR_BONUS
 	return bonus
 
 
 func _defense_bonus(player_index: int) -> int:
-	var bonus := effect_sum(player_index, "def_bonus")
+	var bonus := effect_sum(player_index, "def_bonus") + level_bonus(player_index, "defense")
 	if map_attr == "신화" and char_of(player_index, "defense")["category"] == "신화":
 		bonus += ATTR_BONUS
 	return bonus

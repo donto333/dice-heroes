@@ -1,0 +1,440 @@
+extends RefCounted
+## 게임 밖 성장 규칙: 저장 데이터(프로필), 재화, 영웅 소환, 강화, 판 보상, 랭크, 일일 미션, 출석.
+## 화면 코드와 분리되어 있어 tests/run_tests.gd에서 검사한다. 수치는 data/economy.json.
+## 모든 함수는 프로필 사전을 직접 고친다. 저장은 scripts/save_store.gd가 맡는다.
+## 날짜는 "2026-11-14" 같은 글자로 받는다. (화면 쪽에서 오늘 날짜를 넘겨준다)
+
+const VERSION := 1
+
+
+# ---------------------------------------------------------------- 프로필
+
+static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
+	var start: Dictionary = eco.get("start", {})
+	var owned := {}
+	for id in start.get("characters", []):
+		owned[str(id)] = {"level": 1, "shards": 0}
+	return {
+		"version": VERSION,
+		"nickname": nickname,
+		"level": 1,
+		"exp": 0,
+		"gold": int(start.get("gold", 0)),
+		"gems": int(start.get("gems", 0)),
+		"trophies": 0,
+		"best_trophies": 0,
+		"owned": owned,
+		"party": (start.get("party", {}) as Dictionary).duplicate(),
+		"stats": {"played": 0, "wins": 0, "losses": 0, "draws": 0, "rank_wins": 0},
+		"pity": 0,
+		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false},
+		"attendance": {"last_date": "", "count": 0},
+		"settings": {"sfx": true},
+	}
+
+
+## 닉네임은 공백을 빼고 2~10글자.
+static func clean_nickname(text: String) -> String:
+	return text.strip_edges().left(10)
+
+
+static func nickname_ok(text: String) -> bool:
+	var cleaned := clean_nickname(text)
+	return cleaned.length() >= 2
+
+
+## 예전 저장 데이터에 빠진 항목을 채운다. 저장 형식이 바뀌어도 기존 사용자가 이어서 할 수 있게.
+static func repair(profile: Dictionary, eco: Dictionary) -> Dictionary:
+	var fresh := new_profile(str(profile.get("nickname", "용사")), eco)
+	for key in fresh:
+		if not profile.has(key):
+			profile[key] = fresh[key]
+	for key in fresh["daily"]:
+		if not profile["daily"].has(key):
+			profile["daily"][key] = fresh["daily"][key]
+	for key in fresh["stats"]:
+		if not profile["stats"].has(key):
+			profile["stats"][key] = fresh["stats"][key]
+	profile["version"] = VERSION
+	return profile
+
+
+# ---------------------------------------------------------------- 재화
+
+static func can_pay(profile: Dictionary, currency: String, amount: int) -> bool:
+	return int(profile.get(currency, 0)) >= amount
+
+
+static func pay(profile: Dictionary, currency: String, amount: int) -> bool:
+	if not can_pay(profile, currency, amount):
+		return false
+	profile[currency] = int(profile[currency]) - amount
+	return true
+
+
+## 보상 묶음({"gold": 100, "gems": 30})을 더한다.
+static func grant(profile: Dictionary, reward: Dictionary) -> void:
+	for currency in ["gold", "gems"]:
+		if reward.has(currency):
+			profile[currency] = int(profile.get(currency, 0)) + int(reward[currency])
+
+
+static func reward_text(reward: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	if int(reward.get("gold", 0)) != 0:
+		parts.append("골드 %d" % int(reward["gold"]))
+	if int(reward.get("gems", 0)) != 0:
+		parts.append("보석 %d" % int(reward["gems"]))
+	if int(reward.get("trophies", 0)) != 0:
+		parts.append("트로피 %+d" % int(reward["trophies"]))
+	if int(reward.get("exp", 0)) != 0:
+		parts.append("경험치 %d" % int(reward["exp"]))
+	return ", ".join(parts)
+
+
+# ---------------------------------------------------------------- 영웅 보유·파티
+
+static func owns(profile: Dictionary, id: String) -> bool:
+	return profile["owned"].has(id)
+
+
+static func level_of(profile: Dictionary, id: String) -> int:
+	if not owns(profile, id):
+		return 0
+	return int(profile["owned"][id]["level"])
+
+
+## 파티가 비어 있지 않고, 보유한 영웅이고, 서로 다르고, 포인트 제한 안인지.
+static func party_ok(profile: Dictionary, characters: Array, party: Dictionary, point_limit: int) -> bool:
+	var seen := {}
+	var total := 0
+	for slot in ["attack", "defense", "support"]:
+		var id := str(party.get(slot, ""))
+		if id == "" or seen.has(id) or not owns(profile, id):
+			return false
+		seen[id] = true
+		total += _grade_of(characters, id)
+	return total <= point_limit
+
+
+## 규칙 엔진에 넘길 파티. 자리마다 영웅 레벨을 같이 넣는다.
+static func battle_party(profile: Dictionary, party: Dictionary, name: String) -> Dictionary:
+	var result := party.duplicate()
+	result["name"] = name
+	result["levels"] = {}
+	for slot in ["attack", "defense", "support"]:
+		result["levels"][slot] = max(1, level_of(profile, str(party.get(slot, ""))))
+	return result
+
+
+static func _grade_of(characters: Array, id: String) -> int:
+	for character in characters:
+		if str(character["id"]) == id:
+			return int(character["grade"])
+	return 99
+
+
+# ---------------------------------------------------------------- 소환
+
+## 소환 한 번의 등급. 보장(pity)이 차면 ★★★, guarantee_two면 ★★ 이상.
+static func roll_grade(profile: Dictionary, eco: Dictionary, rng: RandomNumberGenerator, guarantee_two: bool) -> int:
+	var summon: Dictionary = eco.get("summon", {})
+	var pity_limit := int(summon.get("pity_3", 0))
+	if pity_limit > 0 and int(profile.get("pity", 0)) + 1 >= pity_limit:
+		return 3
+	var rates: Dictionary = summon.get("rates", {"1": 100})
+	var roll := rng.randf() * 100.0
+	var grade := 1
+	var acc := 0.0
+	for key in ["3", "2", "1"]:
+		acc += float(rates.get(key, 0))
+		if roll < acc:
+			grade = int(key)
+			break
+	if guarantee_two and grade < 2:
+		grade = 2
+	return grade
+
+
+## 영웅을 count번 소환한다. 비용은 먼저 치러야 한다(pay 또는 무료 소환).
+## 돌려주는 값: [{"id", "grade", "new": 처음 얻었는지, "shards": 중복이면 받은 조각}]
+static func summon(profile: Dictionary, characters: Array, eco: Dictionary, count: int, rng: RandomNumberGenerator) -> Array:
+	var summon_table: Dictionary = eco.get("summon", {})
+	var shard_table: Dictionary = summon_table.get("shards_on_duplicate", {})
+	var results: Array = []
+	for index in count:
+		var guarantee_two := count >= 10 and index == count - 1 and not _has_grade_at_least(results, 2)
+		var grade := roll_grade(profile, eco, rng, guarantee_two)
+		if grade == 3:
+			profile["pity"] = 0
+		else:
+			profile["pity"] = int(profile.get("pity", 0)) + 1
+		var pool: Array = []
+		for character in characters:
+			if int(character["grade"]) == grade:
+				pool.append(character)
+		var picked: Dictionary = pool[rng.randi_range(0, pool.size() - 1)]
+		var id := str(picked["id"])
+		var entry := {"id": id, "grade": grade, "new": false, "shards": 0}
+		if owns(profile, id):
+			var shards := int(shard_table.get(str(grade), 5))
+			profile["owned"][id]["shards"] = int(profile["owned"][id]["shards"]) + shards
+			entry["shards"] = shards
+		else:
+			profile["owned"][id] = {"level": 1, "shards": 0}
+			entry["new"] = true
+		results.append(entry)
+	add_progress(profile, eco, "summon", 1)
+	return results
+
+
+static func _has_grade_at_least(results: Array, grade: int) -> bool:
+	for entry in results:
+		if int(entry["grade"]) >= grade:
+			return true
+	return false
+
+
+static func free_summons_left(profile: Dictionary, eco: Dictionary) -> int:
+	var per_day := int(eco.get("summon", {}).get("free_per_day", 0))
+	return max(0, per_day - int(profile["daily"].get("free_summons", 0)))
+
+
+## 무료 소환 1회를 쓴다. 남은 무료 소환이 없으면 false.
+static func use_free_summon(profile: Dictionary, eco: Dictionary) -> bool:
+	if free_summons_left(profile, eco) <= 0:
+		return false
+	profile["daily"]["free_summons"] = int(profile["daily"].get("free_summons", 0)) + 1
+	return true
+
+
+# ---------------------------------------------------------------- 강화
+
+## 다음 레벨로 올리는 비용. 이미 최고 레벨이거나 없는 영웅이면 빈 사전.
+static func upgrade_cost(profile: Dictionary, eco: Dictionary, id: String) -> Dictionary:
+	var table: Dictionary = eco.get("upgrade", {})
+	var level := level_of(profile, id)
+	if level <= 0 or level >= int(table.get("max_level", 5)):
+		return {}
+	return {"shards": int(table["shards"][level - 1]), "gold": int(table["gold"][level - 1])}
+
+
+static func can_upgrade(profile: Dictionary, eco: Dictionary, id: String) -> bool:
+	var cost := upgrade_cost(profile, eco, id)
+	if cost.is_empty():
+		return false
+	return int(profile["owned"][id]["shards"]) >= int(cost["shards"]) and can_pay(profile, "gold", int(cost["gold"]))
+
+
+static func upgrade(profile: Dictionary, eco: Dictionary, id: String) -> bool:
+	if not can_upgrade(profile, eco, id):
+		return false
+	var cost := upgrade_cost(profile, eco, id)
+	profile["owned"][id]["shards"] = int(profile["owned"][id]["shards"]) - int(cost["shards"])
+	pay(profile, "gold", int(cost["gold"]))
+	profile["owned"][id]["level"] = level_of(profile, id) + 1
+	return true
+
+
+# ---------------------------------------------------------------- 플레이어 레벨
+
+static func exp_to_next(profile: Dictionary, eco: Dictionary) -> int:
+	var table: Dictionary = eco.get("player_level", {})
+	return int(table.get("base", 100)) + int(table.get("per_level", 50)) * (int(profile["level"]) - 1)
+
+
+## 경험치를 더하고 오른 레벨 수를 돌려준다. 레벨이 오를 때마다 보석을 준다.
+static func add_exp(profile: Dictionary, eco: Dictionary, amount: int) -> int:
+	var gained := 0
+	profile["exp"] = int(profile["exp"]) + amount
+	while int(profile["exp"]) >= exp_to_next(profile, eco):
+		profile["exp"] = int(profile["exp"]) - exp_to_next(profile, eco)
+		profile["level"] = int(profile["level"]) + 1
+		profile["gems"] = int(profile["gems"]) + int(eco.get("player_level", {}).get("level_up_gems", 0))
+		gained += 1
+	return gained
+
+
+# ---------------------------------------------------------------- 랭크
+
+static func tier_index(eco: Dictionary, trophies: int) -> int:
+	var tiers: Array = eco.get("tiers", [])
+	var found := 0
+	for index in tiers.size():
+		if trophies >= int(tiers[index]["min"]):
+			found = index
+	return found
+
+
+static func tier_of(eco: Dictionary, trophies: int) -> Dictionary:
+	var tiers: Array = eco.get("tiers", [])
+	if tiers.is_empty():
+		return {"name": "-", "min": 0, "color": "ffffff", "ai_level": 1}
+	return tiers[tier_index(eco, trophies)]
+
+
+## 다음 티어까지 필요한 트로피. 마지막 티어면 0.
+static func trophies_to_next(eco: Dictionary, trophies: int) -> int:
+	var tiers: Array = eco.get("tiers", [])
+	var index := tier_index(eco, trophies)
+	if index + 1 >= tiers.size():
+		return 0
+	return int(tiers[index + 1]["min"]) - trophies
+
+
+## 랭크전 AI 상대의 영웅 레벨. 내 티어가 높을수록 상대도 강하다.
+static func rank_ai_level(eco: Dictionary, trophies: int) -> int:
+	return int(tier_of(eco, trophies).get("ai_level", 1))
+
+
+# ---------------------------------------------------------------- 판 결과
+
+## 판이 끝났을 때 보상을 계산해 적용한다.
+## mode: "rank", "ai", "local" / outcome: "win", "lose", "draw"
+## stats: {"battle_wins": n, "cards": n} 미션 진행에 쓴다.
+## 돌려주는 값: {"gold", "gems", "exp", "trophies", "level_ups", "first_win", "tier_before", "tier_after"}
+static func record_match(profile: Dictionary, eco: Dictionary, mode: String, outcome: String, stats: Dictionary) -> Dictionary:
+	var table: Dictionary = eco.get("rewards", {}).get(mode, {}).get(outcome, {})
+	var reward := {"gold": int(table.get("gold", 0)), "gems": 0, "exp": int(table.get("exp", 0)), "trophies": 0,
+		"level_ups": 0, "first_win": false, "tier_before": "", "tier_after": ""}
+	var played: Dictionary = profile["stats"]
+	played["played"] = int(played["played"]) + 1
+	match outcome:
+		"win":
+			played["wins"] = int(played["wins"]) + 1
+		"lose":
+			played["losses"] = int(played["losses"]) + 1
+		_:
+			played["draws"] = int(played["draws"]) + 1
+	if mode == "rank":
+		var before := int(profile["trophies"])
+		reward["tier_before"] = tier_of(eco, before)["name"]
+		var after: int = max(0, before + int(table.get("trophies", 0)))
+		reward["trophies"] = after - before
+		profile["trophies"] = after
+		profile["best_trophies"] = max(int(profile["best_trophies"]), after)
+		reward["tier_after"] = tier_of(eco, after)["name"]
+		if outcome == "win":
+			played["rank_wins"] = int(played["rank_wins"]) + 1
+	var counts_as_win := outcome == "win" and mode != "local"
+	if counts_as_win and not bool(profile["daily"].get("first_win", false)):
+		profile["daily"]["first_win"] = true
+		reward["gems"] = int(eco.get("rewards", {}).get("first_win_gems", 0))
+		reward["first_win"] = true
+	grant(profile, reward)
+	reward["level_ups"] = add_exp(profile, eco, int(reward["exp"]))
+	add_progress(profile, eco, "play", 1)
+	if counts_as_win:
+		add_progress(profile, eco, "win", 1)
+	add_progress(profile, eco, "battle_win", int(stats.get("battle_wins", 0)))
+	add_progress(profile, eco, "card", int(stats.get("cards", 0)))
+	return reward
+
+
+# ---------------------------------------------------------------- 일일 미션
+
+## 날짜가 바뀌었으면 일일 미션·무료 소환·첫 승리를 새로 시작한다. 바뀌었으면 true.
+static func ensure_daily(profile: Dictionary, today: String) -> bool:
+	if str(profile["daily"].get("date", "")) == today:
+		return false
+	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false}
+	return true
+
+
+static func add_progress(profile: Dictionary, eco: Dictionary, event: String, amount: int) -> void:
+	if amount <= 0:
+		return
+	var progress: Dictionary = profile["daily"]["progress"]
+	for mission in eco.get("missions", []):
+		if str(mission["event"]) == event:
+			var id := str(mission["id"])
+			progress[id] = min(int(mission["goal"]), int(progress.get(id, 0)) + amount)
+
+
+static func mission_progress(profile: Dictionary, mission: Dictionary) -> int:
+	return int(profile["daily"]["progress"].get(str(mission["id"]), 0))
+
+
+static func mission_done(profile: Dictionary, mission: Dictionary) -> bool:
+	return mission_progress(profile, mission) >= int(mission["goal"])
+
+
+static func mission_claimed(profile: Dictionary, mission: Dictionary) -> bool:
+	return str(mission["id"]) in profile["daily"]["claimed"]
+
+
+static func claim_mission(profile: Dictionary, eco: Dictionary, id: String) -> Dictionary:
+	for mission in eco.get("missions", []):
+		if str(mission["id"]) == id and mission_done(profile, mission) and not mission_claimed(profile, mission):
+			profile["daily"]["claimed"].append(id)
+			grant(profile, mission["reward"])
+			return mission["reward"]
+	return {}
+
+
+static func all_missions_done(profile: Dictionary, eco: Dictionary) -> bool:
+	for mission in eco.get("missions", []):
+		if not mission_claimed(profile, mission):
+			return false
+	return true
+
+
+static func claim_all_clear(profile: Dictionary, eco: Dictionary) -> Dictionary:
+	if bool(profile["daily"].get("all_claimed", false)) or not all_missions_done(profile, eco):
+		return {}
+	profile["daily"]["all_claimed"] = true
+	var reward: Dictionary = eco.get("missions_all_clear", {})
+	grant(profile, reward)
+	return reward
+
+
+## 받을 수 있는 미션 보상이 있는지 (로비 알림 점에 쓴다).
+static func has_claimable(profile: Dictionary, eco: Dictionary) -> bool:
+	for mission in eco.get("missions", []):
+		if mission_done(profile, mission) and not mission_claimed(profile, mission):
+			return true
+	if all_missions_done(profile, eco) and not bool(profile["daily"].get("all_claimed", false)):
+		return true
+	return false
+
+
+# ---------------------------------------------------------------- 출석
+
+static func can_check_in(profile: Dictionary, today: String) -> bool:
+	return str(profile["attendance"].get("last_date", "")) != today
+
+
+## 오늘 출석 보상을 받는다. 7일 보상이 돌아가며 나온다. 받은 보상(이미 받았으면 빈 사전).
+static func check_in(profile: Dictionary, eco: Dictionary, today: String) -> Dictionary:
+	if not can_check_in(profile, today):
+		return {}
+	var table: Array = eco.get("attendance", [])
+	if table.is_empty():
+		return {}
+	var count := int(profile["attendance"].get("count", 0))
+	var reward: Dictionary = table[count % table.size()]
+	profile["attendance"]["count"] = count + 1
+	profile["attendance"]["last_date"] = today
+	grant(profile, reward)
+	return reward
+
+
+## 출석 보상표에서 오늘 받을 칸 순번 (0부터).
+static func attendance_day(profile: Dictionary, eco: Dictionary) -> int:
+	var table: Array = eco.get("attendance", [])
+	if table.is_empty():
+		return 0
+	return int(profile["attendance"].get("count", 0)) % table.size()
+
+
+# ---------------------------------------------------------------- 교환
+
+static func exchange(profile: Dictionary, eco: Dictionary, index: int) -> bool:
+	var table: Array = eco.get("exchange", [])
+	if index < 0 or index >= table.size():
+		return false
+	var offer: Dictionary = table[index]
+	if not pay(profile, "gems", int(offer["gems"])):
+		return false
+	profile["gold"] = int(profile["gold"]) + int(offer["gold"])
+	return true
