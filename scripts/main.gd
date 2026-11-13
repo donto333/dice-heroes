@@ -9,6 +9,8 @@ const AI := preload("res://scripts/rules/ai.gd")
 const GameData := preload("res://scripts/game_data.gd")
 const BoardView := preload("res://scripts/ui/board_view.gd")
 const DiceView := preload("res://scripts/ui/dice_view.gd")
+const BattleOverlay := preload("res://scripts/ui/battle_overlay.gd")
+const Sfx := preload("res://scripts/ui/sfx.gd")
 
 ## 프로토타입 고정 파티. 둘 다 소환 포인트 6이다. 파티 고르기 화면은 6단계에서 만든다.
 const PARTIES := [
@@ -38,6 +40,8 @@ var _ability_buttons: Dictionary = {}
 var _card_buttons: Array = []
 var _roll_button: Button
 var _log_label: Label
+var _battle_overlay: Control
+var _sfx: Node
 
 
 func _ready() -> void:
@@ -114,6 +118,13 @@ func _build_ui() -> void:
 	_log_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	column.add_child(_log_label)
 
+	_sfx = Sfx.new()
+	add_child(_sfx)
+	_board_view.stepped.connect(func(): _sfx.play("step"))
+	_battle_overlay = BattleOverlay.new()
+	_battle_overlay.sfx = _sfx
+	add_child(_battle_overlay)
+
 
 func _make_label(font_size: int, text: String = "") -> Label:
 	var label := Label.new()
@@ -187,11 +198,16 @@ func _advance() -> void:
 				return
 			_add_result_header("AI 차례", PLAYER_TEXT_COLORS[1])
 			AI.take_turn(game)
-			_consume_events()
+			await _present_events()
+			if playing != game:
+				return
 		_refresh()
 	await _wait_for_board()
+	if playing != game:
+		return
 	_waiting_for_player = false
 	_show_game_over()
+	_sfx.play("win" if game.winner == 0 else "lose")
 	_refresh()
 
 
@@ -207,10 +223,15 @@ func _on_roll_pressed() -> void:
 	if not _waiting_for_player:
 		return
 	_waiting_for_player = false
+	_sfx.play("click")
+	_refresh()
 	_clear_results()
 	_add_result_header("내 차례", PLAYER_TEXT_COLORS[0])
+	var playing = game
 	game.roll_move()
-	_consume_events()
+	await _present_events()
+	if playing != game:
+		return
 	_after_my_move()
 
 
@@ -253,8 +274,13 @@ func _on_path_chosen(index: int) -> void:
 	_clear_results()
 	_add_result_header("내 차례", PLAYER_TEXT_COLORS[0])
 	_add_result_text("%s(으)로 갑니다." % game.route_name(int(game.pending_choice["options"][index])), Color.WHITE)
+	_sfx.play("click")
+	var playing = game
 	game.choose_path(index)
-	_consume_events()
+	_refresh()
+	await _present_events()
+	if playing != game:
+		return
 	_after_my_move()
 
 
@@ -262,7 +288,9 @@ func _on_ability_pressed(slot: String) -> void:
 	if _waiting_for_player and game.use_ability(slot):
 		_add_result_text("어빌리티 [%s] 발동! %s" % [
 			game.ability_of(0, slot)["name"], game.ability_of(0, slot)["text"]], SLOT_COLORS[slot].lightened(0.4))
-		_consume_events()
+		_sfx.play("reveal")
+		_refresh()
+		await _present_events()
 		_refresh()
 
 
@@ -275,26 +303,96 @@ func _on_card_pressed(index: int) -> void:
 	var card: Dictionary = game.cards[hand[index]]
 	if game.play_card(index):
 		_add_result_text("카드 [%s] 사용! %s" % [card["name"], card["text"]], CARD_COLOR.lightened(0.4))
-		_consume_events()
+		_sfx.play("good")
+		_refresh()
+		await _present_events()
 		_refresh()
 
 
 # ---------------------------------------------------------------- 결과 패널
 
-## 규칙 엔진의 사건을 꺼내, 말 이동은 보드로 보내고 주사위·전투는 결과 패널에 그린다.
-func _consume_events() -> void:
+## 규칙 엔진의 사건을 꺼내 차례대로 연출한다.
+## 주사위는 구르는 모습을 보여 준 뒤 멈추고, 말은 한 칸씩 걷고, 전투는 전투 화면을 띄운다.
+## 모든 연출이 끝나야 돌아온다.
+func _present_events() -> void:
+	var playing = game
 	var moves: Array = []
 	for event in game.take_events():
+		if playing != game:
+			return
+		if event["kind"] == "pos":
+			moves.append(event)
+			continue
+		if not moves.is_empty():
+			_board_view.push_moves(moves)
+			moves = []
+			await _wait_for_board()
 		match event["kind"]:
-			"pos":
-				moves.append(event)
 			"move":
-				_add_move_result(event)
+				await _show_move(event)
 			"battle":
-				_add_battle_result(event)
+				await _show_battle(event)
 			"fate":
-				_add_fate_result(event)
-	_board_view.push_moves(moves)
+				await _show_fate(event)
+	if not moves.is_empty():
+		_board_view.push_moves(moves)
+		await _wait_for_board()
+
+
+func _show_move(event: Dictionary) -> void:
+	var who := int(event["player"])
+	var tail := "→ %d칸" % int(event["total"])
+	if event["rolls"].is_empty():
+		tail = "%d칸 (고정)" % int(event["total"])
+	if int(event["bonus"]) > 0:
+		tail += " (속성 +%d)" % int(event["bonus"])
+	var row := _dice_row("이동", event["rolls"], "", PLAYER_TEXT_COLORS[who])
+	_result_box.add_child(row)
+	_trim_results()
+	await _roll_row(row, event["rolls"], tail)
+
+
+func _show_fate(event: Dictionary) -> void:
+	var who := int(event["player"])
+	var row := _dice_row("판정", event["rolls"], "", PLAYER_TEXT_COLORS[who])
+	_result_box.add_child(row)
+	_trim_results()
+	await _roll_row(row, event["rolls"], event["text"])
+	_sfx.play("good" if event["text"] == "무사 통과" else "bad")
+
+
+## 결과 줄의 주사위를 굴린 뒤 끝 글자를 보여 준다.
+func _roll_row(row: HBoxContainer, rolls: Array, tail: String) -> void:
+	var dice = row.get_meta("dice", null)
+	if dice != null:
+		_sfx.play("dice")
+		await dice.roll_to(rolls, 0.55)
+	var end: Label = row.get_meta("tail")
+	end.text = tail
+
+
+func _show_battle(event: Dictionary) -> void:
+	await _wait_for_board()
+	var who := int(event["player"])
+	var other := 1 - who
+	var against_player: bool = event["defender"] == game.char_of(other, "defense")["name"]
+	var me_attacking := who == 0
+	var info := {
+		"attacker_side": "공격 · %s" % game.players[who]["name"],
+		"defender_side": "방어 · %s" % (game.players[other]["name"] if against_player else "키퍼"),
+		"attacker_color": PLAYER_TEXT_COLORS[who],
+		"defender_color": PLAYER_TEXT_COLORS[other] if against_player else Color("ffcf66"),
+		"winner_text": "%s 승리!" % game.players[who]["name"],
+		"loser_text": "%s 패배... 거점으로" % game.players[who]["name"],
+	}
+	if me_attacking:
+		info["good_for_me"] = event["won"]
+	elif against_player:
+		info["good_for_me"] = not event["won"]
+	else:
+		info["good_for_me"] = not event["won"]
+	await _battle_overlay.play(event, info)
+	_add_battle_result(event)
 
 
 func _clear_results() -> void:
@@ -336,21 +434,12 @@ func _dice_row(caption: String, rolls: Array, tail: String, color: Color) -> HBo
 		dice.values = rolls
 		dice.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(dice)
+		row.set_meta("dice", dice)
 	var end := _make_label(22, tail)
 	end.add_theme_color_override("font_color", Color.WHITE)
 	row.add_child(end)
+	row.set_meta("tail", end)
 	return row
-
-
-func _add_move_result(event: Dictionary) -> void:
-	var who := int(event["player"])
-	var tail := "→ %d칸" % int(event["total"])
-	if event["rolls"].is_empty():
-		tail = "%d칸 (고정)" % int(event["total"])
-	if int(event["bonus"]) > 0:
-		tail += " (속성 +%d)" % int(event["bonus"])
-	_result_box.add_child(_dice_row("이동", event["rolls"], tail, PLAYER_TEXT_COLORS[who]))
-	_trim_results()
 
 
 func _add_battle_result(event: Dictionary) -> void:
@@ -371,12 +460,6 @@ func _add_battle_result(event: Dictionary) -> void:
 	verdict_label.add_theme_color_override("font_color", verdict_color)
 	block.add_child(verdict_label)
 	_result_box.add_child(block)
-	_trim_results()
-
-
-func _add_fate_result(event: Dictionary) -> void:
-	var who := int(event["player"])
-	_result_box.add_child(_dice_row("판정", event["rolls"], event["text"], PLAYER_TEXT_COLORS[who]))
 	_trim_results()
 
 
@@ -445,7 +528,7 @@ func _refresh() -> void:
 		_roll_button.text = "주사위 굴리기"
 		_roll_button.disabled = false
 	else:
-		_roll_button.text = "AI가 진행 중..."
+		_roll_button.text = "AI 차례..." if game.current == 1 else "진행 중..."
 		_roll_button.disabled = true
 
 	var lines: Array = game.messages.slice(max(0, game.messages.size() - LOG_LINES))

@@ -9,6 +9,8 @@ const AI := preload("res://scripts/rules/ai.gd")
 const MainScreen := preload("res://scripts/main.gd")
 const BoardView := preload("res://scripts/ui/board_view.gd")
 const DiceView := preload("res://scripts/ui/dice_view.gd")
+const BattleOverlay := preload("res://scripts/ui/battle_overlay.gd")
+const Sfx := preload("res://scripts/ui/sfx.gd")
 
 const CATEGORIES := ["영웅", "위인", "신화", "근현대"]
 const TILE_TYPES := [
