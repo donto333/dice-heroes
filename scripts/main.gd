@@ -12,11 +12,10 @@ const DiceView := preload("res://scripts/ui/dice_view.gd")
 const BattleOverlay := preload("res://scripts/ui/battle_overlay.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
 
-## 프로토타입 고정 파티. 둘 다 소환 포인트 6이다. 파티 고르기 화면은 6단계에서 만든다.
-const PARTIES := [
-	{"name": "나", "attack": "lubu", "defense": "athena", "support": "choichiwon"},
-	{"name": "AI", "attack": "machao", "defense": "zeus", "support": "houdini"},
-]
+const PartySelect := preload("res://scripts/ui/party_select.gd")
+
+## 처음 파티 고르기 화면에 미리 앉혀 둘 파티.
+const DEFAULT_PARTY := {"attack": "lubu", "defense": "athena", "support": "choichiwon"}
 const AI_DELAY := 1.0
 const LOG_LINES := 4
 const MAX_RESULT_BLOCKS := 3
@@ -41,13 +40,17 @@ var _card_buttons: Array = []
 var _roll_button: Button
 var _log_label: Label
 var _battle_overlay: Control
+var _party_select: Control
+var _my_party: Dictionary = DEFAULT_PARTY.duplicate()
+var _ui_rng := RandomNumberGenerator.new()
 var _sfx: Node
 
 
 func _ready() -> void:
 	_data = GameData.load_all()
 	_build_ui()
-	_start_game()
+	_ui_rng.randomize()
+	_show_party_select()
 
 
 # ---------------------------------------------------------------- 화면 구성
@@ -164,15 +167,38 @@ func _make_button(font_size: int, height: float, color: Color) -> Button:
 
 # ---------------------------------------------------------------- 진행
 
+func _show_party_select() -> void:
+	if _party_select == null:
+		_party_select = PartySelect.new()
+		_party_select.confirmed.connect(_on_party_confirmed)
+		add_child(_party_select)
+		_party_select.setup(_data["characters"], _data["abilities"], _my_party)
+	_party_select.visible = true
+
+
+func _on_party_confirmed(party: Dictionary) -> void:
+	_sfx.play("good")
+	_my_party = party
+	_party_select.visible = false
+	_start_game()
+
+
 func _start_game() -> void:
+	var mine := _my_party.duplicate()
+	mine["name"] = "나"
+	var theirs: Dictionary = AI.pick_party(_data["characters"], Game.POINT_LIMIT, _ui_rng)
+	theirs["name"] = "AI"
 	game = Game.new()
-	game.setup(_data, PARTIES)
+	game.setup(_data, [mine, theirs])
 	game.take_events()
 	_board_view.game = game
 	_board_view.reset_pieces()
 	_waiting_for_player = false
 	_choosing_path = false
 	_clear_results()
+	_add_result_text("상대 AI 파티: %s · %s · %s" % [
+		game.char_of(1, "attack")["name"], game.char_of(1, "defense")["name"], game.char_of(1, "support")["name"]],
+		PLAYER_TEXT_COLORS[1])
 	_add_result_text("주사위 굴리기를 눌러 시작하세요.\n먼저 골(분홍 칸)의 메두사를 이기고 들어가면 승리!\n갈림길에서는 갈 길을 직접 고릅니다.", Color.WHITE)
 	_advance()
 
@@ -218,7 +244,7 @@ func _wait_for_board() -> void:
 
 func _on_roll_pressed() -> void:
 	if game.winner >= 0:
-		_start_game()
+		_show_party_select()
 		return
 	if not _waiting_for_player:
 		return

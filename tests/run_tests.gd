@@ -11,6 +11,7 @@ const BoardView := preload("res://scripts/ui/board_view.gd")
 const DiceView := preload("res://scripts/ui/dice_view.gd")
 const BattleOverlay := preload("res://scripts/ui/battle_overlay.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
+const PartySelect := preload("res://scripts/ui/party_select.gd")
 
 const CATEGORIES := ["영웅", "위인", "신화", "근현대"]
 const TILE_TYPES := [
@@ -32,6 +33,7 @@ func _init() -> void:
 	_test_character_data()
 	_test_board_data()
 	_test_references()
+	_test_ai_party()
 	_test_random_tiles()
 	_test_battle_odds()
 	_test_move_dice()
@@ -131,6 +133,28 @@ func _test_references() -> void:
 	for index in 2:
 		_check(game.party_points(index) <= Game.POINT_LIMIT, "파티 포인트가 6을 넘음")
 		_check(game.players[index]["hand"].size() == Game.START_HAND, "시작 손패가 3장이 아님")
+
+
+## AI가 고르는 파티가 규칙에 맞는지 확인한다.
+func _test_ai_party() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var by_id := {}
+	for character in _data["characters"]:
+		by_id[character["id"]] = character
+	var seen := {}
+	for i in 100:
+		var party: Dictionary = AI.pick_party(_data["characters"], Game.POINT_LIMIT, rng)
+		_check(party.size() == 3, "AI 파티에 자리가 3개가 아님")
+		var ids := [party.get("attack", ""), party.get("defense", ""), party.get("support", "")]
+		_check(ids[0] != ids[1] and ids[0] != ids[2] and ids[1] != ids[2], "AI 파티에 같은 캐릭터가 두 번 들어감")
+		var total := 0
+		for id in ids:
+			_check(by_id.has(id), "AI 파티에 없는 캐릭터: %s" % id)
+			total += int(by_id.get(id, {"grade": 9})["grade"])
+		_check(total <= Game.POINT_LIMIT, "AI 파티 포인트가 6을 넘음")
+		seen[str(ids)] = true
+	_check(seen.size() > 5, "AI 파티가 매번 거의 같음")
 
 
 ## random 칸이 판마다 실제 효과로 바뀌는지, 판마다 배치가 달라지는지 확인한다.
