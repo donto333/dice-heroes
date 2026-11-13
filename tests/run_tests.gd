@@ -23,6 +23,14 @@ const PARTIES := [
 	{"name": "B", "attack": "machao", "defense": "zeus", "support": "houdini"},
 ]
 const SIM_GAMES := 400
+const BALANCE_GAMES := 2000
+## 카드와 어빌리티가 쓸 수 있는 효과 종류. game.gd의 _apply_effect()와 맞춘다.
+const EFFECT_TYPES := [
+	"move_fixed", "move_dice", "move_plus", "move_best", "atk_dice", "def_dice",
+	"atk_bonus", "def_bonus", "retry", "chase", "counter", "enemy_dice_minus",
+	"gauge_team", "gauge_enemy", "draw_card", "skip_enemy", "enemy_move_dice",
+	"trap", "swap", "discard_enemy", "steal_card", "cure", "charm", "set_attr", "multi",
+]
 
 var _failures: Array[String] = []
 var _data: Dictionary = {}
@@ -41,6 +49,7 @@ func _init() -> void:
 	_test_checkpoints()
 	_test_cards()
 	_test_pass_by_fight()
+	_test_balance()
 	_test_full_games()
 	if _failures.is_empty():
 		print("모든 검사 통과")
@@ -129,8 +138,28 @@ func _test_board_data() -> void:
 
 func _test_references() -> void:
 	var abilities: Dictionary = _data["abilities"]
+	var shared_count := 0
+	for ability_id in abilities:
+		var ability: Dictionary = abilities[ability_id]
+		_check(str(ability.get("name", "")) != "" and str(ability.get("text", "")) != "", "어빌리티 이름이나 설명이 없음: " + ability_id)
+		_check(_effect_ok(ability.get("effect", {})), "모르는 어빌리티 효과: " + ability_id)
+		if not str(ability_id).begins_with("unique_"):
+			shared_count += 1
+	_check(shared_count >= 20 and shared_count <= 30, "공용 어빌리티가 20~30종이 아님: %d" % shared_count)
 	for character in _data["characters"]:
-		_check(abilities.has(character.get("ability", "")), "없는 어빌리티를 가리킴: " + str(character.get("id", "")))
+		var ability_id: String = character.get("ability", "")
+		_check(abilities.has(ability_id), "없는 어빌리티를 가리킴: " + str(character.get("id", "")))
+		_check(ability_id.begins_with("unique_") == (int(character["grade"]) == 3), "전용 어빌리티는 ★★★만 가짐: " + str(character.get("id", "")))
+
+	# 모든 어빌리티를 한 번씩 써도 판이 깨지지 않는지.
+	for ability_id in abilities:
+		var game_a = _new_game(60)
+		game_a.begin_turn()
+		game_a._apply_effect(abilities[ability_id]["effect"], 0)
+		game_a.roll_move()
+		while game_a.awaiting_choice():
+			game_a.choose_path(0)
+		_check(int(game_a.players[0]["trail"].back()) == int(game_a.players[0]["pos"]), "어빌리티를 쓴 뒤 위치가 어긋남: " + ability_id)
 	var game = _new_game(1)
 	for index in 2:
 		_check(game.party_points(index) <= Game.POINT_LIMIT, "파티 포인트가 6을 넘음")
@@ -262,12 +291,7 @@ func _test_checkpoints() -> void:
 
 ## 카드 20종이 모두 알려진 효과를 쓰고, 써도 판이 깨지지 않는지 확인한다.
 func _test_cards() -> void:
-	var known := [
-		"move_fixed", "move_dice", "move_plus", "move_best", "atk_dice", "def_dice",
-		"atk_bonus", "def_bonus", "retry", "gauge_team", "gauge_enemy", "draw_card",
-		"skip_enemy", "enemy_move_dice", "trap", "swap", "discard_enemy", "steal_card",
-		"cure", "charm", "set_attr",
-	]
+	var known := EFFECT_TYPES
 	var cards: Dictionary = _data["cards"]
 	_check(cards.size() == 20, "카드가 20종이 아님: %d" % cards.size())
 	for card_id in cards:
@@ -338,6 +362,86 @@ func _test_pass_by_fight() -> void:
 		if event["kind"] == "battle":
 			arrive_fought = true
 	_check(arrive_fought, "도착 칸에서 만났는데 싸우지 않음")
+
+
+func _effect_ok(effect: Dictionary) -> bool:
+	var kind := str(effect.get("type", ""))
+	if not (kind in EFFECT_TYPES):
+		return false
+	if kind == "multi":
+		var parts: Array = effect.get("effects", [])
+		if parts.is_empty():
+			return false
+		for part in parts:
+			if not _effect_ok(part):
+				return false
+	return true
+
+
+## 무작위 파티끼리 많이 붙여서 캐릭터·등급·분류별 승률을 출력한다. 수치 조정의 근거로 쓴다.
+## 자리별로 따로 센다. 같은 캐릭터라도 ATTACK에 앉을 때와 SUPPORT에 앉을 때 하는 일이 다르다.
+func _test_balance() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 777
+	var chars: Array = _data["characters"]
+	var stats := {}
+	var grade_stats := {}
+	var category_stats := {}
+	var finished := 0
+	var total_rounds := 0
+	for index in BALANCE_GAMES:
+		var a: Dictionary = AI.pick_party(chars, Game.POINT_LIMIT, rng)
+		var b: Dictionary = AI.pick_party(chars, Game.POINT_LIMIT, rng)
+		a["name"] = "A"
+		b["name"] = "B"
+		var game = _new_game(5000 + index, [a, b])
+		var steps := 0
+		while game.winner < 0 and steps < 200:
+			AI.take_turn(game)
+			steps += 1
+		game.take_events()
+		if game.winner < 0 or game.winner == 2:
+			continue
+		finished += 1
+		total_rounds += min(game.round_number, Game.MAX_ROUNDS)
+		for player in 2:
+			var won: int = 1 if game.winner == player else 0
+			for slot in Game.SLOTS:
+				var character: Dictionary = game.char_of(player, slot)
+				var key := "%s@%s" % [character["name"], slot]
+				_tally(stats, key, won)
+				_tally(grade_stats, "★%d" % int(character["grade"]), won)
+				_tally(category_stats, str(character["category"]), won)
+	print("[밸런스] %d판 중 승부 %d판 · 평균 %.1f턴" % [BALANCE_GAMES, finished, float(total_rounds) / max(finished, 1)])
+	print("[밸런스 등급] %s" % _rate_text(grade_stats, 0))
+	print("[밸런스 분류] %s" % _rate_text(category_stats, 0))
+	for slot in Game.SLOTS:
+		var by_slot := {}
+		for key in stats:
+			if str(key).ends_with("@" + slot):
+				by_slot[str(key).get_slice("@", 0)] = stats[key]
+		print("[밸런스 %s] %s" % [slot, _rate_text(by_slot, 30)])
+
+
+func _tally(table: Dictionary, key: String, won: int) -> void:
+	var entry: Array = table.get(key, [0, 0])
+	entry[0] += won
+	entry[1] += 1
+	table[key] = entry
+
+
+## "이름 승률%(판수)"를 승률 높은 순으로. min_games보다 적게 나온 항목은 뺀다.
+func _rate_text(table: Dictionary, min_games: int) -> String:
+	var rows: Array = []
+	for key in table:
+		var entry: Array = table[key]
+		if int(entry[1]) >= max(min_games, 1):
+			rows.append([key, float(entry[0]) / float(entry[1]), int(entry[1])])
+	rows.sort_custom(func(x, y): return float(x[1]) > float(y[1]))
+	var parts: PackedStringArray = []
+	for row in rows:
+		parts.append("%s %d%%(%d)" % [row[0], int(round(float(row[1]) * 100.0)), int(row[2])])
+	return ", ".join(parts)
 
 
 ## AI끼리 여러 판을 끝까지 돌린다.

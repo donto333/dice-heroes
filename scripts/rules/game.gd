@@ -765,6 +765,9 @@ func _apply_effect(effect: Dictionary, player_index: int) -> void:
 		_add_effect(player_index, kind, amount, turns)
 		return
 	match kind:
+		"multi":
+			for part in effect.get("effects", []):
+				_apply_effect(part, player_index)
 		"move_fixed":
 			_add_effect(player_index, "move_fixed", amount, 1)
 		"gauge_team":

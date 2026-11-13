@@ -217,11 +217,17 @@ func _on_character_pressed(id: String) -> void:
 
 ## 포인트 6 안에서 자리마다 필요한 능력이 높은 조합을 고른다.
 func _on_auto_pressed() -> void:
+	# 자리마다 점수가 높은 후보를 등급별로 몇 명만 남겨서 조합을 찾는다. 모두 맞춰 보면 느리다.
+	var pools := {
+		"attack": _top_by_grade(func(c): return int(c["attack"]) * 3 + int(c["move"]) * 2),
+		"defense": _top_by_grade(func(c): return int(c["defense"]) * 3),
+		"support": _top_by_grade(func(c): return int(c["intellect"]) * 2),
+	}
 	var best_score := -1
 	var best := {}
-	for a in characters:
-		for d in characters:
-			for s in characters:
+	for a in pools["attack"]:
+		for d in pools["defense"]:
+			for s in pools["support"]:
 				if a["id"] == d["id"] or a["id"] == s["id"] or d["id"] == s["id"]:
 					continue
 				if int(a["grade"]) + int(d["grade"]) + int(s["grade"]) > POINT_LIMIT:
@@ -233,6 +239,19 @@ func _on_auto_pressed() -> void:
 	if not best.is_empty():
 		party = best
 	_refresh()
+
+
+## 등급마다 점수가 높은 캐릭터 4명씩을 고른다.
+func _top_by_grade(score_of: Callable) -> Array:
+	var picked: Array = []
+	for grade in [1, 2, 3]:
+		var group: Array = []
+		for character in characters:
+			if int(character["grade"]) == grade:
+				group.append(character)
+		group.sort_custom(func(x, y): return int(score_of.call(x)) > int(score_of.call(y)))
+		picked.append_array(group.slice(0, 4))
+	return picked
 
 
 func _on_start_pressed() -> void:
