@@ -64,6 +64,18 @@ jobs:
           godot --headless --export-release "Web" build/web/index.html
           test -f build/web/index.html
 
+      - name: 새 버전이 바로 보이게 파일 이름 바꾸기
+        # 브라우저가 예전 게임 파일(index.pck)을 기억해 두는 문제를 막는다.
+        # 배포마다 다른 이름(index-커밋번호.pck)으로 복사하고 index.html이 그 파일을 읽게 한다.
+        # 예전 index.html을 기억한 브라우저를 위해 index.pck도 남겨 둔다.
+        run: |
+          version="${GITHUB_SHA::12}"
+          cp build/web/index.pck "build/web/index-${version}.pck"
+          sed -i "s/\"executable\":\"index\",/\"executable\":\"index\",\"mainPack\":\"index-${version}.pck\",/" build/web/index.html
+          sed -i "s/\"index.pck\":/\"index-${version}.pck\":/" build/web/index.html
+          grep -q "\"mainPack\":\"index-${version}.pck\"" build/web/index.html
+          grep -o 'GODOT_CONFIG = {[^;]*' build/web/index.html
+
       - name: 빌드 결과 보관
         uses: actions/upload-artifact@v4
         with:
