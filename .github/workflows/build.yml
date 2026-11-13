@@ -49,6 +49,15 @@ jobs:
       - name: 규칙 테스트
         run: godot --headless --script res://tests/run_tests.gd
 
+      - name: 화면 실행 검사
+        # 첫 화면을 잠깐 띄워 보고, 스크립트 오류가 찍히면 실패로 처리한다.
+        run: |
+          godot --headless --quit-after 300 2>&1 | tee run.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script" run.log; then
+            echo "화면 실행 중 스크립트 오류가 있습니다."
+            exit 1
+          fi
+
       - name: 웹 버전 내보내기
         run: |
           mkdir -p build/web
