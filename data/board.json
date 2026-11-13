@@ -11,7 +11,7 @@
     {"id": 6, "type": "forward", "amount": 4, "x": 6, "y": 0, "next": [7]},
     {"id": 7, "type": "random", "x": 6, "y": 1, "next": [8]},
     {"id": 8, "type": "luck", "x": 5, "y": 1, "next": [9]},
-    {"id": 9, "type": "normal", "x": 4, "y": 1, "next": [10]},
+    {"id": 9, "type": "ambush", "name": "산적 두목", "dice": 3, "x": 4, "y": 1, "next": [10]},
     {"id": 10, "type": "checkpoint", "x": 3, "y": 1, "next": [11]},
     {"id": 11, "type": "attr", "attr": "위인", "x": 2, "y": 1, "next": [12]},
     {"id": 12, "type": "random", "x": 1, "y": 1, "next": [13]},

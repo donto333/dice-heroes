@@ -8,10 +8,9 @@ static func take_turn(game) -> void:
 	if game.winner >= 0:
 		return
 	if game.begin_turn():
-		for slot in game.SLOTS:
-			if game.can_use_ability(slot):
-				game.use_ability(slot)
-				break
+		var slot := pick_ability(game)
+		if slot != "":
+			game.use_ability(slot)
 		var card_index := pick_card(game)
 		if card_index >= 0:
 			game.play_card(card_index)
@@ -32,6 +31,22 @@ static func choose(game) -> int:
 		var defense := int(game.char_of(1 - me, "defense")["defense"])
 		return 0 if attack > defense else 1
 	return game.best_option(game.pending_choice["options"])
+
+
+## 이번 턴에 쓸 어빌리티의 자리. 없으면 "".
+## 한 턴에 하나만 쓸 수 있으므로 ★★★ 전용을 먼저 쓰고, 나머지는 턴마다 순서를 돌려 고르게 쓴다.
+static func pick_ability(game) -> String:
+	var ready: Array = []
+	for slot in game.SLOTS:
+		if game.can_use_ability(slot):
+			ready.append(slot)
+	if ready.is_empty():
+		return ""
+	for slot in ready:
+		var ability_id := str(game.char_of(game.current, slot).get("ability", ""))
+		if ability_id.begins_with("unique_"):
+			return slot
+	return ready[int(game.round_number) % ready.size()]
 
 
 ## 이번 턴에 쓸 카드의 순번. 쓸 만한 카드가 없으면 -1.

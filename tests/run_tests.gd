@@ -12,6 +12,8 @@ const DiceView := preload("res://scripts/ui/dice_view.gd")
 const BattleOverlay := preload("res://scripts/ui/battle_overlay.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
 const PartySelect := preload("res://scripts/ui/party_select.gd")
+const TurnBanner := preload("res://scripts/ui/turn_banner.gd")
+const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 
 const CATEGORIES := ["영웅", "위인", "신화", "근현대"]
 const TILE_TYPES := [
@@ -343,7 +345,7 @@ func _test_pass_by_fight() -> void:
 		for event in game.take_events():
 			if event["kind"] == "pos" and int(event["player"]) == 0 and int(event["to"]) == 9:
 				reached_nine = true
-			if event["kind"] == "battle":
+			if event["kind"] == "battle" and event["target"] == "player":
 				fought = true
 		if answer == 1:
 			_check(not fought, "지나가기를 골랐는데 싸움")
@@ -362,7 +364,7 @@ func _test_pass_by_fight() -> void:
 	_check(arrive.choice_kind() != "fight", "도착 칸에서 만났는데 싸울지 물음")
 	var arrive_fought := false
 	for event in arrive.take_events():
-		if event["kind"] == "battle":
+		if event["kind"] == "battle" and event["target"] == "player":
 			arrive_fought = true
 	_check(arrive_fought, "도착 칸에서 만났는데 싸우지 않음")
 

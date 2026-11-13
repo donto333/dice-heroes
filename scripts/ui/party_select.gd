@@ -28,6 +28,9 @@ var _card_buttons: Dictionary = {}
 var _points_label: Label
 var _start_button: Button
 var _styles: Dictionary = {}
+var _filter := ""
+var _filter_buttons: Dictionary = {}
+var _info_label: Label
 
 
 func setup(character_list: Array, ability_table: Dictionary, initial: Dictionary) -> void:
@@ -85,6 +88,29 @@ func _build() -> void:
 
 	_points_label = _label("", 24, Color.WHITE)
 	column.add_child(_points_label)
+
+	# 고른 캐릭터의 어빌리티 설명
+	_info_label = _label("캐릭터를 누르면 어빌리티 설명이 여기 나옵니다.", 19, Color(1, 1, 1, 0.8))
+	_info_label.custom_minimum_size = Vector2(0, 56)
+	column.add_child(_info_label)
+
+	# 분류 탭
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 6)
+	column.add_child(tabs)
+	for category in ["", "영웅", "위인", "신화", "근현대"]:
+		var tab := Button.new()
+		tab.text = "전체" if category == "" else category
+		tab.custom_minimum_size = Vector2(0, 56)
+		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tab.add_theme_font_size_override("font_size", 20)
+		tab.add_theme_color_override("font_color", Color.WHITE)
+		tab.add_theme_color_override("font_hover_color", Color.WHITE)
+		tab.add_theme_color_override("font_pressed_color", Color.WHITE)
+		tab.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		tab.pressed.connect(_on_filter_pressed.bind(category))
+		tabs.add_child(tab)
+		_filter_buttons[category] = tab
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -201,7 +227,13 @@ func _on_slot_pressed(slot: String) -> void:
 	_refresh()
 
 
+func _on_filter_pressed(category: String) -> void:
+	_filter = category
+	_refresh()
+
+
 func _on_character_pressed(id: String) -> void:
+	_show_info(id)
 	# 이미 다른 자리에 있으면 그 자리와 맞바꾼다.
 	for slot in SLOTS:
 		if party[slot] == id and slot != _active_slot:
@@ -213,6 +245,16 @@ func _on_character_pressed(id: String) -> void:
 			_active_slot = slot
 			break
 	_refresh()
+
+
+func _show_info(id: String) -> void:
+	var character := _character(id)
+	if character.is_empty() or _info_label == null:
+		return
+	var ability: Dictionary = abilities.get(character.get("ability", ""), {})
+	_info_label.text = "%s %s · %s  [%s] %s" % [
+		"★".repeat(int(character["grade"])), character["name"], character["category"],
+		ability.get("name", "-"), ability.get("text", "")]
 
 
 ## 포인트 6 안에서 자리마다 필요한 능력이 높은 조합을 고른다.
@@ -262,6 +304,17 @@ func _on_start_pressed() -> void:
 func _refresh() -> void:
 	if _points_label == null:
 		return
+	for category in _filter_buttons:
+		var tab: Button = _filter_buttons[category]
+		var tab_color: Color = CATEGORY_COLORS.get(category, Color("3a4466"))
+		var on: bool = category == _filter
+		var tab_fill: Color = tab_color if on else tab_color.darkened(0.55)
+		var tab_border: Color = Color.WHITE if on else tab_color.darkened(0.2)
+		for state in ["normal", "hover", "pressed"]:
+			tab.add_theme_stylebox_override(state, _box(tab_fill, tab_border, 2))
+	for id in _card_buttons:
+		var card: Button = _card_buttons[id]
+		card.visible = _filter == "" or _character(id).get("category", "") == _filter
 	for slot in SLOTS:
 		var button: Button = _slot_buttons[slot]
 		var character := _character(party[slot])

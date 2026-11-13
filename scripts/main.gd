@@ -13,6 +13,8 @@ const BattleOverlay := preload("res://scripts/ui/battle_overlay.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
 
 const PartySelect := preload("res://scripts/ui/party_select.gd")
+const TurnBanner := preload("res://scripts/ui/turn_banner.gd")
+const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 
 ## 처음 파티 고르기 화면에 미리 앉혀 둘 파티.
 const DEFAULT_PARTY := {"attack": "lubu", "defense": "athena", "support": "choichiwon"}
@@ -44,6 +46,10 @@ var _party_select: Control
 var _my_party: Dictionary = DEFAULT_PARTY.duplicate()
 var _ui_rng := RandomNumberGenerator.new()
 var _sfx: Node
+var _banner: Control
+var _result_overlay: Control
+## 이번 판에서 내 전투 기록. [이긴 수, 진 수]
+var _my_battles := [0, 0]
 
 
 func _ready() -> void:
@@ -127,6 +133,12 @@ func _build_ui() -> void:
 	_battle_overlay = BattleOverlay.new()
 	_battle_overlay.sfx = _sfx
 	add_child(_battle_overlay)
+	_result_overlay = ResultOverlay.new()
+	add_child(_result_overlay)
+	_result_overlay.retry_pressed.connect(_on_retry_pressed)
+	_result_overlay.change_party_pressed.connect(_on_change_party_pressed)
+	_banner = TurnBanner.new()
+	add_child(_banner)
 
 
 func _make_label(font_size: int, text: String = "") -> Label:
@@ -195,6 +207,7 @@ func _start_game() -> void:
 	_board_view.reset_pieces()
 	_waiting_for_player = false
 	_choosing_path = false
+	_my_battles = [0, 0]
 	_clear_results()
 	_add_result_text("상대 AI 파티: %s · %s · %s" % [
 		game.char_of(1, "attack")["name"], game.char_of(1, "defense")["name"], game.char_of(1, "support")["name"]],
@@ -210,6 +223,10 @@ func _advance() -> void:
 		await _wait_for_board()
 		if playing != game:
 			return
+		await _banner.play("%d / %d턴" % [min(game.round_number, Game.MAX_ROUNDS), Game.MAX_ROUNDS],
+			"내 차례" if game.current == 0 else "AI 차례", PLAYER_TEXT_COLORS[game.current])
+		if playing != game:
+			return
 		if game.current == 0:
 			if game.begin_turn():
 				_waiting_for_player = true
@@ -219,7 +236,7 @@ func _advance() -> void:
 			game.end_turn()
 		else:
 			_refresh()
-			await get_tree().create_timer(AI_DELAY).timeout
+			await get_tree().create_timer(AI_DELAY * 0.4).timeout
 			if playing != game:
 				return
 			_add_result_header("AI 차례", PLAYER_TEXT_COLORS[1])
@@ -509,6 +526,8 @@ func _add_battle_result(event: Dictionary) -> void:
 	if ambushed:
 		success = not event["won"]
 		verdict = "%s 방어 성공!" % game.players[who]["name"]
+	if who == 0:
+		_my_battles[0 if success else 1] += 1
 	if not success:
 		verdict = "%s 패배... 직전 거점으로" % game.players[who]["name"]
 		verdict_color = Color("ff6b6b")
@@ -523,16 +542,51 @@ func _show_game_over() -> void:
 	_clear_results()
 	var text := "무승부!"
 	var color := Color.WHITE
+	var outcome := "draw"
 	if game.winner == 0:
 		text = "승리! 골에 먼저 들어갔습니다."
 		color = Color("7ee081")
+		outcome = "win"
 	elif game.winner == 1:
 		text = "패배... AI가 먼저 들어갔습니다."
 		color = Color("ff6b6b")
+		outcome = "lose"
 	var label := _make_label(34, text)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", color)
 	_result_box.add_child(label)
+
+	var reached_goal := false
+	if game.winner == 0 or game.winner == 1:
+		reached_goal = game.node_of(int(game.players[game.winner]["pos"])).get("type", "") == "goal"
+	var subtitle := text
+	if not reached_goal:
+		subtitle = "%d턴이 끝나 골까지 남은 거리로 판정했습니다." % Game.MAX_ROUNDS
+	var details := PackedStringArray([
+		"진행한 턴: %d턴" % min(game.round_number, Game.MAX_ROUNDS),
+		"골까지 남은 거리: 나 %d칸 · AI %d칸" % [game.distance_of(0), game.distance_of(1)],
+		"내 전투: %d승 %d패" % [_my_battles[0], _my_battles[1]],
+		"내 파티: %s" % _party_names(0),
+		"AI 파티: %s" % _party_names(1),
+	])
+	_result_overlay.show_result(outcome, subtitle, details)
+
+
+func _on_retry_pressed() -> void:
+	_sfx.play("click")
+	_start_game()
+
+
+func _on_change_party_pressed() -> void:
+	_sfx.play("click")
+	_show_party_select()
+
+
+func _party_names(player_index: int) -> String:
+	var names: PackedStringArray = []
+	for slot in Game.SLOTS:
+		names.append(game.char_of(player_index, slot)["name"])
+	return " · ".join(names)
 
 
 # ---------------------------------------------------------------- 표시
