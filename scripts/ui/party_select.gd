@@ -253,8 +253,8 @@ func _refresh() -> void:
 			button.text = "%s\n%s %s\n%s %d" % [
 				SLOT_LABELS[slot], "★".repeat(int(character["grade"])), character["name"],
 				STAT_NAMES[stat], int(character[stat])]
-		var fill := Color("2a2f4a") if character.is_empty() else CATEGORY_COLORS.get(character["category"], Color("3a4466"))
-		var border := Color.WHITE if slot == _active_slot else fill.lightened(0.3)
+		var fill: Color = Color("2a2f4a") if character.is_empty() else CATEGORY_COLORS.get(character["category"], Color("3a4466"))
+		var border: Color = Color.WHITE if slot == _active_slot else fill.lightened(0.3)
 		var width := 4 if slot == _active_slot else 2
 		for state in ["normal", "hover", "pressed"]:
 			button.add_theme_stylebox_override(state, _box(fill, border, width))
