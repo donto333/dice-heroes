@@ -74,7 +74,7 @@ def T(kind, **extra):
 DESERT = {
     "name": "사막의 길",
     "comment": "사막 맵. 판정과 보물이 많고, 골은 스핑크스가 지킨다. tools/make_maps.py로 만든다.",
-    "theme": {"bg": "3a2c1a", "line": "e0b46a"},
+    "theme": {"bg": "5a4220", "line": "e0b46a"},
     "route_a": "오아시스 길 (행운과 회복)",
     "route_b": "모래폭풍 길 (판정 많음, 보물 큼)",
     "tiles": {
@@ -106,7 +106,7 @@ DESERT = {
 FROST = {
     "name": "설원의 성채",
     "comment": "설원 맵. 습격이 많아 DEFENSE가 중요하고, 골은 서리 거인이 지킨다. tools/make_maps.py로 만든다.",
-    "theme": {"bg": "1b2c3e", "line": "a8d8ff"},
+    "theme": {"bg": "1f4a6e", "line": "a8d8ff"},
     "route_a": "얼음 다리 (짧은 대신 습격)",
     "route_b": "성벽 아래 길 (안전, 보물)",
     "tiles": {
