@@ -1,0 +1,10 @@
+# Godot 4
+.godot/
+*.translation
+
+# 빌드 결과
+build/
+
+# OS
+.DS_Store
+Thumbs.db
