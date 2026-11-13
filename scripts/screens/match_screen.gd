@@ -52,6 +52,8 @@ var _humans: Array = [true, false]
 var _cards_used := 0
 var _recorded := false
 var _result_text := ""
+## 이번 판 보상 줄. 결과 화면을 다시 열어도 같은 글을 보여 준다.
+var _reward_lines := PackedStringArray()
 var _banner: Control
 var _result_overlay: Control
 ## 이번 판에서 내 전투 기록. [이긴 수, 진 수]
@@ -240,6 +242,7 @@ func _start_game() -> void:
 	_my_battles = [0, 0]
 	_cards_used = 0
 	_recorded = false
+	_reward_lines = PackedStringArray()
 	_clear_results()
 	_add_result_text("%s 파티: %s" % [game.players[1]["name"], _party_names(1)], PLAYER_TEXT_COLORS[1])
 	_add_result_text("먼저 골(분홍 칸)의 메두사를 이기고 들어가면 승리!\n갈림길에서는 갈 길을 직접 고릅니다.", Color.WHITE)
@@ -641,7 +644,7 @@ func _show_game_over() -> void:
 func _record(outcome: String) -> PackedStringArray:
 	var lines := PackedStringArray()
 	if _recorded or not app.has_profile():
-		return lines
+		return _reward_lines
 	_recorded = true
 	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used})
 	app.save()
@@ -655,6 +658,7 @@ func _record(outcome: String) -> PackedStringArray:
 		lines.append("오늘 첫 승리 보너스!")
 	if int(reward["level_ups"]) > 0:
 		lines.append("레벨 업! 플레이어 레벨 %d" % int(app.profile["level"]))
+	_reward_lines = lines
 	return lines
 
 

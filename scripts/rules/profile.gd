@@ -29,7 +29,7 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"pity": 0,
 		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false},
 		"attendance": {"last_date": "", "count": 0},
-		"settings": {"sfx": true},
+		"settings": {"sfx": true, "bgm": true},
 	}
 
 

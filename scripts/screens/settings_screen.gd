@@ -34,6 +34,16 @@ func setup(main_app, _params: Dictionary) -> void:
 	toggle.custom_minimum_size = Vector2(150, 64)
 	toggle.pressed.connect(_on_sound)
 	sound_row.add_child(toggle)
+	var music_panel := Kit.panel()
+	body.add_child(music_panel)
+	var music_row := Kit.hbox(10)
+	music_panel.add_child(music_row)
+	music_row.add_child(Kit.expand(Kit.label("배경음악", 26)))
+	var music_on: bool = app.bgm_on()
+	var music_toggle := Kit.button("켜짐" if music_on else "꺼짐", Kit.GOOD if music_on else Kit.PANEL_LIGHT, 24, 64)
+	music_toggle.custom_minimum_size = Vector2(150, 64)
+	music_toggle.pressed.connect(_on_music)
+	music_row.add_child(music_toggle)
 
 	var name_panel := Kit.panel()
 	body.add_child(name_panel)
@@ -101,6 +111,14 @@ func setup(main_app, _params: Dictionary) -> void:
 func _on_help() -> void:
 	app.play("click")
 	app.go("help", {"back": "settings"})
+
+
+func _on_music() -> void:
+	app.profile["settings"]["bgm"] = not app.bgm_on()
+	app.music.set_enabled(app.bgm_on())
+	app.save()
+	app.play("click")
+	app.go("settings")
 
 
 func _on_sound() -> void:

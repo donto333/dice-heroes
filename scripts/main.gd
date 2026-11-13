@@ -9,6 +9,9 @@ const SaveStore := preload("res://scripts/save_store.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
 const Dialog := preload("res://scripts/ui/dialog.gd")
 const Toast := preload("res://scripts/ui/toast.gd")
+const Music := preload("res://scripts/ui/music.gd")
+## 화면마다 틀 배경음악
+const SCREEN_MUSIC := {"match": "match"}
 
 const SCREENS := {
 	"title": preload("res://scripts/screens/title_screen.gd"),
@@ -28,6 +31,7 @@ var data: Dictionary = {}
 var eco: Dictionary = {}
 var profile: Dictionary = {}
 var sfx: Node
+var music: Node
 var rng := RandomNumberGenerator.new()
 var current_screen: Control
 var current_name := ""
@@ -44,10 +48,13 @@ func _ready() -> void:
 		_characters_by_id[str(character["id"])] = character
 	sfx = Sfx.new()
 	add_child(sfx)
+	music = Music.new()
+	add_child(music)
 	_layer = Control.new()
 	_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_layer)
 	load_profile()
+	music.enabled = bgm_on()
 	go("title")
 
 
@@ -92,6 +99,10 @@ func refresh_day() -> void:
 
 func sfx_on() -> bool:
 	return not has_profile() or bool(profile.get("settings", {}).get("sfx", true))
+
+
+func bgm_on() -> bool:
+	return not has_profile() or bool(profile.get("settings", {}).get("bgm", true))
 
 
 func play(sound: String) -> void:
@@ -156,6 +167,7 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 	current_screen = screen
 	_layer.add_child(screen)
 	screen.setup(self, params)
+	music.play_track(SCREEN_MUSIC.get(screen_name, "lobby"))
 
 
 func toast(message: String) -> void:
