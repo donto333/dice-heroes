@@ -3,22 +3,35 @@ extends RefCounted
 ## 규칙 코드와 화면 코드가 같은 데이터를 쓰도록 여기서만 파일을 읽는다.
 
 const CHARACTERS_PATH := "res://data/characters.json"
+const BOARD_PATH := "res://data/board.json"
+const CARDS_PATH := "res://data/cards.json"
+const ABILITIES_PATH := "res://data/abilities.json"
 
-## 등급별 소환 포인트. 파티 합계는 PARTY_POINT_LIMIT 이하여야 한다.
-const GRADE_POINTS := {3: 3, 2: 2, 1: 1}
-const PARTY_POINT_LIMIT := 6
+
+static func load_json(path: String) -> Dictionary:
+	var text := FileAccess.get_file_as_string(path)
+	if text.is_empty():
+		push_error("데이터 파일을 읽지 못했습니다: %s" % path)
+		return {}
+	var parsed = JSON.parse_string(text)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		push_error("데이터 형식이 잘못됐습니다: %s" % path)
+		return {}
+	return parsed
 
 
 static func load_characters() -> Array:
-	var text := FileAccess.get_file_as_string(CHARACTERS_PATH)
-	if text.is_empty():
-		push_error("캐릭터 데이터를 읽지 못했습니다: %s" % CHARACTERS_PATH)
-		return []
-	var parsed: Variant = JSON.parse_string(text)
-	if typeof(parsed) != TYPE_DICTIONARY or not parsed.has("characters"):
-		push_error("캐릭터 데이터 형식이 잘못됐습니다.")
-		return []
-	return parsed["characters"]
+	return load_json(CHARACTERS_PATH).get("characters", [])
+
+
+## 규칙 엔진에 넘길 데이터 묶음.
+static func load_all() -> Dictionary:
+	return {
+		"characters": load_characters(),
+		"board": load_json(BOARD_PATH).get("tiles", []),
+		"cards": load_json(CARDS_PATH).get("cards", {}),
+		"abilities": load_json(ABILITIES_PATH).get("abilities", {}),
+	}
 
 
 static func grade_stars(grade: int) -> String:

@@ -1,0 +1,17 @@
+{
+  "_comment": "프로토타입 캐릭터 12명이 쓰는 어빌리티. unique_로 시작하면 ★★★ 전용이다.",
+  "abilities": {
+    "unique_lubu": {"name": "천하무쌍", "text": "2턴간 공격 주사위 +2개", "effect": {"type": "atk_dice", "amount": 2, "turns": 2}},
+    "unique_sejong": {"name": "훈민정음", "text": "우리 팀 게이지 +50%", "effect": {"type": "gauge_team", "amount": 50}},
+    "unique_zeus": {"name": "번개", "text": "다음 내 차례까지 상대 전투 주사위 -1개", "effect": {"type": "enemy_dice_minus", "amount": 1, "turns": 1}},
+    "unique_tesla": {"name": "번개 코일", "text": "상대 1턴 쉬기", "effect": {"type": "skip_enemy", "amount": 1}},
+    "chase": {"name": "추격", "text": "이번 턴 전투에서 이기면 3칸 더 전진", "effect": {"type": "chase", "amount": 1, "turns": 1}},
+    "onslaught_b": {"name": "연전", "text": "2턴간 공격 주사위 +1개", "effect": {"type": "atk_dice", "amount": 1, "turns": 2}},
+    "disrupt": {"name": "교란", "text": "상대 팀 게이지 -50%", "effect": {"type": "gauge_enemy", "amount": -50}},
+    "study": {"name": "학문", "text": "아이템 카드 1장 획득", "effect": {"type": "draw_card"}},
+    "guard_a": {"name": "가호", "text": "다음 내 차례까지 방어 주사위 +2개", "effect": {"type": "def_dice", "amount": 2, "turns": 1}},
+    "counter": {"name": "반격", "text": "다음 내 차례까지 방어에 성공하면 상대 3칸 추가 후퇴", "effect": {"type": "counter", "amount": 1, "turns": 1}},
+    "explore": {"name": "탐험", "text": "이번 이동을 6칸으로 고정", "effect": {"type": "move_fixed", "amount": 6}},
+    "first_aid": {"name": "응급 처치", "text": "저주와 쉬기 해제", "effect": {"type": "cure"}}
+  }
+}
