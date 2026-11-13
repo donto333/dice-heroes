@@ -28,6 +28,8 @@ const PLAYER_TEXT_COLORS := [Color("4fc3f7"), Color("ff8a65")]
 var game
 var _data: Dictionary = {}
 var _waiting_for_player := false
+## 갈림길에서 내가 길을 골라야 하는 중인지
+var _choosing_path := false
 
 var _status_label: Label
 var _board_view: Control
@@ -158,8 +160,9 @@ func _start_game() -> void:
 	_board_view.game = game
 	_board_view.reset_pieces()
 	_waiting_for_player = false
+	_choosing_path = false
 	_clear_results()
-	_add_result_text("주사위 굴리기를 눌러 시작하세요.\n먼저 40번 칸의 메두사를 이기고 들어가면 승리!", Color.WHITE)
+	_add_result_text("주사위 굴리기를 눌러 시작하세요.\n먼저 골(분홍 칸)의 메두사를 이기고 들어가면 승리!\n갈림길에서는 갈 길을 직접 고릅니다.", Color.WHITE)
 	_advance()
 
 
@@ -208,9 +211,51 @@ func _on_roll_pressed() -> void:
 	_add_result_header("내 차례", PLAYER_TEXT_COLORS[0])
 	game.roll_move()
 	_consume_events()
+	_after_my_move()
+
+
+## 내 이동이 끝났거나 멈췄을 때. 갈림길이면 길 고르기를 보여 주고, 아니면 턴을 넘긴다.
+func _after_my_move() -> void:
+	if game.awaiting_choice():
+		_choosing_path = true
+		_refresh()
+		await _wait_for_board()
+		_show_path_choice()
+		return
+	_choosing_path = false
+	_board_view.highlight = []
 	game.end_turn()
 	_refresh()
 	_advance()
+
+
+func _show_path_choice() -> void:
+	var options: Array = game.pending_choice["options"]
+	_board_view.highlight = options.duplicate()
+	_board_view.queue_redraw()
+	_add_result_text("갈림길! 갈 길을 고르세요. (남은 이동 %d칸)" % int(game.pending_choice["steps"]), Color("ffcf66"))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	for index in options.size():
+		var button := _make_button(18, 72, Color("1ba39c"))
+		button.text = game.route_name(int(options[index]))
+		button.pressed.connect(_on_path_chosen.bind(index))
+		row.add_child(button)
+	_result_box.add_child(row)
+	_trim_results()
+
+
+func _on_path_chosen(index: int) -> void:
+	if not _choosing_path or not game.awaiting_choice():
+		return
+	_choosing_path = false
+	_board_view.highlight = []
+	_clear_results()
+	_add_result_header("내 차례", PLAYER_TEXT_COLORS[0])
+	_add_result_text("%s(으)로 갑니다." % game.route_name(int(game.pending_choice["options"][index])), Color.WHITE)
+	game.choose_path(index)
+	_consume_events()
+	_after_my_move()
 
 
 func _on_ability_pressed(slot: String) -> void:
@@ -362,11 +407,11 @@ func _refresh() -> void:
 		turn_text = "무승부"
 	elif game.winner >= 0:
 		turn_text = "%s 승리!" % game.players[game.winner]["name"]
-	elif _waiting_for_player:
+	elif _waiting_for_player or _choosing_path:
 		turn_text = "내 차례"
-	_status_label.text = "%d/%d턴 · %s · 맵 속성: %s\n나(파랑) %d번 칸%s  ·  AI(주황) %d번 칸%s" % [
+	_status_label.text = "%d/%d턴 · %s · 맵 속성: %s\n나(파랑) 골까지 %d칸%s  ·  AI(주황) 골까지 %d칸%s" % [
 		min(game.round_number, Game.MAX_ROUNDS), Game.MAX_ROUNDS, turn_text, attr_text,
-		int(me["pos"]), _state_text(me), int(ai["pos"]), _state_text(ai)]
+		game.distance_of(0), _state_text(me), game.distance_of(1), _state_text(ai)]
 
 	for slot in Game.SLOTS:
 		var button: Button = _ability_buttons[slot]
@@ -393,6 +438,9 @@ func _refresh() -> void:
 	if game.winner >= 0:
 		_roll_button.text = "새 게임"
 		_roll_button.disabled = false
+	elif _choosing_path:
+		_roll_button.text = "위에서 갈 길을 고르세요"
+		_roll_button.disabled = true
 	elif _waiting_for_player:
 		_roll_button.text = "주사위 굴리기"
 		_roll_button.disabled = false
