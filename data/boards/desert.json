@@ -1,7 +1,7 @@
 {
   "_comment": "사막 맵. 판정과 보물이 많고, 골은 스핑크스가 지킨다. tools/make_maps.py로 만든다.",
   "name": "사막의 길",
-  "theme": {"bg": "3a2c1a", "line": "e0b46a"},
+  "theme": {"bg": "5a4220", "line": "e0b46a"},
   "start": 0,
   "nodes": [
     {"id": 0, "type": "start", "x": 0, "y": 0, "next": [1]},

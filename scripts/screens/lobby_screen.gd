@@ -51,8 +51,8 @@ func setup(main_app, params: Dictionary) -> void:
 	nav.tab_pressed.connect(_on_tab)
 
 	if bool(params.get("welcome", false)):
-		app.message("환영합니다!", "%s님, 주사위 영웅전에 오신 것을 환영해요.\n\n영웅 12명이 함께합니다. 랭크전에서 트로피를 모으고, 상점에서 새 영웅을 소환해 보세요." % app.profile["nickname"],
-			"좋아요", _maybe_attendance)
+		var text := Kit.para("%s님, 주사위 영웅전에 오신 것을 환영해요.\n\n영웅 12명이 함께합니다. 랭크전에서 트로피를 모으고, 상점에서 새 영웅을 소환해 보세요.\n처음이라면 게임 방법부터 보면 좋아요." % app.profile["nickname"], 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		app.dialog("환영합니다!", text, [["게임 방법 보기", Color("6f43a6"), _on_help], ["바로 시작", Kit.ACCENT, _maybe_attendance]])
 	else:
 		_maybe_attendance()
 

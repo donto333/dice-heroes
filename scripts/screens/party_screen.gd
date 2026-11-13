@@ -80,6 +80,10 @@ func _on_confirmed(party: Dictionary) -> void:
 	var ai_level := 1
 	if mode == "rank":
 		ai_level = Profile.rank_ai_level(app.eco, int(app.profile["trophies"]))
+		var names: Array = app.eco.get("ai_names", [])
+		if not names.is_empty():
+			var tier: Dictionary = Profile.tier_of(app.eco, int(app.profile["trophies"]))
+			theirs["name"] = "%s(%s)" % [names[app.rng.randi_range(0, names.size() - 1)], tier["name"]]
 	theirs["levels"] = {"attack": ai_level, "defense": ai_level, "support": ai_level}
 	app.go("match", {"mode": mode, "parties": [mine, theirs], "humans": [true, false], "map": _random_map()})
 
