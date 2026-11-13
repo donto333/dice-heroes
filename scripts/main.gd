@@ -601,7 +601,7 @@ func _refresh() -> void:
 		turn_text = "무승부"
 	elif game.winner >= 0:
 		turn_text = "%s 승리!" % game.players[game.winner]["name"]
-	elif _waiting_for_player or _choosing_path:
+	elif game.current == 0:
 		turn_text = "내 차례"
 	_status_label.text = "%d/%d턴 · %s · 맵 속성: %s\n나(파랑) 골까지 %d칸%s  ·  AI(주황) 골까지 %d칸%s" % [
 		min(game.round_number, Game.MAX_ROUNDS), Game.MAX_ROUNDS, turn_text, attr_text,
