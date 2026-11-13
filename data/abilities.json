@@ -9,7 +9,7 @@
     "unique_davinci": {"name": "만능 설계", "text": "카드 2장 획득, 이번 턴 이동 주사위를 두 번 굴려 큰 쪽으로", "effect": {"type": "multi", "effects": [{"type": "draw_card", "amount": 2}, {"type": "move_best", "amount": 1, "turns": 1}]}},
     "unique_zeus": {"name": "번개", "text": "2턴간 상대 전투 주사위 -1개", "effect": {"type": "enemy_dice_minus", "amount": 1, "turns": 2}},
     "unique_wukong": {"name": "근두운", "text": "이번 이동 +4칸", "effect": {"type": "move_plus", "amount": 4, "turns": 1}},
-    "unique_dangun": {"name": "홍익인간", "text": "2턴간 방어 주사위 +2개, 부적 1장, 저주·쉬기 해제, 우리 팀 게이지 +30%", "effect": {"type": "multi", "effects": [{"type": "def_dice", "amount": 2, "turns": 2}, {"type": "charm"}, {"type": "cure"}, {"type": "gauge_team", "amount": 30}]}},
+    "unique_dangun": {"name": "홍익인간", "text": "2턴간 방어 주사위 +2개, 방어에 성공하면 상대 3칸 추가 후퇴, 부적 1장, 저주·쉬기 해제", "effect": {"type": "multi", "effects": [{"type": "def_dice", "amount": 2, "turns": 2}, {"type": "counter", "amount": 1, "turns": 2}, {"type": "charm"}, {"type": "cure"}]}},
     "unique_tesla": {"name": "번개 코일", "text": "상대 1턴 쉬기", "effect": {"type": "skip_enemy", "amount": 1}},
     "unique_nightingale": {"name": "백의의 천사", "text": "저주·쉬기 해제, 부적 1장, 카드 1장, 우리 팀 게이지 +40%, 2턴간 방어 주사위 +1개", "effect": {"type": "multi", "effects": [{"type": "cure"}, {"type": "charm"}, {"type": "draw_card", "amount": 1}, {"type": "gauge_team", "amount": 40}, {"type": "def_dice", "amount": 1, "turns": 2}]}},
     "unique_edison": {"name": "발명", "text": "카드 2장 획득, 이번 턴 이동 주사위 +1개", "effect": {"type": "multi", "effects": [{"type": "draw_card", "amount": 2}, {"type": "move_dice", "amount": 1, "turns": 1}]}},
