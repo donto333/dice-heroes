@@ -1,0 +1,20 @@
+{
+  "_comment": "규칙 프로토타입용 12명. 수치는 임시이며 2~3단계에서 조정한다. 전체 200명 명단과 등급의 기준은 로스터 시트다.",
+  "characters": [
+    {"id": "lubu", "name": "여포", "category": "영웅", "grade": 3, "move": 1, "attack": 5, "defense": 2, "intellect": 1, "ability": "unique_lubu"},
+    {"id": "machao", "name": "마초", "category": "영웅", "grade": 2, "move": 2, "attack": 4, "defense": 1, "intellect": 1, "ability": "chase"},
+    {"id": "ganning", "name": "감녕", "category": "영웅", "grade": 1, "move": 1, "attack": 3, "defense": 1, "intellect": 1, "ability": "onslaught_b"},
+
+    {"id": "sejong", "name": "세종대왕", "category": "위인", "grade": 3, "move": 1, "attack": 1, "defense": 3, "intellect": 5, "ability": "unique_sejong"},
+    {"id": "zhouyu", "name": "주유", "category": "위인", "grade": 2, "move": 1, "attack": 2, "defense": 2, "intellect": 4, "ability": "disrupt"},
+    {"id": "choichiwon", "name": "최치원", "category": "위인", "grade": 1, "move": 1, "attack": 1, "defense": 1, "intellect": 3, "ability": "study"},
+
+    {"id": "zeus", "name": "제우스", "category": "신화", "grade": 3, "move": 1, "attack": 3, "defense": 5, "intellect": 2, "ability": "unique_zeus"},
+    {"id": "athena", "name": "아테나", "category": "신화", "grade": 2, "move": 1, "attack": 2, "defense": 4, "intellect": 2, "ability": "guard_a"},
+    {"id": "dokkaebi", "name": "도깨비", "category": "신화", "grade": 1, "move": 1, "attack": 2, "defense": 3, "intellect": 1, "ability": "counter"},
+
+    {"id": "tesla", "name": "니콜라 테슬라", "category": "근현대", "grade": 3, "move": 2, "attack": 2, "defense": 2, "intellect": 4, "ability": "unique_tesla"},
+    {"id": "wright", "name": "라이트 형제", "category": "근현대", "grade": 2, "move": 2, "attack": 1, "defense": 2, "intellect": 3, "ability": "explore"},
+    {"id": "houdini", "name": "해리 후디니", "category": "근현대", "grade": 1, "move": 2, "attack": 1, "defense": 2, "intellect": 1, "ability": "first_aid"}
+  ]
+}

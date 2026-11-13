@@ -1,0 +1,81 @@
+name: Build
+
+# 올릴 때마다 Godot로 웹 버전을 빌드한다.
+# main 브랜치에서는 GitHub Pages로도 배포해 브라우저에서 바로 해 볼 수 있게 한다.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7"
+  GODOT_RELEASE: stable
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Godot와 내보내기 템플릿 받기
+        run: |
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}"
+          curl -fsSL -o godot.zip "${base}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip"
+          curl -fsSL -o templates.tpz "${base}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz"
+          unzip -q godot.zip -d "${RUNNER_TEMP}/godot"
+          mv "${RUNNER_TEMP}/godot/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64" "${RUNNER_TEMP}/godot/godot"
+          chmod +x "${RUNNER_TEMP}/godot/godot"
+          echo "${RUNNER_TEMP}/godot" >> "${GITHUB_PATH}"
+          template_dir="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p "${template_dir}"
+          unzip -q templates.tpz -d "${RUNNER_TEMP}/tpl"
+          mv "${RUNNER_TEMP}/tpl/templates/"* "${template_dir}/"
+          rm -f godot.zip templates.tpz
+
+      - name: 리소스 가져오기
+        run: godot --headless --import
+
+      - name: 규칙 테스트
+        run: godot --headless --script res://tests/run_tests.gd
+
+      - name: 웹 버전 내보내기
+        run: |
+          mkdir -p build/web
+          godot --headless --export-release "Web" build/web/index.html
+          test -f build/web/index.html
+
+      - name: 빌드 결과 보관
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+
+      - name: Pages용 묶음 올리기
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    # Pages가 꺼져 있거나 요금제가 지원하지 않으면 이 단계만 실패하고 빌드는 성공으로 남는다.
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
