@@ -27,7 +27,22 @@ func _run() -> void:
 	await _wait(1.0)
 	await _shot("01_title")
 
-	_app.go("login")
+	# 진짜로 화면을 눌러서 로그인 화면으로 넘어가는지 확인한다.
+	var tap := InputEventMouseButton.new()
+	tap.button_index = MOUSE_BUTTON_LEFT
+	tap.position = Vector2(360, 640)
+	tap.global_position = tap.position
+	tap.pressed = true
+	root.push_input(tap)
+	var release := tap.duplicate()
+	release.pressed = false
+	root.push_input(release)
+	await _wait(0.5)
+	if _app.current_name == "login":
+		print("터치 확인: 타이틀을 누르면 로그인으로 넘어감")
+	else:
+		printerr("터치 실패: 타이틀을 눌러도 넘어가지 않음 (지금 화면: %s)" % _app.current_name)
+		_app.go("login")
 	var login = _app.current_screen
 	login._name_edit.text = "주사위왕"
 	login._on_text_changed("주사위왕")
