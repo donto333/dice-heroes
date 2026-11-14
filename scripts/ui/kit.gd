@@ -181,3 +181,94 @@ static func reward_line(reward: Dictionary) -> String:
 	if int(reward.get("gems", 0)) != 0:
 		parts.append(money_text("gems", int(reward["gems"])))
 	return "  ".join(parts)
+
+
+## 도트 아이콘(assets/icons/이름.png)을 정수 배로 또렷하게 키워 보여 준다.
+static func icon(name: String, pixels: float = 54.0) -> TextureRect:
+	var rect := TextureRect.new()
+	var path := "res://assets/icons/%s.png" % name
+	if ResourceLoader.exists(path):
+		rect.texture = load(path)
+	rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rect.custom_minimum_size = Vector2(pixels, pixels)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rect
+
+
+## 모두의 마블식 큰 버튼: 왼쪽에 아이콘, 오른쪽에 굵은 제목과 작은 설명.
+static func icon_button(text: String, icon_name: String, color: Color, font_size: int = 28, height: float = 96.0, sub: String = "") -> Button:
+	var result := button("", color, font_size, height)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.offset_bottom = -4
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	result.add_child(center)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(row)
+	row.add_child(icon(icon_name, minf(height - 30.0, 72.0)))
+	var texts := VBoxContainer.new()
+	texts.add_theme_constant_override("separation", 0)
+	texts.alignment = BoxContainer.ALIGNMENT_CENTER
+	texts.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(texts)
+	var main := label(text, font_size)
+	main.add_theme_constant_override("outline_size", 7)
+	main.add_theme_color_override("font_outline_color", color.darkened(0.6))
+	main.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texts.add_child(main)
+	if sub != "":
+		var small := label(sub, maxi(14, int(font_size * 0.5)), Color(1, 1, 1, 0.9))
+		small.add_theme_constant_override("outline_size", 4)
+		small.add_theme_color_override("font_outline_color", color.darkened(0.6))
+		small.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		texts.add_child(small)
+	return result
+
+
+## 동그란 바로가기 버튼(아이콘 + 아래 글자). badge가 true면 오른쪽 위 빨간 점.
+static func round_shortcut(text: String, icon_name: String, color: Color, badge: bool = false) -> Button:
+	var result := Button.new()
+	result.custom_minimum_size = Vector2(88, 88)
+	var normal := box(color, color.darkened(0.55), 3, 44, 6)
+	normal.border_width_bottom = 7
+	normal.shadow_color = Color(0, 0, 0, 0.45)
+	normal.shadow_size = 5
+	normal.shadow_offset = Vector2(0, 3)
+	result.add_theme_stylebox_override("normal", normal)
+	var hover := normal.duplicate()
+	hover.bg_color = color.lightened(0.12)
+	result.add_theme_stylebox_override("hover", hover)
+	var pressed := normal.duplicate()
+	pressed.bg_color = color.darkened(0.15)
+	pressed.border_width_bottom = 3
+	result.add_theme_stylebox_override("pressed", pressed)
+	result.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var column := VBoxContainer.new()
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	column.offset_top = 6
+	column.offset_bottom = -8
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_theme_constant_override("separation", 0)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	result.add_child(column)
+	var picture := icon(icon_name, 40.0)
+	picture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(picture)
+	var caption := label(text, 16, TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	caption.add_theme_constant_override("outline_size", 4)
+	caption.add_theme_color_override("font_outline_color", color.darkened(0.6))
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(caption)
+	if badge:
+		var dot := Panel.new()
+		dot.add_theme_stylebox_override("panel", box(Color("ff3b3b"), Color.WHITE, 2, 10, 0))
+		dot.custom_minimum_size = Vector2(20, 20)
+		dot.position = Vector2(66, 2)
+		dot.size = Vector2(20, 20)
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		result.add_child(dot)
+	return result
