@@ -12,7 +12,8 @@ extends RefCounted
 const SLOTS := ["attack", "defense", "support"]
 const SLOT_LABELS := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
 const POINT_LIMIT := 6
-const MAX_ROUNDS := 20
+## 턴 제한 기본값. 실제 값은 data/rules.json의 max_rounds.
+const MAX_ROUNDS := 50
 const HAND_LIMIT := 3
 const START_HAND := 3
 const MAX_BATTLE_DICE := 6
@@ -69,6 +70,8 @@ var board_name := ""
 var board_theme: Dictionary = {}
 ## 영웅 레벨에 따른 전투 합계 보너스. 칸 순번 = 레벨 - 1. data/rules.json의 level_battle_bonus.
 var level_battle_bonus: Array = []
+## 턴 제한
+var max_rounds := MAX_ROUNDS
 
 var card_played := false
 var ability_used := false
@@ -91,6 +94,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	gauge_per_intellect = int(rules.get("gauge_per_intellect", 5))
 	start_gauge_per_intellect = int(rules.get("start_gauge_per_intellect", 0))
 	level_battle_bonus = rules.get("level_battle_bonus", [])
+	max_rounds = int(rules.get("max_rounds", MAX_ROUNDS))
 	characters = {}
 	for character in data.get("characters", []):
 		characters[character["id"]] = character
@@ -470,7 +474,7 @@ func end_turn() -> void:
 	current = 1 - current
 	if current == 0:
 		round_number += 1
-		if round_number > MAX_ROUNDS:
+		if round_number > max_rounds:
 			_finish_by_position()
 
 
@@ -484,9 +488,9 @@ func _finish_by_position() -> void:
 	else:
 		winner = 2
 	if winner == 2:
-		say("%d턴이 끝났습니다. 골까지 거리가 같아 무승부!" % MAX_ROUNDS)
+		say("%d턴이 끝났습니다. 골까지 거리가 같아 무승부!" % max_rounds)
 	else:
-		say("%d턴이 끝났습니다. 골에 더 가까운 %s 승리!" % [MAX_ROUNDS, players[winner]["name"]])
+		say("%d턴이 끝났습니다. 골에 더 가까운 %s 승리!" % [max_rounds, players[winner]["name"]])
 
 
 # ---------------------------------------------------------------- 말 이동

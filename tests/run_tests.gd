@@ -48,6 +48,8 @@ var _data: Dictionary = {}
 
 func _init() -> void:
 	_data = GameData.load_all()
+	# 규칙 검사는 칸 번호가 정해진 작은 고정 맵으로 한다. 진짜 맵들은 _test_board_data에서 따로 검사한다.
+	_data["board"] = GameData.load_json("res://tests/fixtures/board_small.json")
 	_test_character_data()
 	_test_board_data()
 	_test_references()
@@ -140,7 +142,7 @@ func _simulate_board(board: Dictionary) -> void:
 		_check(game.winner >= 0, "맵 [%s]에서 판이 끝나지 않음" % board.get("name", "?"))
 		if game.winner >= 0:
 			finished += 1
-			turns += min(game.round_number, Game.MAX_ROUNDS)
+			turns += min(game.round_number, game.max_rounds)
 			if game.winner == 0:
 				first_wins += 1
 	print("[맵 %s] %d판 · 평균 %.1f턴 · 먼저 하는 쪽 승 %d" % [board.get("name", "?"), finished, float(turns) / max(finished, 1), first_wins])
@@ -461,7 +463,7 @@ func _test_balance() -> void:
 		if game.winner < 0 or game.winner == 2:
 			continue
 		finished += 1
-		total_rounds += min(game.round_number, Game.MAX_ROUNDS)
+		total_rounds += min(game.round_number, game.max_rounds)
 		for player in 2:
 			var won: int = 1 if game.winner == player else 0
 			for slot in Game.SLOTS:
@@ -543,7 +545,7 @@ func _test_full_games() -> void:
 					_check(gauge >= 0 and gauge <= 100, "게이지가 0~100을 벗어남")
 			_check(not game.awaiting_choice(), "AI 턴이 끝났는데 길 고르기가 남음")
 		_check(game.winner >= 0, "판이 끝나지 않음 (seed %d)" % (seed_value + 100))
-		total_rounds += min(game.round_number, Game.MAX_ROUNDS)
+		total_rounds += min(game.round_number, game.max_rounds)
 		if game.winner == 2:
 			draws += 1
 		elif game.winner == 0:

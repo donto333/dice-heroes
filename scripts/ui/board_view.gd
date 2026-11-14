@@ -67,9 +67,26 @@ var highlight: Array = []
 var _queue: Array = []
 var _timer := 0.0
 
+## 큰 맵은 화면에 다 안 들어가므로 칸 크기를 MIN_CELL로 두고 카메라로 일부만 보여 준다.
+const MIN_CELL := 84.0
+const CAMERA_SPEED := 6.0
+const MINIMAP_WIDTH := 150.0
+## 카메라가 보고 있는 맵 위의 점(맵 좌표, 픽셀)
+var _camera := Vector2.ZERO
+var _camera_target := Vector2.ZERO
+var _camera_ready := false
+## 손가락으로 끌어서 보고 있는 중이면 true. 다음 움직임이 시작되면 다시 말을 따라간다.
+var _manual := false
+var _dragging := false
+## 카메라가 따라갈 말
+var focus_player := 0
+
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# 카메라로 보는 큰 맵이 판 밖으로 삐져나오지 않게 자른다.
+	clip_contents = true
+	mouse_filter = Control.MOUSE_FILTER_STOP
 	for icon_name in ["start", "fork", "treasure", "battle", "ambush", "forward", "warp", "luck", "curse", "prison",
 			"fate", "checkpoint", "goal", "hidden", "pawn", "attr_hero", "attr_great", "attr_myth", "attr_modern"]:
 		var path := "res://assets/icons/%s.png" % icon_name
@@ -100,6 +117,8 @@ func _tile_style(color: Color) -> StyleBoxFlat:
 func reset_pieces() -> void:
 	_queue.clear()
 	_timer = 0.0
+	_manual = false
+	_camera_ready = false
 	highlight = []
 	shown_pos = [0, 0]
 	if game != null:
@@ -117,7 +136,14 @@ func is_busy() -> bool:
 	return not _queue.is_empty()
 
 
+## 카메라를 이 말에게 맞춘다(턴이 시작될 때 부른다).
+func focus_on(player_index: int) -> void:
+	focus_player = player_index
+	_manual = false
+
+
 func _process(delta: float) -> void:
+	_update_camera(delta)
 	if _queue.is_empty():
 		return
 	_timer -= delta
@@ -125,6 +151,8 @@ func _process(delta: float) -> void:
 		return
 	var move: Dictionary = _queue.pop_front()
 	shown_pos[int(move["player"])] = int(move["to"])
+	focus_player = int(move["player"])
+	_manual = false
 	stepped.emit()
 	_timer = STEP_TIME
 	# 다음 움직임이 다른 말이면 잠깐 쉬어서 누가 움직이는지 보이게 한다.
@@ -133,17 +161,90 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func _layout() -> Dictionary:
+func _grid_size() -> Vector2i:
 	var max_x := 0
 	var max_y := 0
 	for id in game.nodes:
 		max_x = max(max_x, int(game.nodes[id].get("x", 0)))
 		max_y = max(max_y, int(game.nodes[id].get("y", 0)))
-	var columns := max_x + 1
-	var rows := max_y + 1
-	var cell: float = min(size.x / columns, size.y / rows)
-	var origin := Vector2((size.x - cell * columns) / 2.0, (size.y - cell * rows) / 2.0)
-	return {"cell": cell, "origin": origin}
+	return Vector2i(max_x + 1, max_y + 1)
+
+
+## 맵 전체가 들어가면 화면에 맞추고, 안 들어가면 칸 크기를 고정하고 카메라 위치에 맞춰 그린다.
+func _layout() -> Dictionary:
+	var grid := _grid_size()
+	var fit: float = min(size.x / grid.x, size.y / grid.y)
+	if fit >= MIN_CELL:
+		var origin := Vector2((size.x - fit * grid.x) / 2.0, (size.y - fit * grid.y) / 2.0)
+		return {"cell": fit, "origin": origin, "camera": false}
+	var cell := MIN_CELL
+	var world := Vector2(grid.x, grid.y) * cell
+	var view_origin := size / 2.0 - _clamped_camera(world)
+	# 맵이 화면보다 좁은 쪽은 가운데에 둔다.
+	if world.x <= size.x:
+		view_origin.x = (size.x - world.x) / 2.0
+	if world.y <= size.y:
+		view_origin.y = (size.y - world.y) / 2.0
+	return {"cell": cell, "origin": view_origin, "camera": true, "world": world}
+
+
+func _clamped_camera(world: Vector2) -> Vector2:
+	var half := size / 2.0
+	return Vector2(clampf(_camera.x, half.x, max(half.x, world.x - half.x)), clampf(_camera.y, half.y, max(half.y, world.y - half.y)))
+
+
+## 카메라가 따라갈 말의 맵 위 위치(픽셀)
+func _focus_point() -> Vector2:
+	var id := int(shown_pos[clampi(focus_player, 0, shown_pos.size() - 1)])
+	if not game.nodes.has(id):
+		return Vector2.ZERO
+	var node: Dictionary = game.nodes[id]
+	return Vector2(int(node.get("x", 0)) + 0.5, int(node.get("y", 0)) + 0.5) * MIN_CELL
+
+
+func _update_camera(delta: float) -> void:
+	if game == null or game.nodes.is_empty():
+		return
+	var grid := _grid_size()
+	if min(size.x / grid.x, size.y / grid.y) >= MIN_CELL:
+		return
+	if not _manual:
+		_camera_target = _focus_point()
+	if not _camera_ready:
+		_camera = _camera_target
+		_camera_ready = true
+		queue_redraw()
+		return
+	var world := Vector2(grid.x, grid.y) * MIN_CELL
+	_camera = _clamped_camera(world)
+	if _camera.distance_to(_camera_target) > 0.5 and not _dragging:
+		_camera = _camera.lerp(_camera_target, clampf(delta * CAMERA_SPEED, 0.0, 1.0))
+		queue_redraw()
+
+
+## 손가락(마우스)으로 끌면 맵을 둘러본다.
+func _gui_input(event: InputEvent) -> void:
+	if game == null:
+		return
+	var grid := _grid_size()
+	if min(size.x / grid.x, size.y / grid.y) >= MIN_CELL:
+		return
+	var world := Vector2(grid.x, grid.y) * MIN_CELL
+	if event is InputEventScreenDrag:
+		_drag_by(event.relative, world)
+	elif event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
+		_drag_by(event.relative, world)
+	elif event is InputEventMouseButton or event is InputEventScreenTouch:
+		_dragging = event.is_pressed()
+
+
+func _drag_by(relative: Vector2, world: Vector2) -> void:
+	_manual = true
+	_dragging = true
+	_camera = _clamped_camera(world) - relative
+	_camera = _clamped_camera(world)
+	_camera_target = _camera
+	queue_redraw()
 
 
 func _center(id: int, layout: Dictionary) -> Vector2:
@@ -177,10 +278,13 @@ func _draw() -> void:
 			if game.nodes.has(next_id):
 				draw_line(_center(id, layout), _center(next_id, layout), line_color, max(3.0, cell * 0.08))
 
+	var view := Rect2(Vector2(-cell, -cell), size + Vector2(cell, cell) * 2.0)
 	for id in game.nodes:
 		var tile: Dictionary = game.nodes[id]
 		var half := Vector2(cell - TILE_GAP, cell - TILE_GAP) / 2.0
 		var rect := Rect2(_center(id, layout) - half, half * 2.0)
+		if not view.intersects(rect):
+			continue
 		var color: Color = TILE_COLORS.get(tile["type"], Color("3a4466"))
 		var label: String = TILE_LABELS.get(tile["type"], "")
 		var icon_name: String = ICON_NAMES.get(tile["type"], "")
@@ -222,3 +326,37 @@ func _draw() -> void:
 			draw_texture_rect(_icons["pawn"], pawn_rect, false, PLAYER_COLORS[player_index])
 		else:
 			draw_circle(center, cell * 0.14, PLAYER_COLORS[player_index])
+	if bool(layout.get("camera", false)):
+		_draw_minimap(layout)
+
+
+## 오른쪽 위의 작은 전체 지도: 칸은 점, 말은 색 점, 지금 보이는 곳은 흰 네모.
+func _draw_minimap(layout: Dictionary) -> void:
+	var grid := _grid_size()
+	var dot: float = MINIMAP_WIDTH / grid.x
+	var map_size := Vector2(grid.x, grid.y) * dot
+	var corner := Vector2(size.x - map_size.x - 10.0, 10.0)
+	var panel := StyleBoxFlat.new()
+	panel.bg_color = Color(0, 0, 0, 0.55)
+	panel.set_corner_radius_all(8)
+	draw_style_box(panel, Rect2(corner - Vector2(6, 6), map_size + Vector2(12, 12)))
+	for id in game.nodes:
+		var tile: Dictionary = game.nodes[id]
+		var color: Color = TILE_COLORS.get(tile["type"], Color("3a4466"))
+		if tile["type"] == "attr":
+			color = ATTR_COLORS.get(tile["attr"], color)
+		if game.is_hidden(id):
+			color = HIDDEN_COLOR
+		var spot := corner + Vector2(int(tile.get("x", 0)), int(tile.get("y", 0))) * dot
+		draw_rect(Rect2(spot + Vector2(1, 1), Vector2(dot - 2, dot - 2)), color)
+	for player_index in shown_pos.size():
+		var id := int(shown_pos[player_index])
+		if game.nodes.has(id):
+			var node: Dictionary = game.nodes[id]
+			var center := corner + (Vector2(int(node.get("x", 0)), int(node.get("y", 0))) + Vector2(0.5, 0.5)) * dot
+			draw_circle(center, max(3.0, dot * 0.45), PLAYER_COLORS[player_index])
+			draw_arc(center, max(3.0, dot * 0.45), 0.0, TAU, 12, Color.BLACK, 1.0)
+	var cell: float = layout["cell"]
+	var shown := Rect2(-layout["origin"] / cell * dot, size / cell * dot)
+	shown.position += corner
+	draw_rect(shown.intersection(Rect2(corner, map_size)), Color.WHITE, false, 1.5)
