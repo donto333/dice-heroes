@@ -939,6 +939,9 @@ func _show_game_over() -> void:
 	var shown_outcome := outcome
 	if _is_local() and outcome != "draw":
 		shown_outcome = "win"
+	# 칸 알림·말풍선이 결과 창을 가리지 않게 맨 앞으로
+	_close_hint()
+	move_child(_result_overlay, get_child_count() - 1)
 	_result_overlay.show_result(shown_outcome, subtitle, details)
 
 
