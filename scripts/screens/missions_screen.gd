@@ -25,6 +25,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	scroll.add_child(body)
 	body.add_child(_attendance_panel())
 	body.add_child(_missions_panel())
+	body.add_child(_achievements_panel())
 	var nav := BottomNav.new()
 	column.add_child(nav)
 	nav.setup("missions", app.badges())
@@ -78,6 +79,66 @@ func _missions_panel() -> Control:
 	button.pressed.connect(_on_all_clear)
 	all_row.add_child(button)
 	return card
+
+
+## 업적: 받을 수 있는 것 → 진행 중 → 받은 것 순서로 보여 준다.
+func _achievements_panel() -> Control:
+	var card := Kit.panel()
+	var column := Kit.vbox(10)
+	card.add_child(column)
+	var list: Array = app.data.get("achievements", {}).get("achievements", [])
+	var claimed_count := 0
+	for achievement in list:
+		if Profile.achievement_claimed(app.profile, achievement):
+			claimed_count += 1
+	column.add_child(Kit.label("업적  %d / %d" % [claimed_count, list.size()], 30, Kit.GOLD))
+	var ordered: Array = []
+	for group in [0, 1, 2]:
+		for achievement in list:
+			var claimed := Profile.achievement_claimed(app.profile, achievement)
+			var done := Profile.achievement_done(app.profile, app.data, achievement)
+			var bucket: int = 2 if claimed else (0 if done else 1)
+			if bucket == group:
+				ordered.append(achievement)
+	for achievement in ordered:
+		column.add_child(_achievement_row(achievement))
+	return card
+
+
+func _achievement_row(achievement: Dictionary) -> Control:
+	var box := Kit.panel(Color("14182f"), Kit.LINE, 10)
+	var row := Kit.hbox(10)
+	box.add_child(row)
+	var info := Kit.vbox(4)
+	row.add_child(Kit.expand(info))
+	var value: int = Profile.achievement_value(app.profile, app.data, str(achievement["stat"]))
+	var goal := int(achievement["goal"])
+	var claimed := Profile.achievement_claimed(app.profile, achievement)
+	var done := value >= goal
+	info.add_child(Kit.label(str(achievement["text"]), 21, Kit.MUTED if claimed else Color.WHITE))
+	var line := Kit.hbox(8)
+	info.add_child(line)
+	var bar := Kit.bar(float(min(value, goal)) / float(max(goal, 1)), Kit.GOLD if done else Kit.ACCENT, 10)
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(Kit.expand(bar))
+	line.add_child(Kit.label("%d/%d" % [min(value, goal), goal], 16, Kit.MUTED))
+	info.add_child(Kit.label("보상 %s" % Kit.reward_line(achievement["reward"]), 16, Kit.GOLD))
+	var button := Kit.button("받음" if claimed else ("받기" if done else "진행 중"), Color("c4861c") if done and not claimed else Kit.PANEL_LIGHT, 20, 60)
+	button.custom_minimum_size = Vector2(120, 60)
+	button.disabled = claimed or not done
+	button.pressed.connect(_on_achievement.bind(str(achievement["id"])))
+	row.add_child(button)
+	return box
+
+
+func _on_achievement(id: String) -> void:
+	var reward := Profile.claim_achievement(app.profile, app.data, id)
+	if reward.is_empty():
+		return
+	app.save()
+	app.play("win")
+	app.toast("업적 보상: %s" % Kit.reward_line(reward))
+	app.go("missions")
 
 
 func _mission_row(mission: Dictionary) -> Control:

@@ -52,6 +52,7 @@ var _humans: Array = [true, false]
 var _map_index := 0
 var _stage_id := ""
 var _player_cards: Array = []
+var _hint_bubble: Control
 var _start_distance := 1
 var _cards_used := 0
 var _recorded := false
@@ -294,6 +295,61 @@ func _show_tile(event: Dictionary) -> void:
 	panel.queue_free()
 
 
+# ---------------------------------------------------------------- 첫 판 안내
+
+## 내 차례가 시작될 때 처음 한 번씩 알려 줄 것들.
+func _turn_hints() -> void:
+	if not _humans[game.current]:
+		return
+	if _hint("roll", "주사위 굴리기를 누르면 ATTACK 영웅의 이동 주사위만큼 걸어가요. 파란 테두리 초상화가 내 말이에요. 먼저 골(분홍 칸)의 수호자를 이기면 승리!"):
+		return
+	if not game.players[game.current]["hand"].is_empty() and _hint("card", "아이템 카드는 주사위를 굴리기 전에 눌러서 써요. 손에는 3장까지 들 수 있어요."):
+		return
+	for slot in Game.SLOTS:
+		if game.can_use_ability(slot):
+			_hint("ability", "어빌리티 게이지가 찼어요! 노란 테두리 버튼을 누르면 쓸 수 있어요. 한 턴에 하나만 쓸 수 있어요.")
+			return
+
+
+## 처음 보는 상황이면 말풍선을 띄우고 true. 이미 본 안내면 false.
+func _hint(key: String, text: String) -> bool:
+	if not app.has_profile():
+		return false
+	if not app.profile.has("tutorial"):
+		app.profile["tutorial"] = {}
+	if bool(app.profile["tutorial"].get(key, false)):
+		return false
+	app.profile["tutorial"][key] = true
+	app.save()
+	if _hint_bubble != null and is_instance_valid(_hint_bubble):
+		_hint_bubble.queue_free()
+	var bubble := PanelContainer.new()
+	bubble.add_theme_stylebox_override("panel", _box(Color(0.1, 0.08, 0.02, 0.95), Color("ffcf4d"), 3))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	bubble.add_child(row)
+	var label := _make_label(20, text)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.custom_minimum_size = Vector2(420, 0)
+	row.add_child(label)
+	var ok := Kit.button("알겠어요", Color("c4861c"), 20, 60)
+	ok.custom_minimum_size = Vector2(130, 60)
+	ok.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	ok.pressed.connect(func(): bubble.queue_free())
+	row.add_child(ok)
+	add_child(bubble)
+	bubble.anchor_left = 0.0
+	bubble.anchor_right = 1.0
+	bubble.anchor_top = 0.0
+	bubble.anchor_bottom = 0.0
+	bubble.offset_left = 20
+	bubble.offset_right = -20
+	bubble.offset_top = 150
+	_hint_bubble = bubble
+	return true
+
+
 func _make_label(font_size: int, text: String = "") -> Label:
 	var label := Label.new()
 	label.text = text
@@ -388,6 +444,7 @@ func _advance() -> void:
 			if game.begin_turn():
 				_waiting_for_player = true
 				_refresh()
+				_turn_hints()
 				return
 			_add_result_text("%s: 이번 턴은 쉽니다." % game.players[game.current]["name"], PLAYER_TEXT_COLORS[game.current])
 			game.end_turn()
@@ -464,6 +521,10 @@ func _after_my_move() -> void:
 
 
 func _show_path_choice() -> void:
+	if game.choice_kind() == "fight":
+		_hint("fight", "상대 말을 지나칩니다! '싸운다'를 고르면 내 ATTACK과 상대 DEFENSE가 주사위로 겨뤄요. 이기면 상대가 거점으로 돌아가요.")
+	else:
+		_hint("fork", "갈림길이에요! 위쪽 갈래는 키퍼와 판정이 있어 위험하고, 아래쪽 갈래는 보물과 행운이 있는 안전한 길이에요.")
 	var options: Array = game.pending_choice["options"]
 	var fighting: bool = game.choice_kind() == "fight"
 	if fighting:
@@ -601,6 +662,7 @@ func _roll_row(row: HBoxContainer, rolls: Array, tail: String) -> void:
 
 
 func _show_battle(event: Dictionary) -> void:
+	_hint("battle", "전투! 양쪽이 주사위를 굴려 합이 큰 쪽이 이겨요. 지면 직전 거점(파란 깃발)으로 돌아가요. 이기면 카드를 받아요.")
 	await _wait_for_board()
 	var who := int(event["player"])
 	var other := 1 - who

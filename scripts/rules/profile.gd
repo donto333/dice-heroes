@@ -25,7 +25,12 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"best_trophies": 0,
 		"owned": owned,
 		"party": (start.get("party", {}) as Dictionary).duplicate(),
-		"stats": {"played": 0, "wins": 0, "losses": 0, "draws": 0, "rank_wins": 0},
+		"stats": {"played": 0, "wins": 0, "losses": 0, "draws": 0, "rank_wins": 0,
+			"battle_wins_total": 0, "cards_total": 0, "summons_total": 0, "upgrades_total": 0},
+		## 받은 업적 id
+		"achievements": [],
+		## 첫 판 안내를 본 것 {"roll": true, ...}
+		"tutorial": {},
 		"pity": 0,
 		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false},
 		"attendance": {"last_date": "", "count": 0},
@@ -187,6 +192,7 @@ static func summon(profile: Dictionary, characters: Array, eco: Dictionary, coun
 			entry["new"] = true
 		results.append(entry)
 	add_progress(profile, eco, "summon", 1)
+	_add_stat(profile, "summons_total", count)
 	return results
 
 
@@ -235,6 +241,7 @@ static func upgrade(profile: Dictionary, eco: Dictionary, id: String) -> bool:
 	profile["owned"][id]["shards"] = int(profile["owned"][id]["shards"]) - int(cost["shards"])
 	pay(profile, "gold", int(cost["gold"]))
 	profile["owned"][id]["level"] = level_of(profile, id) + 1
+	_add_stat(profile, "upgrades_total", 1)
 	return true
 
 
@@ -330,7 +337,14 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 		add_progress(profile, eco, "win", 1)
 	add_progress(profile, eco, "battle_win", int(stats.get("battle_wins", 0)))
 	add_progress(profile, eco, "card", int(stats.get("cards", 0)))
+	_add_stat(profile, "battle_wins_total", int(stats.get("battle_wins", 0)))
+	_add_stat(profile, "cards_total", int(stats.get("cards", 0)))
 	return reward
+
+
+static func _add_stat(profile: Dictionary, key: String, amount: int) -> void:
+	var stats: Dictionary = profile["stats"]
+	stats[key] = int(stats.get(key, 0)) + amount
 
 
 # ---------------------------------------------------------------- 일일 미션
@@ -522,3 +536,59 @@ static func record_adventure(profile: Dictionary, adventure: Dictionary, stage_i
 	grant(profile, reward)
 	result["reward"] = reward
 	return result
+
+
+# ---------------------------------------------------------------- 업적
+
+## 업적이 보는 값. data는 GameData.load_all()의 묶음(characters, adventure 등).
+static func achievement_value(profile: Dictionary, data: Dictionary, stat: String) -> int:
+	var stats: Dictionary = profile.get("stats", {})
+	match stat:
+		"owned":
+			return profile.get("owned", {}).size()
+		"max_level_heroes":
+			var count := 0
+			for id in profile.get("owned", {}):
+				if int(profile["owned"][id]["level"]) >= 5:
+					count += 1
+			return count
+		"adventure_stars":
+			return total_stars(profile)
+		"chapters_cleared":
+			var cleared := 0
+			for chapter in data.get("adventure", {}).get("chapters", []):
+				var last: Dictionary = chapter["stages"][chapter["stages"].size() - 1]
+				if stage_stars(profile, str(last["id"])) > 0:
+					cleared += 1
+			return cleared
+		"best_trophies":
+			return int(profile.get("best_trophies", 0))
+		"level":
+			return int(profile.get("level", 1))
+	return int(stats.get(stat, 0))
+
+
+static func achievement_done(profile: Dictionary, data: Dictionary, achievement: Dictionary) -> bool:
+	return achievement_value(profile, data, str(achievement["stat"])) >= int(achievement["goal"])
+
+
+static func achievement_claimed(profile: Dictionary, achievement: Dictionary) -> bool:
+	return str(achievement["id"]) in profile.get("achievements", [])
+
+
+static func claim_achievement(profile: Dictionary, data: Dictionary, id: String) -> Dictionary:
+	if not profile.has("achievements"):
+		profile["achievements"] = []
+	for achievement in data.get("achievements", {}).get("achievements", []):
+		if str(achievement["id"]) == id and achievement_done(profile, data, achievement) and not achievement_claimed(profile, achievement):
+			profile["achievements"].append(id)
+			grant(profile, achievement["reward"])
+			return achievement["reward"]
+	return {}
+
+
+static func has_claimable_achievement(profile: Dictionary, data: Dictionary) -> bool:
+	for achievement in data.get("achievements", {}).get("achievements", []):
+		if achievement_done(profile, data, achievement) and not achievement_claimed(profile, achievement):
+			return true
+	return false
