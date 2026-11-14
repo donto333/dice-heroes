@@ -250,8 +250,13 @@ func _showcase() -> Control:
 
 # ---------------------------------------------------------------- 공지 줄
 
+## 공지 줄에 흐르는 글: 열려 있는 이벤트가 먼저, 그다음 일반 공지.
 func _notices() -> Array:
-	return app.data.get("notices", {}).get("notices", [])
+	var list: Array = []
+	for event in Profile.active_events(app.data.get("events", {}), app.today()):
+		list.append("이벤트 [%s] %s (%s까지)" % [event["name"], event["text"], str(event["end"]).substr(5)])
+	list.append_array(app.data.get("notices", {}).get("notices", []))
+	return list
 
 
 func _show_notice() -> void:

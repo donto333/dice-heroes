@@ -85,6 +85,7 @@ func _init() -> void:
 	_test_mail()
 	_test_dice_skins()
 	_test_pass()
+	_test_events()
 	_test_monster_kinds()
 	_test_streak_power()
 	_test_presets()
@@ -1213,3 +1214,23 @@ func _test_monster_kinds() -> void:
 			if str(node.get("type", "")) in ["battle", "ambush"]:
 				kinds[BoardView.monster_kind(str(node["type"]), str(node.get("name", "")))] = true
 	_check(kinds.size() >= 5, "맵의 적들이 그림 종류 5가지 이상으로 나뉘지 않음: %d" % kinds.size())
+
+
+func _test_events() -> void:
+	var eco: Dictionary = _data["economy"]
+	var events := {"events": [
+		{"id": "a", "name": "골드", "start": "2026-05-01", "end": "2026-05-03", "effect": {"match_gold_scale": 2.0}},
+		{"id": "b", "name": "패스", "start": "2026-05-03", "end": "2026-05-05", "effect": {"pass_exp_scale": 3.0}},
+	]}
+	_check(Profile.active_events(events, "2026-04-30").is_empty(), "시작 전인데 이벤트가 열림")
+	_check(Profile.active_events(events, "2026-05-01").size() == 1 and Profile.active_events(events, "2026-05-03").size() == 2, "이벤트 기간 계산이 틀림")
+	_check(Profile.active_events(events, "2026-05-06").is_empty(), "끝났는데 이벤트가 열림")
+	_check(Profile.event_scale(events, "2026-05-02", "match_gold_scale") == 2.0 and Profile.event_scale(events, "2026-05-02", "pass_exp_scale") == 1.0, "이벤트 배율이 틀림")
+	var profile := Profile.new_profile("이벤트", eco)
+	Profile.ensure_daily(profile, "2026-05-02")
+	var reward := Profile.record_match(profile, eco, "ai", "win", {"event_gold_scale": 2.0, "event_pass_scale": 3.0})
+	_check(int(reward["gold"]) == int(eco["rewards"]["ai"]["win"]["gold"]) * 2, "이벤트 골드 배율이 보상에 반영되지 않음")
+	_check(int(reward["pass_exp"]) == int(eco["pass"]["exp"]["win"]) * 3, "이벤트 패스 배율이 반영되지 않음")
+	# 실제 이벤트 파일의 모양 확인
+	for event in _data["events"].get("events", []):
+		_check(str(event.get("start", "")).length() == 10 and str(event.get("end", "")) >= str(event.get("start", "")), "이벤트 날짜가 이상함: " + str(event.get("id", "")))
