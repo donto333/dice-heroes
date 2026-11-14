@@ -266,6 +266,7 @@ func _todo_items() -> Array:
 			missions_done += 1
 	var sweeps := Profile.sweeps_left(profile, app.eco)
 	return [
+		["길잡이 과제", str(Profile.guide_current(profile, app.data).get("text", "모두 끝냈어요")), not Profile.guide_claimable(profile, app.data), _on_tab.bind("missions")],
 		["출석 체크", "하루 한 번 출석 보상", not Profile.can_check_in(profile, app.today()), _on_attendance_shortcut],
 		["무료 소환", "오늘 %d번 남음" % Profile.free_summons_left(profile, app.eco), Profile.free_summons_left(profile, app.eco) <= 0, _on_tab.bind("shop")],
 		["행운의 룰렛", "하루 한 번 무료", not Profile.can_spin_free(profile, app.eco), open_roulette],
@@ -499,6 +500,9 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"길잡이 과제 8단계: 미션 화면 맨 위에서 순서대로 따라 하며 보상을 받아요.",
+	"오늘 할 일: 로비 왼쪽 '할 일'에서 오늘 남은 것을 한눈에 보고 바로 가요.",
+	"전투 창에 공격 쪽 예상 승률이 나와요. 영웅 화면에 일괄 강화, 맵 고르기에 맵별 내 전적이 생겼어요.",
 	"더블: 이동 주사위 두 개가 같은 눈이면 어빌리티 게이지가 12% 더 차요.",
 	"어빌리티를 쓰면 영웅이 화면을 가로지르는 컷인이 나와요.",
 	"모험 소탕: 별 3개로 깬 곳은 대전 없이 보상을 받아요(하루 5번).",
