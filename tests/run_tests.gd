@@ -1252,5 +1252,10 @@ func _test_sweep() -> void:
 	for i in per_day - 1:
 		_check(not Profile.sweep(profile, eco, "1-1").is_empty(), "남은 횟수가 있는데 소탕이 안 됨")
 	_check(Profile.sweeps_left(profile, eco) == 0 and Profile.sweep(profile, eco, "1-1").is_empty(), "하루 횟수를 넘겨 소탕함")
+	_check((profile.get("history", []) as Array).is_empty(), "소탕이 최근 전적에 남음")
+	for i in 12:
+		Profile.record_match(profile, eco, "ai", "win" if i % 2 == 0 else "lose", {"map": "초원", "turns": i})
+	var history: Array = profile["history"]
+	_check(history.size() == Profile.HISTORY_LIMIT and int(history[0]["turns"]) == 11 and str(history[0]["outcome"]) == "lose", "최근 전적이 틀림")
 	Profile.ensure_daily(profile, "2026-05-02")
 	_check(Profile.sweeps_left(profile, eco) == per_day, "다음 날 소탕 횟수가 돌아오지 않음")

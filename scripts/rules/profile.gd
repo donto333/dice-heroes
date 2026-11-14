@@ -323,6 +323,9 @@ static func rank_ai_level(eco: Dictionary, trophies: int) -> int:
 ## mode: "rank", "ai", "local" / outcome: "win", "lose", "draw"
 ## stats: {"battle_wins": n, "cards": n} 미션 진행에 쓴다.
 ## 돌려주는 값: {"gold", "gems", "exp", "trophies", "level_ups", "first_win", "tier_before", "tier_after"}
+## 프로필에 남기는 최근 전적 수
+const HISTORY_LIMIT := 10
+
 static func record_match(profile: Dictionary, eco: Dictionary, mode: String, outcome: String, stats: Dictionary) -> Dictionary:
 	var reward_mode := mode
 	if mode == "challenge":
@@ -345,6 +348,13 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 			played["losses"] = int(played["losses"]) + 1
 		_:
 			played["draws"] = int(played["draws"]) + 1
+	# 최근 전적(프로필 창에 보인다). 소탕처럼 판을 하지 않은 것은 남기지 않는다.
+	if not bool(stats.get("no_history", false)):
+		var history: Array = profile.get("history", [])
+		history.push_front({"mode": mode, "outcome": outcome, "map": str(stats.get("map", "")), "turns": int(stats.get("turns", 0))})
+		while history.size() > HISTORY_LIMIT:
+			history.pop_back()
+		profile["history"] = history
 	if mode == "rank":
 		var before := int(profile["trophies"])
 		reward["tier_before"] = tier_of(eco, before)["name"]
@@ -1194,4 +1204,6 @@ static func sweep(profile: Dictionary, eco: Dictionary, stage_id: String, stats:
 	if not can_sweep(profile, eco, stage_id):
 		return {}
 	profile["daily"]["sweeps"] = int(profile["daily"].get("sweeps", 0)) + 1
-	return record_match(profile, eco, "adventure", "win", stats)
+	var sweep_stats := stats.duplicate()
+	sweep_stats["no_history"] = true
+	return record_match(profile, eco, "adventure", "win", sweep_stats)
