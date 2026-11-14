@@ -819,6 +819,10 @@ func _test_achievements() -> void:
 	_check(int(profile["gems"]) > gems, "업적 보석이 들어오지 않음")
 	_check(Profile.claim_achievement(profile, _data, "first_win").is_empty(), "업적 보상을 두 번 받음")
 	_check(Profile.claim_achievement(profile, _data, "wins_100").is_empty(), "덜 한 업적 보상을 받음")
+	var before_all := int(profile["gold"]) + int(profile["gems"])
+	var everything := Profile.claim_everything(profile, eco, _data)
+	_check(int(everything["count"]) >= 1 and int(profile["gold"]) + int(profile["gems"]) > before_all, "모두 받기가 보상을 주지 않음")
+	_check(int(Profile.claim_everything(profile, eco, _data)["count"]) == 0, "모두 받기를 두 번 받음")
 	Profile.summon(profile, _data["characters"], eco, 10, RandomNumberGenerator.new())
 	_check(int(profile["stats"]["summons_total"]) == 10, "누적 소환 기록이 틀림")
 

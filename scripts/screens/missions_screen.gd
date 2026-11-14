@@ -23,6 +23,11 @@ func setup(main_app, _params: Dictionary) -> void:
 	var body := Kit.vbox(14)
 	Kit.expand(body)
 	scroll.add_child(body)
+	var waiting := Profile.claimable_mission_count(app.profile, app.eco) + Profile.claimable_achievement_count(app.profile, app.data)
+	if waiting > 0:
+		var all := Kit.button("보상 %d개 모두 받기" % waiting, Color("e8890c"), 28, 84)
+		all.pressed.connect(_on_claim_everything)
+		body.add_child(all)
 	body.add_child(_attendance_panel())
 	body.add_child(_missions_panel())
 	body.add_child(_achievements_panel())
@@ -194,6 +199,16 @@ func _on_all_clear() -> void:
 	app.save()
 	app.play("win")
 	app.toast("모든 미션 완료! %s" % Kit.reward_line(reward))
+	app.go("missions")
+
+
+func _on_claim_everything() -> void:
+	var total := Profile.claim_everything(app.profile, app.eco, app.data)
+	if int(total["count"]) == 0:
+		return
+	app.save()
+	app.play("win")
+	app.toast("보상 %d개: %s" % [int(total["count"]), Kit.reward_line({"gold": int(total["gold"]), "gems": int(total["gems"])})])
 	app.go("missions")
 
 
