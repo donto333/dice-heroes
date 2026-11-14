@@ -127,10 +127,11 @@ func _build_ui() -> void:
 	_board_view.custom_minimum_size = Vector2(0, 300)
 	_board_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_board_view.size_flags_stretch_ratio = 3.0
+	_board_view.size_flags_stretch_ratio = 3.0
 	column.add_child(_board_view)
 
 	var result_panel := PanelContainer.new()
-	result_panel.custom_minimum_size = Vector2(0, 210)
+	result_panel.custom_minimum_size = Vector2(0, 180)
 	result_panel.add_theme_stylebox_override("panel", _box(Color("12152b"), Color("3a4466"), 2))
 	column.add_child(result_panel)
 	_result_box = VBoxContainer.new()
@@ -162,9 +163,9 @@ func _build_ui() -> void:
 
 	_log_label = _make_label(17)
 	_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_log_label.custom_minimum_size = Vector2(0, 90)
-	_log_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_log_label.size_flags_stretch_ratio = 1.0
+	# 진행 기록은 두세 줄만. 남는 자리는 모두 보드에 준다.
+	_log_label.custom_minimum_size = Vector2(0, 60)
+	_log_label.size_flags_vertical = Control.SIZE_SHRINK_END
 	_log_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	_log_label.clip_text = true
 	_log_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
