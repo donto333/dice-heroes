@@ -2,6 +2,7 @@
   "_comment": "설원 맵(약 120칸, 나선형). 습격이 많아 DEFENSE가 중요하다. tools/make_maps.py로 만든다.",
   "name": "설원의 성채",
   "shape": "나선형",
+  "feature": "습격이 많아 DEFENSE가 중요하다",
   "theme": {"terrain": "snow", "bg": "1f4a6e", "line": "a8d8ff"},
   "start": 0,
   "nodes": [

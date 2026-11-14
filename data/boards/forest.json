@@ -2,6 +2,7 @@
   "_comment": "숲 맵(약 120칸, 세로 S자형). 숨은 칸과 행운이 많다. tools/make_maps.py로 만든다.",
   "name": "깊은 숲",
   "shape": "세로 S자형",
+  "feature": "숨은 칸과 행운이 많다",
   "theme": {"terrain": "forest", "bg": "1a3a22", "line": "b6f0a0"},
   "start": 0,
   "nodes": [

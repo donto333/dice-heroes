@@ -73,6 +73,8 @@ var start_gauge_per_intellect := 0
 ## 맵 이름과 색(화면용)
 var board_name := ""
 var board_shape := ""
+## 맵의 특징 한 줄("판정과 보물이 많다")
+var board_feature := ""
 var board_theme: Dictionary = {}
 ## 영웅 레벨에 따른 전투 합계 보너스. 칸 순번 = 레벨 - 1. data/rules.json의 level_battle_bonus.
 var level_battle_bonus: Array = []
@@ -154,6 +156,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 
 func _load_board(board: Dictionary) -> void:
 	board_name = str(board.get("name", ""))
+	board_feature = str(board.get("feature", ""))
 	board_shape = str(board.get("shape", ""))
 	board_theme = board.get("theme", {})
 	nodes = {}

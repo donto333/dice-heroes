@@ -2,6 +2,7 @@
   "_comment": "하늘 맵(약 120칸, 쌍고리형). 판정과 전진이 많아 변화가 크다. tools/make_maps.py로 만든다.",
   "name": "하늘 섬",
   "shape": "쌍고리형",
+  "feature": "판정과 전진이 많아 변화가 크다",
   "theme": {"terrain": "sky", "bg": "23366b", "line": "c8d8ff"},
   "start": 0,
   "nodes": [
