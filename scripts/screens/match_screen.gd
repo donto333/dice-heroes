@@ -347,7 +347,20 @@ func _hint(key: String, text: String) -> bool:
 	bubble.offset_right = -20
 	bubble.offset_top = 150
 	_hint_bubble = bubble
+	# 그냥 두어도 잠시 뒤 사라진다.
+	get_tree().create_timer(12.0).timeout.connect(_close_hint_if.bind(bubble))
 	return true
+
+
+func _close_hint() -> void:
+	if _hint_bubble != null and is_instance_valid(_hint_bubble):
+		_hint_bubble.queue_free()
+	_hint_bubble = null
+
+
+func _close_hint_if(bubble: Control) -> void:
+	if bubble == _hint_bubble:
+		_close_hint()
 
 
 func _make_label(font_size: int, text: String = "") -> Label:
@@ -487,6 +500,7 @@ func _wait_for_board() -> void:
 
 
 func _on_roll_pressed() -> void:
+	_close_hint()
 	if game.winner >= 0:
 		_result_overlay.visible = true
 		return

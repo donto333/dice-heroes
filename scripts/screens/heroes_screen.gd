@@ -187,6 +187,8 @@ func show_hero(id: String) -> void:
 		var bonus_table: Array = app.data["rules"].get("level_battle_bonus", [])
 		var bonus: int = int(bonus_table[clampi(level - 1, 0, bonus_table.size() - 1)]) if not bonus_table.is_empty() else 0
 		body.add_child(Kit.para("레벨 %d / %d   ·   전투 합계 보너스 +%d" % [level, int(app.eco["upgrade"]["max_level"]), bonus], 22, Kit.GOLD))
+		if not bonus_table.is_empty() and level < bonus_table.size():
+			body.add_child(Kit.para("다음 레벨 보너스 +%d  (전투에서 주사위 합에 더해져요)" % int(bonus_table[level]), 18, Kit.MUTED))
 		if cost.is_empty():
 			body.add_child(Kit.label("최고 레벨입니다.", 20, Kit.MUTED))
 		else:
@@ -196,11 +198,21 @@ func show_hero(id: String) -> void:
 			body.add_child(Kit.para("조각은 같은 영웅을 또 소환하면 얻어요.", 18, Kit.MUTED))
 			var can := Profile.can_upgrade(app.profile, app.eco, id)
 			buttons.append(["강화하기" if can else "강화 불가", Color("c4861c") if can else Kit.DISABLED, _upgrade.bind(id) if can else Callable()])
+		if str(app.profile.get("avatar", "")) != id:
+			buttons.append(["대표로", Kit.ACCENT, _set_avatar.bind(id)])
 	else:
 		body.add_child(Kit.para("아직 없는 영웅이에요. 상점에서 소환하면 얻을 수 있어요.", 20, Kit.MUTED))
 		buttons.append(["상점으로", Color("c4861c"), func(): app.go("shop")])
 	buttons.append(["닫기", Kit.PANEL_LIGHT])
 	app.dialog("", body, buttons, 660)
+
+
+## 위쪽 막대에 보이는 대표 영웅을 바꾼다.
+func _set_avatar(id: String) -> void:
+	app.profile["avatar"] = id
+	app.save()
+	app.toast("%s(을)를 대표 영웅으로 정했어요." % app.character(id)["name"])
+	app.go("heroes", {"filter": _filter})
 
 
 func _upgrade(id: String) -> void:

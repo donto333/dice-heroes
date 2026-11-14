@@ -31,6 +31,8 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"achievements": [],
 		## 첫 판 안내를 본 것 {"roll": true, ...}
 		"tutorial": {},
+		## 위쪽 막대에 보일 대표 영웅 id (비어 있으면 ATTACK 영웅)
+		"avatar": "",
 		"pity": 0,
 		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false},
 		"attendance": {"last_date": "", "count": 0},
