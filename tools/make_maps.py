@@ -330,6 +330,7 @@ COMMON_POOL = [
     {"weight": 1, "tile": {"type": "forward", "amount": 3}},
     {"weight": 1, "tile": {"type": "prison"}},
     {"weight": 1, "tile": {"type": "fate"}},
+    {"weight": 2, "tile": {"type": "warp"}},
 ]
 
 THEMES = [
@@ -367,6 +368,7 @@ THEMES = [
             {"weight": 1, "tile": {"type": "forward", "amount": 3}},
             {"weight": 1, "tile": {"type": "battle", "name": "모래 벌레", "dice": 2}},
             {"weight": 1, "tile": {"type": "prison"}},
+            {"weight": 2, "tile": {"type": "warp"}},
         ],
     },
     {
@@ -387,6 +389,7 @@ THEMES = [
             {"weight": 2, "tile": {"type": "ambush", "name": "눈보라 늑대", "dice": 3}},
             {"weight": 1, "tile": {"type": "curse"}},
             {"weight": 2, "tile": {"type": "forward", "amount": 3}},
+            {"weight": 2, "tile": {"type": "warp"}},
         ],
     },
     {
