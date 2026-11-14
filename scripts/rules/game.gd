@@ -73,7 +73,7 @@ var board_theme: Dictionary = {}
 var level_battle_bonus: Array = []
 ## 턴 제한
 var max_rounds := MAX_ROUNDS
-## 워프 칸: 내가 상대보다 warp_gap칸 이상 뒤처져 있으면 결투, 이기면 warp_advance칸 전진
+## 워프 칸: 두 말의 골까지 거리 차이가 warp_gap칸 이상이면 결투, 이기면 warp_advance칸 전진
 var warp_gap := 10
 var warp_advance := 10
 
@@ -618,14 +618,13 @@ func _resolve_tile(depth: int) -> void:
 				_walk(current, amount, false)
 				_resolve_tile(depth + 1)
 		"warp":
-			# 워프 결투: 내가 상대보다 많이 뒤처져 있으면 상대에게 싸움을 건다. 이기면 전진, 지면 그대로.
-			# gap은 내가 뒤처진 칸 수(골까지 남은 거리의 차이). 앞서 있으면 음수다.
-			var gap: int = distance_of(current) - distance_of(1 - current)
+			# 워프 결투: 두 말의 거리 차이가 크면 상대에게 싸움을 건다. 이기면 전진, 지면 그대로.
+			var gap: int = abs(distance_of(current) - distance_of(1 - current))
 			if gap < warp_gap:
-				say("  워프 칸! %d칸 이상 뒤처져 있어야 결투합니다. 아무 일도 없습니다." % warp_gap)
-				_tile_event("warp", "워프! %d칸 이상\n뒤처져 있어야 결투" % warp_gap, true)
+				say("  워프 칸! 상대와 %d칸 차이라 아무 일도 없습니다. (%d칸 이상 차이가 나야 결투)" % [gap, warp_gap])
+				_tile_event("warp", "워프! 상대와 %d칸 이상\n차이가 나야 결투" % warp_gap, true)
 			elif depth < 3:
-				say("  워프 결투! %d칸 뒤처져 있어 %s에게 싸움을 겁니다." % [gap, opponent["name"]])
+				say("  워프 결투! 상대와 %d칸 차이, %s에게 싸움을 겁니다." % [gap, opponent["name"]])
 				_tile_event("warp", "워프 결투!", true)
 				if _battle_warp():
 					say("  결투 승리! %d칸 전진합니다." % warp_advance)
