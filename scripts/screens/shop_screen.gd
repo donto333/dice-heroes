@@ -29,6 +29,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	Kit.expand(body)
 	scroll.add_child(body)
 	body.add_child(_summon_panel())
+	body.add_child(_deals_panel())
 	body.add_child(_exchange_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
@@ -74,6 +75,57 @@ func _summon_panel() -> Control:
 	ten.pressed.connect(_on_paid.bind(10))
 	buttons.add_child(Kit.expand(ten))
 	return card
+
+
+## 오늘의 특가: 가진 영웅의 강화 조각을 골드로. 매일 바뀐다.
+func _deals_panel() -> Control:
+	var card := Kit.panel(Color("1c2a24"), Color("3f8f5f"), 14)
+	var column := Kit.vbox(10)
+	card.add_child(column)
+	var head := Kit.hbox(8)
+	column.add_child(head)
+	head.add_child(Kit.expand(Kit.label("오늘의 특가", 30, Kit.GOLD)))
+	head.add_child(Kit.label("매일 자정에 바뀌어요", 17, Kit.MUTED))
+	var deals := Profile.daily_deals(app.profile, app.data["characters"], app.eco, app.today())
+	if deals.is_empty():
+		column.add_child(Kit.para("강화할 영웅이 없어요. 모든 영웅이 최고 레벨이에요!", 19))
+		return card
+	var row := Kit.hbox(10)
+	column.add_child(row)
+	for index in deals.size():
+		row.add_child(Kit.expand(_deal_cell(deals[index], index)))
+	return card
+
+
+func _deal_cell(deal: Dictionary, index: int) -> Control:
+	var character: Dictionary = app.character(str(deal["id"]))
+	var grade := int(deal["grade"])
+	var cell := Kit.vbox(4)
+	var face := Portrait.new()
+	face.custom_minimum_size = Vector2(0, 150)
+	face.border = Kit.GRADE_COLORS[grade]
+	face.border_width = 3.0
+	face.show_character(character, Kit.CATEGORY_COLORS.get(character.get("category", ""), Kit.LINE))
+	face.dim = bool(deal["bought"])
+	cell.add_child(face)
+	cell.add_child(Kit.label("%s %s" % ["★".repeat(grade), character.get("name", "")], 18, Kit.GRADE_COLORS[grade], HORIZONTAL_ALIGNMENT_CENTER))
+	var shards := int(app.profile["owned"][str(deal["id"])]["shards"])
+	cell.add_child(Kit.label("조각 +%d  (지금 %d)" % [int(deal["shards"]), shards], 16, Kit.GEM, HORIZONTAL_ALIGNMENT_CENTER))
+	var text: String = "구매 완료" if bool(deal["bought"]) else Kit.money_text("gold", int(deal["gold"]))
+	var buy := Kit.button(text, Color("2f8f4e"), 20, 60)
+	buy.disabled = bool(deal["bought"]) or not Profile.can_pay(app.profile, "gold", int(deal["gold"]))
+	buy.pressed.connect(_on_deal.bind(index))
+	cell.add_child(buy)
+	return cell
+
+
+func _on_deal(index: int) -> void:
+	var deals := Profile.daily_deals(app.profile, app.data["characters"], app.eco, app.today())
+	if Profile.buy_deal(app.profile, app.data["characters"], app.eco, app.today(), index):
+		app.save()
+		app.play("good")
+		app.toast("%s 조각 +%d" % [app.character(str(deals[index]["id"]))["name"], int(deals[index]["shards"])])
+		app.go("shop")
 
 
 func _exchange_panel() -> Control:

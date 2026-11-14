@@ -74,6 +74,7 @@ func _init() -> void:
 	_test_achievements()
 	_test_ai_difficulty()
 	_test_hero_records()
+	_test_daily_deals()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -819,3 +820,27 @@ func _test_hero_records() -> void:
 	Profile.record_match(profile, eco, "ai", "lose", {"party": ["lubu", "athena", "sejong"]})
 	var record: Dictionary = Profile.hero_record(profile, "lubu")
 	_check(int(record["played"]) == 2 and int(record["wins"]) == 1, "영웅별 전적이 틀림")
+
+
+func _test_daily_deals() -> void:
+	var eco: Dictionary = _data["economy"]
+	var characters: Array = _data["characters"]
+	var profile := Profile.new_profile("특가", eco)
+	Profile.ensure_daily(profile, "2026-05-01")
+	var deals := Profile.daily_deals(profile, characters, eco, "2026-05-01")
+	_check(deals.size() == 3, "오늘의 특가가 3개가 아님")
+	var again := Profile.daily_deals(profile, characters, eco, "2026-05-01")
+	_check(str(deals[0]["id"]) == str(again[0]["id"]), "같은 날 특가가 바뀜")
+	for deal in deals:
+		_check(Profile.owns(profile, str(deal["id"])), "가지지 않은 영웅이 특가에 나옴")
+	var id := str(deals[0]["id"])
+	var shards := int(profile["owned"][id]["shards"])
+	var gold := int(profile["gold"])
+	_check(Profile.buy_deal(profile, characters, eco, "2026-05-01", 0), "특가를 못 삼")
+	_check(int(profile["owned"][id]["shards"]) == shards + int(deals[0]["shards"]), "특가 조각이 안 들어옴")
+	_check(int(profile["gold"]) == gold - int(deals[0]["gold"]), "특가 골드가 안 빠짐")
+	_check(not Profile.buy_deal(profile, characters, eco, "2026-05-01", 0), "특가를 두 번 삼")
+	profile["gold"] = 0
+	_check(not Profile.buy_deal(profile, characters, eco, "2026-05-01", 1), "골드 없이 특가를 삼")
+	Profile.ensure_daily(profile, "2026-05-02")
+	_check(not bool(Profile.daily_deals(profile, characters, eco, "2026-05-02")[0]["bought"]), "다음 날 특가 구매 기록이 남음")
