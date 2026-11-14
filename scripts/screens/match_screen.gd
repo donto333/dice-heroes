@@ -1010,7 +1010,11 @@ func _show_move(event: Dictionary) -> void:
 		if dice != null:
 			dice.roll_to(event["rolls"], BigDice.ROLL_TIME)
 		var bonus_text := " (+%d)" % int(event["bonus"]) if int(event["bonus"]) > 0 else ""
-		await _big_dice.play("%s 이동" % game.players[who]["name"], event["rolls"], "%d칸!%s" % [int(event["total"]), bonus_text], PLAYER_TEXT_COLORS[who])
+		var caption := "%s 이동" % game.players[who]["name"]
+		if bool(event.get("catchup", false)):
+			# 많이 뒤처진 쪽은 큰 눈이 잘 나온다는 것을 알려 준다.
+			caption = "%s 따라잡기! 큰 눈이 잘 나와요" % game.players[who]["name"]
+		await _big_dice.play(caption, event["rolls"], "%d칸!%s" % [int(event["total"]), bonus_text], PLAYER_TEXT_COLORS[who])
 		# 연출을 기다리는 사이에 결과 줄이 지워졌을 수 있다(다시 하기 등).
 		if is_instance_valid(row):
 			var end: Label = row.get_meta("tail")
