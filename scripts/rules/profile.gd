@@ -1231,3 +1231,26 @@ static func three_star_count(profile: Dictionary) -> int:
 		if int(profile["adventure"][id]) >= 3:
 			count += 1
 	return count
+
+
+## 일괄 강화: 지금 강화할 수 있는 영웅을 파티원 먼저, 한 단계씩 돌아가며 올린다. 올린 횟수를 돌려준다.
+static func upgrade_all(profile: Dictionary, eco: Dictionary) -> int:
+	var order: Array = []
+	for slot in ["attack", "defense", "support"]:
+		var id := str(profile.get("party", {}).get(slot, ""))
+		if id != "" and not order.has(id):
+			order.append(id)
+	var rest: Array = profile.get("owned", {}).keys()
+	rest.sort()
+	for id in rest:
+		if not order.has(str(id)):
+			order.append(str(id))
+	var done := 0
+	var changed := true
+	while changed:
+		changed = false
+		for id in order:
+			if upgrade(profile, eco, str(id)):
+				done += 1
+				changed = true
+	return done

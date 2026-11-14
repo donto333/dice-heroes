@@ -44,6 +44,11 @@ func setup(main_app, params: Dictionary) -> void:
 	column.add_child(header)
 	_count_label = Kit.label("", 26, Kit.GOLD)
 	header.add_child(Kit.expand(_count_label))
+	var all_up := Kit.button("일괄 강화", Color("2a7d4f"), 20, 56)
+	all_up.custom_minimum_size = Vector2(150, 56)
+	all_up.disabled = not bool(app.badges().get("heroes", false))
+	all_up.pressed.connect(_upgrade_all)
+	header.add_child(all_up)
 	_owned_button = Kit.button("", Kit.PANEL_LIGHT, 20, 56)
 	_owned_button.custom_minimum_size = Vector2(190, 56)
 	_owned_button.pressed.connect(_on_owned_toggle)
@@ -250,6 +255,18 @@ func _upgrade(id: String) -> void:
 		app.toast("%s 레벨 %d!" % [app.character(id)["name"], Profile.level_of(app.profile, id)])
 		app.go("heroes", {"filter": _filter})
 		app.current_screen.show_hero(id)
+
+
+## 강화할 수 있는 영웅을 한꺼번에 올린다(파티원 먼저).
+func _upgrade_all() -> void:
+	var count := Profile.upgrade_all(app.profile, app.eco)
+	if count <= 0:
+		app.toast("지금 강화할 수 있는 영웅이 없어요.")
+		return
+	app.save()
+	app.play("win")
+	app.go("heroes", {"filter": _filter})
+	app.toast("영웅을 %d번 강화했어요!" % count)
 
 
 func _on_edit_party() -> void:
