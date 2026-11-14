@@ -163,21 +163,6 @@ func _dice_panel() -> Control:
 		button.pressed.connect(_on_dice_skin.bind(id))
 		cell.add_child(button)
 		grid.add_child(cell)
-	# 묶음 상품(스타터·성장·패스 프리미엄) 설계도 함께 보여 준다.
-	for bundle in table.get("bundles", []):
-		var line := Kit.panel(Color("14182f"), Kit.LINE, 10)
-		var row := Kit.hbox(10)
-		line.add_child(row)
-		var words := Kit.vbox(2)
-		words.add_child(Kit.label(str(bundle["name"]), 22, Kit.GOLD))
-		words.add_child(Kit.para(str(bundle.get("text", "")), 17, Color.WHITE))
-		words.add_child(Kit.label(str(bundle.get("note", "")), 15, Kit.MUTED))
-		row.add_child(Kit.expand(words))
-		var soon := Kit.button("준비 중", Kit.PANEL_LIGHT, 18, 50)
-		soon.custom_minimum_size = Vector2(120, 50)
-		soon.disabled = true
-		row.add_child(soon)
-		column.add_child(line)
 	return card
 
 
@@ -223,6 +208,21 @@ func _gem_pack_panel() -> Control:
 		buy.disabled = true
 		text.add_child(buy)
 		grid.add_child(cell)
+	# 묶음 상품(스타터·성장·패스 프리미엄) 설계도 함께 보여 준다.
+	for bundle in table.get("bundles", []):
+		var line := Kit.panel(Color("14182f"), Kit.LINE, 10)
+		var row := Kit.hbox(10)
+		line.add_child(row)
+		var words := Kit.vbox(2)
+		words.add_child(Kit.label(str(bundle["name"]), 22, Kit.GOLD))
+		words.add_child(Kit.para(str(bundle.get("text", "")), 17, Color.WHITE))
+		words.add_child(Kit.label(str(bundle.get("note", "")), 15, Kit.MUTED))
+		row.add_child(Kit.expand(words))
+		var soon := Kit.button("준비 중", Kit.PANEL_LIGHT, 18, 50)
+		soon.custom_minimum_size = Vector2(120, 50)
+		soon.disabled = true
+		row.add_child(soon)
+		column.add_child(line)
 	return card
 
 
