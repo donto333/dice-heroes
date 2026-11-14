@@ -81,6 +81,7 @@ func _init() -> void:
 	_test_challenge()
 	_test_mail()
 	_test_dice_skins()
+	_test_pass()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -1086,3 +1087,28 @@ func _test_dice_skins() -> void:
 	_check(Profile.equip_dice_skin(profile, "classic") and str(profile["dice_skin"]) == "classic", "기본 스킨으로 못 돌아감")
 	profile["dice_skin"] = "없는것"
 	_check(str(Profile.current_dice_skin(profile, eco)["id"]) == "classic", "모르는 스킨이면 기본이어야 함")
+
+
+func _test_pass() -> void:
+	var eco: Dictionary = _data["economy"]
+	var table: Dictionary = eco["pass"]
+	var levels: Array = table["levels"]
+	_check(levels.size() == 20 and not bool(table["premium_open"]), "패스 구성이 이상함")
+	var profile := Profile.new_profile("패스", eco)
+	Profile.ensure_daily(profile, "2026-05-01")
+	_check(Profile.pass_level(profile, eco) == 0 and Profile.pass_claimable_count(profile, eco) == 0, "처음 패스 레벨이 0이 아님")
+	_check(Profile.claim_pass(profile, eco, 1).is_empty(), "레벨이 안 됐는데 패스 보상을 받음")
+	Profile.record_match(profile, eco, "ai", "win", {})
+	_check(int(profile["pass"]["exp"]) == int(table["exp"]["win"]), "승리 패스 경험치가 틀림")
+	Profile.record_match(profile, eco, "local", "win", {})
+	_check(int(profile["pass"]["exp"]) == int(table["exp"]["win"]), "친구 대전에 패스 경험치를 줌")
+	Profile.add_pass_exp(profile, eco, 250)
+	_check(Profile.pass_level(profile, eco) == 2, "패스 레벨 계산이 틀림")
+	var gold := int(profile["gold"])
+	var first := Profile.claim_pass(profile, eco, 1)
+	_check(int(first.get("gold", 0)) == int(levels[0]["free"]["gold"]) and int(profile["gold"]) == gold + int(first["gold"]), "패스 1레벨 보상이 틀림")
+	_check(Profile.claim_pass(profile, eco, 1).is_empty(), "패스 보상을 두 번 받음")
+	_check(Profile.claim_pass(profile, eco, 3).is_empty(), "아직 안 된 레벨의 패스 보상을 받음")
+	_check(int(Profile.claim_all_pass(profile, eco)["count"]) == 1, "패스 모두 받기 개수가 틀림")
+	Profile.add_pass_exp(profile, eco, 999999)
+	_check(Profile.pass_level(profile, eco) == levels.size() and Profile.pass_progress(profile, eco) == 1.0, "패스 최고 레벨 처리가 틀림")

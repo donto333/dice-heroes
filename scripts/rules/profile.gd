@@ -33,6 +33,8 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"tutorial": {},
 		## 위쪽 막대에 보일 대표 영웅 id (비어 있으면 ATTACK 영웅)
 		"avatar": "",
+		## 시즌 패스: 쌓은 경험치와 이미 받은 무료 보상 레벨(1부터)
+		"pass": {"exp": 0, "claimed": []},
 		## 가진 주사위 스킨 id와 지금 쓰는 스킨
 		"dice_skins": ["classic"],
 		"dice_skin": "classic",
@@ -367,6 +369,8 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 	_add_stat(profile, "battle_wins_total", int(stats.get("battle_wins", 0)))
 	_add_stat(profile, "cards_total", int(stats.get("cards", 0)))
 	_record_heroes(profile, stats.get("party", []), outcome == "win")
+	if mode != "local":
+		add_pass_exp(profile, eco, int(eco.get("pass", {}).get("exp", {}).get(outcome, 0)))
 	return reward
 
 
@@ -455,6 +459,7 @@ static func claim_mission(profile: Dictionary, eco: Dictionary, id: String) -> D
 		if str(mission["id"]) == id and mission_done(profile, mission) and not mission_claimed(profile, mission):
 			profile["daily"]["claimed"].append(id)
 			grant(profile, mission["reward"])
+			add_pass_exp(profile, eco, int(eco.get("pass", {}).get("exp", {}).get("mission", 0)))
 			return mission["reward"]
 	return {}
 
@@ -979,3 +984,73 @@ static func equip_dice_skin(profile: Dictionary, id: String) -> bool:
 		return false
 	profile["dice_skin"] = id
 	return true
+
+
+# ---------------------------------------------------------------- 시즌 패스
+
+static func _pass_state(profile: Dictionary) -> Dictionary:
+	if not profile.has("pass"):
+		profile["pass"] = {"exp": 0, "claimed": []}
+	return profile["pass"]
+
+
+static func add_pass_exp(profile: Dictionary, eco: Dictionary, amount: int) -> void:
+	if amount <= 0 or not eco.has("pass"):
+		return
+	var state := _pass_state(profile)
+	var table: Dictionary = eco["pass"]
+	var level_list: Array = table.get("levels", [])
+	var cap: int = int(table.get("exp_per_level", 100)) * level_list.size()
+	state["exp"] = min(cap, int(state["exp"]) + amount)
+
+
+## 지금 패스 레벨(0부터, 최고는 levels 수)
+static func pass_level(profile: Dictionary, eco: Dictionary) -> int:
+	var table: Dictionary = eco.get("pass", {})
+	var per := int(table.get("exp_per_level", 100))
+	return min(table.get("levels", []).size(), int(_pass_state(profile)["exp"]) / max(per, 1))
+
+
+## 다음 레벨까지 쌓은 비율(0~1). 최고 레벨이면 1.
+static func pass_progress(profile: Dictionary, eco: Dictionary) -> float:
+	var table: Dictionary = eco.get("pass", {})
+	var per := int(table.get("exp_per_level", 100))
+	if pass_level(profile, eco) >= table.get("levels", []).size():
+		return 1.0
+	return float(int(_pass_state(profile)["exp"]) % max(per, 1)) / float(max(per, 1))
+
+
+static func pass_claimed(profile: Dictionary, level: int) -> bool:
+	return level in _pass_state(profile)["claimed"]
+
+
+## 무료 보상을 받을 수 있는 레벨 수
+static func pass_claimable_count(profile: Dictionary, eco: Dictionary) -> int:
+	var count := 0
+	for level in range(1, pass_level(profile, eco) + 1):
+		if not pass_claimed(profile, level):
+			count += 1
+	return count
+
+
+## level(1부터)의 무료 보상을 받는다. 아직 못 갔거나 이미 받았으면 {}.
+static func claim_pass(profile: Dictionary, eco: Dictionary, level: int) -> Dictionary:
+	var levels: Array = eco.get("pass", {}).get("levels", [])
+	if level < 1 or level > levels.size() or level > pass_level(profile, eco) or pass_claimed(profile, level):
+		return {}
+	_pass_state(profile)["claimed"].append(level)
+	var reward: Dictionary = levels[level - 1].get("free", {})
+	grant(profile, reward)
+	return reward
+
+
+## 받을 수 있는 패스 보상을 모두 받는다. 합계 {"gold", "gems", "count"}.
+static func claim_all_pass(profile: Dictionary, eco: Dictionary) -> Dictionary:
+	var total := {"gold": 0, "gems": 0, "count": 0}
+	for level in range(1, pass_level(profile, eco) + 1):
+		var reward := claim_pass(profile, eco, level)
+		if not reward.is_empty():
+			total["gold"] = int(total["gold"]) + int(reward.get("gold", 0))
+			total["gems"] = int(total["gems"]) + int(reward.get("gems", 0))
+			total["count"] = int(total["count"]) + 1
+	return total

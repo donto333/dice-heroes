@@ -534,5 +534,179 @@
         "gems": 500
       }
     }
-  ]
+  ],
+  "pass": {
+    "_comment": "시즌 패스. 판을 하거나 미션 보상을 받으면 패스 경험치가 쌓인다. levels의 free는 누구나 받고, premium은 유료 줄(아직 결제가 없어 premium_open=false로 잠가 둔다).",
+    "name": "시즌 1 · 첫 원정",
+    "exp_per_level": 100,
+    "exp": {
+      "win": 30,
+      "lose": 15,
+      "draw": 20,
+      "mission": 10
+    },
+    "premium_open": false,
+    "levels": [
+      {
+        "free": {
+          "gold": 300
+        },
+        "premium": {
+          "gems": 100
+        }
+      },
+      {
+        "free": {
+          "gems": 20
+        },
+        "premium": {
+          "gold": 1000
+        }
+      },
+      {
+        "free": {
+          "gold": 400
+        },
+        "premium": {
+          "gems": 100
+        }
+      },
+      {
+        "free": {
+          "gems": 30
+        },
+        "premium": {
+          "gold": 1500
+        }
+      },
+      {
+        "free": {
+          "gems": 50
+        },
+        "premium": {
+          "gems": 200
+        }
+      },
+      {
+        "free": {
+          "gold": 500
+        },
+        "premium": {
+          "gold": 2000
+        }
+      },
+      {
+        "free": {
+          "gems": 30
+        },
+        "premium": {
+          "gems": 150
+        }
+      },
+      {
+        "free": {
+          "gold": 600
+        },
+        "premium": {
+          "gold": 2500
+        }
+      },
+      {
+        "free": {
+          "gems": 40
+        },
+        "premium": {
+          "gems": 150
+        }
+      },
+      {
+        "free": {
+          "gems": 80
+        },
+        "premium": {
+          "gems": 300
+        }
+      },
+      {
+        "free": {
+          "gold": 700
+        },
+        "premium": {
+          "gold": 3000
+        }
+      },
+      {
+        "free": {
+          "gems": 40
+        },
+        "premium": {
+          "gems": 200
+        }
+      },
+      {
+        "free": {
+          "gold": 800
+        },
+        "premium": {
+          "gold": 3500
+        }
+      },
+      {
+        "free": {
+          "gems": 50
+        },
+        "premium": {
+          "gems": 200
+        }
+      },
+      {
+        "free": {
+          "gems": 100
+        },
+        "premium": {
+          "gems": 400
+        }
+      },
+      {
+        "free": {
+          "gold": 1000
+        },
+        "premium": {
+          "gold": 4000
+        }
+      },
+      {
+        "free": {
+          "gems": 50
+        },
+        "premium": {
+          "gems": 250
+        }
+      },
+      {
+        "free": {
+          "gold": 1200
+        },
+        "premium": {
+          "gold": 5000
+        }
+      },
+      {
+        "free": {
+          "gems": 60
+        },
+        "premium": {
+          "gems": 300
+        }
+      },
+      {
+        "free": {
+          "gems": 200
+        },
+        "premium": {
+          "gems": 800
+        }
+      }
+    ]
+  }
 }

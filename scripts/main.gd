@@ -28,6 +28,7 @@ const SCREENS := {
 	"match": preload("res://scripts/screens/match_screen.gd"),
 	"help": preload("res://scripts/screens/help_screen.gd"),
 	"adventure": preload("res://scripts/screens/adventure_screen.gd"),
+	"pass": preload("res://scripts/screens/pass_screen.gd"),
 }
 const VERSION := "0.7.0"
 
