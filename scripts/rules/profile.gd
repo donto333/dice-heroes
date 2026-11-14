@@ -40,7 +40,9 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"pity": 0,
 		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0},
 		"attendance": {"last_date": "", "count": 0},
-		"settings": {"sfx": true, "bgm": true},
+		"settings": {"sfx": true, "bgm": true, "fast": false},
+		## 마지막으로 새 소식을 본 버전
+		"seen_version": "",
 		## 모험 진행: {스테이지 id: 얻은 별 수(0~3)}
 		"adventure": {},
 	}
