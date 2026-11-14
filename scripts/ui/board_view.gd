@@ -70,7 +70,7 @@ var _timer := 0.0
 ## 큰 맵은 화면에 다 안 들어가므로 칸 크기를 MIN_CELL로 두고 카메라로 일부만 보여 준다.
 const MIN_CELL := 84.0
 const CAMERA_SPEED := 6.0
-const MINIMAP_WIDTH := 150.0
+const MINIMAP_WIDTH := 110.0
 ## 카메라가 보고 있는 맵 위의 점(맵 좌표, 픽셀)
 var _camera := Vector2.ZERO
 var _camera_target := Vector2.ZERO
@@ -337,7 +337,7 @@ func _draw_minimap(layout: Dictionary) -> void:
 	var map_size := Vector2(grid.x, grid.y) * dot
 	var corner := Vector2(size.x - map_size.x - 10.0, 10.0)
 	var panel := StyleBoxFlat.new()
-	panel.bg_color = Color(0, 0, 0, 0.55)
+	panel.bg_color = Color(0, 0, 0, 0.45)
 	panel.set_corner_radius_all(8)
 	draw_style_box(panel, Rect2(corner - Vector2(6, 6), map_size + Vector2(12, 12)))
 	for id in game.nodes:
@@ -348,6 +348,7 @@ func _draw_minimap(layout: Dictionary) -> void:
 		if game.is_hidden(id):
 			color = HIDDEN_COLOR
 		var spot := corner + Vector2(int(tile.get("x", 0)), int(tile.get("y", 0))) * dot
+		color.a = 0.7
 		draw_rect(Rect2(spot + Vector2(1, 1), Vector2(dot - 2, dot - 2)), color)
 	for player_index in shown_pos.size():
 		var id := int(shown_pos[player_index])
