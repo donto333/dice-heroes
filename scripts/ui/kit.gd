@@ -221,7 +221,7 @@ static func icon_button(text: String, icon_name: String, color: Color, font_size
 	main.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texts.add_child(main)
 	if sub != "":
-		var small := label(sub, maxi(14, int(font_size * 0.5)), Color(1, 1, 1, 0.9))
+		var small := label(sub, maxi(17, int(font_size * 0.5)), Color(1, 1, 1, 0.9))
 		small.add_theme_constant_override("outline_size", 4)
 		small.add_theme_color_override("font_outline_color", color.darkened(0.6))
 		small.mouse_filter = Control.MOUSE_FILTER_IGNORE
