@@ -62,6 +62,7 @@ var _speed_button: Button
 var _versus: Control
 var _reward_scale := 1.0
 var _last_reward: Dictionary = {}
+var _next_stage := ""
 var _start_distance := 1
 var _cards_used := 0
 var _recorded := false
@@ -1248,6 +1249,12 @@ func _result_extras() -> Dictionary:
 	if int(_last_reward.get("trophies", 0)) != 0:
 		chips.append(["트로피 %+d" % int(_last_reward["trophies"]), Color("ff9a6a")])
 	extras["chips"] = chips
+	# 모험에서 이겼고 다음 스테이지가 있으면 오른쪽 버튼이 '다음 스테이지'가 된다.
+	_next_stage = ""
+	if _mode == "adventure" and game.winner == 0:
+		_next_stage = Profile.next_stage_id(app.data.get("adventure", {}), _stage_id)
+	if _next_stage != "":
+		extras["again_text"] = "다음 스테이지"
 	return extras
 
 
@@ -1294,7 +1301,7 @@ func _on_retry_pressed() -> void:
 	if _is_local():
 		app.go("match", {"mode": _mode, "parties": _parties, "humans": _humans, "map": app.rng.randi_range(0, app.data["boards"].size() - 1)})
 	elif _mode == "adventure":
-		app.go("party", {"purpose": "match", "mode": "adventure", "stage": _stage_id})
+		app.go("party", {"purpose": "match", "mode": "adventure", "stage": _next_stage if _next_stage != "" else _stage_id})
 	else:
 		app.start_mode(_mode)
 

@@ -543,6 +543,15 @@ static func all_stages(adventure: Dictionary) -> Array:
 	return result
 
 
+## 이 스테이지 다음 스테이지의 id. 마지막이면 "".
+static func next_stage_id(adventure: Dictionary, stage_id: String) -> String:
+	var stages := all_stages(adventure)
+	for index in stages.size() - 1:
+		if str(stages[index]["id"]) == stage_id:
+			return str(stages[index + 1]["id"])
+	return ""
+
+
 static func stage_stars(profile: Dictionary, stage_id: String) -> int:
 	return int(profile.get("adventure", {}).get(stage_id, 0))
 

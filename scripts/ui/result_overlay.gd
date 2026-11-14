@@ -19,6 +19,7 @@ var _subtitle: Label
 var _details: Label
 var _panel: PanelContainer
 var _confetti: Control
+var _again: Button
 var _mvp_row: HBoxContainer
 var _mvp_face: Control
 var _mvp_name: Label
@@ -116,6 +117,7 @@ func _ready() -> void:
 	change.pressed.connect(_on_change_pressed)
 	buttons.add_child(change)
 	var again := Kit.button("다시 하기", Color("e8890c"), 30, 92)
+	_again = again
 	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.size_flags_stretch_ratio = 1.5
 	again.pressed.connect(_on_again_pressed)
@@ -154,6 +156,7 @@ func _button(text: String, color: Color) -> Button:
 ## details는 아래에 줄마다 보여 줄 글이다.
 ## extras: {"mvp": 캐릭터, "mvp_note": "ATTACK · 전투 3승", "chips": [["● 150", 색], ...]} (없어도 됨)
 func show_result(outcome: String, subtitle: String, details: PackedStringArray, extras: Dictionary = {}) -> void:
+	_again.text = str(extras.get("again_text", "다시 하기"))
 	var mvp: Dictionary = extras.get("mvp", {})
 	_mvp_row.visible = not mvp.is_empty()
 	if not mvp.is_empty():
