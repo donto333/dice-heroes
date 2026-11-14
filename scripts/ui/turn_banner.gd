@@ -18,7 +18,7 @@ func _ready() -> void:
 	visible = false
 	_box = VBoxContainer.new()
 	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_box.add_theme_constant_override("separation", -14)
+	_box.add_theme_constant_override("separation", -6)
 	_box.anchor_left = 0.0
 	_box.anchor_right = 1.0
 	_box.anchor_top = 0.36
