@@ -512,7 +512,7 @@ func _draw() -> void:
 func _draw_minimap(layout: Dictionary) -> void:
 	var grid := _grid_size()
 	# 아주 긴 맵(직선형)은 작은 지도를 가로로 더 길게 쓴다.
-	var dot: float = min(MINIMAP_WIDTH * 1.8 / grid.x, MINIMAP_WIDTH / grid.y)
+	var dot: float = min(MINIMAP_WIDTH * 2.6 / grid.x, MINIMAP_WIDTH / grid.y)
 	var map_size := Vector2(grid.x, grid.y) * dot
 	var corner := Vector2(size.x - map_size.x - 10.0, 10.0)
 	var panel := StyleBoxFlat.new()
@@ -528,7 +528,9 @@ func _draw_minimap(layout: Dictionary) -> void:
 			color = HIDDEN_COLOR
 		var spot := corner + Vector2(int(tile.get("x", 0)), int(tile.get("y", 0))) * dot
 		color.a = 0.7
-		draw_rect(Rect2(spot + Vector2(1, 1), Vector2(dot - 2, dot - 2)), color)
+		var dot_size: float = max(dot - 1.0, 2.5)
+		color.a = 0.9
+		draw_rect(Rect2(spot, Vector2(dot_size, dot_size)), color)
 	for player_index in shown_pos.size():
 		var id := int(shown_pos[player_index])
 		if game.nodes.has(id):
