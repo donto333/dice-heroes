@@ -47,6 +47,7 @@ var _roll_button: Button
 var _log_label: Label
 var _battle_overlay: Control
 var _ability_portraits: Dictionary = {}
+var _ability_gauges: Dictionary = {}
 var app
 var _mode := "ai"
 var _parties: Array = []
@@ -200,6 +201,23 @@ func _build_ui() -> void:
 	for slot in Game.SLOTS:
 		var button := _make_button(15, 120, SLOT_COLORS[slot])
 		button.pressed.connect(_on_ability_pressed.bind(slot))
+		# 쓸 수 있을 때: 금색 테두리 / 아직 못 쓸 때: 어두운 자리 색(글자는 잘 보이게)
+		var ready_style := _chunky(_box(SLOT_COLORS[slot], Color("ffcf4d"), 4), 8)
+		button.add_theme_stylebox_override("normal", ready_style)
+		button.add_theme_stylebox_override("disabled", _chunky(_box(SLOT_COLORS[slot].darkened(0.6), SLOT_COLORS[slot].darkened(0.75), 3), 5))
+		button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.72))
+		var gauge := Kit.bar(0.0, Color("ffcf4d"), 10)
+		gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(gauge)
+		gauge.anchor_left = 0.0
+		gauge.anchor_right = 1.0
+		gauge.anchor_top = 1.0
+		gauge.anchor_bottom = 1.0
+		gauge.offset_left = 8
+		gauge.offset_right = -8
+		gauge.offset_top = -20
+		gauge.offset_bottom = -10
+		_ability_gauges[slot] = gauge
 		ability_row.add_child(button)
 		_ability_buttons[slot] = button
 		_ability_portraits[slot] = _add_side_portrait(button)
@@ -1160,6 +1178,7 @@ func _refresh() -> void:
 			Game.SLOT_LABELS[slot], character["name"],
 			ability.get("name", "-"), gauge_text, ability.get("text", "")]
 		button.disabled = not is_ready
+		_ability_gauges[slot].value = clampf(float(me["gauge"][slot]) / 100.0, 0.0, 1.0)
 		var portrait = _ability_portraits[slot]
 		portrait.show_character(character, SLOT_COLORS[slot])
 
