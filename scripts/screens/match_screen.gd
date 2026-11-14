@@ -457,7 +457,7 @@ func _hint(key: String, text: String) -> bool:
 	bubble.offset_top = 0
 	_hint_bubble = bubble
 	# 그냥 두어도 잠시 뒤 사라진다.
-	get_tree().create_timer(12.0).timeout.connect(_close_hint_if.bind(bubble))
+	get_tree().create_timer(12.0).timeout.connect(_close_hint_if.bind(bubble.get_instance_id()))
 	return true
 
 
@@ -467,8 +467,9 @@ func _close_hint() -> void:
 	_hint_bubble = null
 
 
-func _close_hint_if(bubble: Control) -> void:
-	if bubble == _hint_bubble:
+## 이미 닫힌(지워진) 말풍선일 수 있으므로 번호로 견준다.
+func _close_hint_if(bubble_id: int) -> void:
+	if _hint_bubble != null and is_instance_valid(_hint_bubble) and _hint_bubble.get_instance_id() == bubble_id:
 		_close_hint()
 
 
@@ -992,7 +993,7 @@ func _show_move(event: Dictionary) -> void:
 	if not event["rolls"].is_empty():
 		# 판 가운데 큰 주사위 연출. 아래 결과 줄의 작은 주사위도 같이 구른다.
 		_play("dice")
-		var dice = row.get_meta("dice", null)
+		var dice = row.get_meta("dice") if row.has_meta("dice") else null
 		if dice != null:
 			dice.roll_to(event["rolls"], BigDice.ROLL_TIME)
 		var bonus_text := " (+%d)" % int(event["bonus"]) if int(event["bonus"]) > 0 else ""
@@ -1016,7 +1017,7 @@ func _show_fate(event: Dictionary) -> void:
 
 ## 결과 줄의 주사위를 굴린 뒤 끝 글자를 보여 준다.
 func _roll_row(row: HBoxContainer, rolls: Array, tail: String) -> void:
-	var dice = row.get_meta("dice", null)
+	var dice = row.get_meta("dice") if row.has_meta("dice") else null
 	if dice != null:
 		_play("dice")
 		await dice.roll_to(rolls, 0.55)
