@@ -82,6 +82,7 @@ func _init() -> void:
 	_test_mail()
 	_test_dice_skins()
 	_test_pass()
+	_test_presets()
 	_test_coupon_and_backup()
 	if _failures.is_empty():
 		print("모든 검사 통과")
@@ -1132,3 +1133,18 @@ func _test_coupon_and_backup() -> void:
 	_check(back["owned"].size() == profile["owned"].size(), "옮기기 코드에서 영웅 수가 달라짐")
 	_check(SaveStore.import_text("아무 글자").is_empty() and SaveStore.import_text("DH1:엉터리").is_empty(), "틀린 옮기기 코드가 통함")
 	_check(SaveStore.import_text("DH1:" + Marshalls.utf8_to_base64("{\"a\": 1}")).is_empty(), "프로필이 아닌 코드가 통함")
+
+
+func _test_presets() -> void:
+	var eco: Dictionary = _data["economy"]
+	var characters: Array = _data["characters"]
+	var profile := Profile.new_profile("저장칸", eco)
+	var party: Dictionary = profile["party"].duplicate()
+	_check(Profile.save_preset(profile, characters, 1, party, Game.POINT_LIMIT), "파티를 저장 칸에 못 넣음")
+	_check(str(profile["party_presets"][1]["attack"]) == str(party["attack"]) and profile["party_presets"][0].is_empty(), "저장 칸 내용이 틀림")
+	_check(not Profile.save_preset(profile, characters, 3, party, Game.POINT_LIMIT), "없는 칸에 저장함")
+	var bad := party.duplicate()
+	bad["defense"] = bad["attack"]
+	_check(not Profile.save_preset(profile, characters, 0, bad, Game.POINT_LIMIT), "같은 영웅이 두 번 든 파티를 저장함")
+	profile.erase("party_presets")
+	_check(Profile.save_preset(profile, characters, 2, party, Game.POINT_LIMIT) and profile["party_presets"].size() == 3, "예전 프로필에 저장 칸이 안 생김")

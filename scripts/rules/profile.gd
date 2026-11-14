@@ -33,6 +33,8 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"tutorial": {},
 		## 위쪽 막대에 보일 대표 영웅 id (비어 있으면 ATTACK 영웅)
 		"avatar": "",
+		## 저장해 둔 파티 3칸 ({}이면 빈 칸)
+		"party_presets": [{}, {}, {}],
 		## 이미 쓴 쿠폰 코드
 		"coupons_used": [],
 		## 시즌 패스: 쌓은 경험치와 이미 받은 무료 보상 레벨(1부터)
@@ -1074,3 +1076,17 @@ static func redeem_coupon(profile: Dictionary, coupons: Dictionary, code: String
 	var reward: Dictionary = table[key].get("reward", {})
 	grant(profile, reward)
 	return {"ok": true, "reason": "", "reward": reward, "text": str(table[key].get("text", ""))}
+
+
+# ---------------------------------------------------------------- 파티 저장 칸
+
+## index번 칸(0~2)에 파티를 저장한다. 파티가 규칙에 안 맞으면 false.
+static func save_preset(profile: Dictionary, characters: Array, index: int, party: Dictionary, point_limit: int) -> bool:
+	if index < 0 or index > 2 or not party_ok(profile, characters, party, point_limit):
+		return false
+	if not profile.has("party_presets") or typeof(profile["party_presets"]) != TYPE_ARRAY:
+		profile["party_presets"] = [{}, {}, {}]
+	while profile["party_presets"].size() < 3:
+		profile["party_presets"].append({})
+	profile["party_presets"][index] = {"attack": str(party["attack"]), "defense": str(party["defense"]), "support": str(party["support"])}
+	return true

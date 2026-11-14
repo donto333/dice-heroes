@@ -46,9 +46,19 @@ func setup(main_app, params: Dictionary) -> void:
 		options["title"] = "%s · 파티 확인" % MODE_TITLES.get(mode, "대전")
 		options["subtitle"] = "이대로 시작하거나 바꿔도 돼요. 바꾼 파티는 저장돼요."
 		options["confirm_text"] = "대전 시작"
+	# 내 영웅으로 파티를 짤 때만 저장 칸을 보여 준다(친구 대전은 48명을 다 쓰므로 제외).
+	if mode != "local":
+		options["presets"] = app.profile.get("party_presets", [{}, {}, {}])
+		select.preset_saved.connect(_on_preset_saved)
 	select.setup(characters, app.data["abilities"], initial, options)
 	select.confirmed.connect(_on_confirmed)
 	select.cancelled.connect(_on_cancelled)
+
+
+func _on_preset_saved(index: int, party: Dictionary) -> void:
+	if Profile.save_preset(app.profile, app.data["characters"], index, party, Game.POINT_LIMIT):
+		app.save()
+		app.play("good")
 
 
 func _on_confirmed(party: Dictionary) -> void:

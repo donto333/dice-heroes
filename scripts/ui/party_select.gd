@@ -5,6 +5,8 @@ extends Control
 
 signal confirmed(party: Dictionary)
 signal cancelled
+## 저장 칸에 지금 파티를 넣었을 때 (index: 0부터)
+signal preset_saved(index: int, party: Dictionary)
 
 const Portrait := preload("res://scripts/ui/portrait.gd")
 
@@ -40,6 +42,11 @@ var _filter_buttons: Dictionary = {}
 var _info_label: Label
 ## {"title", "subtitle", "confirm_text", "cancel_text", "levels": {id: 레벨}}
 var _options: Dictionary = {}
+## 저장 칸(파티 3개까지). options["presets"]가 있을 때만 보인다.
+var _presets: Array = []
+var _preset_buttons: Array = []
+var _save_button: Button
+var _saving := false
 
 
 func setup(character_list: Array, ability_table: Dictionary, initial: Dictionary, options: Dictionary = {}) -> void:
@@ -94,6 +101,28 @@ func _build() -> void:
 
 	_points_label = _label("", 24, Color.WHITE)
 	column.add_child(_points_label)
+
+	# 저장 칸: 자주 쓰는 파티를 넣어 두고 한 번에 불러온다.
+	_preset_buttons = []
+	_presets = (_options.get("presets", []) as Array).duplicate(true)
+	if _options.has("presets"):
+		var preset_row := HBoxContainer.new()
+		preset_row.add_theme_constant_override("separation", 6)
+		column.add_child(preset_row)
+		_save_button = _plain_button("칸에 저장", Color("7a5a1c"))
+		_save_button.custom_minimum_size = Vector2(150, 64)
+		_save_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		_save_button.add_theme_font_size_override("font_size", 20)
+		_save_button.pressed.connect(_on_save_mode_pressed)
+		preset_row.add_child(_save_button)
+		for index in 3:
+			var preset := _plain_button("", Color("3a4466"))
+			preset.custom_minimum_size = Vector2(0, 64)
+			preset.add_theme_font_size_override("font_size", 16)
+			preset.clip_text = true
+			preset.pressed.connect(_on_preset_pressed.bind(index))
+			preset_row.add_child(preset)
+			_preset_buttons.append(preset)
 
 	# 고른 캐릭터의 어빌리티 설명
 	_info_label = _label("캐릭터를 누르면 어빌리티 설명이 여기 나옵니다.", 19, Color(1, 1, 1, 0.8))
@@ -333,6 +362,54 @@ func _top_by_grade(score_of: Callable) -> Array:
 	return picked
 
 
+# ---------------------------------------------------------------- 저장 칸
+
+func _preset_at(index: int) -> Dictionary:
+	if index < _presets.size() and typeof(_presets[index]) == TYPE_DICTIONARY:
+		return _presets[index]
+	return {}
+
+
+## 저장 칸의 영웅을 지금도 모두 쓸 수 있는지(가진 영웅 목록에 있는지)
+func _preset_usable(preset: Dictionary) -> bool:
+	for slot in SLOTS:
+		if _character(str(preset.get(slot, ""))).is_empty():
+			return false
+	return true
+
+
+func _on_save_mode_pressed() -> void:
+	if not can_start():
+		_info_label.text = "세 자리를 모두 채우고 포인트 제한을 지켜야 저장할 수 있어요."
+		return
+	_saving = not _saving
+	_info_label.text = "저장할 칸을 누르세요." if _saving else "저장을 그만뒀어요."
+	_refresh()
+
+
+func _on_preset_pressed(index: int) -> void:
+	if _saving:
+		_saving = false
+		while _presets.size() <= index:
+			_presets.append({})
+		_presets[index] = party.duplicate()
+		preset_saved.emit(index, party.duplicate())
+		_info_label.text = "%d번 칸에 저장했어요." % (index + 1)
+		_refresh()
+		return
+	var preset := _preset_at(index)
+	if preset.is_empty():
+		_info_label.text = "%d번 칸은 비어 있어요. '칸에 저장'을 누른 뒤 이 칸을 누르면 지금 파티가 들어가요." % (index + 1)
+		return
+	if not _preset_usable(preset):
+		_info_label.text = "%d번 칸에 지금 쓸 수 없는 영웅이 있어요." % (index + 1)
+		return
+	for slot in SLOTS:
+		party[slot] = str(preset[slot])
+	_info_label.text = "%d번 칸의 파티를 불러왔어요." % (index + 1)
+	_refresh()
+
+
 func _on_cancel_pressed() -> void:
 	cancelled.emit()
 
@@ -389,6 +466,21 @@ func _refresh() -> void:
 		var border := GOLD if chosen else fill.lightened(0.3)
 		for state in ["normal", "hover", "pressed"]:
 			button.add_theme_stylebox_override(state, _box(fill if state != "hover" else fill.lightened(0.1), border, 2))
+
+	for index in _preset_buttons.size():
+		var preset_button: Button = _preset_buttons[index]
+		var preset := _preset_at(index)
+		var names: Array = []
+		for slot in SLOTS:
+			var member := _character(str(preset.get(slot, "")))
+			if not member.is_empty():
+				names.append(str(member["name"]))
+		preset_button.text = "%d번  %s" % [index + 1, " · ".join(names)] if names.size() == 3 else "%d번  비어 있음" % (index + 1)
+		var preset_fill := Color("7a5a1c") if _saving else (Color("2f5a8a") if names.size() == 3 else Color("3a4466"))
+		for state in ["normal", "hover", "pressed"]:
+			preset_button.add_theme_stylebox_override(state, _box(preset_fill, GOLD if _saving else preset_fill.lightened(0.3), 2))
+	if _save_button != null:
+		_save_button.text = "칸 고르기..." if _saving else "칸에 저장"
 
 	var total := points()
 	_points_label.text = "소환 포인트 %d / %d" % [total, POINT_LIMIT]
