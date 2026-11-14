@@ -100,6 +100,7 @@ const HEX_DEPTH := 0.13
 ## 판 위에 얹힌 것(정보판, 주사위 버튼)이 가리는 위·아래 높이(픽셀)
 var pad_top := 0.0
 var pad_bottom := 0.0
+var pad_left := 0.0
 const HOP_HEIGHT := 0.42
 
 
@@ -244,7 +245,7 @@ func _layout() -> Dictionary:
 func _clamped_camera(world: Vector2) -> Vector2:
 	var half := size / 2.0
 	# 위아래 여백만큼 맵 밖까지 밀 수 있게 해서, 가장자리 칸이 판 위에 얹힌 정보판에 가려지지 않게 한다.
-	return Vector2(clampf(_camera.x, half.x, max(half.x, world.x - half.x)),
+	return Vector2(clampf(_camera.x, half.x - pad_left, max(half.x - pad_left, world.x - half.x)),
 		clampf(_camera.y, half.y - pad_top, max(half.y - pad_top, world.y - half.y + pad_bottom)))
 
 

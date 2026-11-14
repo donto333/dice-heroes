@@ -166,6 +166,7 @@ func _build_ui() -> void:
 	_board_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_board_view.pad_top = 100.0
 	_board_view.pad_bottom = 110.0
+	_board_view.pad_left = 112.0
 	board_area.add_child(_board_view)
 	for index in 2:
 		var card := _player_card(index)
