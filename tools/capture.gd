@@ -184,6 +184,8 @@ func _run() -> void:
 	_app.go("lobby")
 	await _wait(0.4)
 	await _shot("19_lobby_after")
+	_close_dialogs()
+	await _play_full_game()
 	quit(0)
 
 
@@ -219,3 +221,44 @@ func _find_scroll(node: Node) -> ScrollContainer:
 		if found != null:
 			return found
 	return null
+
+
+## 한 판을 처음부터 끝까지 자동으로 해 본다(빠르게). 실제 흐름에서 스크립트 오류가 나는지 보는 용도.
+## 내 차례면 굴리고, 갈림길·싸움 선택은 첫 번째를 고르고, VS·전투 화면은 바로 넘긴다.
+func _play_full_game() -> void:
+	_app.start_mode("rank")
+	await _wait(0.4)
+	_app.current_screen.get_child(0)._on_start_pressed()
+	await _wait(0.3)
+	var screen = _app.current_screen
+	Engine.time_scale = 10.0
+	var steps := 0
+	var rolls := 0
+	var choices := 0
+	while steps < 900:
+		steps += 1
+		await _wait(0.5)
+		if _app.current_screen != screen or screen.game == null:
+			break
+		_close_dialogs()
+		screen._versus._skipped = true
+		screen._battle_overlay._skip = true
+		if screen.game.winner >= 0:
+			break
+		if screen._choosing_path and screen.game.awaiting_choice() and not screen._board_view.is_busy():
+			choices += 1
+			screen._on_path_chosen(0)
+		elif screen._waiting_for_player:
+			rolls += 1
+			if rolls == 2:
+				screen._on_emote("가자!")
+			screen._on_roll_pressed()
+		if steps == 60:
+			Engine.time_scale = 1.0
+			await _shot("20_midgame")
+			Engine.time_scale = 10.0
+	Engine.time_scale = 1.0
+	await _wait(1.2)
+	await _shot("21_game_end")
+	if screen.game != null:
+		print("FULLGAME 끝: 승자 %d · %d턴 · 굴림 %d번 · 선택 %d번 · 확인 %d번" % [int(screen.game.winner), int(screen.game.round_number), rolls, choices, steps])
