@@ -32,3 +32,27 @@ static func save_profile(profile: Dictionary) -> void:
 static func erase() -> void:
 	if exists():
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))
+
+
+# ---------------------------------------------------------------- 데이터 옮기기
+
+## 프로필을 글자 한 줄(옮기기 코드)로 바꾼다. 다른 기기에 붙여 넣어 이어 할 수 있다.
+static func export_text(profile: Dictionary) -> String:
+	return "DH1:" + Marshalls.utf8_to_base64(JSON.stringify(profile))
+
+
+## 옮기기 코드를 프로필로 되돌린다. 코드가 틀리면 빈 사전.
+static func import_text(text: String) -> Dictionary:
+	var cleaned := text.strip_edges().replace("\n", "").replace(" ", "")
+	if not cleaned.begins_with("DH1:"):
+		return {}
+	var raw := Marshalls.base64_to_utf8(cleaned.substr(4))
+	if raw == "":
+		return {}
+	var parsed = JSON.parse_string(raw)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	# 프로필 모양인지 간단히 확인한다.
+	if typeof(parsed.get("nickname")) != TYPE_STRING or typeof(parsed.get("owned")) != TYPE_DICTIONARY or typeof(parsed.get("party")) != TYPE_DICTIONARY:
+		return {}
+	return parsed
