@@ -96,8 +96,17 @@ func _on_confirmed(party: Dictionary) -> void:
 		if not names.is_empty():
 			var tier: Dictionary = Profile.tier_of(app.eco, int(app.profile["trophies"]))
 			theirs["name"] = "%s(%s)" % [names[app.rng.randi_range(0, names.size() - 1)], tier["name"]]
+	var scale := 1.0
+	if mode == "ai":
+		var difficulty: Dictionary = Profile.ai_difficulty(app.eco, str(app.profile.get("ai_difficulty", "easy")))
+		ai_level = int(difficulty["level"])
+		scale = float(difficulty["reward_scale"])
+		if not bool(difficulty["smart"]):
+			# 쉬움: 조합을 따지지 않은 아무 파티
+			theirs = AI.pick_party(app.data["characters"], Game.POINT_LIMIT, app.rng, 1)
+		theirs["name"] = "AI(%s)" % difficulty["name"]
 	theirs["levels"] = {"attack": ai_level, "defense": ai_level, "support": ai_level}
-	app.go("match", {"mode": mode, "parties": [mine, theirs], "humans": [true, false], "map": _random_map()})
+	app.go("match", {"mode": mode, "parties": [mine, theirs], "humans": [true, false], "map": _random_map(), "reward_scale": scale})
 
 
 func _random_map() -> int:

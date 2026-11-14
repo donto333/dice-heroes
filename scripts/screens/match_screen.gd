@@ -53,6 +53,7 @@ var _map_index := 0
 var _stage_id := ""
 var _player_cards: Array = []
 var _hint_bubble: Control
+var _reward_scale := 1.0
 var _start_distance := 1
 var _cards_used := 0
 var _recorded := false
@@ -76,6 +77,7 @@ func setup(main_app, params: Dictionary) -> void:
 	_map_index = map_index
 	_mode = str(params.get("mode", "ai"))
 	_stage_id = str(params.get("stage", ""))
+	_reward_scale = float(params.get("reward_scale", 1.0))
 	_parties = params.get("parties", [])
 	_humans = params.get("humans", [true, false])
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -854,7 +856,7 @@ func _record(outcome: String) -> PackedStringArray:
 	if _recorded or not app.has_profile():
 		return _reward_lines
 	_recorded = true
-	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used})
+	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale})
 	lines.append("")
 	lines.append("보상: %s  ·  경험치 +%d" % [Kit.reward_line(reward), int(reward["exp"])])
 	if _mode == "adventure" and _stage_id != "":

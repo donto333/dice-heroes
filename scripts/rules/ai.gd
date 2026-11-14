@@ -78,7 +78,7 @@ static func card_useful(game, card: Dictionary) -> bool:
 ## 자리 배치까지 따져 가장 점수가 높은 조합을 쓴다. 매번 뽑는 조합이 달라서 상대가 다양하다.
 const PARTY_SAMPLES := 12
 
-static func pick_party(characters: Array, point_limit: int, rng: RandomNumberGenerator) -> Dictionary:
+static func pick_party(characters: Array, point_limit: int, rng: RandomNumberGenerator, samples: int = PARTY_SAMPLES) -> Dictionary:
 	var count := characters.size()
 	if count < 3:
 		return {}
@@ -86,7 +86,7 @@ static func pick_party(characters: Array, point_limit: int, rng: RandomNumberGen
 	var best_score := -1
 	var found := 0
 	for attempt in 5000:
-		if found >= PARTY_SAMPLES:
+		if found >= samples:
 			break
 		var i := rng.randi_range(0, count - 1)
 		var j := rng.randi_range(0, count - 1)
