@@ -266,7 +266,7 @@ func _todo_items() -> Array:
 			missions_done += 1
 	var sweeps := Profile.sweeps_left(profile, app.eco)
 	return [
-		["길잡이 과제", str(Profile.guide_current(profile, app.data).get("text", "모두 끝냈어요")), not Profile.guide_claimable(profile, app.data), _on_tab.bind("missions")],
+		["길잡이 과제", str(Profile.guide_current(profile, app.data).get("text", "모두 끝냈어요")), Profile.guide_current(profile, app.data).is_empty(), _on_tab.bind("missions")],
 		["출석 체크", "하루 한 번 출석 보상", not Profile.can_check_in(profile, app.today()), _on_attendance_shortcut],
 		["무료 소환", "오늘 %d번 남음" % Profile.free_summons_left(profile, app.eco), Profile.free_summons_left(profile, app.eco) <= 0, _on_tab.bind("shop")],
 		["행운의 룰렛", "하루 한 번 무료", not Profile.can_spin_free(profile, app.eco), open_roulette],
@@ -282,8 +282,12 @@ func _todo_left() -> int:
 	var left := 0
 	for item in _todo_items():
 		# 소탕은 별 3개 스테이지가 있어야 할 수 있어서 빨간 점에는 넣지 않는다.
-		if not bool(item[2]) and str(item[0]) != "모험 소탕":
-			left += 1
+		if bool(item[2]) or str(item[0]) == "모험 소탕":
+			continue
+		# 길잡이 과제는 보상을 받을 수 있을 때만 센다(진행 중일 때는 점을 띄우지 않는다).
+		if str(item[0]) == "길잡이 과제" and not Profile.guide_claimable(app.profile, app.data):
+			continue
+		left += 1
 	return left
 
 
