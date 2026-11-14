@@ -1266,6 +1266,10 @@ func _test_sweep() -> void:
 
 
 func _test_double() -> void:
+	_check(absf(Game.win_chance(1, 1, 0, 0) - 0.5) < 0.001 and absf(Game.win_chance(3, 3, 0, 0) - 0.5) < 0.001, "같은 주사위인데 승률이 반반이 아님")
+	_check(Game.win_chance(5, 1, 0, 0) > 0.95 and Game.win_chance(1, 5, 0, 0) < 0.05, "주사위 수 차이가 승률에 안 드러남")
+	_check(Game.win_chance(2, 2, 2, 0) > Game.win_chance(2, 2, 0, 0) and Game.win_chance(1, 1, 0, 6) == 0.0, "보너스가 승률에 안 드러남")
+	_check(int(Game.sum_distribution(2)[7]) == 6 and int(Game.sum_distribution(2)[2]) == 1, "주사위 합 분포가 틀림")
 	_check(Game.is_double([3, 3]) and Game.is_double([6, 6, 6]), "같은 눈인데 더블이 아님")
 	_check(not Game.is_double([3]) and not Game.is_double([2, 5]) and not Game.is_double([]), "더블이 아닌데 더블임")
 	_check(int(_data["rules"].get("double_gauge", 0)) > 0 and int(_data["rules"]["double_gauge"]) <= 20, "더블 게이지가 없거나 너무 큼")
