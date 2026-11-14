@@ -81,6 +81,11 @@ func _run() -> void:
 	await _wait(0.4)
 	await _shot("05f_mailbox")
 	_close_dialogs()
+	await _wait(0.2)
+	_app.current_screen.open_todo()
+	await _wait(0.4)
+	await _shot("05i_todo")
+	_close_dialogs()
 	_app.profile["pass"]["exp"] = 260
 	_app.go("pass")
 	await _wait(0.4)
