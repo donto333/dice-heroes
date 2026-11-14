@@ -579,6 +579,7 @@ func _resolve_tile(depth: int) -> void:
 		else:
 			player["skip"] = int(player["skip"]) + 1
 			say("  덫에 걸렸습니다! 다음 턴을 쉽니다.")
+			_tile_event("prison", "덫! 다음 턴 쉬기", false)
 
 	var tile: Dictionary = node_of(pos)
 	if is_hidden(pos):
@@ -588,6 +589,7 @@ func _resolve_tile(depth: int) -> void:
 		"attr":
 			map_attr = tile["attr"]
 			say("  맵 속성이 [%s](으)로 바뀌었습니다." % map_attr)
+			_tile_event("attr", "맵 속성: %s" % map_attr, true)
 		"battle":
 			if _battle_keeper(int(tile["dice"]), tile["name"]):
 				_draw_card(current, true)
@@ -597,32 +599,38 @@ func _resolve_tile(depth: int) -> void:
 				_draw_card(current, true)
 		"treasure":
 			say("  보물 칸!")
+			_tile_event("treasure", "보물! 카드 획득", true)
 			_draw_card(current, true)
 		"forward":
 			if depth < 3:
 				var amount := int(tile["amount"])
 				say("  전진 칸! %d칸 더 나아갑니다." % amount)
+				_tile_event("forward", "전진! %d칸 더" % amount, true)
 				_walk(current, amount, false)
 				_resolve_tile(depth + 1)
 		"warp":
 			var to := int(tile["to"])
 			say("  워프! %d번 칸으로 이동합니다." % to)
+			_tile_event("warp", "워프!", true)
 			_step(current, to)
 		"luck":
 			_add_gauge(current, 25)
 			say("  행운 칸! 게이지 +25%")
+			_tile_event("luck", "행운! 게이지 +25%", true)
 		"curse":
 			if _consume_charm(current):
 				say("  저주 칸이지만 부적이 막아 줬습니다.")
 			else:
 				player["cursed"] = true
 				say("  저주! 다음 전투에서 주사위가 1개 줄어듭니다.")
+				_tile_event("curse", "저주! 다음 전투 주사위 -1", false)
 		"prison":
 			if _consume_charm(current):
 				say("  감옥 칸이지만 부적이 막아 줬습니다.")
 			else:
 				player["skip"] = int(player["skip"]) + 1
 				say("  감옥! 다음 턴을 쉽니다.")
+				_tile_event("prison", "감옥! 다음 턴 쉬기", false)
 		"fate":
 			_resolve_fate()
 		"goal":
@@ -630,6 +638,11 @@ func _resolve_tile(depth: int) -> void:
 			if _battle_keeper(int(tile["dice"]), tile["name"]):
 				winner = current
 				say("%s 골인! 승리!" % player["name"])
+
+
+## 화면에 크게 알릴 칸 효과. good이면 좋은 일(밝은 색), 아니면 나쁜 일.
+func _tile_event(kind: String, text: String, good: bool) -> void:
+	_event({"kind": "tile", "player": current, "tile": kind, "text": text, "good": good})
 
 
 func _resolve_fate() -> void:
