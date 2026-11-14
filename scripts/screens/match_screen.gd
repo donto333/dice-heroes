@@ -393,11 +393,12 @@ func _hint(key: String, text: String) -> bool:
 	add_child(bubble)
 	bubble.anchor_left = 0.0
 	bubble.anchor_right = 1.0
-	bubble.anchor_top = 0.0
-	bubble.anchor_bottom = 0.0
+	# 판을 가리지 않게 아래쪽 결과 칸 자리에 띄운다.
+	bubble.anchor_top = 0.74
+	bubble.anchor_bottom = 0.74
 	bubble.offset_left = 20
 	bubble.offset_right = -20
-	bubble.offset_top = 150
+	bubble.offset_top = 0
 	_hint_bubble = bubble
 	# 그냥 두어도 잠시 뒤 사라진다.
 	get_tree().create_timer(12.0).timeout.connect(_close_hint_if.bind(bubble))

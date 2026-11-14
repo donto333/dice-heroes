@@ -458,24 +458,38 @@ func _draw() -> void:
 			var bob := 0.0
 			if player_index == active_player and _queue.is_empty():
 				bob = -abs(sin(_anim_time * 4.0)) * cell * 0.08
-			var piece_rect := Rect2(center - Vector2(piece, piece) / 2.0 + Vector2(0, bob - lift - cell * 0.08), Vector2(piece, piece))
+			var player_color: Color = PLAYER_COLORS[player_index]
+			var radius := cell * 0.34
+			var foot := center + Vector2(0, cell * 0.16)
+			var head := foot + Vector2(0, bob - lift - cell * 0.52)
+			var piece_rect := Rect2(head - Vector2(radius, radius), Vector2(radius, radius) * 2.0)
 			# 그림자(높이 뛸수록 작고 옅게)
 			var shade := 1.0 - lift / (cell * HOP_HEIGHT) * 0.45 if lift > 0.0 else 1.0
-			draw_circle(center + Vector2(0, piece * 0.42), piece * 0.32 * shade, Color(0, 0, 0, 0.35 * shade))
-			var frame := StyleBoxFlat.new()
-			frame.bg_color = PLAYER_COLORS[player_index]
-			frame.set_corner_radius_all(int(piece * 0.18))
-			draw_style_box(frame, piece_rect.grow(4.0))
+			draw_set_transform(foot, 0.0, Vector2(1.0, 0.42))
+			draw_circle(Vector2.ZERO, cell * 0.27 * shade, Color(0, 0, 0, 0.38 * shade))
+			draw_set_transform(Vector2(foot.x, foot.y + bob - lift), 0.0, Vector2(1.0, 0.42))
+			# 받침대
+			draw_circle(Vector2(0, cell * 0.05), cell * 0.2, player_color.darkened(0.45))
+			draw_circle(Vector2.ZERO, cell * 0.2, player_color)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			# 받침대와 초상화를 잇는 목
+			var base_top := Vector2(foot.x, foot.y + bob - lift)
+			draw_colored_polygon(PackedVector2Array([base_top + Vector2(-cell * 0.1, 0), base_top + Vector2(cell * 0.1, 0),
+				head + Vector2(cell * 0.14, radius * 0.6), head + Vector2(-cell * 0.14, radius * 0.6)]), player_color.darkened(0.2))
+			# 둥근 초상화: 색 테 → 그림 → 흰 테(내 차례일 때)
+			draw_circle(head, radius + 5.0, player_color.darkened(0.45))
+			draw_circle(head, radius + 3.0, Color.WHITE if player_index == active_player else player_color)
 			var size_px := face.get_size()
 			var side: float = min(size_px.x, size_px.y) * 0.78
 			var src := Rect2((size_px.x - side) / 2.0, 0.0, side, side)
-			draw_texture_rect_region(face, piece_rect, src)
-			var ring := StyleBoxFlat.new()
-			ring.draw_center = false
-			ring.border_color = Color.WHITE if player_index == active_player else PLAYER_COLORS[player_index].darkened(0.3)
-			ring.set_border_width_all(3)
-			ring.set_corner_radius_all(int(piece * 0.18))
-			draw_style_box(ring, piece_rect.grow(4.0))
+			var ring_points := PackedVector2Array()
+			var ring_uvs := PackedVector2Array()
+			for corner in 28:
+				var a := TAU * corner / 28.0
+				var unit := Vector2(cos(a), sin(a))
+				ring_points.append(head + unit * radius)
+				ring_uvs.append((src.position + (unit * 0.5 + Vector2(0.5, 0.5)) * src.size) / size_px)
+			draw_colored_polygon(ring_points, Color.WHITE, ring_uvs, face)
 			# 이동 중이면 남은 칸 수를 말 위에 보여 준다.
 			var left := _steps_left(player_index)
 			if left > 0:
@@ -498,7 +512,7 @@ func _draw() -> void:
 func _draw_minimap(layout: Dictionary) -> void:
 	var grid := _grid_size()
 	# 아주 긴 맵(직선형)은 작은 지도를 가로로 더 길게 쓴다.
-	var dot: float = min(MINIMAP_WIDTH * 1.8 / grid.x, MINIMAP_WIDTH / grid.y)
+	var dot: float = min(MINIMAP_WIDTH * 2.6 / grid.x, MINIMAP_WIDTH / grid.y)
 	var map_size := Vector2(grid.x, grid.y) * dot
 	var corner := Vector2(size.x - map_size.x - 10.0, 10.0)
 	var panel := StyleBoxFlat.new()
@@ -514,7 +528,9 @@ func _draw_minimap(layout: Dictionary) -> void:
 			color = HIDDEN_COLOR
 		var spot := corner + Vector2(int(tile.get("x", 0)), int(tile.get("y", 0))) * dot
 		color.a = 0.7
-		draw_rect(Rect2(spot + Vector2(1, 1), Vector2(dot - 2, dot - 2)), color)
+		var dot_size: float = max(dot - 1.0, 2.5)
+		color.a = 0.9
+		draw_rect(Rect2(spot, Vector2(dot_size, dot_size)), color)
 	for player_index in shown_pos.size():
 		var id := int(shown_pos[player_index])
 		if game.nodes.has(id):
