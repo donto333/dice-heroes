@@ -999,7 +999,8 @@ static func add_pass_exp(profile: Dictionary, eco: Dictionary, amount: int) -> v
 		return
 	var state := _pass_state(profile)
 	var table: Dictionary = eco["pass"]
-	var cap := int(table.get("exp_per_level", 100)) * table.get("levels", []).size()
+	var level_list: Array = table.get("levels", [])
+	var cap: int = int(table.get("exp_per_level", 100)) * level_list.size()
 	state["exp"] = min(cap, int(state["exp"]) + amount)
 
 
