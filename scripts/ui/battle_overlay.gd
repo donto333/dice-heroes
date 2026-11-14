@@ -73,6 +73,12 @@ func _ready() -> void:
 		var portrait := Portrait.new()
 		portrait.custom_minimum_size = Vector2(170, 170)
 		portrait_holder.add_child(portrait)
+		# 승패가 갈리면 그림 위에 도장처럼 찍히는 글자
+		var stamp := _label("", 58, WIN_COLOR)
+		stamp.add_theme_constant_override("outline_size", 14)
+		stamp.add_theme_color_override("font_outline_color", Color.BLACK)
+		stamp.visible = false
+		portrait_holder.add_child(stamp)
 		var who := _label("", 30, Color.WHITE)
 		var total := _label("00", 76, Color.WHITE)
 		total.add_theme_constant_override("outline_size", 8)
@@ -90,7 +96,7 @@ func _ready() -> void:
 		side_box.add_child(dice_holder)
 		side_box.add_child(bonus)
 		row.add_child(side_box)
-		_sides.append({"role": role, "portrait": portrait, "who": who, "total": total, "dice": dice, "bonus": bonus})
+		_sides.append({"role": role, "portrait": portrait, "who": who, "total": total, "dice": dice, "bonus": bonus, "stamp": stamp})
 		if side == 0:
 			var versus := _label("VS", 48, LOSE_COLOR)
 			versus.add_theme_constant_override("outline_size", 8)
@@ -147,7 +153,8 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 	right["who"].text = battle["defender"]
 	_show_portrait(right, info.get("defender_character", {}), str(battle["defender"]), info.get("defender_color", Color.WHITE))
 	for side in _sides:
-		side["total"].text = "??"
+		side["total"].text = "00"
+		side["stamp"].visible = false
 		side["total"].add_theme_color_override("font_color", Color.WHITE)
 		side["bonus"].text = ""
 	left["dice"].die_size = _die_size(attack_rolls.size())
@@ -164,22 +171,11 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 	_play_sound("hit")
 	await tween.finished
 
-	# 양쪽 주사위를 동시에 굴린다.
-	_play_sound("dice")
-	left["dice"].roll_to(attack_rolls, ROLL_TIME)
-	await right["dice"].roll_to(defense_rolls, ROLL_TIME)
-	await get_tree().create_timer(0.1).timeout
-
-	# 합계를 0부터 세어 올린다.
-	for step in 11:
-		var ratio := step / 10.0
-		left["total"].text = "%02d" % int(round(attack_total * ratio))
-		right["total"].text = "%02d" % int(round(defense_total * ratio))
-		await get_tree().create_timer(0.03).timeout
-	if attack_bonus != 0:
-		left["bonus"].text = "보너스 %+d" % attack_bonus
-	if defense_bonus != 0:
-		right["bonus"].text = "보너스 %+d" % defense_bonus
+	# 공격 쪽이 먼저 굴리고 점수가 올라간 뒤, 방어 쪽이 굴린다. 누르면 빨리 넘어간다.
+	left["dice"].values = _blank(attack_rolls.size())
+	right["dice"].values = _blank(defense_rolls.size())
+	await _roll_side(left, attack_rolls, attack_total, attack_bonus)
+	await _roll_side(right, defense_rolls, defense_total, defense_bonus)
 
 	var won: bool = battle["won"]
 	var winner_side: Dictionary = left if won else right
@@ -190,6 +186,8 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 	winner_side["portrait"].border = WIN_COLOR
 	winner_side["portrait"].queue_redraw()
 	loser_side["total"].add_theme_color_override("font_color", LOSE_COLOR)
+	_stamp(winner_side, "WIN", WIN_COLOR, -0.14)
+	_stamp(loser_side, "LOSE", LOSE_COLOR, 0.14)
 	_verdict.text = info.get("winner_text", "승리!") if won else info.get("loser_text", "패배...")
 	_verdict.add_theme_color_override("font_color", WIN_COLOR if info.get("good_for_me", won) else LOSE_COLOR)
 	_play_sound("good" if info.get("good_for_me", won) else "bad")
@@ -204,6 +202,45 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 	fade.tween_property(self, "modulate", Color(1, 1, 1, 0), 0.15)
 	await fade.finished
 	visible = false
+
+
+func _blank(count: int) -> Array:
+	var values: Array = []
+	for i in count:
+		values.append(1)
+	return values
+
+
+## 한쪽 주사위를 굴리고 합계를 0부터 세어 올린다.
+func _roll_side(side: Dictionary, rolls: Array, total: int, bonus: int) -> void:
+	_play_sound("dice")
+	await side["dice"].roll_to(rolls, 0.25 if _skip else ROLL_TIME * 0.75)
+	var steps := 4 if _skip else 10
+	for step in steps + 1:
+		side["total"].text = "%02d" % int(round(total * step / float(steps)))
+		await get_tree().create_timer(0.03).timeout
+	if bonus != 0:
+		side["bonus"].text = "보너스 %+d" % bonus
+	side["total"].pivot_offset = side["total"].size / 2.0
+	var bump := create_tween()
+	bump.tween_property(side["total"], "scale", Vector2(1.25, 1.25), 0.08)
+	bump.tween_property(side["total"], "scale", Vector2.ONE, 0.12)
+	await bump.finished
+
+
+## 그림 위에 WIN·LOSE를 크게 찍는다.
+func _stamp(side: Dictionary, text: String, color: Color, tilt: float) -> void:
+	var stamp: Label = side["stamp"]
+	stamp.text = text
+	stamp.add_theme_color_override("font_color", color)
+	stamp.visible = true
+	stamp.pivot_offset = stamp.size / 2.0
+	stamp.rotation = tilt
+	stamp.scale = Vector2(2.6, 2.6)
+	stamp.modulate.a = 0.0
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(stamp, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(stamp, "modulate:a", 1.0, 0.1)
 
 
 func _show_portrait(side: Dictionary, character: Dictionary, fallback_name: String, color: Color) -> void:
