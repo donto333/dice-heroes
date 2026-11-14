@@ -359,6 +359,9 @@ func use_ability(slot: String) -> bool:
 	ability_used = true
 	say("%s: %s의 어빌리티 [%s] 발동" % [
 		players[current]["name"], char_of(current, slot)["name"], ability["name"]])
+	# 화면이 "누가 어떤 어빌리티를 썼는지" 보여 줄 수 있게 사건으로 남긴다.
+	_event({"kind": "ability", "player": current, "slot": slot, "hero": str(char_of(current, slot)["name"]),
+		"name": str(ability["name"]), "text": str(ability.get("text", ""))})
 	_apply_effect(ability["effect"], current)
 	return true
 
@@ -371,6 +374,7 @@ func play_card(hand_index: int) -> bool:
 	hand.remove_at(hand_index)
 	card_played = true
 	say("%s: 카드 [%s] 사용" % [players[current]["name"], card["name"]])
+	_event({"kind": "card", "player": current, "name": str(card["name"]), "text": str(card.get("text", ""))})
 	_apply_effect(card["effect"], current)
 	return true
 
