@@ -59,6 +59,7 @@ var _hint_bubble: Control
 var _big_dice: Control
 var _versus: Control
 var _reward_scale := 1.0
+var _last_reward: Dictionary = {}
 var _start_distance := 1
 var _cards_used := 0
 var _recorded := false
@@ -583,6 +584,7 @@ func _start_game() -> void:
 	_cards_used = 0
 	_recorded = false
 	_reward_lines = PackedStringArray()
+	_last_reward = {}
 	_clear_results()
 	_add_result_text("%s 파티: %s" % [game.players[1]["name"], _party_names(1)], PLAYER_TEXT_COLORS[1])
 	_add_result_text("맵: %s(%s)  ·  골의 수호자: %s\n먼저 골(분홍 칸)의 수호자를 이기고 들어가면 승리!" % [game.board_name, game.board_shape, _goal_name()], Color.WHITE)
@@ -1044,9 +1046,6 @@ func _show_game_over() -> void:
 	if not _is_local():
 		details.insert(2, "내 전투: %d승 %d패  ·  최고 주사위 합 %d" % [_my_battles[0], _my_battles[1], _best_roll])
 		details.insert(3, "카드 %d장 · 어빌리티 %d번 사용" % [_cards_used, _abilities_used])
-		var mvp := _mvp_slot()
-		if mvp != "":
-			details.insert(4, "MVP: %s (%s, 전투 %d승)" % [game.char_of(0, mvp)["name"], SLOT_NAMES.get(mvp, mvp), int(_slot_wins[mvp])])
 	details.append_array(_record(outcome))
 	var shown_outcome := outcome
 	if _is_local() and outcome != "draw":
@@ -1054,7 +1053,30 @@ func _show_game_over() -> void:
 	# 칸 알림·말풍선이 결과 창을 가리지 않게 맨 앞으로
 	_close_hint()
 	move_child(_result_overlay, get_child_count() - 1)
-	_result_overlay.show_result(shown_outcome, subtitle, details)
+	_result_overlay.show_result(shown_outcome, subtitle, details, _result_extras())
+
+
+## 결과 화면의 MVP 영웅과 보상 칩.
+func _result_extras() -> Dictionary:
+	var extras := {}
+	if not _is_local():
+		var slot := _mvp_slot()
+		var note := "전투 %d승" % int(_slot_wins[slot]) if slot != "" else "파티의 선봉"
+		if slot == "":
+			slot = "attack"
+		extras["mvp"] = game.char_of(0, slot)
+		extras["mvp_note"] = "%s · %s" % [SLOT_NAMES.get(slot, slot), note]
+	var chips: Array = []
+	if int(_last_reward.get("gold", 0)) > 0:
+		chips.append([Kit.money_text("gold", int(_last_reward["gold"])), Kit.GOLD])
+	if int(_last_reward.get("gems", 0)) > 0:
+		chips.append([Kit.money_text("gems", int(_last_reward["gems"])), Kit.GEM])
+	if int(_last_reward.get("exp", 0)) > 0:
+		chips.append(["경험치 +%d" % int(_last_reward["exp"]), Color("7ee081")])
+	if int(_last_reward.get("trophies", 0)) != 0:
+		chips.append(["트로피 %+d" % int(_last_reward["trophies"]), Color("ff9a6a")])
+	extras["chips"] = chips
+	return extras
 
 
 ## 판 결과를 프로필에 기록하고 보상 줄을 돌려준다. 한 판에 한 번만.
@@ -1064,8 +1086,7 @@ func _record(outcome: String) -> PackedStringArray:
 		return _reward_lines
 	_recorded = true
 	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids()})
-	lines.append("")
-	lines.append("보상: %s  ·  경험치 +%d" % [Kit.reward_line(reward), int(reward["exp"])])
+	_last_reward = reward
 	if _mode == "adventure" and _stage_id != "":
 		var result := Profile.record_adventure(app.profile, app.data.get("adventure", {}), _stage_id, outcome == "win", int(game.round_number), int(_my_battles[1]))
 		if int(result["stars"]) > 0:

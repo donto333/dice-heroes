@@ -6,6 +6,10 @@ signal retry_pressed
 ## 왼쪽 버튼(로비로)
 signal change_party_pressed
 
+const Kit := preload("res://scripts/ui/kit.gd")
+const Portrait := preload("res://scripts/ui/portrait.gd")
+const Confetti := preload("res://scripts/ui/confetti.gd")
+
 const GOLD := Color("ffcf4d")
 const WIN_COLOR := Color("7ee081")
 const LOSE_COLOR := Color("ff6b6b")
@@ -14,6 +18,12 @@ var _title: Label
 var _subtitle: Label
 var _details: Label
 var _panel: PanelContainer
+var _confetti: Control
+var _mvp_row: HBoxContainer
+var _mvp_face: Control
+var _mvp_name: Label
+var _mvp_note: Label
+var _chips: HFlowContainer
 
 
 func _ready() -> void:
@@ -26,6 +36,9 @@ func _ready() -> void:
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
+
+	_confetti = Confetti.new()
+	add_child(_confetti)
 
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -59,7 +72,37 @@ func _ready() -> void:
 	line.custom_minimum_size = Vector2(0, 2)
 	column.add_child(line)
 
-	_details = _label(22)
+	# MVP 영웅: 큰 초상화와 이름
+	_mvp_row = HBoxContainer.new()
+	_mvp_row.add_theme_constant_override("separation", 16)
+	_mvp_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_child(_mvp_row)
+	_mvp_face = Portrait.new()
+	_mvp_face.custom_minimum_size = Vector2(150, 150)
+	_mvp_face.border = GOLD
+	_mvp_face.border_width = 4.0
+	_mvp_row.add_child(_mvp_face)
+	var mvp_text := VBoxContainer.new()
+	mvp_text.alignment = BoxContainer.ALIGNMENT_CENTER
+	mvp_text.add_theme_constant_override("separation", 2)
+	_mvp_row.add_child(mvp_text)
+	var ribbon := Kit.label(" MVP ", 26, Color("3a2408"))
+	ribbon.add_theme_stylebox_override("normal", Kit.box(GOLD, Color("7a4a12"), 3, 10, 6))
+	ribbon.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	mvp_text.add_child(ribbon)
+	_mvp_name = Kit.label("", 34)
+	mvp_text.add_child(_mvp_name)
+	_mvp_note = Kit.label("", 20, Color(1, 1, 1, 0.8))
+	mvp_text.add_child(_mvp_note)
+
+	# 받은 보상 칩
+	_chips = HFlowContainer.new()
+	_chips.alignment = FlowContainer.ALIGNMENT_CENTER
+	_chips.add_theme_constant_override("h_separation", 10)
+	_chips.add_theme_constant_override("v_separation", 8)
+	column.add_child(_chips)
+
+	_details = _label(20)
 	_details.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_details.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 	_details.add_theme_constant_override("line_spacing", 6)
@@ -68,10 +111,12 @@ func _ready() -> void:
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
 	column.add_child(buttons)
-	var change := _button("로비로", Color("3a4466"))
+	var change := Kit.button("로비로", Color("4a5580"), 28, 92)
+	change.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	change.pressed.connect(_on_change_pressed)
 	buttons.add_child(change)
-	var again := _button("다시 하기", Color("2f80ed"))
+	var again := Kit.button("다시 하기", Color("e8890c"), 30, 92)
+	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.size_flags_stretch_ratio = 1.5
 	again.pressed.connect(_on_again_pressed)
 	buttons.add_child(again)
@@ -107,7 +152,28 @@ func _button(text: String, color: Color) -> Button:
 
 ## 결과를 보여 준다. outcome은 "win", "lose", "draw".
 ## details는 아래에 줄마다 보여 줄 글이다.
-func show_result(outcome: String, subtitle: String, details: PackedStringArray) -> void:
+## extras: {"mvp": 캐릭터, "mvp_note": "ATTACK · 전투 3승", "chips": [["● 150", 색], ...]} (없어도 됨)
+func show_result(outcome: String, subtitle: String, details: PackedStringArray, extras: Dictionary = {}) -> void:
+	var mvp: Dictionary = extras.get("mvp", {})
+	_mvp_row.visible = not mvp.is_empty()
+	if not mvp.is_empty():
+		_mvp_face.show_character(mvp, Color("3a4466"))
+		_mvp_name.text = str(mvp.get("name", ""))
+		_mvp_note.text = str(extras.get("mvp_note", ""))
+	for child in _chips.get_children():
+		child.queue_free()
+	for chip in extras.get("chips", []):
+		var color: Color = chip[1]
+		var label := Kit.label(" %s " % chip[0], 24, Color.WHITE)
+		label.add_theme_constant_override("outline_size", 5)
+		label.add_theme_color_override("font_outline_color", color.darkened(0.7))
+		label.add_theme_stylebox_override("normal", Kit.box(color.darkened(0.45), color, 3, 22, 8))
+		_chips.add_child(label)
+	_chips.visible = not extras.get("chips", []).is_empty()
+	if outcome == "win":
+		_confetti.start()
+	else:
+		_confetti.stop()
 	match outcome:
 		"win":
 			_title.text = "승리!"
@@ -131,10 +197,12 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray) 
 
 
 func _on_change_pressed() -> void:
+	_confetti.stop()
 	visible = false
 	change_party_pressed.emit()
 
 
 func _on_again_pressed() -> void:
+	_confetti.stop()
 	visible = false
 	retry_pressed.emit()
