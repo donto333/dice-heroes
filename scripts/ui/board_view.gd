@@ -9,8 +9,8 @@ const PAUSE_TIME := 0.35
 
 const TILE_COLORS := {
 	"start": Color("5c6b8a"),
-	"normal": Color("3a4466"),
-	"fork": Color("3a4466"),
+	"normal": Color("b59a5c"),
+	"fork": Color("8a6fd0"),
 	"treasure": Color("c9a227"),
 	"battle": Color("d9702b"),
 	"ambush": Color("a8323e"),
@@ -87,6 +87,14 @@ var active_player := -1
 var _anim_time := 0.0
 ## 통통 튀는 이동: 말마다 {"from": 칸 id, "t": 0~1}. 없으면 멈춰 있는 것.
 var _hops: Dictionary = {}
+## 지형 바탕과 꾸밈 그림(assets/terrain). 맵 테마가 바뀌면 다시 읽는다.
+var _terrain_name := ""
+var _terrain: Texture2D = null
+var _deco: Texture2D = null
+var _occupied: Dictionary = {}
+const TERRAIN_SCALE := 4.0
+const HEX_SQUASH := 0.84
+const HEX_DEPTH := 0.13
 ## 판 위에 얹힌 것(정보판, 주사위 버튼)이 가리는 위·아래 높이(픽셀)
 var pad_top := 0.0
 var pad_bottom := 0.0
@@ -95,6 +103,8 @@ const HOP_HEIGHT := 0.42
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# 지형 바탕을 이어 붙여 그리려면 반복이 켜져 있어야 한다.
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	# 카메라로 보는 큰 맵이 판 밖으로 삐져나오지 않게 자른다.
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -281,6 +291,87 @@ func _drag_by(relative: Vector2, world: Vector2) -> void:
 	queue_redraw()
 
 
+func _load_terrain(name: String) -> void:
+	if name == _terrain_name:
+		return
+	_terrain_name = name
+	_terrain = null
+	_deco = null
+	if name == "":
+		return
+	var ground := "res://assets/terrain/%s.png" % name
+	if ResourceLoader.exists(ground):
+		_terrain = load(ground)
+	var sheet := "res://assets/terrain/%s_deco.png" % name
+	if ResourceLoader.exists(sheet):
+		_deco = load(sheet)
+	_occupied = {}
+	for id in game.nodes:
+		_occupied[Vector2i(int(game.nodes[id].get("x", 0)), int(game.nodes[id].get("y", 0)))] = true
+
+
+## 칸이 없는 빈 자리에 나무·집·바위 같은 꾸밈 그림을 흩어 놓는다. 자리와 종류는 좌표로 정해져 늘 같다.
+func _draw_decorations(layout: Dictionary) -> void:
+	if _deco == null:
+		return
+	var cell: float = layout["cell"]
+	var origin: Vector2 = layout["origin"]
+	var count: int = max(1, int(_deco.get_width() / 32.0))
+	var first := Vector2i(floori(-origin.x / cell) - 1, floori(-origin.y / cell) - 1)
+	var last := Vector2i(floori((size.x - origin.x) / cell) + 1, floori((size.y - origin.y) / cell) + 1)
+	for gy in range(first.y, last.y + 1):
+		for gx in range(first.x, last.x + 1):
+			if _occupied.has(Vector2i(gx, gy)):
+				continue
+			var seed_value: int = absi((gx * 73856093) ^ (gy * 19349663) ^ 0x5bd1e995)
+			if seed_value % 100 >= 46:
+				continue
+			var kind: int = (seed_value / 100) % count
+			var jitter := Vector2(((seed_value / 1000) % 21 - 10) / 60.0, ((seed_value / 30000) % 21 - 10) / 60.0)
+			var side := cell * (0.78 + ((seed_value / 7) % 20) / 100.0)
+			var spot := origin + (Vector2(gx, gy) + Vector2(0.5, 0.5) + jitter) * cell
+			draw_texture_rect_region(_deco, Rect2(spot - Vector2(side, side) / 2.0, Vector2(side, side)), Rect2(kind * 32, 0, 32, 32))
+
+
+## 두께가 있는 육각형 칸. 옆면(어두운 색)을 먼저 그리고 그 위에 윗면을 얹는다.
+func _draw_hex(center: Vector2, half: Vector2, cell: float, color: Color, lit: bool) -> void:
+	var rx := half.x * 1.06
+	var ry := half.y * HEX_SQUASH
+	var depth := cell * HEX_DEPTH
+	var top := PackedVector2Array()
+	var low := PackedVector2Array()
+	for corner in 6:
+		var a := TAU * corner / 6.0
+		var point := center + Vector2(cos(a) * rx, sin(a) * ry) - Vector2(0, depth * 0.5)
+		top.append(point)
+		low.append(point + Vector2(0, depth))
+	var side := color.darkened(0.5)
+	# 바닥 그림자
+	var shade := PackedVector2Array()
+	for point in low:
+		shade.append(point + Vector2(0, depth * 0.55))
+	draw_colored_polygon(shade, Color(0, 0, 0, 0.3))
+	draw_colored_polygon(low, side)
+	draw_rect(Rect2(Vector2(center.x - rx, top[0].y), Vector2(rx * 2.0, depth)), side)
+	draw_colored_polygon(top, color)
+	# 윗면 안쪽의 밝은 테
+	var inner := PackedVector2Array()
+	for point in top:
+		inner.append(top_center(top) + (point - top_center(top)) * 0.86)
+	inner.append(inner[0])
+	draw_polyline(inner, color.lightened(0.35), 2.0)
+	var outline := PackedVector2Array(top)
+	outline.append(top[0])
+	draw_polyline(outline, Color.WHITE if lit else color.darkened(0.6), 5.0 if lit else 2.5)
+
+
+func top_center(points: PackedVector2Array) -> Vector2:
+	var sum := Vector2.ZERO
+	for point in points:
+		sum += point
+	return sum / float(points.size())
+
+
 func _center(id: int, layout: Dictionary) -> Vector2:
 	var node: Dictionary = game.nodes[id]
 	var cell: float = layout["cell"]
@@ -295,22 +386,25 @@ func _draw() -> void:
 	var cell: float = layout["cell"]
 	var small: int = int(clamp(cell * 0.18, 9.0, 20.0))
 
-	# 맵마다 다른 바탕색
+	# 맵마다 다른 바탕: 지형 그림이 있으면 이어 붙여 깔고, 없으면 바탕색.
 	var theme: Dictionary = game.board_theme
-	var line_color := Color(1, 1, 1, 0.25)
+	_load_terrain(str(theme.get("terrain", "")))
 	if theme.has("bg"):
-		var bg := StyleBoxFlat.new()
-		bg.bg_color = Color(str(theme["bg"]))
-		bg.set_corner_radius_all(14)
-		draw_style_box(bg, Rect2(Vector2.ZERO, size))
-	if theme.has("line"):
-		line_color = Color(str(theme["line"]))
-		line_color.a = 0.35
-	# 칸 사이 연결선
-	for id in game.nodes:
-		for next_id in game.nodes[id]["next"]:
-			if game.nodes.has(next_id):
-				draw_line(_center(id, layout), _center(next_id, layout), line_color, max(3.0, cell * 0.08))
+		draw_rect(Rect2(Vector2.ZERO, size), Color(str(theme["bg"])))
+	var origin: Vector2 = layout["origin"]
+	if _terrain != null:
+		var scale_px := cell / 21.0 if not bool(layout.get("camera", false)) else TERRAIN_SCALE
+		draw_texture_rect_region(_terrain, Rect2(Vector2.ZERO, size), Rect2(-origin / scale_px, size / scale_px))
+		_draw_decorations(layout)
+	# 칸 사이 연결선은 흙길처럼: 어두운 테 위에 밝은 길
+	var road := Color(str(theme.get("line", "ffffff")))
+	for pass_index in 2:
+		var road_color := Color(0, 0, 0, 0.28) if pass_index == 0 else Color(road.r, road.g, road.b, 0.55)
+		var road_width: float = cell * (0.30 if pass_index == 0 else 0.20)
+		for id in game.nodes:
+			for next_id in game.nodes[id]["next"]:
+				if game.nodes.has(next_id):
+					draw_line(_center(id, layout), _center(next_id, layout), road_color, road_width)
 
 	var view := Rect2(Vector2(-cell, -cell), size + Vector2(cell, cell) * 2.0)
 	for id in game.nodes:
@@ -330,20 +424,16 @@ func _draw() -> void:
 			color = HIDDEN_COLOR
 			label = ""
 			icon_name = "hidden"
-		draw_style_box(_tile_style(color), rect)
-		if id in highlight:
-			draw_rect(rect.grow(3.0), Color.WHITE, false, 4.0)
+		_draw_hex(rect.get_center(), half, cell, color, id in highlight)
 		if _icons.has(icon_name):
-			var icon_size := rect.size.x * 0.62
-			var icon_rect := Rect2(rect.position + Vector2((rect.size.x - icon_size) / 2.0, rect.size.y * 0.10),
+			var icon_size := rect.size.x * 0.52
+			var icon_rect := Rect2(rect.position + Vector2((rect.size.x - icon_size) / 2.0, rect.size.y * 0.09),
 				Vector2(icon_size, icon_size))
 			draw_texture_rect(_icons[icon_name], icon_rect, false)
-		draw_string(font, rect.position + Vector2(3, small), str(id),
-			HORIZONTAL_ALIGNMENT_LEFT, -1, int(small * 0.8), Color(1, 1, 1, 0.55))
 		if label != "":
-			draw_string_outline(font, rect.position + Vector2(0, rect.size.y - 6), label,
+			draw_string_outline(font, rect.position + Vector2(0, rect.size.y * 0.76), label,
 				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, small, 4, Color(0, 0, 0, 0.8))
-			draw_string(font, rect.position + Vector2(0, rect.size.y - 6), label,
+			draw_string(font, rect.position + Vector2(0, rect.size.y * 0.76), label,
 				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, small, Color.WHITE)
 
 	# 말. 같은 칸에 있으면 좌우로 나눠 그린다.
