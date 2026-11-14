@@ -323,6 +323,11 @@ static func rank_ai_level(eco: Dictionary, trophies: int) -> int:
 ## mode: "rank", "ai", "local" / outcome: "win", "lose", "draw"
 ## stats: {"battle_wins": n, "cards": n} 미션 진행에 쓴다.
 ## 돌려주는 값: {"gold", "gems", "exp", "trophies", "level_ups", "first_win", "tier_before", "tier_after"}
+## 그 맵에서의 내 전적 {played, wins}
+static func map_record(profile: Dictionary, map_name: String) -> Dictionary:
+	return profile.get("map_stats", {}).get(map_name, {"played": 0, "wins": 0})
+
+
 ## 프로필에 남기는 최근 전적 수
 const HISTORY_LIMIT := 10
 
@@ -355,6 +360,16 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 		while history.size() > HISTORY_LIMIT:
 			history.pop_back()
 		profile["history"] = history
+		# 맵별 전적(맵 고르기에 보인다)
+		var map_name := str(stats.get("map", ""))
+		if map_name != "":
+			var maps: Dictionary = profile.get("map_stats", {})
+			var record: Dictionary = maps.get(map_name, {"played": 0, "wins": 0})
+			record["played"] = int(record["played"]) + 1
+			if outcome == "win":
+				record["wins"] = int(record["wins"]) + 1
+			maps[map_name] = record
+			profile["map_stats"] = maps
 	if mode == "rank":
 		var before := int(profile["trophies"])
 		reward["tier_before"] = tier_of(eco, before)["name"]
@@ -1207,3 +1222,12 @@ static func sweep(profile: Dictionary, eco: Dictionary, stage_id: String, stats:
 	var sweep_stats := stats.duplicate()
 	sweep_stats["no_history"] = true
 	return record_match(profile, eco, "adventure", "win", sweep_stats)
+
+
+## 별 3개로 깬 모험 스테이지 수
+static func three_star_count(profile: Dictionary) -> int:
+	var count := 0
+	for id in profile.get("adventure", {}):
+		if int(profile["adventure"][id]) >= 3:
+			count += 1
+	return count

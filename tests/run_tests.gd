@@ -1258,6 +1258,9 @@ func _test_sweep() -> void:
 		Profile.record_match(profile, eco, "ai", "win" if i % 2 == 0 else "lose", {"map": "초원", "turns": i})
 	var history: Array = profile["history"]
 	_check(history.size() == Profile.HISTORY_LIMIT and int(history[0]["turns"]) == 11 and str(history[0]["outcome"]) == "lose", "최근 전적이 틀림")
+	var on_map: Dictionary = Profile.map_record(profile, "초원")
+	_check(int(on_map["played"]) == 12 and int(on_map["wins"]) == 6 and int(Profile.map_record(profile, "없는 맵")["played"]) == 0, "맵별 전적이 틀림")
+	_check(Profile.three_star_count(profile) == 1, "별 3개 스테이지 수가 틀림")
 	Profile.ensure_daily(profile, "2026-05-02")
 	_check(Profile.sweeps_left(profile, eco) == per_day, "다음 날 소탕 횟수가 돌아오지 않음")
 

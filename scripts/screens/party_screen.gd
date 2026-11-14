@@ -150,6 +150,9 @@ func _pick_map(start: Dictionary) -> void:
 	for index in boards.size():
 		var board: Dictionary = boards[index]
 		var note := str(board.get("feature", ""))
+		var record: Dictionary = Profile.map_record(app.profile, str(board.get("name", "")))
+		if int(record["played"]) > 0:
+			note = "내 전적 %d판 %d승" % [int(record["played"]), int(record["wins"])]
 		grid.add_child(_map_cell(index, "%s (%s)" % [board.get("name", "맵"), board.get("shape", "")], note, board))
 	var body := Kit.vbox(8)
 	body.add_child(Kit.para("싸울 맵을 고르세요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
