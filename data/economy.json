@@ -171,7 +171,8 @@
       "goal": 1,
       "reward": {
         "gold": 100
-      }
+      },
+      "always": true
     },
     {
       "id": "play_3",
@@ -189,7 +190,8 @@
       "goal": 2,
       "reward": {
         "gems": 30
-      }
+      },
+      "always": true
     },
     {
       "id": "battle_5",
@@ -217,8 +219,63 @@
       "reward": {
         "gold": 100
       }
+    },
+    {
+      "id": "rank_1",
+      "text": "랭크전 1판 하기",
+      "event": "rank_play",
+      "goal": 1,
+      "reward": {
+        "gold": 150
+      }
+    },
+    {
+      "id": "adventure_1",
+      "text": "모험에서 1번 이기기",
+      "event": "adventure_win",
+      "goal": 1,
+      "reward": {
+        "gems": 20
+      }
+    },
+    {
+      "id": "roulette_1",
+      "text": "행운의 룰렛 돌리기",
+      "event": "roulette",
+      "goal": 1,
+      "reward": {
+        "gold": 100
+      }
+    },
+    {
+      "id": "upgrade_1",
+      "text": "영웅 강화 1번 하기",
+      "event": "upgrade",
+      "goal": 1,
+      "reward": {
+        "gems": 20
+      }
+    },
+    {
+      "id": "deal_1",
+      "text": "오늘의 특가 1개 사기",
+      "event": "deal",
+      "goal": 1,
+      "reward": {
+        "gold": 150
+      }
+    },
+    {
+      "id": "battle_10",
+      "text": "전투에서 10번 이기기",
+      "event": "battle_win",
+      "goal": 10,
+      "reward": {
+        "gems": 30
+      }
     }
   ],
+  "missions_per_day": 6,
   "missions_all_clear": {
     "gems": 50
   },

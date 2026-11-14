@@ -65,7 +65,7 @@ func _missions_panel() -> Control:
 	card.add_child(column)
 	column.add_child(Kit.label("오늘의 미션", 30, Kit.GOLD))
 	column.add_child(Kit.label("매일 새로 바뀌어요.", 18, Kit.MUTED))
-	for mission in app.eco.get("missions", []):
+	for mission in Profile.active_missions(app.profile, app.eco):
 		column.add_child(_mission_row(mission))
 	var all_reward: Dictionary = app.eco.get("missions_all_clear", {})
 	var all_done := Profile.all_missions_done(app.profile, app.eco)
