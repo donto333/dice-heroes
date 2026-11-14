@@ -10,6 +10,8 @@ const Sfx := preload("res://scripts/ui/sfx.gd")
 const Dialog := preload("res://scripts/ui/dialog.gd")
 const Toast := preload("res://scripts/ui/toast.gd")
 const Music := preload("res://scripts/ui/music.gd")
+const Kit := preload("res://scripts/ui/kit.gd")
+const ProfileCard := preload("res://scripts/ui/profile_card.gd")
 ## 화면마다 틀 배경음악
 const SCREEN_MUSIC := {"match": "match"}
 
@@ -26,7 +28,7 @@ const SCREENS := {
 	"help": preload("res://scripts/screens/help_screen.gd"),
 	"adventure": preload("res://scripts/screens/adventure_screen.gd"),
 }
-const VERSION := "0.5.0"
+const VERSION := "0.6.0"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -183,6 +185,21 @@ func dialog(title_text: String, body: Control, buttons: Array, width: float = 64
 	add_child(window)
 	window.open(title_text, body, buttons, width)
 	return window
+
+
+## 내 프로필 창 (위쪽 막대를 누르면 뜬다)
+func show_profile() -> void:
+	if not has_profile():
+		return
+	play("click")
+	dialog("내 프로필", ProfileCard.profile_body(self), [["순위표", Color("c4861c"), show_league], ["닫기", Kit.PANEL_LIGHT]], 660)
+
+
+## 연습 리그 순위표
+func show_league() -> void:
+	if not has_profile():
+		return
+	dialog("연습 리그 순위", ProfileCard.league_body(self), [["닫기", Kit.PANEL_LIGHT]], 660)
 
 
 ## 글자 한 줄짜리 창.

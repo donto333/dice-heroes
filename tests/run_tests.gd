@@ -77,6 +77,7 @@ func _init() -> void:
 	_test_daily_deals()
 	_test_roulette()
 	_test_font_coverage()
+	_test_league()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -895,3 +896,19 @@ func _test_font_coverage() -> void:
 			if code > 127 and not font.has_char(code):
 				missing[String.chr(code)] = path
 	_check(missing.is_empty(), "글꼴에 없는 글자: " + str(missing))
+
+
+func _test_league() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("리그", eco)
+	var rows := Profile.league_table(profile, eco)
+	_check(rows.size() == eco["ai_names"].size() + 1, "순위표 줄 수가 틀림")
+	for index in rows.size() - 1:
+		_check(int(rows[index]["trophies"]) >= int(rows[index + 1]["trophies"]), "순위표가 트로피 순이 아님")
+	_check(Profile.league_rank(profile, eco) == rows.size(), "트로피 0인데 꼴찌가 아님")
+	profile["trophies"] = 99999
+	_check(Profile.league_rank(profile, eco) == 1, "트로피가 가장 많은데 1위가 아님")
+	_check(Profile.favorite_hero(profile) == "", "기록이 없는데 좋아하는 영웅이 있음")
+	Profile.ensure_daily(profile, "2026-05-01")
+	Profile.record_match(profile, eco, "ai", "win", {"party": ["lubu", "athena", "sejong"]})
+	_check(Profile.favorite_hero(profile) != "", "출전했는데 좋아하는 영웅이 없음")

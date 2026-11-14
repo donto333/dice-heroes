@@ -722,3 +722,41 @@ static func spin_roulette(profile: Dictionary, eco: Dictionary, rng: RandomNumbe
 	profile["daily"]["roulette_spins"] = roulette_spins(profile) + 1
 	grant(profile, slots[index]["reward"])
 	return {"index": index, "reward": slots[index]["reward"], "cost": cost}
+
+
+# ---------------------------------------------------------------- 연습 리그 순위표
+
+## AI 상대들과 나를 트로피 순으로 줄 세운 표. 온라인이 없으므로 AI 이름과 정해진 트로피로 만든다.
+## 각 줄: {"name", "trophies", "me"}
+static func league_table(profile: Dictionary, eco: Dictionary) -> Array:
+	var rows: Array = []
+	var names: Array = eco.get("ai_names", [])
+	for index in names.size():
+		var name := str(names[index])
+		# 이름마다 늘 같은 트로피(0~2300 사이에 고르게 퍼지게)
+		var trophies := 40 + int(2300.0 * (index + 1) / (names.size() + 1)) + absi(hash(name)) % 60
+		rows.append({"name": name, "trophies": trophies, "me": false})
+	rows.append({"name": str(profile.get("nickname", "나")), "trophies": int(profile.get("trophies", 0)), "me": true})
+	rows.sort_custom(func(a, b): return int(a["trophies"]) > int(b["trophies"]))
+	return rows
+
+
+## 순위표에서 내 순위(1부터)
+static func league_rank(profile: Dictionary, eco: Dictionary) -> int:
+	var rows := league_table(profile, eco)
+	for index in rows.size():
+		if bool(rows[index]["me"]):
+			return index + 1
+	return rows.size()
+
+
+## 가장 많이 출전시킨 영웅 id. 기록이 없으면 "".
+static func favorite_hero(profile: Dictionary) -> String:
+	var best := ""
+	var best_played := 0
+	var stats: Dictionary = profile.get("hero_stats", {})
+	for id in stats:
+		if int(stats[id]["played"]) > best_played:
+			best_played = int(stats[id]["played"])
+			best = str(id)
+	return best
