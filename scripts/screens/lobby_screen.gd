@@ -58,10 +58,13 @@ func setup(main_app, params: Dictionary) -> void:
 	nav.tab_pressed.connect(_on_tab)
 
 	if bool(params.get("welcome", false)):
+		# 처음 온 사람은 새 소식을 따로 띄우지 않는다.
+		app.profile["seen_version"] = app.VERSION
+		app.save()
 		var text := Kit.para("%s님, 주사위 영웅전에 오신 것을 환영해요.\n\n영웅 12명이 함께합니다. 랭크전에서 트로피를 모으고, 상점에서 새 영웅을 소환해 보세요.\n처음이라면 게임 방법부터 보면 좋아요." % app.profile["nickname"], 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		app.dialog("환영합니다!", text, [["게임 방법 보기", Color("6f43a6"), _on_help], ["바로 시작", Kit.ACCENT, _maybe_attendance]])
 	else:
-		_maybe_attendance()
+		_maybe_news()
 
 
 func _rank_card() -> Control:
@@ -268,6 +271,29 @@ func _on_attendance_shortcut() -> void:
 		_maybe_attendance()
 	else:
 		app.go("missions")
+
+
+## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
+const NEWS := [
+	"보드가 지형 위의 육각 칸으로 바뀌었어요. 맵마다 풍경이 달라요.",
+	"주사위가 판 위를 굴러가고, 말이 통통 뛰어가요.",
+	"전투는 공격 → 방어 순서로 굴리고 WIN·LOSE가 찍혀요.",
+	"모험 모드 24판, 업적 28개, 행운의 룰렛, 오늘의 특가가 생겼어요.",
+	"AI 연습전 난이도, 대전 빠르기 ×2, 한마디 말풍선을 쓸 수 있어요.",
+	"내 정보를 누르면 프로필, 랭크 카드를 누르면 순위표가 나와요.",
+]
+
+
+func _maybe_news() -> void:
+	if str(app.profile.get("seen_version", "")) == app.VERSION:
+		_maybe_attendance()
+		return
+	app.profile["seen_version"] = app.VERSION
+	app.save()
+	var body := Kit.vbox(8)
+	for line in NEWS:
+		body.add_child(Kit.para("· " + line, 21, Color.WHITE))
+	app.dialog("새 소식 · 버전 %s" % app.VERSION, body, [["확인", Kit.ACCENT, _maybe_attendance]], 640)
 
 
 func _maybe_attendance() -> void:

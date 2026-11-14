@@ -57,6 +57,7 @@ var _stage_id := ""
 var _player_cards: Array = []
 var _hint_bubble: Control
 var _big_dice: Control
+var _speed_button: Button
 var _versus: Control
 var _reward_scale := 1.0
 var _last_reward: Dictionary = {}
@@ -144,6 +145,11 @@ func _build_ui() -> void:
 	_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_row.add_child(_status_label)
+	_speed_button = Kit.button("", Color("2a7d4f"), 20, 56)
+	_speed_button.custom_minimum_size = Vector2(110, 56)
+	_speed_button.pressed.connect(_on_speed_pressed)
+	status_row.add_child(_speed_button)
+	_apply_speed()
 	var quit_button := Kit.button("나가기", Color("3a4466"), 20, 56)
 	quit_button.custom_minimum_size = Vector2(110, 56)
 	quit_button.pressed.connect(_on_quit_pressed)
@@ -483,6 +489,32 @@ func _box(fill: Color, border: Color, border_width: int) -> StyleBoxFlat:
 
 
 ## 켜진 버튼은 밝은 색, 꺼진 버튼은 어두운 회색으로 확실히 구분한다.
+# ---------------------------------------------------------------- 빠르기
+
+## 대전 연출 빠르기(1배·2배). 설정에 저장되고, 대전 화면을 나가면 1배로 돌아간다.
+func _fast() -> bool:
+	return app.has_profile() and bool(app.profile["settings"].get("fast", false))
+
+
+func _apply_speed() -> void:
+	Engine.time_scale = 2.0 if _fast() else 1.0
+	_speed_button.text = "빠르기 ×2" if _fast() else "빠르기 ×1"
+	Kit.paint(_speed_button, Color("c4861c") if _fast() else Color("2a7d4f"))
+
+
+func _on_speed_pressed() -> void:
+	if not app.has_profile():
+		return
+	app.profile["settings"]["fast"] = not _fast()
+	app.save()
+	_play("click")
+	_apply_speed()
+
+
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
+
+
 # ---------------------------------------------------------------- 한마디 말풍선
 
 ## 판 오른쪽 가운데의 '말' 버튼과, 누르면 펼쳐지는 한마디 목록.
