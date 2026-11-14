@@ -40,7 +40,7 @@ const EFFECT_TYPES := [
 	"move_fixed", "move_dice", "move_plus", "move_best", "atk_dice", "def_dice",
 	"atk_bonus", "def_bonus", "retry", "chase", "counter", "enemy_dice_minus",
 	"gauge_team", "gauge_enemy", "draw_card", "skip_enemy", "enemy_move_dice",
-	"trap", "swap", "discard_enemy", "steal_card", "cure", "charm", "set_attr", "multi",
+	"trap", "swap", "comeback", "discard_enemy", "steal_card", "cure", "charm", "set_attr", "multi",
 ]
 
 var _failures: Array[String] = []
@@ -369,19 +369,55 @@ func _test_cards() -> void:
 		var game = _new_game(40)
 		game.begin_turn()
 		game.players[0]["hand"] = [card_id]
+		if str(card["effect"].get("type", "")) == "comeback":
+			# 뒤처져 있어야 쓸 수 있는 카드라 상대를 12칸 앞에 둔다.
+			_place(game, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 		_check(game.play_card(0), "카드를 쓸 수 없음: " + card_id)
 		game.roll_move()
 		while game.awaiting_choice():
 			game.choose_path(1)
 		_check(int(game.players[0]["trail"].back()) == int(game.players[0]["pos"]), "카드를 쓴 뒤 위치가 어긋남: " + card_id)
 
-	# 뒤바뀐 운명: 두 말의 자리가 바뀐다.
-	var swap_game = _new_game(41)
-	swap_game.begin_turn()
-	_place(swap_game, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8])
-	swap_game.players[0]["hand"] = ["twisted_fate"]
-	swap_game.play_card(0)
-	_check(int(swap_game.players[0]["pos"]) == 8 and int(swap_game.players[1]["pos"]) == 0, "뒤바뀐 운명으로 자리가 바뀌지 않음")
+	# 역전의 첫걸음: 10칸 이상 뒤처졌을 때만 쓸 수 있다. 이기면 나 +5칸, 상대 -5칸. 지면 그대로.
+	_check(not _data["cards"].has("twisted_fate"), "뒤바뀐 운명 카드가 남아 있음")
+	var wins := 0
+	var losses := 0
+	for seed_value in range(1, 41):
+		var duel = _new_game(seed_value)
+		duel.begin_turn()
+		_place(duel, 0, [0, 1])
+		_place(duel, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+		duel.players[0]["hand"] = ["comeback_step"]
+		_check(duel.can_play_card(0), "11칸 뒤처졌는데 역전의 첫걸음을 못 씀")
+		duel.take_events()
+		duel.play_card(0)
+		var won := false
+		var fought := false
+		for event in duel.take_events():
+			if event["kind"] == "battle" and str(event.get("target", "")) == "card":
+				fought = true
+				won = bool(event["won"])
+		_check(fought, "역전의 첫걸음을 썼는데 전투가 없음")
+		if won:
+			wins += 1
+			_check(int(duel.players[0]["pos"]) == 6 and int(duel.players[1]["pos"]) == 7, "역전 승리: 나 +5칸, 상대 -5칸이 아님")
+		else:
+			losses += 1
+			_check(int(duel.players[0]["pos"]) == 1 and int(duel.players[1]["pos"]) == 12, "역전 실패인데 자리가 바뀜")
+		_check(duel.players[0]["hand"].is_empty(), "쓴 카드가 손에 남음")
+	_check(wins > 0 and losses > 0, "역전의 첫걸음 결과가 한쪽으로만 나옴 (승 %d, 패 %d)" % [wins, losses])
+	var near = _new_game(41)
+	near.begin_turn()
+	_place(near, 0, [0, 1])
+	_place(near, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+	near.players[0]["hand"] = ["comeback_step"]
+	_check(not near.can_play_card(0) and not near.play_card(0), "9칸 뒤처졌는데 역전의 첫걸음을 씀")
+	_check(near.players[0]["hand"].size() == 1, "못 쓴 카드가 사라짐")
+	var lead = _new_game(41)
+	lead.begin_turn()
+	_place(lead, 0, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+	lead.players[0]["hand"] = ["comeback_step"]
+	_check(not lead.can_play_card(0), "앞서 있는데 역전의 첫걸음을 씀")
 
 	# 후공 보정: 나중에 하는 쪽은 게이지를 채우고 시작한다.
 	var fresh = _new_game(42)

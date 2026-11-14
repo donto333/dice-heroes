@@ -275,7 +275,23 @@ func can_use_ability(slot: String) -> bool:
 func can_play_card(hand_index: int) -> bool:
 	if not can_act() or card_played:
 		return false
-	return hand_index >= 0 and hand_index < players[current]["hand"].size()
+	if hand_index < 0 or hand_index >= players[current]["hand"].size():
+		return false
+	return card_condition_met(cards[players[current]["hand"][hand_index]])
+
+
+## 카드에 붙은 사용 조건을 지금 만족하는지. 조건이 없는 카드는 늘 true.
+## "comeback"(역전의 첫걸음): 상대보다 gap칸 이상 뒤처져 있어야 한다(골까지 남은 거리 기준).
+func card_condition_met(card: Dictionary) -> bool:
+	var effect: Dictionary = card.get("effect", {})
+	if str(effect.get("type", "")) == "comeback":
+		return behind_by(current) >= int(effect.get("gap", 10))
+	return true
+
+
+## player_index가 상대보다 뒤처진 칸 수. 앞서 있으면 음수.
+func behind_by(player_index: int) -> int:
+	return distance_of(player_index) - distance_of(1 - player_index)
 
 
 # ---------------------------------------------------------------- 주사위
@@ -768,6 +784,19 @@ func _battle_players() -> bool:
 	return false
 
 
+## 역전의 첫걸음 카드의 전투: 카드를 쓴 쪽의 ATTACK과 상대의 DEFENSE가 겨룬다.
+## 이겨도 져도 아무도 거점으로 돌아가지 않는다. 이기면 true (이동은 부른 쪽에서 한다).
+func _battle_comeback(player_index: int) -> bool:
+	var attacker: Dictionary = char_of(player_index, "attack")
+	var defender: Dictionary = char_of(1 - player_index, "defense")
+	say("  전투! %s(공격) vs %s(방어)" % [attacker["name"], defender["name"]])
+	var result := resolve_battle(_attack_dice(player_index), _defense_dice(1 - player_index),
+		_attack_bonus(player_index), _defense_bonus(1 - player_index))
+	_say_battle(result)
+	_battle_event(attacker["name"], defender["name"], result, "card")
+	return bool(result["attacker_won"])
+
+
 ## 현재 플레이어가 칸을 지키는 키퍼를 공격한다. 이기면 true.
 func _battle_keeper(keeper_dice: int, keeper_name: String) -> bool:
 	var player: Dictionary = players[current]
@@ -820,7 +849,7 @@ func _say_battle(result: Dictionary) -> void:
 		str(result["defense_rolls"]), int(result["defense_total"])])
 
 
-## target: "player"(상대 말과 싸움), "keeper"(키퍼를 공격), "ambush"(몬스터의 습격을 막음)
+## target: "player"(상대 말과 싸움), "keeper"(키퍼를 공격), "ambush"(몬스터의 습격을 막음), "card"(역전의 첫걸음 카드, 지는 쪽이 거점으로 가지 않음)
 func _battle_event(attacker_name: String, defender_name: String, result: Dictionary, target: String) -> void:
 	_event({
 		"kind": "battle",
@@ -873,6 +902,14 @@ func _apply_effect(effect: Dictionary, player_index: int) -> void:
 			say("  %d번 칸에 덫을 숨겨 두었습니다." % int(player["pos"]))
 		"swap":
 			_swap_positions(player_index)
+		"comeback":
+			# 역전의 첫걸음: 상대와 전투. 이기면 나는 앞으로, 상대는 뒤로. 지면 아무 일도 없다.
+			if _battle_comeback(player_index):
+				say("  역전! %s은(는) %d칸 앞으로, %s은(는) %d칸 뒤로 갑니다." % [player["name"], amount, opponent["name"], amount])
+				_walk(player_index, amount, false)
+				_move_back(opponent_index, amount)
+			else:
+				say("  역전 실패. 자리는 그대로입니다.")
 		"discard_enemy":
 			var their_hand: Array = opponent["hand"]
 			if their_hand.is_empty():

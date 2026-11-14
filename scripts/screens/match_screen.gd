@@ -929,7 +929,13 @@ func _on_card_pressed(index: int) -> void:
 	if usable:
 		buttons.append(["사용", Color("c4861c"), _use_card.bind(index)])
 	else:
-		body.add_child(Kit.para("카드는 내 차례에 주사위를 굴리기 전에 쓸 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		if not game.card_condition_met(card):
+			# 조건이 붙은 카드(역전의 첫걸음): 지금 얼마나 뒤처져 있는지 알려 준다.
+			var behind: int = game.behind_by(_viewer())
+			var state := "지금 %d칸 뒤처져 있어요." % behind if behind > 0 else "지금은 뒤처져 있지 않아요."
+			body.add_child(Kit.para("상대보다 %d칸 이상 뒤처졌을 때만 쓸 수 있어요. %s" % [int(card["effect"].get("gap", 10)), state], 18, Color("ff9a6a"), HORIZONTAL_ALIGNMENT_CENTER))
+		else:
+			body.add_child(Kit.para("카드는 내 차례에 주사위를 굴리기 전에 쓸 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	buttons.append(["닫기", Kit.PANEL_LIGHT])
 	app.dialog("카드 · %s" % card["name"], body, buttons, 560)
 
@@ -1053,7 +1059,8 @@ func _show_battle(event: Dictionary) -> void:
 		_add_battle_result(event)
 		_ai_reacts(event["won"] if who == 0 else not event["won"])
 		return
-	var against_player: bool = str(event.get("target", "")) == "player"
+	var card_duel: bool = str(event.get("target", "")) == "card"
+	var against_player: bool = str(event.get("target", "")) == "player" or card_duel
 	var me_attacking := who == 0 or _is_local()
 	var info := {
 		"attacker_side": "공격 · %s" % game.players[who]["name"],
@@ -1069,6 +1076,10 @@ func _show_battle(event: Dictionary) -> void:
 		info["good_for_me"] = not event["won"]
 	else:
 		info["good_for_me"] = not event["won"]
+	if card_duel:
+		# 역전의 첫걸음: 이기면 나는 앞으로, 상대는 뒤로. 지면 그대로(아무도 거점으로 가지 않는다).
+		info["winner_text"] = "%s 역전! 5칸 앞으로, 상대는 5칸 뒤로" % game.players[who]["name"]
+		info["loser_text"] = "%s 역전 실패... 그대로" % game.players[who]["name"]
 	info["attacker_character"] = _character_named(str(event["attacker"]))
 	info["defender_character"] = _character_named(str(event["defender"]))
 	await _battle_overlay.play(event, info)
@@ -1165,7 +1176,7 @@ func _add_battle_result(event: Dictionary) -> void:
 		_best_roll = max(_best_roll, my_total)
 		if success:
 			_slot_wins["defense" if ambushed else "attack"] += 1
-	elif str(event.get("target", "")) == "player" and not success:
+	elif str(event.get("target", "")) in ["player", "card"] and not success:
 		# 상대가 나를 공격했다가 진 것도 내 전투 승리
 		_my_battles[0] += 1
 		_slot_wins["defense"] += 1

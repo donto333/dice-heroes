@@ -28,7 +28,7 @@ const SCREENS := {
 	"help": preload("res://scripts/screens/help_screen.gd"),
 	"adventure": preload("res://scripts/screens/adventure_screen.gd"),
 }
-const VERSION := "0.6.2"
+const VERSION := "0.6.3"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}

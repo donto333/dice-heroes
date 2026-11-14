@@ -126,11 +126,13 @@
         "turns": 1
       }
     },
-    "twisted_fate": {
-      "name": "뒤바뀐 운명",
-      "text": "상대와 말의 자리를 바꿈",
+    "comeback_step": {
+      "name": "역전의 첫걸음",
+      "text": "상대보다 10칸 이상 뒤처졌을 때만 사용. 상대와 전투해 이기면 나는 5칸 앞으로, 상대는 5칸 뒤로",
       "effect": {
-        "type": "swap"
+        "type": "comeback",
+        "gap": 10,
+        "amount": 5
       }
     },
     "oblivion": {

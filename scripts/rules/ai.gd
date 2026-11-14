@@ -65,6 +65,9 @@ static func card_useful(game, card: Dictionary) -> bool:
 	match str(card["effect"].get("type", "")):
 		"swap":
 			return game.distance_of(1 - me) < game.distance_of(me)
+		"comeback":
+			# 쓸 수 있는 조건(10칸 이상 뒤처짐)이면 늘 쓸 만하다.
+			return game.card_condition_met(card)
 		"discard_enemy":
 			return not other_hand.is_empty()
 		"steal_card":
