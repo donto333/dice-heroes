@@ -59,6 +59,11 @@ func _run() -> void:
 	_app.current_screen._claim_attendance()
 	await _wait(0.5)
 	await _shot("05_lobby")
+	_close_dialogs()
+	_app.current_screen._choose_difficulty()
+	await _wait(0.4)
+	await _shot("05b_ai_difficulty")
+	_close_dialogs()
 
 	_app.go("heroes")
 	await _wait(0.4)
@@ -80,6 +85,11 @@ func _run() -> void:
 	_app.go("missions")
 	await _wait(0.4)
 	await _shot("10_missions")
+	var mission_scroll := _find_scroll(_app.current_screen)
+	if mission_scroll != null:
+		mission_scroll.scroll_vertical = 100000
+		await _wait(0.3)
+		await _shot("10b_achievements")
 	_app.go("settings")
 	await _wait(0.4)
 	await _shot("11_settings")
@@ -160,3 +170,13 @@ func _shot(name: String) -> void:
 	var path := "%s/%s.png" % [_out_dir, name]
 	image.save_png(path)
 	print("사진 저장: ", path)
+
+
+func _find_scroll(node: Node) -> ScrollContainer:
+	if node is ScrollContainer:
+		return node
+	for child in node.get_children():
+		var found := _find_scroll(child)
+		if found != null:
+			return found
+	return null

@@ -33,6 +33,8 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"tutorial": {},
 		## 위쪽 막대에 보일 대표 영웅 id (비어 있으면 ATTACK 영웅)
 		"avatar": "",
+		## 마지막으로 고른 AI 연습전 난이도 id
+		"ai_difficulty": "easy",
 		"pity": 0,
 		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false},
 		"attendance": {"last_date": "", "count": 0},
@@ -306,7 +308,8 @@ static func rank_ai_level(eco: Dictionary, trophies: int) -> int:
 ## 돌려주는 값: {"gold", "gems", "exp", "trophies", "level_ups", "first_win", "tier_before", "tier_after"}
 static func record_match(profile: Dictionary, eco: Dictionary, mode: String, outcome: String, stats: Dictionary) -> Dictionary:
 	var table: Dictionary = eco.get("rewards", {}).get(mode, {}).get(outcome, {})
-	var reward := {"gold": int(table.get("gold", 0)), "gems": 0, "exp": int(table.get("exp", 0)), "trophies": 0,
+	var scale := float(stats.get("reward_scale", 1.0))
+	var reward := {"gold": int(round(int(table.get("gold", 0)) * scale)), "gems": 0, "exp": int(round(int(table.get("exp", 0)) * scale)), "trophies": 0,
 		"level_ups": 0, "first_win": false, "tier_before": "", "tier_after": ""}
 	var played: Dictionary = profile["stats"]
 	played["played"] = int(played["played"]) + 1
@@ -594,3 +597,16 @@ static func has_claimable_achievement(profile: Dictionary, data: Dictionary) -> 
 		if achievement_done(profile, data, achievement) and not achievement_claimed(profile, achievement):
 			return true
 	return false
+
+
+# ---------------------------------------------------------------- AI 연습전 난이도
+
+## 난이도 정보. 모르는 id면 첫 번째(쉬움).
+static func ai_difficulty(eco: Dictionary, id: String) -> Dictionary:
+	var list: Array = eco.get("ai_difficulty", [])
+	for entry in list:
+		if str(entry["id"]) == id:
+			return entry
+	if list.is_empty():
+		return {"id": "easy", "name": "쉬움", "level": 1, "smart": false, "reward_scale": 1.0}
+	return list[0]

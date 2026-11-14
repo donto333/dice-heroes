@@ -34,7 +34,7 @@ func setup(main_app, params: Dictionary) -> void:
 	adventure.pressed.connect(_on_adventure)
 	modes.add_child(Kit.expand(adventure))
 	var practice := Kit.button("AI 연습전", Kit.ACCENT, 26, 96)
-	practice.pressed.connect(_on_mode.bind("ai"))
+	practice.pressed.connect(_choose_difficulty)
 	modes.add_child(Kit.expand(practice))
 	var friend := Kit.button("친구 대전\n(한 기기)", Color("2a7d4f"), 22, 96)
 	friend.pressed.connect(_on_mode.bind("local"))
@@ -198,6 +198,28 @@ func _on_adventure() -> void:
 func _on_help() -> void:
 	app.play("click")
 	app.go("help", {"back": "lobby"})
+
+
+## AI 연습전 난이도 고르기
+func _choose_difficulty() -> void:
+	app.play("click")
+	var body := Kit.vbox(12)
+	body.add_child(Kit.para("어려울수록 상대 영웅 레벨이 높고 조합을 잘 짜요. 보상도 많아져요.", 20, Kit.MUTED))
+	var buttons: Array = []
+	var colors := [Color("2f8f4e"), Color("c4861c"), Color("b8323a")]
+	var list: Array = app.eco.get("ai_difficulty", [])
+	for index in list.size():
+		var entry: Dictionary = list[index]
+		body.add_child(Kit.para("%s  ·  상대 레벨 %d  ·  보상 ×%s" % [entry["name"], int(entry["level"]), str(entry["reward_scale"])], 21))
+		buttons.append([str(entry["name"]), colors[index % colors.size()], _start_ai.bind(str(entry["id"]))])
+	buttons.append(["닫기", Kit.PANEL_LIGHT])
+	app.dialog("AI 연습전 난이도", body, buttons, 660)
+
+
+func _start_ai(id: String) -> void:
+	app.profile["ai_difficulty"] = id
+	app.save()
+	app.start_mode("ai")
 
 
 func _on_mode(mode: String) -> void:

@@ -72,6 +72,7 @@ func _init() -> void:
 	_test_missions_and_attendance()
 	_test_adventure()
 	_test_achievements()
+	_test_ai_difficulty()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -791,3 +792,17 @@ func _test_achievements() -> void:
 	_check(Profile.claim_achievement(profile, _data, "wins_100").is_empty(), "덜 한 업적 보상을 받음")
 	Profile.summon(profile, _data["characters"], eco, 10, RandomNumberGenerator.new())
 	_check(int(profile["stats"]["summons_total"]) == 10, "누적 소환 기록이 틀림")
+
+
+func _test_ai_difficulty() -> void:
+	var eco: Dictionary = _data["economy"]
+	_check(eco.get("ai_difficulty", []).size() == 3, "AI 난이도가 3개가 아님")
+	_check(str(Profile.ai_difficulty(eco, "hard")["id"]) == "hard", "어려움 난이도를 못 찾음")
+	_check(str(Profile.ai_difficulty(eco, "없음")["id"]) == "easy", "모르는 난이도가 쉬움이 아님")
+	var profile := Profile.new_profile("난이도", eco)
+	Profile.ensure_daily(profile, "2026-05-01")
+	var base := int(eco["rewards"]["ai"]["win"]["gold"])
+	var reward := Profile.record_match(profile, eco, "ai", "win", {"reward_scale": 2.0})
+	_check(int(reward["gold"]) == base * 2, "어려움 보상 배율이 적용되지 않음")
+	var party: Dictionary = AI.pick_party(_data["characters"], Game.POINT_LIMIT, RandomNumberGenerator.new(), 1)
+	_check(not party.is_empty(), "쉬움 AI 파티를 못 고름")
