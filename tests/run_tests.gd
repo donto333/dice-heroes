@@ -71,6 +71,7 @@ func _init() -> void:
 	_test_match_rewards()
 	_test_missions_and_attendance()
 	_test_adventure()
+	_test_achievements()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -764,3 +765,29 @@ func _test_adventure() -> void:
 	Profile.record_adventure(profile, adventure, str(stages[0]["id"]), true, 999, 2)
 	_check(Profile.stage_stars(profile, str(stages[0]["id"])) == 3, "별이 낮은 기록으로 덮어써짐")
 	_check(Profile.total_stars(profile) == 3, "별 합계가 틀림")
+
+
+func _test_achievements() -> void:
+	var list: Array = _data["achievements"].get("achievements", [])
+	_check(list.size() >= 20, "업적이 20개보다 적음")
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("업적", eco)
+	var known := ["wins", "rank_wins", "battle_wins_total", "cards_total", "summons_total", "upgrades_total",
+		"owned", "max_level_heroes", "adventure_stars", "chapters_cleared", "best_trophies", "level"]
+	var ids := {}
+	for achievement in list:
+		_check(str(achievement["stat"]) in known, "모르는 업적 값: " + str(achievement["id"]))
+		_check(not ids.has(achievement["id"]), "업적 id가 겹침: " + str(achievement["id"]))
+		ids[achievement["id"]] = true
+	_check(not Profile.has_claimable_achievement(profile, _data), "아무것도 안 했는데 업적 보상이 있음")
+	Profile.ensure_daily(profile, "2026-05-01")
+	Profile.record_match(profile, eco, "ai", "win", {"battle_wins": 3, "cards": 2})
+	_check(int(profile["stats"]["battle_wins_total"]) == 3 and int(profile["stats"]["cards_total"]) == 2, "누적 전투 승리·카드 기록이 안 됨")
+	_check(Profile.has_claimable_achievement(profile, _data), "첫 승리 업적을 받을 수 없음")
+	var gems := int(profile["gems"])
+	_check(not Profile.claim_achievement(profile, _data, "first_win").is_empty(), "첫 승리 업적 보상을 못 받음")
+	_check(int(profile["gems"]) > gems, "업적 보석이 들어오지 않음")
+	_check(Profile.claim_achievement(profile, _data, "first_win").is_empty(), "업적 보상을 두 번 받음")
+	_check(Profile.claim_achievement(profile, _data, "wins_100").is_empty(), "덜 한 업적 보상을 받음")
+	Profile.summon(profile, _data["characters"], eco, 10, RandomNumberGenerator.new())
+	_check(int(profile["stats"]["summons_total"]) == 10, "누적 소환 기록이 틀림")

@@ -1,0 +1,257 @@
+{
+  "_comment": "업적. stat은 scripts/rules/profile.gd의 achievement_value()가 계산하는 값 이름. 한 번만 받을 수 있다.",
+  "achievements": [
+    {
+      "id": "first_win",
+      "text": "첫 승리",
+      "stat": "wins",
+      "goal": 1,
+      "reward": {
+        "gems": 30
+      }
+    },
+    {
+      "id": "wins_10",
+      "text": "승리 10번",
+      "stat": "wins",
+      "goal": 10,
+      "reward": {
+        "gems": 50
+      }
+    },
+    {
+      "id": "wins_50",
+      "text": "승리 50번",
+      "stat": "wins",
+      "goal": 50,
+      "reward": {
+        "gems": 150
+      }
+    },
+    {
+      "id": "wins_100",
+      "text": "승리 100번",
+      "stat": "wins",
+      "goal": 100,
+      "reward": {
+        "gems": 300
+      }
+    },
+    {
+      "id": "rank_5",
+      "text": "랭크전 5승",
+      "stat": "rank_wins",
+      "goal": 5,
+      "reward": {
+        "gems": 50
+      }
+    },
+    {
+      "id": "rank_30",
+      "text": "랭크전 30승",
+      "stat": "rank_wins",
+      "goal": 30,
+      "reward": {
+        "gems": 200
+      }
+    },
+    {
+      "id": "battle_20",
+      "text": "전투 승리 20번",
+      "stat": "battle_wins_total",
+      "goal": 20,
+      "reward": {
+        "gold": 1000
+      }
+    },
+    {
+      "id": "battle_100",
+      "text": "전투 승리 100번",
+      "stat": "battle_wins_total",
+      "goal": 100,
+      "reward": {
+        "gems": 100
+      }
+    },
+    {
+      "id": "battle_300",
+      "text": "전투 승리 300번",
+      "stat": "battle_wins_total",
+      "goal": 300,
+      "reward": {
+        "gems": 250
+      }
+    },
+    {
+      "id": "card_30",
+      "text": "아이템 카드 30장 쓰기",
+      "stat": "cards_total",
+      "goal": 30,
+      "reward": {
+        "gold": 1000
+      }
+    },
+    {
+      "id": "card_150",
+      "text": "아이템 카드 150장 쓰기",
+      "stat": "cards_total",
+      "goal": 150,
+      "reward": {
+        "gems": 100
+      }
+    },
+    {
+      "id": "summon_10",
+      "text": "영웅 10명 소환",
+      "stat": "summons_total",
+      "goal": 10,
+      "reward": {
+        "gems": 50
+      }
+    },
+    {
+      "id": "summon_50",
+      "text": "영웅 50명 소환",
+      "stat": "summons_total",
+      "goal": 50,
+      "reward": {
+        "gems": 150
+      }
+    },
+    {
+      "id": "collect_20",
+      "text": "영웅 20명 모으기",
+      "stat": "owned",
+      "goal": 20,
+      "reward": {
+        "gems": 100
+      }
+    },
+    {
+      "id": "collect_30",
+      "text": "영웅 30명 모으기",
+      "stat": "owned",
+      "goal": 30,
+      "reward": {
+        "gems": 200
+      }
+    },
+    {
+      "id": "collect_48",
+      "text": "영웅 48명 모두 모으기",
+      "stat": "owned",
+      "goal": 48,
+      "reward": {
+        "gems": 500
+      }
+    },
+    {
+      "id": "upgrade_5",
+      "text": "영웅 강화 5번",
+      "stat": "upgrades_total",
+      "goal": 5,
+      "reward": {
+        "gold": 2000
+      }
+    },
+    {
+      "id": "max_level_1",
+      "text": "레벨 5 영웅 1명",
+      "stat": "max_level_heroes",
+      "goal": 1,
+      "reward": {
+        "gems": 100
+      }
+    },
+    {
+      "id": "stars_15",
+      "text": "모험 별 15개",
+      "stat": "adventure_stars",
+      "goal": 15,
+      "reward": {
+        "gems": 80
+      }
+    },
+    {
+      "id": "stars_45",
+      "text": "모험 별 45개",
+      "stat": "adventure_stars",
+      "goal": 45,
+      "reward": {
+        "gems": 200
+      }
+    },
+    {
+      "id": "stars_72",
+      "text": "모험 별 72개 모두",
+      "stat": "adventure_stars",
+      "goal": 72,
+      "reward": {
+        "gems": 500
+      }
+    },
+    {
+      "id": "chapter_1",
+      "text": "모험 1장 끝내기",
+      "stat": "chapters_cleared",
+      "goal": 1,
+      "reward": {
+        "gold": 1500
+      }
+    },
+    {
+      "id": "chapter_8",
+      "text": "모험 8장 모두 끝내기",
+      "stat": "chapters_cleared",
+      "goal": 8,
+      "reward": {
+        "gems": 400
+      }
+    },
+    {
+      "id": "tier_silver",
+      "text": "실버 티어 달성",
+      "stat": "best_trophies",
+      "goal": 200,
+      "reward": {
+        "gems": 50
+      }
+    },
+    {
+      "id": "tier_gold",
+      "text": "골드 티어 달성",
+      "stat": "best_trophies",
+      "goal": 500,
+      "reward": {
+        "gems": 100
+      }
+    },
+    {
+      "id": "tier_diamond",
+      "text": "다이아 티어 달성",
+      "stat": "best_trophies",
+      "goal": 1400,
+      "reward": {
+        "gems": 300
+      }
+    },
+    {
+      "id": "level_10",
+      "text": "플레이어 레벨 10",
+      "stat": "level",
+      "goal": 10,
+      "reward": {
+        "gems": 100
+      }
+    },
+    {
+      "id": "level_20",
+      "text": "플레이어 레벨 20",
+      "stat": "level",
+      "goal": 20,
+      "reward": {
+        "gems": 200
+      }
+    }
+  ]
+}
