@@ -713,12 +713,28 @@ func _test_missions_and_attendance() -> void:
 	var eco: Dictionary = _data["economy"]
 	var profile := Profile.new_profile("미션", eco)
 	Profile.ensure_daily(profile, "2026-03-01")
-	var missions: Array = eco["missions"]
+	var missions: Array = Profile.active_missions(profile, eco)
+	_check(missions.size() == int(eco["missions_per_day"]), "오늘의 미션 수가 틀림")
+	_check(str(Profile.active_missions(profile, eco)[0]["id"]) == str(missions[0]["id"]), "같은 날 미션이 바뀜")
+	var ids := {}
+	for mission in missions:
+		ids[str(mission["id"])] = true
+	_check(ids.has("play_1") and ids.has("win_2"), "늘 나오는 미션이 빠짐")
+	var varied := false
+	for day in 10:
+		var other := Profile.new_profile("미션", eco)
+		Profile.ensure_daily(other, "2026-06-%02d" % (day + 1))
+		for mission in Profile.active_missions(other, eco):
+			if not ids.has(str(mission["id"])):
+				varied = true
+	_check(varied, "날이 바뀌어도 미션이 늘 같음")
 	_check(not Profile.has_claimable(profile, eco), "아무것도 안 했는데 받을 보상이 있음")
 	for index in 3:
 		Profile.record_match(profile, eco, "ai", "win", {"battle_wins": 2, "cards": 2})
-	Profile.summon(profile, _data["characters"], eco, 1, RandomNumberGenerator.new())
 	_check(Profile.has_claimable(profile, eco), "미션을 깼는데 받을 보상이 없음")
+	# 나머지 미션은 진행도를 채워서 보상 받기를 확인한다.
+	for mission in missions:
+		profile["daily"]["progress"][str(mission["id"])] = int(mission["goal"])
 	var gold_before := int(profile["gold"])
 	for mission in missions:
 		var reward := Profile.claim_mission(profile, eco, str(mission["id"]))

@@ -250,6 +250,7 @@ static func upgrade(profile: Dictionary, eco: Dictionary, id: String) -> bool:
 	pay(profile, "gold", int(cost["gold"]))
 	profile["owned"][id]["level"] = level_of(profile, id) + 1
 	_add_stat(profile, "upgrades_total", 1)
+	add_progress(profile, eco, "upgrade", 1)
 	return true
 
 
@@ -342,6 +343,10 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 	grant(profile, reward)
 	reward["level_ups"] = add_exp(profile, eco, int(reward["exp"]))
 	add_progress(profile, eco, "play", 1)
+	if mode == "rank":
+		add_progress(profile, eco, "rank_play", 1)
+	if mode == "adventure" and outcome == "win":
+		add_progress(profile, eco, "adventure_win", 1)
 	if counts_as_win:
 		add_progress(profile, eco, "win", 1)
 	add_progress(profile, eco, "battle_win", int(stats.get("battle_wins", 0)))
@@ -383,11 +388,38 @@ static func ensure_daily(profile: Dictionary, today: String) -> bool:
 	return true
 
 
+## 오늘의 미션. 미션 목록(eco.missions)에서 하루 missions_per_day개를 날짜로 정해 고른다.
+## "always": true인 미션은 늘 들어간다. 같은 날에는 늘 같은 목록이다.
+static func active_missions(profile: Dictionary, eco: Dictionary) -> Array:
+	var pool: Array = eco.get("missions", [])
+	var per_day := int(eco.get("missions_per_day", pool.size()))
+	if pool.size() <= per_day:
+		return pool
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("missions|" + str(profile.get("daily", {}).get("date", "")))
+	var picked := {}
+	var others: Array = []
+	for mission in pool:
+		if bool(mission.get("always", false)):
+			picked[str(mission["id"])] = true
+		else:
+			others.append(mission)
+	while picked.size() < per_day and not others.is_empty():
+		var index := rng.randi_range(0, others.size() - 1)
+		picked[str(others[index]["id"])] = true
+		others.remove_at(index)
+	var result: Array = []
+	for mission in pool:
+		if picked.has(str(mission["id"])):
+			result.append(mission)
+	return result
+
+
 static func add_progress(profile: Dictionary, eco: Dictionary, event: String, amount: int) -> void:
 	if amount <= 0:
 		return
 	var progress: Dictionary = profile["daily"]["progress"]
-	for mission in eco.get("missions", []):
+	for mission in active_missions(profile, eco):
 		if str(mission["event"]) == event:
 			var id := str(mission["id"])
 			progress[id] = min(int(mission["goal"]), int(progress.get(id, 0)) + amount)
@@ -406,7 +438,7 @@ static func mission_claimed(profile: Dictionary, mission: Dictionary) -> bool:
 
 
 static func claim_mission(profile: Dictionary, eco: Dictionary, id: String) -> Dictionary:
-	for mission in eco.get("missions", []):
+	for mission in active_missions(profile, eco):
 		if str(mission["id"]) == id and mission_done(profile, mission) and not mission_claimed(profile, mission):
 			profile["daily"]["claimed"].append(id)
 			grant(profile, mission["reward"])
@@ -415,7 +447,7 @@ static func claim_mission(profile: Dictionary, eco: Dictionary, id: String) -> D
 
 
 static func all_missions_done(profile: Dictionary, eco: Dictionary) -> bool:
-	for mission in eco.get("missions", []):
+	for mission in active_missions(profile, eco):
 		if not mission_claimed(profile, mission):
 			return false
 	return true
@@ -432,7 +464,7 @@ static func claim_all_clear(profile: Dictionary, eco: Dictionary) -> Dictionary:
 
 ## 받을 수 있는 미션 보상이 있는지 (로비 알림 점에 쓴다).
 static func has_claimable(profile: Dictionary, eco: Dictionary) -> bool:
-	for mission in eco.get("missions", []):
+	for mission in active_missions(profile, eco):
 		if mission_done(profile, mission) and not mission_claimed(profile, mission):
 			return true
 	if all_missions_done(profile, eco) and not bool(profile["daily"].get("all_claimed", false)):
@@ -625,7 +657,7 @@ static func claimable_achievement_count(profile: Dictionary, data: Dictionary) -
 ## 지금 받을 수 있는 일일 미션 수
 static func claimable_mission_count(profile: Dictionary, eco: Dictionary) -> int:
 	var count := 0
-	for mission in eco.get("missions", []):
+	for mission in active_missions(profile, eco):
 		if mission_done(profile, mission) and not mission_claimed(profile, mission):
 			count += 1
 	return count
@@ -695,6 +727,7 @@ static func buy_deal(profile: Dictionary, characters: Array, eco: Dictionary, to
 	profile["daily"]["deals_bought"].append(str(deal["id"]))
 	var owned: Dictionary = profile["owned"][str(deal["id"])]
 	owned["shards"] = int(owned["shards"]) + int(deal["shards"])
+	add_progress(profile, eco, "deal", 1)
 	return true
 
 
@@ -740,6 +773,7 @@ static func spin_roulette(profile: Dictionary, eco: Dictionary, rng: RandomNumbe
 			index = slot_index
 			break
 	profile["daily"]["roulette_spins"] = roulette_spins(profile) + 1
+	add_progress(profile, eco, "roulette", 1)
 	grant(profile, slots[index]["reward"])
 	return {"index": index, "reward": slots[index]["reward"], "cost": cost}
 
