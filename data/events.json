@@ -1,0 +1,35 @@
+{
+  "_comment": "기간 이벤트. start~end(둘 다 포함, YYYY-MM-DD) 동안 열린다. effect: match_gold_scale(판 보상 골드 배율), pass_exp_scale(패스 경험치 배율). 운영 중에 이 파일만 고치면 된다.",
+  "events": [
+    {
+      "id": "open_gold",
+      "name": "테스트 기념 골드 1.5배",
+      "text": "모든 판의 보상 골드가 1.5배예요.",
+      "start": "2026-11-14",
+      "end": "2026-11-30",
+      "effect": {
+        "match_gold_scale": 1.5
+      }
+    },
+    {
+      "id": "pass_boost",
+      "name": "패스 경험치 2배 주간",
+      "text": "판으로 얻는 패스 경험치가 2배예요.",
+      "start": "2026-11-21",
+      "end": "2026-11-27",
+      "effect": {
+        "pass_exp_scale": 2.0
+      }
+    },
+    {
+      "id": "december_gold",
+      "name": "연말 골드 2배",
+      "text": "모든 판의 보상 골드가 2배예요.",
+      "start": "2026-12-24",
+      "end": "2026-12-31",
+      "effect": {
+        "match_gold_scale": 2.0
+      }
+    }
+  ]
+}

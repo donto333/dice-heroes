@@ -332,7 +332,8 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 		elif outcome == "win":
 			profile["daily"]["challenge_done"] = true
 	var table: Dictionary = eco.get("rewards", {}).get(reward_mode, {}).get(outcome, {})
-	var scale := float(stats.get("reward_scale", 1.0))
+	# 기간 이벤트 배율(stats에 실려 온다. 없으면 1배)
+	var scale := float(stats.get("reward_scale", 1.0)) * float(stats.get("event_gold_scale", 1.0))
 	var reward := {"gold": int(round(int(table.get("gold", 0)) * scale)), "gems": int(table.get("gems", 0)), "exp": int(round(int(table.get("exp", 0)) * scale)), "trophies": 0,
 		"level_ups": 0, "first_win": false, "tier_before": "", "tier_after": "", "streak": 0, "streak_gold": 0, "pass_exp": 0}
 	var played: Dictionary = profile["stats"]
@@ -388,7 +389,7 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 	_add_stat(profile, "cards_total", int(stats.get("cards", 0)))
 	_record_heroes(profile, stats.get("party", []), outcome == "win")
 	if mode != "local":
-		reward["pass_exp"] = int(eco.get("pass", {}).get("exp", {}).get(outcome, 0))
+		reward["pass_exp"] = int(round(int(eco.get("pass", {}).get("exp", {}).get(outcome, 0)) * float(stats.get("event_pass_scale", 1.0))))
 		add_pass_exp(profile, eco, int(reward["pass_exp"]))
 	return reward
 
@@ -1155,3 +1156,22 @@ static func sell_shards(profile: Dictionary, eco: Dictionary, id: String) -> int
 	profile["owned"][id]["shards"] = 0
 	grant(profile, {"gold": shards * int(eco.get("upgrade", {}).get("shard_sell_gold", 0))})
 	return shards
+
+
+# ---------------------------------------------------------------- 기간 이벤트
+
+## today(YYYY-MM-DD)에 열려 있는 이벤트 목록. 날짜는 글자 비교로 충분하다(같은 형식).
+static func active_events(events: Dictionary, today: String) -> Array:
+	var result: Array = []
+	for event in events.get("events", []):
+		if today >= str(event.get("start", "")) and today <= str(event.get("end", "")):
+			result.append(event)
+	return result
+
+
+## 열려 있는 이벤트의 효과 배율을 곱한 값. 해당 효과가 없으면 1.
+static func event_scale(events: Dictionary, today: String, effect: String) -> float:
+	var scale := 1.0
+	for event in active_events(events, today):
+		scale *= float(event.get("effect", {}).get(effect, 1.0))
+	return scale

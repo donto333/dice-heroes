@@ -194,8 +194,7 @@ func _map_cell(index: int, title: String, note: String, board: Dictionary) -> Co
 	name_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(name_label)
-	var note_label := Kit.label(note, 14, Color(1, 1, 1, 0.85), HORIZONTAL_ALIGNMENT_CENTER)
-	note_label.clip_text = true
+	var note_label := Kit.para(note, 13, Color(1, 1, 1, 0.85), HORIZONTAL_ALIGNMENT_CENTER)
 	note_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(note_label)
 	return button

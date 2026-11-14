@@ -1399,7 +1399,9 @@ func _record(outcome: String) -> PackedStringArray:
 	_recorded = true
 	var missions_before := Profile.claimable_mission_count(app.profile, app.eco)
 	var achievements_before := Profile.claimable_achievement_count(app.profile, app.data)
-	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids()})
+	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids(),
+		"event_gold_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "match_gold_scale"),
+		"event_pass_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "pass_exp_scale")})
 	_last_reward = reward
 	if _mode == "adventure" and _stage_id != "":
 		var result := Profile.record_adventure(app.profile, app.data.get("adventure", {}), _stage_id, outcome == "win", int(game.round_number), int(_my_battles[1]))
@@ -1416,6 +1418,8 @@ func _record(outcome: String) -> PackedStringArray:
 			lines.append("티어 변경: %s → %s" % [reward["tier_before"], reward["tier_after"]])
 	if int(reward.get("streak", 0)) >= 2:
 		lines.append("%d연승! 연승 보너스 골드 +%d" % [int(reward["streak"]), int(reward.get("streak_gold", 0))])
+	for event in Profile.active_events(app.data.get("events", {}), app.today()):
+		lines.append("이벤트 적용: %s" % event["name"])
 	if bool(reward["first_win"]):
 		lines.append("오늘 첫 승리 보너스!")
 	if int(reward["level_ups"]) > 0:
