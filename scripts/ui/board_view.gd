@@ -87,6 +87,8 @@ var active_player := -1
 var _anim_time := 0.0
 ## 통통 튀는 이동: 말마다 {"from": 칸 id, "t": 0~1}. 없으면 멈춰 있는 것.
 var _hops: Dictionary = {}
+## 말이 내려앉은 칸에서 퍼지는 고리: [{"id": 칸, "t": 0~1, "color": 색}]
+var _rings: Array = []
 ## 지형 바탕과 꾸밈 그림(assets/terrain). 맵 테마가 바뀌면 다시 읽는다.
 var _terrain_name := ""
 var _terrain: Texture2D = null
@@ -142,6 +144,7 @@ func reset_pieces() -> void:
 	_camera_ready = false
 	highlight = []
 	_hops = {}
+	_rings = []
 	shown_pos = [0, 0]
 	if game != null:
 		for index in game.players.size():
@@ -184,6 +187,14 @@ func _process(delta: float) -> void:
 		hop["t"] = float(hop["t"]) + delta / (STEP_TIME * 0.92)
 		if float(hop["t"]) >= 1.0:
 			_hops.erase(player_index)
+			# 이어서 뛸 칸이 없으면(도착) 고리를 퍼뜨린다.
+			if _queue.is_empty() or int(_queue[0]["player"]) != int(player_index):
+				_rings.append({"id": int(shown_pos[player_index]), "t": 0.0, "color": PLAYER_COLORS[player_index]})
+		queue_redraw()
+	if not _rings.is_empty():
+		for ring in _rings:
+			ring["t"] = float(ring["t"]) + delta / 0.5
+		_rings = _rings.filter(func(ring): return float(ring["t"]) < 1.0)
 		queue_redraw()
 	if _queue.is_empty():
 		return
@@ -435,6 +446,33 @@ func _draw() -> void:
 				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, small, 4, Color(0, 0, 0, 0.8))
 			draw_string(font, rect.position + Vector2(0, rect.size.y * 0.76), label,
 				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, small, Color.WHITE)
+
+	# 골 칸은 반짝이는 테와 수호자 이름으로 눈에 띄게
+	for id in game.nodes:
+		if game.nodes[id].get("type", "") != "goal":
+			continue
+		var goal_center := _center(id, layout)
+		if not view.has_point(goal_center):
+			continue
+		var pulse := 0.5 + 0.5 * sin(_anim_time * 3.0)
+		draw_set_transform(goal_center - Vector2(0, cell * HEX_DEPTH * 0.5), 0.0, Vector2(1.0, HEX_SQUASH))
+		draw_arc(Vector2.ZERO, cell * (0.56 + pulse * 0.06), 0.0, TAU, 40, Color(1.0, 0.85, 0.3, 0.9 - pulse * 0.4), 5.0)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		var boss := "수호자 %s" % str(game.nodes[id].get("name", ""))
+		var boss_size := int(cell * 0.2)
+		var boss_pos := goal_center + Vector2(-cell * 1.5, -cell * 0.62)
+		draw_string_outline(font, boss_pos, boss, HORIZONTAL_ALIGNMENT_CENTER, cell * 3.0, boss_size, 6, Color.BLACK)
+		draw_string(font, boss_pos, boss, HORIZONTAL_ALIGNMENT_CENTER, cell * 3.0, boss_size, Color("ffcf4d"))
+	# 내려앉은 칸에서 퍼지는 고리
+	for ring in _rings:
+		if not game.nodes.has(int(ring["id"])):
+			continue
+		var ring_t := float(ring["t"])
+		var ring_color: Color = ring["color"]
+		ring_color.a = 1.0 - ring_t
+		draw_set_transform(_center(int(ring["id"]), layout) - Vector2(0, cell * HEX_DEPTH * 0.5), 0.0, Vector2(1.0, HEX_SQUASH))
+		draw_arc(Vector2.ZERO, cell * (0.35 + ring_t * 0.55), 0.0, TAU, 36, ring_color, 6.0 * (1.0 - ring_t) + 1.0)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	# 말. 같은 칸에 있으면 좌우로 나눠 그린다.
 	for player_index in shown_pos.size():
