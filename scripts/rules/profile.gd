@@ -35,6 +35,8 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"avatar": "",
 		## 마지막으로 고른 AI 연습전 난이도 id
 		"ai_difficulty": "easy",
+		## 영웅별 전적 {id: {"played": n, "wins": n}}
+		"hero_stats": {},
 		"pity": 0,
 		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false},
 		"attendance": {"last_date": "", "count": 0},
@@ -344,7 +346,24 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 	add_progress(profile, eco, "card", int(stats.get("cards", 0)))
 	_add_stat(profile, "battle_wins_total", int(stats.get("battle_wins", 0)))
 	_add_stat(profile, "cards_total", int(stats.get("cards", 0)))
+	_record_heroes(profile, stats.get("party", []), outcome == "win")
 	return reward
+
+
+## 영웅별 출전·승리 수
+static func _record_heroes(profile: Dictionary, party: Array, won: bool) -> void:
+	if not profile.has("hero_stats"):
+		profile["hero_stats"] = {}
+	for id in party:
+		var entry: Dictionary = profile["hero_stats"].get(str(id), {"played": 0, "wins": 0})
+		entry["played"] = int(entry["played"]) + 1
+		if won:
+			entry["wins"] = int(entry["wins"]) + 1
+		profile["hero_stats"][str(id)] = entry
+
+
+static func hero_record(profile: Dictionary, id: String) -> Dictionary:
+	return profile.get("hero_stats", {}).get(id, {"played": 0, "wins": 0})
 
 
 static func _add_stat(profile: Dictionary, key: String, amount: int) -> void:

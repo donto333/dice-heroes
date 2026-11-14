@@ -64,6 +64,11 @@ var _banner: Control
 var _result_overlay: Control
 ## 이번 판에서 내 전투 기록. [이긴 수, 진 수]
 var _my_battles := [0, 0]
+## 내 영웅 자리별 전투 승리 수 (결과 화면의 MVP)
+var _slot_wins := {"attack": 0, "defense": 0, "support": 0}
+var _abilities_used := 0
+const SLOT_NAMES := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
+var _best_roll := 0
 
 
 func setup(main_app, params: Dictionary) -> void:
@@ -433,6 +438,9 @@ func _start_game() -> void:
 	_waiting_for_player = false
 	_choosing_path = false
 	_my_battles = [0, 0]
+	_slot_wins = {"attack": 0, "defense": 0, "support": 0}
+	_abilities_used = 0
+	_best_roll = 0
 	_cards_used = 0
 	_recorded = false
 	_reward_lines = PackedStringArray()
@@ -588,6 +596,8 @@ func _on_path_chosen(index: int) -> void:
 func _on_ability_pressed(slot: String) -> void:
 	var me := _viewer()
 	if _waiting_for_player and game.use_ability(slot):
+		if me == 0:
+			_abilities_used += 1
 		_add_result_text("어빌리티 [%s] 발동! %s" % [
 			game.ability_of(me, slot)["name"], game.ability_of(me, slot)["text"]], SLOT_COLORS[slot].lightened(0.4))
 		_play("reveal")
@@ -792,9 +802,15 @@ func _add_battle_result(event: Dictionary) -> void:
 		verdict = "%s 방어 성공!" % game.players[who]["name"]
 	if who == 0:
 		_my_battles[0 if success else 1] += 1
+		var my_total := int(event["defense_total"]) if ambushed else int(event["attack_total"])
+		_best_roll = max(_best_roll, my_total)
+		if success:
+			_slot_wins["defense" if ambushed else "attack"] += 1
 	elif str(event.get("target", "")) == "player" and not success:
 		# 상대가 나를 공격했다가 진 것도 내 전투 승리
 		_my_battles[0] += 1
+		_slot_wins["defense"] += 1
+		_best_roll = max(_best_roll, int(event["defense_total"]))
 	if not success:
 		verdict = "%s 패배... 직전 거점으로" % game.players[who]["name"]
 		verdict_color = Color("ff6b6b")
@@ -842,7 +858,11 @@ func _show_game_over() -> void:
 		"%s 파티: %s" % [game.players[1]["name"], _party_names(1)],
 	])
 	if not _is_local():
-		details.insert(2, "내 전투: %d승 %d패" % [_my_battles[0], _my_battles[1]])
+		details.insert(2, "내 전투: %d승 %d패  ·  최고 주사위 합 %d" % [_my_battles[0], _my_battles[1], _best_roll])
+		details.insert(3, "카드 %d장 · 어빌리티 %d번 사용" % [_cards_used, _abilities_used])
+		var mvp := _mvp_slot()
+		if mvp != "":
+			details.insert(4, "MVP: %s (%s, 전투 %d승)" % [game.char_of(0, mvp)["name"], SLOT_NAMES.get(mvp, mvp), int(_slot_wins[mvp])])
 	details.append_array(_record(outcome))
 	var shown_outcome := outcome
 	if _is_local() and outcome != "draw":
@@ -856,7 +876,7 @@ func _record(outcome: String) -> PackedStringArray:
 	if _recorded or not app.has_profile():
 		return _reward_lines
 	_recorded = true
-	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale})
+	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids()})
 	lines.append("")
 	lines.append("보상: %s  ·  경험치 +%d" % [Kit.reward_line(reward), int(reward["exp"])])
 	if _mode == "adventure" and _stage_id != "":
@@ -914,6 +934,24 @@ func _confirm_quit() -> void:
 		app.save()
 	game = null
 	app.go("lobby")
+
+
+## 전투를 가장 많이 이긴 내 영웅 자리. 아무도 못 이겼으면 "".
+func _mvp_slot() -> String:
+	var best := ""
+	var best_wins := 0
+	for slot in Game.SLOTS:
+		if int(_slot_wins[slot]) > best_wins:
+			best_wins = int(_slot_wins[slot])
+			best = slot
+	return best
+
+
+func _my_party_ids() -> Array:
+	var ids: Array = []
+	for slot in Game.SLOTS:
+		ids.append(str(game.char_of(0, slot)["id"]))
+	return ids
 
 
 func _party_names(player_index: int) -> String:
