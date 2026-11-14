@@ -57,7 +57,10 @@ func refresh() -> void:
 	if app == null:
 		return
 	var profile: Dictionary = app.profile
-	var leader: Dictionary = app.character(str(profile["party"].get("attack", "")))
+	var leader_id := str(profile.get("avatar", ""))
+	if leader_id == "" or not Profile.owns(profile, leader_id):
+		leader_id = str(profile["party"].get("attack", ""))
+	var leader: Dictionary = app.character(leader_id)
 	_avatar.show_character(leader, Kit.CATEGORY_COLORS.get(leader.get("category", ""), Kit.LINE))
 	_name.text = str(profile["nickname"])
 	_level.text = "Lv.%d" % int(profile["level"])
