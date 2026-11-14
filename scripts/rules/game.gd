@@ -748,6 +748,38 @@ func _resolve_fate() -> void:
 # ---------------------------------------------------------------- 전투
 
 ## 주사위 전투 한 번. 비기면 다시 굴리고, 10번 연속 비기면 방어 쪽이 이긴다.
+## 주사위 count개 합의 분포. 결과[합] = 경우의 수 (주사위를 굴리지 않고 셈만 한다)
+static func sum_distribution(count: int) -> Array:
+	var ways: Array = [1]
+	for die in count:
+		var next: Array = []
+		next.resize(ways.size() + 6)
+		next.fill(0)
+		for total in ways.size():
+			for face in range(1, 7):
+				next[total + face] += int(ways[total])
+		ways = next
+	return ways
+
+
+## 공격 쪽이 이길 확률(0~1). 비기면 다시 굴리므로 비긴 경우는 빼고 센다.
+static func win_chance(attack_dice: int, defense_dice: int, attack_bonus: int, defense_bonus: int) -> float:
+	var attack: Array = sum_distribution(clampi(attack_dice, 1, MAX_BATTLE_DICE))
+	var defense: Array = sum_distribution(clampi(defense_dice, 1, MAX_BATTLE_DICE))
+	var wins := 0.0
+	var losses := 0.0
+	for a in attack.size():
+		for d in defense.size():
+			var ways := float(int(attack[a]) * int(defense[d]))
+			if a + attack_bonus > d + defense_bonus:
+				wins += ways
+			elif a + attack_bonus < d + defense_bonus:
+				losses += ways
+	if wins + losses <= 0.0:
+		return 0.5
+	return wins / (wins + losses)
+
+
 func resolve_battle(attack_dice: int, defense_dice: int, attack_bonus: int, defense_bonus: int) -> Dictionary:
 	var attack_count: int = clamp(attack_dice, 1, MAX_BATTLE_DICE)
 	var defense_count: int = clamp(defense_dice, 1, MAX_BATTLE_DICE)

@@ -4,6 +4,7 @@ extends Control
 
 const DiceView := preload("res://scripts/ui/dice_view.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
+const Game := preload("res://scripts/rules/game.gd")
 
 const GOLD := Color("ffcf4d")
 const WIN_COLOR := Color("7ee081")
@@ -159,7 +160,10 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 		side["bonus"].text = ""
 	left["dice"].die_size = _die_size(attack_rolls.size())
 	right["dice"].die_size = _die_size(defense_rolls.size())
-	_verdict.text = ""
+	# 굴리기 전에 공격 쪽 예상 승률을 보여 준다(판정이 나면 승패 글자로 바뀐다).
+	var chance := Game.win_chance(attack_rolls.size(), defense_rolls.size(), attack_bonus, defense_bonus)
+	_verdict.text = "공격 승률 약 %d%%" % int(round(chance * 100.0))
+	_verdict.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
 
 	visible = true
 	modulate = Color(1, 1, 1, 0)
