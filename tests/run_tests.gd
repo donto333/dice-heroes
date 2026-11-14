@@ -76,6 +76,7 @@ func _init() -> void:
 	_test_hero_records()
 	_test_daily_deals()
 	_test_roulette()
+	_test_font_coverage()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -877,3 +878,20 @@ func _test_roulette() -> void:
 		var result := Profile.spin_roulette(sample, eco, rng)
 		counts[int(result["index"])] = int(counts.get(int(result["index"]), 0)) + 1
 	_check(int(counts.get(0, 0)) > int(counts.get(7, 0)), "룰렛 확률이 가중치와 다름")
+
+
+## 화면에 쓰는 글자가 모두 게임 글꼴에 들어 있는지 본다. (웹에서는 없는 글자가 깨진 네모로 보인다)
+func _test_font_coverage() -> void:
+	var font: FontFile = load("res://assets/fonts/NotoSansKR-Regular-subset.otf")
+	if font == null:
+		return
+	var missing := {}
+	for path in ["res://scripts/ui/kit.gd", "res://data/economy.json", "res://data/achievements.json",
+			"res://data/adventure.json", "res://data/characters.json", "res://data/abilities.json", "res://data/cards.json",
+			"res://scripts/screens/help_screen.gd", "res://scripts/screens/lobby_screen.gd", "res://scripts/screens/match_screen.gd"]:
+		var text := FileAccess.get_file_as_string(path)
+		for index in text.length():
+			var code := text.unicode_at(index)
+			if code > 127 and not font.has_char(code):
+				missing[String.chr(code)] = path
+	_check(missing.is_empty(), "글꼴에 없는 글자: " + str(missing))
