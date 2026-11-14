@@ -45,6 +45,26 @@ func setup(main_app, _params: Dictionary) -> void:
 	music_toggle.pressed.connect(_on_music)
 	music_row.add_child(music_toggle)
 
+	var play_panel := Kit.panel()
+	body.add_child(play_panel)
+	var play_column := Kit.vbox(10)
+	play_panel.add_child(play_column)
+	var fast_row := Kit.hbox(10)
+	play_column.add_child(fast_row)
+	fast_row.add_child(Kit.expand(Kit.label("대전 빠르기 ×2", 26)))
+	var fast_on := bool(app.profile["settings"].get("fast", false))
+	var fast_toggle := Kit.button("켜짐" if fast_on else "꺼짐", Kit.GOOD if fast_on else Kit.PANEL_LIGHT, 24, 64)
+	fast_toggle.custom_minimum_size = Vector2(150, 64)
+	fast_toggle.pressed.connect(_on_fast)
+	fast_row.add_child(fast_toggle)
+	var hint_row := Kit.hbox(10)
+	play_column.add_child(hint_row)
+	hint_row.add_child(Kit.expand(Kit.para("첫 판 안내 말풍선을 처음부터 다시 볼 수 있어요.", 20)))
+	var hint_button := Kit.button("안내 다시 보기", Kit.ACCENT, 20, 64)
+	hint_button.custom_minimum_size = Vector2(190, 64)
+	hint_button.pressed.connect(_on_hints)
+	hint_row.add_child(hint_button)
+
 	var name_panel := Kit.panel()
 	body.add_child(name_panel)
 	var name_column := Kit.vbox(10)
@@ -119,6 +139,20 @@ func _on_music() -> void:
 	app.save()
 	app.play("click")
 	app.go("settings")
+
+
+func _on_fast() -> void:
+	app.profile["settings"]["fast"] = not bool(app.profile["settings"].get("fast", false))
+	app.save()
+	app.play("click")
+	app.go("settings")
+
+
+func _on_hints() -> void:
+	app.profile["tutorial"] = {}
+	app.save()
+	app.play("good")
+	app.toast("다음 대전에서 안내가 다시 나와요.")
 
 
 func _on_sound() -> void:

@@ -88,6 +88,8 @@ func _rebuild() -> void:
 		var on: bool = category == _filter
 		var color: Color = Kit.CATEGORY_COLORS.get(category, Kit.PANEL_LIGHT)
 		Kit.paint(_tabs[category], color if on else color.darkened(0.55), Color.WHITE if on else color.darkened(0.2))
+	# 가진 영웅 먼저, 그 안에서는 등급이 높은 순, 같으면 레벨이 높은 순
+	var shown: Array = []
 	for character in app.data["characters"]:
 		var id := str(character["id"])
 		var owned := Profile.owns(app.profile, id)
@@ -95,7 +97,11 @@ func _rebuild() -> void:
 			continue
 		if _owned_only and not owned:
 			continue
-		_grid.add_child(_card(character, owned))
+		var level := Profile.level_of(app.profile, id) if owned else 0
+		shown.append({"character": character, "owned": owned, "key": (100000 if owned else 0) + int(character["grade"]) * 1000 + level * 100 - shown.size()})
+	shown.sort_custom(func(a, b): return int(a["key"]) > int(b["key"]))
+	for entry in shown:
+		_grid.add_child(_card(entry["character"], entry["owned"]))
 
 
 func _card(character: Dictionary, owned: bool) -> Control:
