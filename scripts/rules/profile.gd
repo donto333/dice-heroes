@@ -1254,3 +1254,30 @@ static func upgrade_all(profile: Dictionary, eco: Dictionary) -> int:
 				done += 1
 				changed = true
 	return done
+
+
+# ---------------------------------------------------------------- 초보자 길잡이 과제
+
+## 지금 하고 있는 길잡이 과제. 모두 끝냈으면 {}.
+static func guide_current(profile: Dictionary, data: Dictionary) -> Dictionary:
+	var steps: Array = data.get("guide", {}).get("steps", [])
+	var index := int(profile.get("guide_step", 0))
+	if index < 0 or index >= steps.size():
+		return {}
+	return steps[index]
+
+
+## 지금 과제를 달성했나(보상을 받을 수 있나)
+static func guide_claimable(profile: Dictionary, data: Dictionary) -> bool:
+	var step := guide_current(profile, data)
+	return not step.is_empty() and achievement_value(profile, data, str(step["stat"])) >= int(step["goal"])
+
+
+## 지금 과제의 보상을 받고 다음 과제로 넘어간다. 못 받으면 {}.
+static func claim_guide(profile: Dictionary, data: Dictionary) -> Dictionary:
+	if not guide_claimable(profile, data):
+		return {}
+	var step := guide_current(profile, data)
+	profile["guide_step"] = int(profile.get("guide_step", 0)) + 1
+	grant(profile, step["reward"])
+	return step["reward"]

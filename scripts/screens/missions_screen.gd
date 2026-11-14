@@ -28,6 +28,8 @@ func setup(main_app, _params: Dictionary) -> void:
 		var all := Kit.button("보상 %d개 모두 받기" % waiting, Color("e8890c"), 28, 84)
 		all.pressed.connect(_on_claim_everything)
 		body.add_child(all)
+	if not Profile.guide_current(app.profile, app.data).is_empty():
+		body.add_child(_guide_panel())
 	body.add_child(_attendance_panel())
 	body.add_child(_missions_panel())
 	body.add_child(_achievements_panel())
@@ -108,6 +110,48 @@ func _achievements_panel() -> Control:
 	for achievement in ordered:
 		column.add_child(_achievement_row(achievement))
 	return card
+
+
+## 초보자 길잡이: 순서대로 하나씩 하는 과제. 모두 끝내면 사라진다.
+func _guide_panel() -> Control:
+	var step: Dictionary = Profile.guide_current(app.profile, app.data)
+	var total: int = (app.data.get("guide", {}).get("steps", []) as Array).size()
+	var index := int(app.profile.get("guide_step", 0))
+	var card := Kit.panel(Color("1f2a1c"), Color("6fd08c"), 14)
+	var column := Kit.vbox(8)
+	card.add_child(column)
+	column.add_child(Kit.label("길잡이 과제  %d / %d" % [index + 1, total], 30, Color("9ff0b4")))
+	var row := Kit.hbox(10)
+	column.add_child(row)
+	var info := Kit.vbox(4)
+	row.add_child(Kit.expand(info))
+	var value: int = Profile.achievement_value(app.profile, app.data, str(step["stat"]))
+	var goal := int(step["goal"])
+	var done := value >= goal
+	info.add_child(Kit.label(str(step["text"]), 23))
+	var line := Kit.hbox(8)
+	info.add_child(line)
+	var bar := Kit.bar(float(min(value, goal)) / float(max(goal, 1)), Kit.GOLD if done else Color("6fd08c"), 10)
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(Kit.expand(bar))
+	line.add_child(Kit.label("%d/%d" % [min(value, goal), goal], 16, Kit.MUTED))
+	info.add_child(Kit.label("보상 %s" % Kit.reward_line(step["reward"]), 16, Kit.GOLD))
+	var button := Kit.button("받기" if done else "진행 중", Color("c4861c") if done else Kit.PANEL_LIGHT, 20, 60)
+	button.custom_minimum_size = Vector2(120, 60)
+	button.disabled = not done
+	button.pressed.connect(_on_guide)
+	row.add_child(button)
+	return card
+
+
+func _on_guide() -> void:
+	var reward := Profile.claim_guide(app.profile, app.data)
+	if reward.is_empty():
+		return
+	app.save()
+	app.play("win")
+	app.toast("길잡이 보상: %s" % Kit.reward_line(reward))
+	app.go("missions")
 
 
 func _achievement_row(achievement: Dictionary) -> Control:
