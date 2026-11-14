@@ -11,6 +11,7 @@ const PIPS := {
 	5: [Vector2(0.27, 0.27), Vector2(0.73, 0.27), Vector2(0.5, 0.5), Vector2(0.27, 0.73), Vector2(0.73, 0.73)],
 	6: [Vector2(0.27, 0.25), Vector2(0.73, 0.25), Vector2(0.27, 0.5), Vector2(0.73, 0.5), Vector2(0.27, 0.75), Vector2(0.73, 0.75)],
 }
+const DiePreview := preload("res://scripts/ui/die_preview.gd")
 const ROLL_TIME := 0.95
 const HOLD_TIME := 0.6
 const FADE_TIME := 0.2
@@ -27,6 +28,8 @@ var _fx_rng := RandomNumberGenerator.new()
 var _caption: Label
 var _total: Label
 var _color := Color.WHITE
+## 지금 굴리는 쪽의 주사위 스킨 {"body", "edge", "pip"}. 비어 있으면 기본 색.
+var skin: Dictionary = {}
 
 
 func _ready() -> void:
@@ -128,7 +131,7 @@ func _draw() -> void:
 		draw_set_transform(ground + Vector2(0, DIE * 0.5), 0.0, Vector2(1.0, 0.35))
 		draw_circle(Vector2.ZERO, DIE * 0.5 * (1.0 - hop / 400.0), Color(0, 0, 0, 0.35))
 		draw_set_transform(ground - Vector2(0, hop), spin, Vector2(scale_now, scale_now))
-		_draw_die(int(_faces[index]))
+		DiePreview.draw_die(self, DIE, clampi(int(_faces[index]), 1, 6), skin)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
