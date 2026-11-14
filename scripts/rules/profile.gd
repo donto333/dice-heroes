@@ -38,7 +38,7 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		## 영웅별 전적 {id: {"played": n, "wins": n}}
 		"hero_stats": {},
 		"pity": 0,
-		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": []},
+		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0},
 		"attendance": {"last_date": "", "count": 0},
 		"settings": {"sfx": true, "bgm": true},
 		## 모험 진행: {스테이지 id: 얻은 별 수(0~3)}
@@ -377,7 +377,7 @@ static func _add_stat(profile: Dictionary, key: String, amount: int) -> void:
 static func ensure_daily(profile: Dictionary, today: String) -> bool:
 	if str(profile["daily"].get("date", "")) == today:
 		return false
-	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": []}
+	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0}
 	return true
 
 
@@ -676,3 +676,49 @@ static func buy_deal(profile: Dictionary, characters: Array, eco: Dictionary, to
 	var owned: Dictionary = profile["owned"][str(deal["id"])]
 	owned["shards"] = int(owned["shards"]) + int(deal["shards"])
 	return true
+
+
+# ---------------------------------------------------------------- 행운의 룰렛
+
+## 오늘 돌린 횟수
+static func roulette_spins(profile: Dictionary) -> int:
+	return int(profile.get("daily", {}).get("roulette_spins", 0))
+
+
+## 이번에 돌릴 때 드는 보석. 무료면 0, 오늘 더 못 돌리면 -1.
+static func roulette_cost(profile: Dictionary, eco: Dictionary) -> int:
+	var table: Dictionary = eco.get("roulette", {})
+	var spins := roulette_spins(profile)
+	var free := int(table.get("free_per_day", 1))
+	if spins < free:
+		return 0
+	if spins >= free + int(table.get("max_extra", 0)):
+		return -1
+	return int(table.get("extra_cost_gems", 30))
+
+
+static func can_spin_free(profile: Dictionary, eco: Dictionary) -> bool:
+	return roulette_cost(profile, eco) == 0
+
+
+## 룰렛을 돌린다. 못 돌리면 {}. 돌리면 {"index": 걸린 칸, "reward": 보상, "cost": 낸 보석}
+static func spin_roulette(profile: Dictionary, eco: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var slots: Array = eco.get("roulette", {}).get("slots", [])
+	var cost := roulette_cost(profile, eco)
+	if slots.is_empty() or cost < 0:
+		return {}
+	if cost > 0 and not pay(profile, "gems", cost):
+		return {}
+	var total := 0
+	for slot in slots:
+		total += int(slot["weight"])
+	var roll := rng.randi_range(1, max(total, 1))
+	var index := 0
+	for slot_index in slots.size():
+		roll -= int(slots[slot_index]["weight"])
+		if roll <= 0:
+			index = slot_index
+			break
+	profile["daily"]["roulette_spins"] = roulette_spins(profile) + 1
+	grant(profile, slots[index]["reward"])
+	return {"index": index, "reward": slots[index]["reward"], "cost": cost}

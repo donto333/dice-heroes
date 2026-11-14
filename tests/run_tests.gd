@@ -75,6 +75,7 @@ func _init() -> void:
 	_test_ai_difficulty()
 	_test_hero_records()
 	_test_daily_deals()
+	_test_roulette()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -844,3 +845,35 @@ func _test_daily_deals() -> void:
 	_check(not Profile.buy_deal(profile, characters, eco, "2026-05-01", 1), "골드 없이 특가를 삼")
 	Profile.ensure_daily(profile, "2026-05-02")
 	_check(not bool(Profile.daily_deals(profile, characters, eco, "2026-05-02")[0]["bought"]), "다음 날 특가 구매 기록이 남음")
+
+
+func _test_roulette() -> void:
+	var eco: Dictionary = _data["economy"]
+	var table: Dictionary = eco["roulette"]
+	_check(table["slots"].size() == 8, "룰렛 칸이 8개가 아님")
+	var profile := Profile.new_profile("룰렛", eco)
+	Profile.ensure_daily(profile, "2026-05-01")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	_check(Profile.roulette_cost(profile, eco) == 0, "첫 룰렛이 무료가 아님")
+	var gems := int(profile["gems"])
+	var gold := int(profile["gold"])
+	var first := Profile.spin_roulette(profile, eco, rng)
+	_check(not first.is_empty() and int(first["cost"]) == 0, "무료 룰렛을 못 돌림")
+	_check(int(profile["gems"]) + int(profile["gold"]) > gems + gold, "룰렛 보상이 안 들어옴")
+	_check(Profile.roulette_cost(profile, eco) == int(table["extra_cost_gems"]), "두 번째 룰렛 값이 틀림")
+	for i in int(table["max_extra"]):
+		_check(not Profile.spin_roulette(profile, eco, rng).is_empty(), "보석 룰렛을 못 돌림")
+	_check(Profile.roulette_cost(profile, eco) == -1, "하루 제한이 없음")
+	_check(Profile.spin_roulette(profile, eco, rng).is_empty(), "제한을 넘겨 룰렛을 돌림")
+	profile["gems"] = 0
+	Profile.ensure_daily(profile, "2026-05-02")
+	_check(not Profile.spin_roulette(profile, eco, rng).is_empty(), "다음 날 무료 룰렛을 못 돌림")
+	_check(Profile.spin_roulette(profile, eco, rng).is_empty(), "보석 없이 룰렛을 돌림")
+	var counts := {}
+	var sample := Profile.new_profile("확률", eco)
+	for i in 2000:
+		Profile.ensure_daily(sample, "d%d" % i)
+		var result := Profile.spin_roulette(sample, eco, rng)
+		counts[int(result["index"])] = int(counts.get(int(result["index"]), 0)) + 1
+	_check(int(counts.get(0, 0)) > int(counts.get(7, 0)), "룰렛 확률이 가중치와 다름")
