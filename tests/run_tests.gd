@@ -78,6 +78,7 @@ func _init() -> void:
 	_test_roulette()
 	_test_font_coverage()
 	_test_league()
+	_test_challenge()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -933,3 +934,23 @@ func _test_league() -> void:
 	Profile.ensure_daily(profile, "2026-05-01")
 	Profile.record_match(profile, eco, "ai", "win", {"party": ["lubu", "athena", "sejong"]})
 	_check(Profile.favorite_hero(profile) != "", "출전했는데 좋아하는 영웅이 없음")
+
+
+func _test_challenge() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("도전", eco)
+	Profile.ensure_daily(profile, "2026-05-01")
+	_check(not Profile.challenge_done(profile), "하지도 않았는데 도전 완료")
+	_check(Profile.challenge_level(profile, eco) == 2, "도전 상대 레벨이 틀림")
+	var lose := Profile.record_match(profile, eco, "challenge", "lose", {})
+	_check(not Profile.challenge_done(profile) and int(lose["gold"]) == int(eco["rewards"]["challenge"]["lose"]["gold"]), "져도 도전이 끝남")
+	var win := Profile.record_match(profile, eco, "challenge", "win", {})
+	_check(Profile.challenge_done(profile), "이겼는데 도전이 안 끝남")
+	_check(int(win["gold"]) == int(eco["rewards"]["challenge"]["win"]["gold"]), "도전 승리 골드가 틀림")
+	_check(int(win["gems"]) >= int(eco["rewards"]["challenge"]["win"]["gems"]), "도전 승리 보석이 안 들어옴")
+	var again := Profile.record_match(profile, eco, "challenge", "win", {})
+	_check(int(again["gold"]) == int(eco["rewards"]["ai"]["win"]["gold"]), "하루 두 번째 도전에 큰 보상을 줌")
+	var seed_today := Profile.challenge_seed(profile)
+	Profile.ensure_daily(profile, "2026-05-02")
+	_check(not Profile.challenge_done(profile), "다음 날 도전이 다시 열리지 않음")
+	_check(Profile.challenge_seed(profile) != seed_today, "날이 바뀌어도 도전 상대가 같음")
