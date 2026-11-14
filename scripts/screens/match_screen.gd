@@ -204,13 +204,24 @@ func _build_ui() -> void:
 		_ability_buttons[slot] = button
 		_ability_portraits[slot] = _add_side_portrait(button)
 
-	var card_row := HBoxContainer.new()
-	card_row.add_theme_constant_override("separation", 8)
-	column.add_child(card_row)
+	# 아이템 카드는 판 왼쪽에 카드 모양으로 세워 둔다. 누르면 설명 창이 뜨고 거기서 쓴다.
+	var card_column := VBoxContainer.new()
+	card_column.add_theme_constant_override("separation", 8)
+	card_column.alignment = BoxContainer.ALIGNMENT_CENTER
+	board_area.add_child(card_column)
+	card_column.anchor_left = 0.0
+	card_column.anchor_right = 0.0
+	card_column.anchor_top = 0.0
+	card_column.anchor_bottom = 1.0
+	card_column.offset_left = 8
+	card_column.offset_right = 108
+	card_column.offset_top = 100
+	card_column.offset_bottom = -100
+	card_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for index in Game.HAND_LIMIT:
-		var button := _make_button(18, 88, CARD_COLOR)
+		var button := _make_card_button()
 		button.pressed.connect(_on_card_pressed.bind(index))
-		card_row.add_child(button)
+		card_column.add_child(button)
 		_card_buttons.append(button)
 
 
@@ -489,6 +500,32 @@ func _round_box(fill: Color, edge: Color, bottom: int) -> StyleBoxFlat:
 	return style
 
 
+## 카드 모양 버튼: 크림색 종이에 갈색 테두리, 위에 작은 띠.
+func _make_card_button() -> Button:
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(100, 118)
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.add_theme_font_size_override("font_size", 18)
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(state, Color("3a2408"))
+	var paper := Color("f3e6c4")
+	for state in ["normal", "hover", "pressed"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = paper if state == "normal" else (paper.lightened(0.3) if state == "hover" else paper.darkened(0.12))
+		style.border_color = Color("7a4a12")
+		style.set_border_width_all(3)
+		style.border_width_top = 14
+		style.border_width_bottom = 6
+		style.set_corner_radius_all(10)
+		style.set_content_margin_all(6)
+		style.shadow_color = Color(0, 0, 0, 0.4)
+		style.shadow_size = 4
+		style.shadow_offset = Vector2(0, 3)
+		button.add_theme_stylebox_override(state, style)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	return button
+
+
 func _make_button(font_size: int, height: float, color: Color) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(0, height)
@@ -704,7 +741,26 @@ func _on_ability_pressed(slot: String) -> void:
 		_refresh()
 
 
+## 카드를 누르면 설명 창. 쓸 수 있을 때만 '사용' 버튼이 나온다.
 func _on_card_pressed(index: int) -> void:
+	var hand: Array = game.players[_viewer()]["hand"]
+	if index >= hand.size():
+		return
+	var card: Dictionary = game.cards[hand[index]]
+	_play("click")
+	var body := Kit.vbox(10)
+	body.add_child(Kit.para(str(card["text"]), 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	var usable: bool = _waiting_for_player and game.can_play_card(index)
+	var buttons: Array = []
+	if usable:
+		buttons.append(["사용", Color("c4861c"), _use_card.bind(index)])
+	else:
+		body.add_child(Kit.para("카드는 내 차례에 주사위를 굴리기 전에 쓸 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	buttons.append(["닫기", Kit.PANEL_LIGHT])
+	app.dialog("카드 · %s" % card["name"], body, buttons, 560)
+
+
+func _use_card(index: int) -> void:
 	if not _waiting_for_player:
 		return
 	var hand: Array = game.players[game.current]["hand"]
@@ -1111,11 +1167,12 @@ func _refresh() -> void:
 		var button: Button = _card_buttons[index]
 		if index < hand.size():
 			var card: Dictionary = game.cards[hand[index]]
-			button.text = "카드: %s\n%s" % [card["name"], card["text"]]
-			button.disabled = not (_waiting_for_player and game.can_play_card(index))
+			button.text = str(card["name"])
+			button.visible = true
+			# 지금 쓸 수 있는 카드는 또렷하게, 아니면 흐리게
+			button.modulate = Color.WHITE if _waiting_for_player and game.can_play_card(index) else Color(0.75, 0.75, 0.8, 0.85)
 		else:
-			button.text = "(빈 카드 칸)"
-			button.disabled = true
+			button.visible = false
 
 	if game.winner >= 0:
 		_roll_button.text = "결과\n보기"
