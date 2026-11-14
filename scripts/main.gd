@@ -12,6 +12,7 @@ const Toast := preload("res://scripts/ui/toast.gd")
 const Music := preload("res://scripts/ui/music.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const ProfileCard := preload("res://scripts/ui/profile_card.gd")
+const LoadingOverlay := preload("res://scripts/ui/loading_overlay.gd")
 ## 화면마다 틀 배경음악
 const SCREEN_MUSIC := {"match": "match"}
 
@@ -39,6 +40,11 @@ var rng := RandomNumberGenerator.new()
 var current_screen: Control
 var current_name := ""
 var _layer: Control
+## 잠시 기다리는 화면
+var loading: Control
+## true면 기다림·화면 전환 효과를 모두 건너뛴다(자동 사진 도구용).
+var instant := false
+var _busy := false
 var _characters_by_id: Dictionary = {}
 
 
@@ -56,6 +62,8 @@ func _ready() -> void:
 	_layer = Control.new()
 	_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_layer)
+	loading = LoadingOverlay.new()
+	add_child(loading)
 	load_profile()
 	music.enabled = bgm_on()
 	go("title")
@@ -170,7 +178,32 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 	current_screen = screen
 	_layer.add_child(screen)
 	screen.setup(self, params)
+	if not instant:
+		# 새 화면이 부드럽게 나타난다.
+		screen.modulate.a = 0.0
+		screen.create_tween().tween_property(screen, "modulate:a", 1.0, 0.16)
 	music.play_track(SCREEN_MUSIC.get(screen_name, "lobby"))
+
+
+## 잠시 기다리는 화면을 보여 준 뒤 화면을 바꾼다. 기다리는 동안 다시 눌러도 한 번만 넘어간다.
+## 게임 진입("불러오는 중"), 접속("접속 중"), 대전 준비처럼 큰 전환에 쓴다.
+func go_loading(screen_name: String, params: Dictionary = {}, message: String = "불러오는 중...", seconds: float = 0.7, with_tip: bool = false) -> void:
+	if instant:
+		go(screen_name, params)
+		return
+	if _busy:
+		return
+	_busy = true
+	await loading.show_for(message, seconds, with_tip)
+	_busy = false
+	go(screen_name, params)
+
+
+## 화면은 그대로 두고 잠시 기다리는 화면만 보여 준다(소환처럼 결과를 기다리는 느낌).
+func wait_loading(message: String, seconds: float = 0.7) -> void:
+	if instant:
+		return
+	await loading.show_for(message, seconds, false)
 
 
 func toast(message: String) -> void:

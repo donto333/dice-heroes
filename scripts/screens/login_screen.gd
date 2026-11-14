@@ -70,4 +70,4 @@ func _on_start_pressed() -> void:
 		return
 	app.play("good")
 	app.create_profile(_name_edit.text)
-	app.go("lobby", {"welcome": true})
+	app.go_loading("lobby", {"welcome": true}, "접속 중...", 1.0, true)

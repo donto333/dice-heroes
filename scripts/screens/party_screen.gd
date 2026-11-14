@@ -88,7 +88,7 @@ func _on_confirmed(party: Dictionary) -> void:
 		enemy["name"] = str(stage["name"])
 		var level := int(stage["ai_level"])
 		enemy["levels"] = {"attack": level, "defense": level, "support": level}
-		app.go("match", {"mode": "adventure", "stage": str(stage["id"]), "parties": [mine, enemy], "humans": [true, false], "map": int(found["chapter"]["map"])})
+		app.go_loading("match", {"mode": "adventure", "stage": str(stage["id"]), "parties": [mine, enemy], "humans": [true, false], "map": int(found["chapter"]["map"])}, "대전 준비 중...", 1.0, true)
 		return
 	if mode == "challenge":
 		# 상대 파티와 맵은 날짜로 정해져 하루 동안 같다.
@@ -98,8 +98,8 @@ func _on_confirmed(party: Dictionary) -> void:
 		challenger["name"] = "오늘의 도전자"
 		var challenge_level := Profile.challenge_level(app.profile, app.eco)
 		challenger["levels"] = {"attack": challenge_level, "defense": challenge_level, "support": challenge_level}
-		app.go("match", {"mode": "challenge", "parties": [mine, challenger], "humans": [true, false],
-			"map": day_rng.randi_range(0, app.data["boards"].size() - 1)})
+		app.go_loading("match", {"mode": "challenge", "parties": [mine, challenger], "humans": [true, false],
+			"map": day_rng.randi_range(0, app.data["boards"].size() - 1)}, "대전 준비 중...", 1.0, true)
 		return
 	var theirs: Dictionary = AI.pick_party(app.data["characters"], Game.POINT_LIMIT, app.rng)
 	theirs["name"] = "AI"
@@ -125,7 +125,7 @@ func _on_confirmed(party: Dictionary) -> void:
 		_pick_map(start)
 		return
 	start["map"] = _random_map()
-	app.go("match", start)
+	app.go_loading("match", start, "대전 준비 중...", 1.0, true)
 
 
 ## AI 연습전·친구 대전은 시작하기 전에 맵을 고른다. (랭크전은 늘 무작위, 모험은 장마다 정해짐)
@@ -193,7 +193,7 @@ func _on_map_picked(index: int) -> void:
 	if _map_window != null and is_instance_valid(_map_window):
 		_map_window.close()
 	_pending["map"] = index if index >= 0 else _random_map()
-	app.go("match", _pending)
+	app.go_loading("match", _pending, "대전 준비 중...", 1.0, true)
 
 
 func _random_map() -> int:

@@ -1314,7 +1314,7 @@ func _record(outcome: String) -> PackedStringArray:
 func _on_retry_pressed() -> void:
 	_play("click")
 	if _is_local():
-		app.go("match", {"mode": _mode, "parties": _parties, "humans": _humans, "map": app.rng.randi_range(0, app.data["boards"].size() - 1)})
+		app.go_loading("match", {"mode": _mode, "parties": _parties, "humans": _humans, "map": app.rng.randi_range(0, app.data["boards"].size() - 1)}, "대전 준비 중...", 0.8, true)
 	elif _mode == "adventure":
 		app.go("party", {"purpose": "match", "mode": "adventure", "stage": _next_stage if _next_stage != "" else _stage_id})
 	else:
@@ -1323,14 +1323,14 @@ func _on_retry_pressed() -> void:
 
 func _on_change_party_pressed() -> void:
 	_play("click")
-	app.go("adventure" if _mode == "adventure" else "lobby")
+	app.go_loading("adventure" if _mode == "adventure" else "lobby", {}, "돌아가는 중...", 0.5)
 
 
 ## 나가기. 랭크전에서 도중에 나가면 패배로 기록한다.
 func _on_quit_pressed() -> void:
 	_play("click")
 	if game.winner >= 0:
-		app.go("lobby")
+		app.go_loading("lobby", {}, "돌아가는 중...", 0.5)
 		return
 	var text := "지금 나가면 이번 판은 기록되지 않아요."
 	if _mode == "rank":
@@ -1344,6 +1344,7 @@ func _confirm_quit() -> void:
 		Profile.record_match(app.profile, app.eco, _mode, "lose", {"battle_wins": _my_battles[0], "cards": _cards_used})
 		app.save()
 	game = null
+	# 판을 버리고 나갈 때는 바로 넘어간다(멈춘 판 화면을 기다리게 하지 않는다).
 	app.go("lobby")
 
 

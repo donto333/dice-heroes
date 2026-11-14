@@ -82,7 +82,13 @@ func setup(main_app, _params: Dictionary) -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	if _hint != null:
-		_hint.modulate.a = 0.55 + 0.45 * sin(_time * 3.0)
+		# 처음 잠깐은 불러오는 중. 다 되면 "화면을 누르세요"가 깜빡인다.
+		if _loaded():
+			_hint.text = "화면을 누르세요"
+			_hint.modulate.a = 0.55 + 0.45 * sin(_time * 3.0)
+		else:
+			_hint.text = "불러오는 중... %d%%" % int(clampf(_time / LOAD_TIME, 0.0, 1.0) * 100.0)
+			_hint.modulate.a = 1.0
 	if _strip != null:
 		_strip.queue_redraw()
 	if _emblem != null:
@@ -130,16 +136,22 @@ func _draw_emblem() -> void:
 
 ## 화면 어디를 눌러도 넘어가도록, 다른 상자보다 먼저 입력을 받는다(_input).
 var _leaving := false
+## 게임을 켠 직후 잠깐 보여 주는 불러오기 시간(초)
+const LOAD_TIME := 1.1
+
+
+func _loaded() -> bool:
+	return app.instant or _time >= LOAD_TIME
 
 
 func _input(event: InputEvent) -> void:
-	if _leaving or not is_visible_in_tree():
+	if _leaving or not is_visible_in_tree() or not _loaded():
 		return
 	if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.is_pressed():
 		_leaving = true
 		get_viewport().set_input_as_handled()
 		app.play("click")
 		if app.has_profile():
-			app.go("lobby")
+			app.go_loading("lobby", {}, "접속 중...", 0.9, true)
 		else:
-			app.go("login")
+			app.go_loading("login", {}, "불러오는 중...", 0.6)

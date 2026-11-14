@@ -179,7 +179,7 @@ func _on_reset() -> void:
 
 func _confirm_reset() -> void:
 	app.reset_profile()
-	app.go("title")
+	app.go_loading("title", {}, "처음으로 돌아가는 중...", 0.8)
 
 
 func _on_tab(screen_name: String) -> void:
