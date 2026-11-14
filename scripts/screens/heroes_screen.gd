@@ -164,6 +164,8 @@ func show_hero(id: String) -> void:
 	var grade := int(character["grade"])
 	info.add_child(Kit.label("★".repeat(grade) + "  " + str(character["category"]), 24, Kit.GRADE_COLORS[grade]))
 	info.add_child(Kit.label(str(character["name"]), 34))
+	if character.has("title"):
+		info.add_child(Kit.label("「%s」" % character["title"], 18, Kit.GOLD))
 	for pair in STAT_NAMES:
 		var stat_row := Kit.hbox(8)
 		stat_row.add_child(Kit.label(pair[1], 20, Kit.MUTED))
@@ -179,6 +181,11 @@ func show_hero(id: String) -> void:
 	ability_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ability_box.add_child(ability_text)
 	body.add_child(ability_box)
+	if character.has("bio"):
+		body.add_child(Kit.para(str(character["bio"]), 18, Kit.MUTED))
+	var record: Dictionary = Profile.hero_record(app.profile, id)
+	if int(record["played"]) > 0:
+		body.add_child(Kit.para("이 영웅 전적: %d판 %d승 (승률 %d%%)" % [int(record["played"]), int(record["wins"]), int(100.0 * int(record["wins"]) / int(record["played"]))], 18))
 	var buttons: Array = []
 	if owned:
 		var level := Profile.level_of(app.profile, id)

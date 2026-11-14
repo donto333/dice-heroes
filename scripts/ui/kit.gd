@@ -74,19 +74,28 @@ static func button(text: String, color: Color = ACCENT, font_size: int = 26, hei
 	return result
 
 
+## 모두의 마블식 통통한 버튼: 둥근 모서리, 짙은 테두리, 두꺼운 아래 두께, 그림자, 글자 외곽선.
 static func paint(target: Button, color: Color, border: Color = Color.TRANSPARENT) -> void:
-	var edge: Color = color.lightened(0.35) if border == Color.TRANSPARENT else border
-	var normal := box(color, edge, 2)
-	normal.border_width_bottom = 6
-	normal.border_color = edge
-	target.add_theme_stylebox_override("normal", normal)
-	var hover := box(color.lightened(0.1), Color.WHITE, 2)
-	hover.border_width_bottom = 6
-	target.add_theme_stylebox_override("hover", hover)
-	var pressed := box(color.darkened(0.2), Color.WHITE, 2)
-	pressed.border_width_top = 5
+	var edge: Color = color.darkened(0.55) if border == Color.TRANSPARENT else border
+	target.add_theme_stylebox_override("normal", _chunky(color, edge, 8))
+	target.add_theme_stylebox_override("hover", _chunky(color.lightened(0.12), edge, 8))
+	var pressed := _chunky(color.darkened(0.15), edge, 3)
+	pressed.content_margin_top += 5
 	target.add_theme_stylebox_override("pressed", pressed)
-	target.add_theme_stylebox_override("disabled", box(DISABLED, DISABLED, 0))
+	var off := _chunky(DISABLED, DISABLED.darkened(0.4), 5)
+	off.shadow_size = 0
+	target.add_theme_stylebox_override("disabled", off)
+	target.add_theme_constant_override("outline_size", 5)
+	target.add_theme_color_override("font_outline_color", color.darkened(0.6))
+
+
+static func _chunky(fill: Color, edge: Color, bottom: int) -> StyleBoxFlat:
+	var style := box(fill, edge, 3, 18)
+	style.border_width_bottom = bottom
+	style.shadow_color = Color(0, 0, 0, 0.35)
+	style.shadow_size = 4
+	style.shadow_offset = Vector2(0, 3)
+	return style
 
 
 static func panel(fill: Color = PANEL, border: Color = LINE, padding: int = 14) -> PanelContainer:

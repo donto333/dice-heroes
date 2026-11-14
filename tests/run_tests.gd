@@ -73,6 +73,7 @@ func _init() -> void:
 	_test_adventure()
 	_test_achievements()
 	_test_ai_difficulty()
+	_test_hero_records()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -806,3 +807,15 @@ func _test_ai_difficulty() -> void:
 	_check(int(reward["gold"]) == base * 2, "어려움 보상 배율이 적용되지 않음")
 	var party: Dictionary = AI.pick_party(_data["characters"], Game.POINT_LIMIT, RandomNumberGenerator.new(), 1)
 	_check(not party.is_empty(), "쉬움 AI 파티를 못 고름")
+
+
+func _test_hero_records() -> void:
+	for character in _data["characters"]:
+		_check(str(character.get("bio", "")) != "" and str(character.get("title", "")) != "", "영웅 소개글이 없음: " + str(character["id"]))
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("전적", eco)
+	Profile.ensure_daily(profile, "2026-05-01")
+	Profile.record_match(profile, eco, "ai", "win", {"party": ["lubu", "athena", "sejong"]})
+	Profile.record_match(profile, eco, "ai", "lose", {"party": ["lubu", "athena", "sejong"]})
+	var record: Dictionary = Profile.hero_record(profile, "lubu")
+	_check(int(record["played"]) == 2 and int(record["wins"]) == 1, "영웅별 전적이 틀림")
