@@ -38,7 +38,7 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		## 영웅별 전적 {id: {"played": n, "wins": n}}
 		"hero_stats": {},
 		"pity": 0,
-		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false},
+		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": []},
 		"attendance": {"last_date": "", "count": 0},
 		"settings": {"sfx": true, "bgm": true},
 		## 모험 진행: {스테이지 id: 얻은 별 수(0~3)}
@@ -377,7 +377,7 @@ static func _add_stat(profile: Dictionary, key: String, amount: int) -> void:
 static func ensure_daily(profile: Dictionary, today: String) -> bool:
 	if str(profile["daily"].get("date", "")) == today:
 		return false
-	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false}
+	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": []}
 	return true
 
 
@@ -629,3 +629,50 @@ static func ai_difficulty(eco: Dictionary, id: String) -> Dictionary:
 	if list.is_empty():
 		return {"id": "easy", "name": "쉬움", "level": 1, "smart": false, "reward_scale": 1.0}
 	return list[0]
+
+
+# ---------------------------------------------------------------- 오늘의 특가
+
+## 오늘의 특가 목록. 날짜와 닉네임으로 정해지므로 같은 날에는 몇 번 열어도 같다.
+## 각 항목: {"id", "grade", "shards", "gold", "bought"}
+static func daily_deals(profile: Dictionary, characters: Array, eco: Dictionary, today: String) -> Array:
+	var table: Dictionary = eco.get("daily_deals", {})
+	var offers: Dictionary = table.get("offers", {})
+	var max_level := int(eco.get("upgrade", {}).get("max_level", 5))
+	var candidates: Array = []
+	for character in characters:
+		var id := str(character["id"])
+		if owns(profile, id) and level_of(profile, id) < max_level:
+			candidates.append(character)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(today + "|" + str(profile.get("nickname", "")))
+	var picked: Array = []
+	var count: int = min(int(table.get("count", 3)), candidates.size())
+	while picked.size() < count:
+		var index := rng.randi_range(0, candidates.size() - 1)
+		picked.append(candidates[index])
+		candidates.remove_at(index)
+	var bought: Array = profile.get("daily", {}).get("deals_bought", [])
+	var deals: Array = []
+	for character in picked:
+		var grade := int(character["grade"])
+		var offer: Dictionary = offers.get(str(grade), {"shards": 5, "gold": 1000})
+		var id := str(character["id"])
+		deals.append({"id": id, "grade": grade, "shards": int(offer["shards"]), "gold": int(offer["gold"]), "bought": id in bought})
+	return deals
+
+
+## 오늘의 특가 하나를 산다. 골드가 모자라거나 이미 샀으면 false.
+static func buy_deal(profile: Dictionary, characters: Array, eco: Dictionary, today: String, index: int) -> bool:
+	var deals := daily_deals(profile, characters, eco, today)
+	if index < 0 or index >= deals.size():
+		return false
+	var deal: Dictionary = deals[index]
+	if bool(deal["bought"]) or not pay(profile, "gold", int(deal["gold"])):
+		return false
+	if not profile["daily"].has("deals_bought"):
+		profile["daily"]["deals_bought"] = []
+	profile["daily"]["deals_bought"].append(str(deal["id"]))
+	var owned: Dictionary = profile["owned"][str(deal["id"])]
+	owned["shards"] = int(owned["shards"]) + int(deal["shards"])
+	return true

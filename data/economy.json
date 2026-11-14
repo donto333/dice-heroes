@@ -295,5 +295,23 @@
       "smart": true,
       "reward_scale": 2.0
     }
-  ]
+  ],
+  "daily_deals": {
+    "_comment": "상점 오늘의 특가: 가진 영웅 중 최고 레벨이 아닌 영웅의 조각을 골드로 판다. 등급별 조각 수와 값.",
+    "count": 3,
+    "offers": {
+      "1": {
+        "shards": 10,
+        "gold": 800
+      },
+      "2": {
+        "shards": 6,
+        "gold": 1500
+      },
+      "3": {
+        "shards": 4,
+        "gold": 2500
+      }
+    }
+  }
 }
