@@ -1,0 +1,434 @@
+{
+  "_comment": "모험 모드. 장(chapter)마다 맵 하나(map = data/boards 순서)와 스테이지 3개. 스테이지는 앞 스테이지를 깨야 열린다. 규칙은 scripts/rules/profile.gd의 모험 부분.",
+  "star_rules": {
+    "_comment": "★1 이기기, ★2 turns턴 안에 이기기, ★3 전투에서 한 번도 지지 않고 이기기",
+    "turns": 24
+  },
+  "three_star_gems": 10,
+  "chapters": [
+    {
+      "id": "c1",
+      "name": "1장 초원의 길",
+      "map": 0,
+      "intro": "평화롭던 초원에 도적이 들끓는다. 첫 여정을 시작하자.",
+      "stages": [
+        {
+          "id": "1-1",
+          "name": "들판의 도적단",
+          "boss": false,
+          "enemy": {
+            "attack": "ganning",
+            "defense": "haetae",
+            "support": "libai"
+          },
+          "ai_level": 1,
+          "reward": {
+            "gold": 300,
+            "gems": 20
+          }
+        },
+        {
+          "id": "1-2",
+          "name": "국경 수비대",
+          "boss": false,
+          "enemy": {
+            "attack": "choiyoung",
+            "defense": "dokkaebi",
+            "support": "seohui"
+          },
+          "ai_level": 1,
+          "reward": {
+            "gold": 300,
+            "gems": 20
+          }
+        },
+        {
+          "id": "1-3",
+          "name": "초원의 패자",
+          "boss": true,
+          "enemy": {
+            "attack": "lubu",
+            "defense": "athena",
+            "support": "choichiwon"
+          },
+          "ai_level": 2,
+          "reward": {
+            "gold": 600,
+            "gems": 80
+          }
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "name": "2장 사막의 길",
+      "map": 1,
+      "intro": "모래바람 너머 스핑크스가 지키는 길. 보물과 판정이 기다린다.",
+      "stages": [
+        {
+          "id": "2-1",
+          "name": "모래 사냥꾼",
+          "boss": false,
+          "enemy": {
+            "attack": "robinhood",
+            "defense": "isis",
+            "support": "marcopolo"
+          },
+          "ai_level": 1,
+          "reward": {
+            "gold": 400,
+            "gems": 20
+          }
+        },
+        {
+          "id": "2-2",
+          "name": "오아시스 수호자",
+          "boss": false,
+          "enemy": {
+            "attack": "mulan",
+            "defense": "anubis",
+            "support": "hypatia"
+          },
+          "ai_level": 2,
+          "reward": {
+            "gold": 400,
+            "gems": 20
+          }
+        },
+        {
+          "id": "2-3",
+          "name": "사막의 정복자",
+          "boss": true,
+          "enemy": {
+            "attack": "alexander",
+            "defense": "anubis",
+            "support": "archimedes"
+          },
+          "ai_level": 2,
+          "reward": {
+            "gold": 750,
+            "gems": 80
+          }
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "name": "3장 설원의 성채",
+      "map": 2,
+      "intro": "얼어붙은 성채. 습격이 잦으니 방어가 강한 영웅을 데려가자.",
+      "stages": [
+        {
+          "id": "3-1",
+          "name": "눈보라 척후대",
+          "boss": false,
+          "enemy": {
+            "attack": "gyebaek",
+            "defense": "haetae",
+            "support": "seohui"
+          },
+          "ai_level": 2,
+          "reward": {
+            "gold": 500,
+            "gems": 20
+          }
+        },
+        {
+          "id": "3-2",
+          "name": "성채의 문지기",
+          "boss": false,
+          "enemy": {
+            "attack": "hanxin",
+            "defense": "leonidas",
+            "support": "libai"
+          },
+          "ai_level": 2,
+          "reward": {
+            "gold": 500,
+            "gems": 20
+          }
+        },
+        {
+          "id": "3-3",
+          "name": "서리 성의 군주",
+          "boss": true,
+          "enemy": {
+            "attack": "heracles",
+            "defense": "dangun",
+            "support": "choichiwon"
+          },
+          "ai_level": 3,
+          "reward": {
+            "gold": 900,
+            "gems": 80
+          }
+        }
+      ]
+    },
+    {
+      "id": "c4",
+      "name": "4장 강변의 길",
+      "map": 3,
+      "intro": "길게 뻗은 강을 따라 달린다. 속도 싸움이다.",
+      "stages": [
+        {
+          "id": "4-1",
+          "name": "나루터 패거리",
+          "boss": false,
+          "enemy": {
+            "attack": "machao",
+            "defense": "isis",
+            "support": "earhart"
+          },
+          "ai_level": 2,
+          "reward": {
+            "gold": 600,
+            "gems": 20
+          }
+        },
+        {
+          "id": "4-2",
+          "name": "갈대숲 매복",
+          "boss": false,
+          "enemy": {
+            "attack": "ganning",
+            "defense": "gumiho",
+            "support": "twain"
+          },
+          "ai_level": 3,
+          "reward": {
+            "gold": 600,
+            "gems": 20
+          }
+        },
+        {
+          "id": "4-3",
+          "name": "강의 제독",
+          "boss": true,
+          "enemy": {
+            "attack": "yisunsin",
+            "defense": "athena",
+            "support": "zhouyu"
+          },
+          "ai_level": 3,
+          "reward": {
+            "gold": 1050,
+            "gems": 80
+          }
+        }
+      ]
+    },
+    {
+      "id": "c5",
+      "name": "5장 고대 유적",
+      "map": 4,
+      "intro": "무너진 신전의 계단. 보물만큼 함정도 많다.",
+      "stages": [
+        {
+          "id": "5-1",
+          "name": "유적 도굴꾼",
+          "boss": false,
+          "enemy": {
+            "attack": "perseus",
+            "defense": "haetae",
+            "support": "fabre"
+          },
+          "ai_level": 3,
+          "reward": {
+            "gold": 700,
+            "gems": 20
+          }
+        },
+        {
+          "id": "5-2",
+          "name": "석실의 학자",
+          "boss": false,
+          "enemy": {
+            "attack": "eulji",
+            "defense": "anubis",
+            "support": "verne"
+          },
+          "ai_level": 3,
+          "reward": {
+            "gold": 700,
+            "gems": 20
+          }
+        },
+        {
+          "id": "5-3",
+          "name": "유적의 대성",
+          "boss": true,
+          "enemy": {
+            "attack": "wukong",
+            "defense": "zeus",
+            "support": "choichiwon"
+          },
+          "ai_level": 4,
+          "reward": {
+            "gold": 1200,
+            "gems": 80
+          }
+        }
+      ]
+    },
+    {
+      "id": "c6",
+      "name": "6장 화산 산맥",
+      "map": 5,
+      "intro": "불타는 봉우리를 넘어야 한다. 키퍼가 강하다.",
+      "stages": [
+        {
+          "id": "6-1",
+          "name": "화산 파수꾼",
+          "boss": false,
+          "enemy": {
+            "attack": "heracles",
+            "defense": "dokkaebi",
+            "support": "bangjeonghwan"
+          },
+          "ai_level": 3,
+          "reward": {
+            "gold": 800,
+            "gems": 20
+          }
+        },
+        {
+          "id": "6-2",
+          "name": "용암 길 군단",
+          "boss": false,
+          "enemy": {
+            "attack": "hanxin",
+            "defense": "leonidas",
+            "support": "pasteur"
+          },
+          "ai_level": 4,
+          "reward": {
+            "gold": 800,
+            "gems": 20
+          }
+        },
+        {
+          "id": "6-3",
+          "name": "불꽃 봉우리의 왕",
+          "boss": true,
+          "enemy": {
+            "attack": "lubu",
+            "defense": "dangun",
+            "support": "sunwu"
+          },
+          "ai_level": 4,
+          "reward": {
+            "gold": 1350,
+            "gems": 80
+          }
+        }
+      ]
+    },
+    {
+      "id": "c7",
+      "name": "7장 깊은 숲",
+      "map": 6,
+      "intro": "안개 낀 숲. 숨은 칸 뒤에 무엇이 있을지 모른다.",
+      "stages": [
+        {
+          "id": "7-1",
+          "name": "숲의 사냥꾼",
+          "boss": false,
+          "enemy": {
+            "attack": "mulan",
+            "defense": "gumiho",
+            "support": "hypatia"
+          },
+          "ai_level": 4,
+          "reward": {
+            "gold": 900,
+            "gems": 20
+          }
+        },
+        {
+          "id": "7-2",
+          "name": "안개 속 원정대",
+          "boss": false,
+          "enemy": {
+            "attack": "alexander",
+            "defense": "haetae",
+            "support": "wright"
+          },
+          "ai_level": 4,
+          "reward": {
+            "gold": 900,
+            "gems": 20
+          }
+        },
+        {
+          "id": "7-3",
+          "name": "숲의 현자",
+          "boss": true,
+          "enemy": {
+            "attack": "wukong",
+            "defense": "athena",
+            "support": "zhugeliang"
+          },
+          "ai_level": 5,
+          "reward": {
+            "gold": 1500,
+            "gems": 80
+          }
+        }
+      ]
+    },
+    {
+      "id": "c8",
+      "name": "8장 하늘 섬",
+      "map": 7,
+      "intro": "마지막 여정. 구름 위 두 고리를 지나 천둥새에게 도전하라.",
+      "stages": [
+        {
+          "id": "8-1",
+          "name": "구름 기사단",
+          "boss": false,
+          "enemy": {
+            "attack": "machao",
+            "defense": "anubis",
+            "support": "tesla"
+          },
+          "ai_level": 4,
+          "reward": {
+            "gold": 1000,
+            "gems": 20
+          }
+        },
+        {
+          "id": "8-2",
+          "name": "천둥의 전령",
+          "boss": false,
+          "enemy": {
+            "attack": "yisunsin",
+            "defense": "zeus",
+            "support": "libai"
+          },
+          "ai_level": 5,
+          "reward": {
+            "gold": 1000,
+            "gems": 20
+          }
+        },
+        {
+          "id": "8-3",
+          "name": "하늘의 지배자",
+          "boss": true,
+          "enemy": {
+            "attack": "lubu",
+            "defense": "zeus",
+            "support": "zhugeliang"
+          },
+          "ai_level": 5,
+          "reward": {
+            "gold": 1650,
+            "gems": 80
+          }
+        }
+      ]
+    }
+  ]
+}

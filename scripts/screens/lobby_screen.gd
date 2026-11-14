@@ -30,10 +30,13 @@ func setup(main_app, params: Dictionary) -> void:
 	column.add_child(rank_button)
 	var modes := Kit.hbox(10)
 	column.add_child(modes)
-	var practice := Kit.button("AI 연습전", Kit.ACCENT, 28, 96)
+	var adventure := Kit.button("모험\n★ %d" % Profile.total_stars(app.profile), Color("8a2b2b"), 26, 96)
+	adventure.pressed.connect(_on_adventure)
+	modes.add_child(Kit.expand(adventure))
+	var practice := Kit.button("AI 연습전", Kit.ACCENT, 26, 96)
 	practice.pressed.connect(_on_mode.bind("ai"))
 	modes.add_child(Kit.expand(practice))
-	var friend := Kit.button("친구 대전\n(한 기기 2인)", Color("2a7d4f"), 24, 96)
+	var friend := Kit.button("친구 대전\n(한 기기)", Color("2a7d4f"), 22, 96)
 	friend.pressed.connect(_on_mode.bind("local"))
 	modes.add_child(Kit.expand(friend))
 	var extra := Kit.hbox(10)
@@ -185,6 +188,11 @@ func _claim_attendance() -> void:
 	app.play("win")
 	app.toast("출석 보상: %s" % Kit.reward_line(reward))
 	app.go("lobby")
+
+
+func _on_adventure() -> void:
+	app.play("click")
+	app.go("adventure")
 
 
 func _on_help() -> void:

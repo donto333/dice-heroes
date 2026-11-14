@@ -9,7 +9,7 @@ const PartySelect := preload("res://scripts/ui/party_select.gd")
 const AI := preload("res://scripts/rules/ai.gd")
 const Game := preload("res://scripts/rules/game.gd")
 
-const MODE_TITLES := {"rank": "랭크전", "ai": "AI 연습전", "local": "친구 대전"}
+const MODE_TITLES := {"rank": "랭크전", "ai": "AI 연습전", "local": "친구 대전", "adventure": "모험"}
 
 var app
 var _params: Dictionary = {}
@@ -75,6 +75,18 @@ func _on_confirmed(party: Dictionary) -> void:
 	app.profile["party"] = party.duplicate()
 	app.save()
 	var mine := Profile.battle_party(app.profile, party, "나")
+	if mode == "adventure":
+		var found := Profile.find_stage(app.data.get("adventure", {}), str(_params.get("stage", "")))
+		if found.is_empty():
+			app.go("adventure")
+			return
+		var stage: Dictionary = found["stage"]
+		var enemy: Dictionary = stage["enemy"].duplicate()
+		enemy["name"] = str(stage["name"])
+		var level := int(stage["ai_level"])
+		enemy["levels"] = {"attack": level, "defense": level, "support": level}
+		app.go("match", {"mode": "adventure", "stage": str(stage["id"]), "parties": [mine, enemy], "humans": [true, false], "map": int(found["chapter"]["map"])})
+		return
 	var theirs: Dictionary = AI.pick_party(app.data["characters"], Game.POINT_LIMIT, app.rng)
 	theirs["name"] = "AI"
 	var ai_level := 1
@@ -96,5 +108,7 @@ func _on_cancelled() -> void:
 	app.play("click")
 	if str(_params.get("purpose", "edit")) == "edit":
 		app.go("heroes")
+	elif str(_params.get("mode", "")) == "adventure":
+		app.go("adventure")
 	else:
 		app.go("lobby")
