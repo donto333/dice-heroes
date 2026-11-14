@@ -264,7 +264,8 @@ func _advance() -> void:
 		await _wait_for_board()
 		if playing != game:
 			return
-		await _banner.play("%d / %d턴" % [min(game.round_number, Game.MAX_ROUNDS), Game.MAX_ROUNDS],
+		_board_view.focus_on(game.current)
+		await _banner.play("%d / %d턴" % [min(game.round_number, game.max_rounds), game.max_rounds],
 			_turn_title(game.current), PLAYER_TEXT_COLORS[game.current])
 		if playing != game:
 			return
@@ -638,9 +639,9 @@ func _show_game_over() -> void:
 		reached_goal = game.node_of(int(game.players[game.winner]["pos"])).get("type", "") == "goal"
 	var subtitle := text
 	if not reached_goal:
-		subtitle = "%d턴이 끝나 골까지 남은 거리로 판정했습니다." % Game.MAX_ROUNDS
+		subtitle = "%d턴이 끝나 골까지 남은 거리로 판정했습니다." % game.max_rounds
 	var details := PackedStringArray([
-		"진행한 턴: %d턴" % min(game.round_number, Game.MAX_ROUNDS),
+		"진행한 턴: %d턴" % min(game.round_number, game.max_rounds),
 		"골까지 남은 거리: %s %d칸 · %s %d칸" % [game.players[0]["name"], game.distance_of(0), game.players[1]["name"], game.distance_of(1)],
 		"%s 파티: %s" % [game.players[0]["name"], _party_names(0)],
 		"%s 파티: %s" % [game.players[1]["name"], _party_names(1)],
@@ -733,7 +734,7 @@ func _refresh() -> void:
 	elif game.winner >= 0:
 		turn_text = "%s 승리!" % game.players[game.winner]["name"]
 	_status_label.text = "%d/%d턴 · %s · 맵 속성: %s\n%s(파랑) %d칸%s · %s(주황) %d칸%s" % [
-		min(game.round_number, Game.MAX_ROUNDS), Game.MAX_ROUNDS, turn_text, attr_text,
+		min(game.round_number, game.max_rounds), game.max_rounds, turn_text, attr_text,
 		first["name"], game.distance_of(0), _state_text(first), second["name"], game.distance_of(1), _state_text(second)]
 
 	for slot in Game.SLOTS:
