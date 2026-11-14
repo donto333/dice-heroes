@@ -23,20 +23,20 @@ func setup(main_app, params: Dictionary) -> void:
 	column.add_child(_rank_card())
 	column.add_child(_showcase())
 
-	var rank_button := Kit.button("랭크전", Color("c4861c"), 40, 120)
-	rank_button.add_theme_constant_override("outline_size", 8)
-	rank_button.add_theme_color_override("font_outline_color", Color("4a2f00"))
+	var tier: Dictionary = Profile.tier_of(app.eco, int(app.profile["trophies"]))
+	var rank_button := Kit.icon_button("랭크전", "battle", Color("e8890c"), 44, 124, "%s · 트로피 %d · 이기면 +30" % [tier["name"], int(app.profile["trophies"])])
 	rank_button.pressed.connect(_on_mode.bind("rank"))
 	column.add_child(rank_button)
 	var modes := Kit.hbox(10)
 	column.add_child(modes)
-	var adventure := Kit.button("모험\n★ %d" % Profile.total_stars(app.profile), Color("8a2b2b"), 26, 96)
+	var adventure := Kit.icon_button("모험", "goal", Color("c2413a"), 26, 100, "★ %d / %d" % [Profile.total_stars(app.profile), _max_stars()])
 	adventure.pressed.connect(_on_adventure)
 	modes.add_child(Kit.expand(adventure))
-	var practice := Kit.button("AI 연습전", Kit.ACCENT, 26, 96)
+	var difficulty: Dictionary = Profile.ai_difficulty(app.eco, str(app.profile.get("ai_difficulty", "easy")))
+	var practice := Kit.icon_button("AI전", "fate", Color("2f80ed"), 26, 100, "최근 %s" % difficulty["name"])
 	practice.pressed.connect(_choose_difficulty)
 	modes.add_child(Kit.expand(practice))
-	var friend := Kit.button("친구 대전\n(한 기기)", Color("2a7d4f"), 22, 96)
+	var friend := Kit.icon_button("친구", "pawn", Color("2a9d5c"), 26, 100, "한 기기 2인")
 	friend.pressed.connect(_on_mode.bind("local"))
 	modes.add_child(Kit.expand(friend))
 	var extra := Kit.hbox(10)
@@ -44,7 +44,7 @@ func setup(main_app, params: Dictionary) -> void:
 	var online := Kit.button("온라인 대전 · 준비 중", Kit.PANEL_LIGHT, 20, 64)
 	online.disabled = true
 	extra.add_child(Kit.expand(online, 1.6))
-	var help := Kit.button("게임 방법", Color("6f43a6"), 22, 64)
+	var help := Kit.icon_button("게임 방법", "hidden", Color("7d4fc0"), 22, 64)
 	help.pressed.connect(_on_help)
 	extra.add_child(Kit.expand(help))
 
@@ -102,7 +102,10 @@ func _showcase() -> Control:
 	button.add_theme_stylebox_override("pressed", Kit.box(Color("0d1026"), Kit.GOLD, 2, 16, 0))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.pressed.connect(_on_tab.bind("heroes"))
-	var leader: Dictionary = app.character(str(party.get("attack", "")))
+	var leader_id := str(app.profile.get("avatar", ""))
+	if leader_id == "" or not Profile.owns(app.profile, leader_id):
+		leader_id = str(party.get("attack", ""))
+	var leader: Dictionary = app.character(leader_id)
 	var big := Portrait.new()
 	big.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	big.border_width = 0.0
@@ -148,7 +151,41 @@ func _showcase() -> Control:
 	hint.add_theme_constant_override("outline_size", 6)
 	hint.add_theme_color_override("font_outline_color", Color.BLACK)
 	button.add_child(hint)
+	# 모두의 마블식 오른쪽 바로가기: 출석 · 미션 · 특가
+	var badges: Dictionary = app.badges()
+	var shortcuts := VBoxContainer.new()
+	shortcuts.add_theme_constant_override("separation", 10)
+	shortcuts.anchor_left = 1.0
+	shortcuts.anchor_right = 1.0
+	shortcuts.offset_left = -102
+	shortcuts.offset_right = -12
+	shortcuts.offset_top = 46
+	button.add_child(shortcuts)
+	var attend := Kit.round_shortcut("출석", "treasure", Color("e0a21b"), Profile.can_check_in(app.profile, app.today()))
+	attend.pressed.connect(_on_attendance_shortcut)
+	shortcuts.add_child(attend)
+	var missions := Kit.round_shortcut("미션", "checkpoint", Color("2f80ed"), bool(badges.get("missions", false)))
+	missions.pressed.connect(_on_tab.bind("missions"))
+	shortcuts.add_child(missions)
+	var deals := Kit.round_shortcut("특가", "luck", Color("2a9d5c"), bool(badges.get("shop", false)))
+	deals.pressed.connect(_on_tab.bind("shop"))
+	shortcuts.add_child(deals)
 	return button
+
+
+func _max_stars() -> int:
+	var count := 0
+	for chapter in app.data.get("adventure", {}).get("chapters", []):
+		count += chapter["stages"].size() * 3
+	return count
+
+
+func _on_attendance_shortcut() -> void:
+	app.play("click")
+	if Profile.can_check_in(app.profile, app.today()):
+		_maybe_attendance()
+	else:
+		app.go("missions")
 
 
 func _maybe_attendance() -> void:
