@@ -181,6 +181,11 @@ func _showcase() -> Control:
 	button.add_child(mail)
 	mail.position = Vector2(12, 40)
 	mail.size = Vector2(88, 88)
+	var season := Kit.round_shortcut("패스", "goal", Color("c4861c"), Profile.pass_claimable_count(app.profile, app.eco) > 0)
+	season.pressed.connect(_on_tab.bind("pass"))
+	button.add_child(season)
+	season.position = Vector2(12, 134)
+	season.size = Vector2(88, 88)
 	# 모두의 마블식 오른쪽 바로가기: 출석 · 미션 · 특가
 	var badges: Dictionary = app.badges()
 	var shortcuts := VBoxContainer.new()

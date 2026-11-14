@@ -81,6 +81,13 @@ func _run() -> void:
 	await _wait(0.4)
 	await _shot("05f_mailbox")
 	_close_dialogs()
+	_app.profile["pass"]["exp"] = 260
+	_app.go("pass")
+	await _wait(0.4)
+	await _shot("05h_pass")
+	_app.go("lobby")
+	await _wait(0.4)
+	_close_dialogs()
 	_app.show_profile()
 	await _wait(0.4)
 	await _shot("05d_profile")
