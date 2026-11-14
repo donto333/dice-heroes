@@ -235,7 +235,7 @@ func _play_full_game() -> void:
 	var steps := 0
 	var rolls := 0
 	var choices := 0
-	while steps < 900:
+	while steps < 1600:
 		steps += 1
 		await _wait(0.5)
 		if _app.current_screen != screen or screen.game == null:
