@@ -734,7 +734,7 @@ static func league_table(profile: Dictionary, eco: Dictionary) -> Array:
 	for index in names.size():
 		var name := str(names[index])
 		# 이름마다 늘 같은 트로피(0~2300 사이에 고르게 퍼지게)
-		var trophies := 40 + int(2300.0 * (index + 1) / (names.size() + 1)) + abs(hash(name)) % 60
+		var trophies := 40 + int(2300.0 * (index + 1) / (names.size() + 1)) + absi(hash(name)) % 60
 		rows.append({"name": name, "trophies": trophies, "me": false})
 	rows.append({"name": str(profile.get("nickname", "나")), "trophies": int(profile.get("trophies", 0)), "me": true})
 	rows.sort_custom(func(a, b): return int(a["trophies"]) > int(b["trophies"]))
