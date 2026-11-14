@@ -147,6 +147,19 @@ func _run() -> void:
 	await _wait(0.5)
 	await _shot("11a2_stage")
 	_close_dialogs()
+	# 소탕 확인: 별 3개로 깬 것으로 해 두고 소탕 버튼과 소탕 뒤 화면을 찍은 다음 되돌린다.
+	var stars_before: Dictionary = (_app.profile["adventure"] as Dictionary).duplicate(true)
+	_app.profile["adventure"]["1-1"] = 3
+	_app.go("adventure")
+	await _wait(0.4)
+	_app.current_screen._on_stage("1-1")
+	await _wait(0.5)
+	await _shot("11a3_sweep")
+	_close_dialogs()
+	_app.current_screen._sweep("1-1")
+	await _wait(0.5)
+	await _shot("11a4_swept")
+	_app.profile["adventure"] = stars_before
 	_app.go("help", {"back": "lobby"})
 	await _wait(0.4)
 	await _shot("11b_help")
