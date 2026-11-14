@@ -59,6 +59,9 @@ var _hint_bubble: Control
 var _big_dice: Control
 var _result_scroll: ScrollContainer
 var _speed_button: Button
+var _auto_button: Button
+## 자동 진행: 켜면 내 차례도 AI가 대신 둔다(한 기기 2인 대전에서는 쓰지 않는다).
+var _auto := false
 var _versus: Control
 var _reward_scale := 1.0
 var _last_reward: Dictionary = {}
@@ -147,6 +150,10 @@ func _build_ui() -> void:
 	_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_row.add_child(_status_label)
+	_auto_button = Kit.button("자동 꺼짐", Color("4a5580"), 20, 56)
+	_auto_button.custom_minimum_size = Vector2(110, 56)
+	_auto_button.pressed.connect(_on_auto_pressed)
+	status_row.add_child(_auto_button)
 	_speed_button = Kit.button("", Color("2a7d4f"), 20, 56)
 	_speed_button.custom_minimum_size = Vector2(110, 56)
 	_speed_button.pressed.connect(_on_speed_pressed)
@@ -516,6 +523,48 @@ func _box(fill: Color, border: Color, border_width: int) -> StyleBoxFlat:
 
 
 ## 켜진 버튼은 밝은 색, 꺼진 버튼은 어두운 회색으로 확실히 구분한다.
+# ---------------------------------------------------------------- 자동 진행·진동
+
+func _on_auto_pressed() -> void:
+	if _is_local() or game == null or game.winner >= 0:
+		return
+	_auto = not _auto
+	_play("click")
+	_auto_button.text = "자동 켜짐" if _auto else "자동 꺼짐"
+	Kit.paint(_auto_button, Color("c4861c") if _auto else Color("4a5580"))
+	# 내 차례에서 기다리던 중에 켰으면 이번 턴부터 바로 대신 둔다.
+	if _auto and _waiting_for_player and not _choosing_path:
+		_waiting_for_player = false
+		_close_hint()
+		_clear_results()
+		_add_result_header("자동 진행", PLAYER_TEXT_COLORS[game.current])
+		var playing = game
+		var slot := AI.pick_ability(game)
+		if slot != "":
+			game.use_ability(slot)
+		var card_index := AI.pick_card(game)
+		if card_index >= 0:
+			game.play_card(card_index)
+		game.roll_move()
+		var guard := 0
+		while game.awaiting_choice() and guard < 10:
+			game.choose_path(AI.choose(game))
+			guard += 1
+		game.end_turn()
+		_refresh()
+		await _present_events()
+		if playing != game:
+			return
+		_refresh()
+		_advance()
+
+
+## 내 차례가 오면 짧게 진동한다(설정에서 끌 수 있다). 진동이 없는 기기에서는 아무 일도 없다.
+func _buzz() -> void:
+	if app.has_profile() and bool(app.profile["settings"].get("vibrate", true)) and not _is_local():
+		Input.vibrate_handheld(40)
+
+
 # ---------------------------------------------------------------- 빠르기
 
 ## 대전 연출 빠르기(1배·2배). 설정에 저장되고, 대전 화면을 나가면 1배로 돌아간다.
@@ -738,6 +787,10 @@ func _start_game() -> void:
 	_recorded = false
 	_reward_lines = PackedStringArray()
 	_last_reward = {}
+	_auto = false
+	_auto_button.text = "자동 꺼짐"
+	Kit.paint(_auto_button, Color("4a5580"))
+	_auto_button.visible = not _is_local()
 	_clear_results()
 	_add_result_text("%s 파티: %s" % [game.players[1]["name"], _party_names(1)], PLAYER_TEXT_COLORS[1])
 	_add_result_text("맵: %s(%s)  ·  골의 수호자: %s\n먼저 골(분홍 칸)의 수호자를 이기고 들어가면 승리!" % [game.board_name, game.board_shape, _goal_name()], Color.WHITE)
@@ -772,11 +825,12 @@ func _advance() -> void:
 			_turn_title(game.current), PLAYER_TEXT_COLORS[game.current])
 		if playing != game:
 			return
-		if _humans[game.current]:
+		if _humans[game.current] and not _auto:
 			if game.begin_turn():
 				_waiting_for_player = true
 				_refresh()
 				_turn_hints()
+				_buzz()
 				return
 			_add_result_text("%s: 이번 턴은 쉽니다." % game.players[game.current]["name"], PLAYER_TEXT_COLORS[game.current])
 			game.end_turn()
@@ -785,7 +839,7 @@ func _advance() -> void:
 			await get_tree().create_timer(AI_DELAY * 0.4).timeout
 			if playing != game:
 				return
-			_add_result_header("AI 차례", PLAYER_TEXT_COLORS[1])
+			_add_result_header("자동 진행" if _humans[game.current] else "AI 차례", PLAYER_TEXT_COLORS[game.current])
 			AI.take_turn(game)
 			await _present_events()
 			if playing != game:

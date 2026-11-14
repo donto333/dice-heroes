@@ -265,6 +265,9 @@ func _play_full_game() -> void:
 			if rolls == 2:
 				screen._on_emote("가자!")
 			screen._on_roll_pressed()
+		# 중간부터는 자동 진행을 켜서 그 흐름도 확인한다.
+		if steps == 200 and not screen._auto:
+			screen._on_auto_pressed()
 		if steps == 60:
 			Engine.time_scale = 1.0
 			await _shot("20_midgame")
