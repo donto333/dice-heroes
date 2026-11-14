@@ -57,6 +57,7 @@ var _stage_id := ""
 var _player_cards: Array = []
 var _hint_bubble: Control
 var _big_dice: Control
+var _result_scroll: ScrollContainer
 var _speed_button: Button
 var _versus: Control
 var _reward_scale := 1.0
@@ -205,12 +206,17 @@ func _build_ui() -> void:
 	_roll_button.offset_bottom = -12
 
 	var result_panel := PanelContainer.new()
-	result_panel.custom_minimum_size = Vector2(0, 120)
+	# 기록 칸은 높이를 고정한다. 내용이 넘치면 안에서 스크롤되어 판이 줄어들지 않는다.
+	result_panel.custom_minimum_size = Vector2(0, 168)
 	result_panel.add_theme_stylebox_override("panel", _box(Color("12152b"), Color("3a4466"), 2))
 	column.add_child(result_panel)
+	_result_scroll = ScrollContainer.new()
+	_result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	result_panel.add_child(_result_scroll)
 	_result_box = VBoxContainer.new()
 	_result_box.add_theme_constant_override("separation", 6)
-	result_panel.add_child(_result_box)
+	_result_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_result_scroll.add_child(_result_box)
 
 	var ability_row := HBoxContainer.new()
 	ability_row.add_theme_constant_override("separation", 8)
@@ -1086,6 +1092,16 @@ func _trim_results() -> void:
 	var children := _result_box.get_children().filter(func(node): return not node.is_queued_for_deletion())
 	while children.size() > MAX_RESULT_BLOCKS + 2:
 		children.pop_front().queue_free()
+	_scroll_results_down.call_deferred()
+
+
+## 새 기록이 보이도록 맨 아래로 내린다.
+func _scroll_results_down() -> void:
+	if _result_scroll == null:
+		return
+	await get_tree().process_frame
+	if is_instance_valid(_result_scroll):
+		_result_scroll.scroll_vertical = int(_result_scroll.get_v_scroll_bar().max_value)
 
 
 func _add_result_header(text: String, color: Color) -> void:
