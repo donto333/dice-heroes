@@ -19,6 +19,7 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const ABILITY_PORTRAIT_WIDTH := 76.0
 const TurnBanner := preload("res://scripts/ui/turn_banner.gd")
 const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
+const BigDice := preload("res://scripts/ui/big_dice.gd")
 
 const AI_DELAY := 1.0
 const LOG_LINES := 4
@@ -53,6 +54,7 @@ var _map_index := 0
 var _stage_id := ""
 var _player_cards: Array = []
 var _hint_bubble: Control
+var _big_dice: Control
 var _reward_scale := 1.0
 var _start_distance := 1
 var _cards_used := 0
@@ -164,6 +166,9 @@ func _build_ui() -> void:
 		card.offset_left = 8
 		card.offset_right = 0
 		_ignore_mouse(card)
+
+	_big_dice = BigDice.new()
+	board_area.add_child(_big_dice)
 
 	_roll_button = _make_round_button()
 	_roll_button.pressed.connect(_on_roll_pressed)
@@ -737,6 +742,17 @@ func _show_move(event: Dictionary) -> void:
 	var row := _dice_row("이동", event["rolls"], "", PLAYER_TEXT_COLORS[who])
 	_result_box.add_child(row)
 	_trim_results()
+	if not event["rolls"].is_empty():
+		# 판 가운데 큰 주사위 연출. 아래 결과 줄의 작은 주사위도 같이 구른다.
+		_play("dice")
+		var dice = row.get_meta("dice", null)
+		if dice != null:
+			dice.roll_to(event["rolls"], BigDice.ROLL_TIME)
+		var bonus_text := " (+%d)" % int(event["bonus"]) if int(event["bonus"]) > 0 else ""
+		await _big_dice.play("%s 이동" % game.players[who]["name"], event["rolls"], "%d칸!%s" % [int(event["total"]), bonus_text], PLAYER_TEXT_COLORS[who])
+		var end: Label = row.get_meta("tail")
+		end.text = tail
+		return
 	await _roll_row(row, event["rolls"], tail)
 
 

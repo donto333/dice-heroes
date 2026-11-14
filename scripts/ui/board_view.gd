@@ -4,7 +4,7 @@ extends Control
 ## 말은 규칙 엔진이 보낸 "pos" 사건을 받아 한 칸씩 걸어간다.
 
 const TILE_GAP := 8.0
-const STEP_TIME := 0.09
+const STEP_TIME := 0.17
 const PAUSE_TIME := 0.35
 
 const TILE_COLORS := {
@@ -85,6 +85,9 @@ var piece_textures: Array = [null, null]
 ## 지금 차례인 말은 살짝 통통 튄다.
 var active_player := -1
 var _anim_time := 0.0
+## 통통 튀는 이동: 말마다 {"from": 칸 id, "t": 0~1}. 없으면 멈춰 있는 것.
+var _hops: Dictionary = {}
+const HOP_HEIGHT := 0.42
 
 
 func _ready() -> void:
@@ -125,6 +128,7 @@ func reset_pieces() -> void:
 	_manual = false
 	_camera_ready = false
 	highlight = []
+	_hops = {}
 	shown_pos = [0, 0]
 	if game != null:
 		for index in game.players.size():
@@ -137,8 +141,18 @@ func push_moves(moves: Array) -> void:
 	_queue.append_array(moves)
 
 
+## 이 말이 이어서 더 움직일 칸 수(지금 뛰는 칸 포함). 다른 말의 움직임이 끼어들면 거기까지만 센다.
+func _steps_left(player_index: int) -> int:
+	var count := 1 if _hops.has(player_index) else 0
+	for move in _queue:
+		if int(move["player"]) != player_index:
+			break
+		count += 1
+	return count if count > 1 else 0
+
+
 func is_busy() -> bool:
-	return not _queue.is_empty()
+	return not _queue.is_empty() or not _hops.is_empty()
 
 
 ## 카메라를 이 말에게 맞춘다(턴이 시작될 때 부른다).
@@ -152,12 +166,19 @@ func _process(delta: float) -> void:
 	_anim_time += delta
 	if active_player >= 0:
 		queue_redraw()
+	for player_index in _hops.keys():
+		var hop: Dictionary = _hops[player_index]
+		hop["t"] = float(hop["t"]) + delta / (STEP_TIME * 0.92)
+		if float(hop["t"]) >= 1.0:
+			_hops.erase(player_index)
+		queue_redraw()
 	if _queue.is_empty():
 		return
 	_timer -= delta
 	if _timer > 0.0:
 		return
 	var move: Dictionary = _queue.pop_front()
+	_hops[int(move["player"])] = {"from": int(shown_pos[int(move["player"])]), "t": 0.0}
 	shown_pos[int(move["player"])] = int(move["to"])
 	focus_player = int(move["player"])
 	_manual = false
@@ -326,6 +347,12 @@ func _draw() -> void:
 		if not game.nodes.has(id):
 			continue
 		var center := _center(id, layout)
+		var lift := 0.0
+		if _hops.has(player_index) and game.nodes.has(int(_hops[player_index]["from"])):
+			# 앞 칸에서 이 칸으로 포물선을 그리며 뛴다.
+			var t := clampf(float(_hops[player_index]["t"]), 0.0, 1.0)
+			center = _center(int(_hops[player_index]["from"]), layout).lerp(center, t)
+			lift = sin(t * PI) * cell * HOP_HEIGHT
 		center.x += (player_index * 2 - 1) * cell * 0.22
 		center.y += cell * 0.06
 		var pawn_size := cell * 0.62
@@ -336,9 +363,10 @@ func _draw() -> void:
 			var bob := 0.0
 			if player_index == active_player and _queue.is_empty():
 				bob = -abs(sin(_anim_time * 4.0)) * cell * 0.08
-			var piece_rect := Rect2(center - Vector2(piece, piece) / 2.0 + Vector2(0, bob - cell * 0.08), Vector2(piece, piece))
-			# 그림자
-			draw_circle(center + Vector2(0, piece * 0.42), piece * 0.32, Color(0, 0, 0, 0.35))
+			var piece_rect := Rect2(center - Vector2(piece, piece) / 2.0 + Vector2(0, bob - lift - cell * 0.08), Vector2(piece, piece))
+			# 그림자(높이 뛸수록 작고 옅게)
+			var shade := 1.0 - lift / (cell * HOP_HEIGHT) * 0.45 if lift > 0.0 else 1.0
+			draw_circle(center + Vector2(0, piece * 0.42), piece * 0.32 * shade, Color(0, 0, 0, 0.35 * shade))
 			var frame := StyleBoxFlat.new()
 			frame.bg_color = PLAYER_COLORS[player_index]
 			frame.set_corner_radius_all(int(piece * 0.18))
@@ -353,6 +381,15 @@ func _draw() -> void:
 			ring.set_border_width_all(3)
 			ring.set_corner_radius_all(int(piece * 0.18))
 			draw_style_box(ring, piece_rect.grow(4.0))
+			# 이동 중이면 남은 칸 수를 말 위에 보여 준다.
+			var left := _steps_left(player_index)
+			if left > 0:
+				var bubble_center := Vector2(piece_rect.get_center().x, piece_rect.position.y - cell * 0.2)
+				draw_circle(bubble_center, cell * 0.19, Color("ffcf4d"))
+				draw_arc(bubble_center, cell * 0.19, 0.0, TAU, 24, Color("4a2600"), 2.5)
+				var count_size := int(cell * 0.26)
+				draw_string(font, bubble_center + Vector2(-cell * 0.19, count_size * 0.36), str(left),
+					HORIZONTAL_ALIGNMENT_CENTER, cell * 0.38, count_size, Color("4a2600"))
 			continue
 		if _icons.has("pawn"):
 			draw_texture_rect(_icons["pawn"], pawn_rect, false, PLAYER_COLORS[player_index])

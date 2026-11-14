@@ -114,7 +114,9 @@ func _run() -> void:
 	await _shot("14_match")
 	var match_screen = _app.current_screen
 	match_screen._on_roll_pressed()
-	await _wait(1.4)
+	await _wait(0.95)
+	await _shot("15a_big_dice")
+	await _wait(1.3)
 	await _shot("15_after_roll")
 
 	var fake_battle := {
