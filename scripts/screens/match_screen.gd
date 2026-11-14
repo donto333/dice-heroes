@@ -997,8 +997,10 @@ func _show_move(event: Dictionary) -> void:
 			dice.roll_to(event["rolls"], BigDice.ROLL_TIME)
 		var bonus_text := " (+%d)" % int(event["bonus"]) if int(event["bonus"]) > 0 else ""
 		await _big_dice.play("%s 이동" % game.players[who]["name"], event["rolls"], "%d칸!%s" % [int(event["total"]), bonus_text], PLAYER_TEXT_COLORS[who])
-		var end: Label = row.get_meta("tail")
-		end.text = tail
+		# 연출을 기다리는 사이에 결과 줄이 지워졌을 수 있다(다시 하기 등).
+		if is_instance_valid(row):
+			var end: Label = row.get_meta("tail")
+			end.text = tail
 		return
 	await _roll_row(row, event["rolls"], tail)
 
@@ -1018,6 +1020,8 @@ func _roll_row(row: HBoxContainer, rolls: Array, tail: String) -> void:
 	if dice != null:
 		_play("dice")
 		await dice.roll_to(rolls, 0.55)
+	if not is_instance_valid(row):
+		return
 	var end: Label = row.get_meta("tail")
 	end.text = tail
 
