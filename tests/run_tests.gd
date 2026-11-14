@@ -44,6 +44,9 @@ const EFFECT_TYPES := [
 ]
 
 var _failures: Array[String] = []
+## 큰 맵 모의 대전 전체에서 먼저 하는 쪽이 이긴 판 수(선공·후공 균형 확인용)
+var _seat_total := 0
+var _seat_games := 0
 var _data: Dictionary = {}
 
 
@@ -138,6 +141,10 @@ func _test_board_data() -> void:
 	for index in boards.size():
 		_check_board(boards[index], index)
 		_simulate_board(boards[index])
+	if _seat_games > 0:
+		var rate := 100.0 * _seat_total / _seat_games
+		print("[큰 맵 전체] %d판 · 먼저 하는 쪽 승률 %.1f%%" % [_seat_games, rate])
+		_check(rate > 40.0 and rate < 60.0, "큰 맵에서 선공·후공 균형이 무너짐: 먼저 하는 쪽 승률 %.1f%%" % rate)
 
 
 ## 맵 하나에서 AI끼리 여러 판을 돌려 끝까지 가는지, 평균 몇 턴인지 본다.
@@ -147,10 +154,13 @@ func _simulate_board(board: Dictionary) -> void:
 	var turns := 0
 	var finished := 0
 	var first_wins := 0
+	var team_a_wins := 0
 	var games := 300
 	for index in games:
 		var game = Game.new()
-		game.setup(data, PARTIES, 9000 + index)
+		# 두 팀이 번갈아 먼저 시작한다. 그래야 '먼저 하는 쪽'과 '팀'의 유불리를 따로 볼 수 있다.
+		var swapped := index % 2 == 1
+		game.setup(data, [PARTIES[1], PARTIES[0]] if swapped else PARTIES, 9000 + index)
 		var steps := 0
 		while game.winner < 0 and steps < 200:
 			AI.take_turn(game)
@@ -162,7 +172,12 @@ func _simulate_board(board: Dictionary) -> void:
 			turns += min(game.round_number, game.max_rounds)
 			if game.winner == 0:
 				first_wins += 1
-	print("[맵 %s] %d판 · 평균 %.1f턴 · 먼저 하는 쪽 승 %d" % [board.get("name", "?"), finished, float(turns) / max(finished, 1), first_wins])
+			if (game.winner == 0) != swapped:
+				team_a_wins += 1
+	print("[맵 %s] %d판 · 평균 %.1f턴 · 먼저 하는 쪽 승 %d · %s 승 %d" % [board.get("name", "?"), finished, float(turns) / max(finished, 1),
+		first_wins, str(PARTIES[0].get("name", "첫 팀")), team_a_wins])
+	_seat_total += first_wins
+	_seat_games += finished
 
 
 func _check_board(board: Dictionary, board_index: int) -> void:
