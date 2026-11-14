@@ -22,10 +22,18 @@ func _gui_input(event: InputEvent) -> void:
 
 
 ## sides: [{"name": 이름, "color": 색, "members": [캐릭터 3명], "levels": [레벨 3개]}, 같은 모양]
-func play(sides: Array, map_text: String, goal_text: String) -> void:
+## searching이 true면(랭크전) 먼저 "상대를 찾는 중..."을 잠깐 보여 준다.
+func play(sides: Array, map_text: String, goal_text: String, searching: bool = false) -> void:
 	for child in get_children():
 		child.queue_free()
 	_skipped = false
+	if searching:
+		await _search()
+		if not is_inside_tree():
+			return
+		for child in get_children():
+			child.queue_free()
+		_skipped = false
 	var shade := ColorRect.new()
 	shade.color = Color(0.03, 0.04, 0.1, 0.94)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -95,6 +103,29 @@ func play(sides: Array, map_text: String, goal_text: String) -> void:
 	fade.tween_property(self, "modulate:a", 0.0, 0.22)
 	await fade.finished
 	visible = false
+
+
+## 상대를 찾는 연출: 점이 하나씩 늘어나는 글자. 누르면 넘어간다.
+func _search() -> void:
+	var shade := ColorRect.new()
+	shade.color = Color(0.03, 0.04, 0.1, 0.94)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+	var label := _text("상대를 찾는 중", 44, Color("ffcf4d"), 10)
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(label)
+	modulate.a = 1.0
+	visible = true
+	var waited := 0.0
+	while waited < 1.3 and not _skipped and is_inside_tree():
+		label.text = "상대를 찾는 중" + ".".repeat(int(waited / 0.3) % 4)
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	if is_inside_tree():
+		label.text = "상대를 찾았어요!"
+		await get_tree().create_timer(0.35).timeout
 
 
 func _side(side: Dictionary, flip: bool) -> Control:
