@@ -22,6 +22,7 @@
 - 대전 화면 배치(모두의 마블·원작 영상의 구성만 참고): 판이 화면 대부분, 정보판은 판 모서리, 아이템 카드는 판 왼쪽 세로 줄, 오른쪽 아래 동그란 주사위 버튼, 오른쪽 가운데 한마디 버튼.
 - 연출 부품(`scripts/ui/`): `big_dice.gd`(굴러가는 주사위), `versus_overlay.gd`(시작 VS), `turn_banner.gd`(내 차례! START!), `battle_overlay.gd`(공격→방어 굴림, WIN·LOSE), `result_overlay.gd`+`confetti.gd`, `roulette_wheel.gd`.
 - 글꼴은 한글 부분집합이라 없는 기호가 있다(예: ◆). 새 기호를 쓰면 tests의 글꼴 검사(`_test_font_coverage`)가 잡는다.
+- 기다림 화면: `scripts/ui/loading_overlay.gd`. 큰 전환(게임 진입, 접속, 대전 준비, 소환)은 `app.go_loading()`·`app.wait_loading()`을 쓰고, 나머지 `app.go()`는 짧게 스르륵 나타난다. 자동 사진 도구는 `app.instant = true`로 모두 건너뛴다.
 - 저장은 `scripts/save_store.gd`(기기 안 user://). 온라인 서버(Nakama)는 아직 없음.
 - 보드 바탕 지형·꾸밈 그림은 `tools/make_terrain.py`로 만든다(assets/terrain, 직접 그린 도트). 칸은 두께 있는 육각형으로 그린다(scripts/ui/board_view.gd).
 - 화면 확인은 CI의 `tools/capture.gd` 자동 사진(로그에 base64로 남음).

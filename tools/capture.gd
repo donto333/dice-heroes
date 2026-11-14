@@ -24,8 +24,12 @@ func _run() -> void:
 	SaveStore.erase()
 	_app = load(MAIN_SCENE).instantiate()
 	root.add_child(_app)
-	await _wait(1.0)
+	await _wait(0.5)
+	await _shot("00_title_loading")
+	await _wait(1.2)
 	await _shot("01_title")
+	# 여기부터는 기다림·전환 효과 없이 바로바로 넘어가게 한다(사진 순서가 흔들리지 않게).
+	_app.instant = true
 
 	# 진짜로 화면을 눌러서 로그인 화면으로 넘어가는지 확인한다.
 	var tap := InputEventMouseButton.new()
@@ -69,6 +73,10 @@ func _run() -> void:
 	_app.go("lobby")
 	await _wait(0.4)
 	_close_dialogs()
+	_app.loading.show_for("대전 준비 중...", 1.5, true)
+	await _wait(0.6)
+	await _shot("05g_loading")
+	await _wait(1.4)
 	_app.current_screen.open_mailbox()
 	await _wait(0.4)
 	await _shot("05f_mailbox")

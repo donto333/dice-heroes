@@ -166,6 +166,8 @@ func _on_paid(count: int) -> void:
 func _summon(count: int) -> void:
 	var results := Profile.summon(app.profile, app.data["characters"], app.eco, count, app.rng)
 	app.save()
+	# 결과를 바로 보여 주지 않고 잠깐 뜸을 들인다.
+	await app.wait_loading("소환 중...", 0.9)
 	app.play("reveal")
 	app.go("shop")
 	app.current_screen.show_results(results)
