@@ -50,6 +50,8 @@ var _mode := "ai"
 var _parties: Array = []
 var _humans: Array = [true, false]
 var _map_index := 0
+var _player_cards: Array = []
+var _start_distance := 1
 var _cards_used := 0
 var _recorded := false
 var _result_text := ""
@@ -114,14 +116,23 @@ func _build_ui() -> void:
 	var status_row := HBoxContainer.new()
 	status_row.add_theme_constant_override("separation", 8)
 	column.add_child(status_row)
-	_status_label = _make_label(22)
+	_status_label = _make_label(20)
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_row.add_child(_status_label)
-	var quit_button := Kit.button("나가기", Color("3a4466"), 20, 60)
-	quit_button.custom_minimum_size = Vector2(120, 60)
+	var quit_button := Kit.button("나가기", Color("3a4466"), 20, 56)
+	quit_button.custom_minimum_size = Vector2(110, 56)
 	quit_button.pressed.connect(_on_quit_pressed)
 	status_row.add_child(quit_button)
+
+	# 두 플레이어 정보판: 초상화, 이름, 골까지 남은 거리 막대, 카드·상태
+	var players_row := HBoxContainer.new()
+	players_row.add_theme_constant_override("separation", 8)
+	column.add_child(players_row)
+	for index in 2:
+		var card := _player_card(index)
+		players_row.add_child(card)
 
 	_board_view = BoardView.new()
 	_board_view.custom_minimum_size = Vector2(0, 300)
@@ -183,6 +194,104 @@ func _build_ui() -> void:
 	add_child(_banner)
 
 
+## 플레이어 정보판 하나. _player_cards[index]에 부품을 담아 _refresh에서 고친다.
+func _player_card(index: int) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	panel.add_child(row)
+	var face := Portrait.new()
+	face.custom_minimum_size = Vector2(64, 64)
+	face.border_width = 2.0
+	row.add_child(face)
+	var info := VBoxContainer.new()
+	info.add_theme_constant_override("separation", 2)
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(info)
+	var name_label := _make_label(18)
+	name_label.add_theme_color_override("font_color", PLAYER_TEXT_COLORS[index])
+	name_label.clip_text = true
+	info.add_child(name_label)
+	var bar := Kit.bar(0.0, PLAYER_TEXT_COLORS[index], 12)
+	info.add_child(bar)
+	var detail := _make_label(15)
+	detail.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
+	detail.clip_text = true
+	info.add_child(detail)
+	_player_cards.append({"panel": panel, "face": face, "name": name_label, "bar": bar, "detail": detail})
+	return panel
+
+
+func _refresh_player_cards() -> void:
+	for index in _player_cards.size():
+		var parts: Dictionary = _player_cards[index]
+		var player: Dictionary = game.players[index]
+		var leader: Dictionary = game.char_of(index, "attack")
+		parts["face"].show_character(leader, PLAYER_TEXT_COLORS[index])
+		parts["name"].text = str(player["name"])
+		var total := float(max(_start_distance, 1))
+		parts["bar"].value = clampf(1.0 - float(game.distance_of(index)) / total, 0.0, 1.0)
+		var flags: PackedStringArray = []
+		if bool(player.get("cursed", false)):
+			flags.append("저주")
+		if int(player.get("skip", 0)) > 0:
+			flags.append("쉬기")
+		if bool(player.get("charm", false)):
+			flags.append("부적")
+		parts["detail"].text = "골까지 %d칸 · 카드 %d%s" % [game.distance_of(index), player["hand"].size(), ("  " + " ".join(flags)) if not flags.is_empty() else ""]
+		var current: bool = game.current == index and game.winner < 0
+		var edge: Color = PLAYER_TEXT_COLORS[index] if current else Color("3a4466")
+		parts["panel"].add_theme_stylebox_override("panel", _box(Color("161a36") if current else Color("12152b"), edge, 3 if current else 1))
+
+
+## 칸 효과를 보드 위에 크게 띄운다. 좋은 일은 금색, 나쁜 일은 붉은색.
+func _show_tile(event: Dictionary) -> void:
+	var good := bool(event.get("good", true))
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var color := Color("ffcf4d") if good else Color("ff6b6b")
+	panel.add_theme_stylebox_override("panel", _box(Color(0.04, 0.05, 0.12, 0.92), color, 4))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(row)
+	var icon_name := str(event.get("tile", ""))
+	if icon_name == "attr":
+		icon_name = "attr_hero"
+	var icon_path := "res://assets/icons/%s.png" % icon_name
+	if ResourceLoader.exists(icon_path):
+		var icon := TextureRect.new()
+		icon.texture = load(icon_path)
+		icon.custom_minimum_size = Vector2(72, 72)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		row.add_child(icon)
+	var text := _make_label(34, str(event.get("text", "")))
+	text.add_theme_color_override("font_color", color)
+	text.add_theme_constant_override("outline_size", 8)
+	text.add_theme_color_override("font_outline_color", Color.BLACK)
+	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(text)
+	add_child(panel)
+	await get_tree().process_frame
+	var board_rect := _board_view.get_global_rect()
+	panel.size = panel.get_combined_minimum_size()
+	panel.position = board_rect.get_center() - panel.size / 2.0 - global_position
+	panel.pivot_offset = panel.size / 2.0
+	panel.scale = Vector2(0.6, 0.6)
+	_play("good" if good else "bad")
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(panel, "scale", Vector2.ONE, 0.22)
+	tween.tween_interval(0.75)
+	tween.set_ease(Tween.EASE_IN)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.25)
+	await tween.finished
+	panel.queue_free()
+
+
 func _make_label(font_size: int, text: String = "") -> Label:
 	var label := Label.new()
 	label.text = text
@@ -242,6 +351,9 @@ func _make_button(font_size: int, height: float, color: Color) -> Button:
 func _start_game() -> void:
 	game = Game.new()
 	game.setup(_data, _parties)
+	_start_distance = max(game.distance_of(0), 1)
+	for index in 2:
+		_board_view.piece_textures[index] = GameData.portrait(str(game.char_of(index, "attack").get("id", "")))
 	game.take_events()
 	_board_view.game = game
 	_board_view.reset_pieces()
@@ -447,6 +559,8 @@ func _present_events() -> void:
 				await _show_battle(event)
 			"fate":
 				await _show_fate(event)
+			"tile":
+				await _show_tile(event)
 	if not moves.is_empty():
 		_board_view.push_moves(moves)
 		await _wait_for_board()
@@ -566,7 +680,7 @@ func _dice_row(caption: String, rolls: Array, tail: String, color: Color) -> HBo
 	row.add_child(head)
 	if not rolls.is_empty():
 		var dice := DiceView.new()
-		dice.die_size = 34.0
+		dice.die_size = 46.0
 		dice.values = rolls
 		dice.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(dice)
@@ -734,9 +848,10 @@ func _refresh() -> void:
 		turn_text = "무승부"
 	elif game.winner >= 0:
 		turn_text = "%s 승리!" % game.players[game.winner]["name"]
-	_status_label.text = "%d/%d턴 · %s · 맵 속성: %s\n%s(파랑) %d칸%s · %s(주황) %d칸%s" % [
-		min(game.round_number, game.max_rounds), game.max_rounds, turn_text, attr_text,
-		first["name"], game.distance_of(0), _state_text(first), second["name"], game.distance_of(1), _state_text(second)]
+	_status_label.text = "%d/%d턴 · %s\n%s · 맵 속성: %s" % [
+		min(game.round_number, game.max_rounds), game.max_rounds, turn_text, game.board_name, attr_text]
+	_refresh_player_cards()
+	_board_view.active_player = game.current if game.winner < 0 else -1
 
 	for slot in Game.SLOTS:
 		var button: Button = _ability_buttons[slot]

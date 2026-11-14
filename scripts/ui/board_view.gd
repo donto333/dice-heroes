@@ -80,6 +80,11 @@ var _manual := false
 var _dragging := false
 ## 카메라가 따라갈 말
 var focus_player := 0
+## 말로 그릴 영웅 초상화(플레이어마다). 없으면 기본 말 아이콘.
+var piece_textures: Array = [null, null]
+## 지금 차례인 말은 살짝 통통 튄다.
+var active_player := -1
+var _anim_time := 0.0
 
 
 func _ready() -> void:
@@ -144,6 +149,9 @@ func focus_on(player_index: int) -> void:
 
 func _process(delta: float) -> void:
 	_update_camera(delta)
+	_anim_time += delta
+	if active_player >= 0:
+		queue_redraw()
 	if _queue.is_empty():
 		return
 	_timer -= delta
@@ -322,6 +330,30 @@ func _draw() -> void:
 		center.y += cell * 0.06
 		var pawn_size := cell * 0.62
 		var pawn_rect := Rect2(center - Vector2(pawn_size, pawn_size) / 2.0, Vector2(pawn_size, pawn_size))
+		var face: Texture2D = piece_textures[player_index] if player_index < piece_textures.size() else null
+		if face != null:
+			var piece := cell * 0.7
+			var bob := 0.0
+			if player_index == active_player and _queue.is_empty():
+				bob = -abs(sin(_anim_time * 4.0)) * cell * 0.08
+			var piece_rect := Rect2(center - Vector2(piece, piece) / 2.0 + Vector2(0, bob - cell * 0.08), Vector2(piece, piece))
+			# 그림자
+			draw_circle(center + Vector2(0, piece * 0.42), piece * 0.32, Color(0, 0, 0, 0.35))
+			var frame := StyleBoxFlat.new()
+			frame.bg_color = PLAYER_COLORS[player_index]
+			frame.set_corner_radius_all(int(piece * 0.18))
+			draw_style_box(frame, piece_rect.grow(4.0))
+			var size_px := face.get_size()
+			var side: float = min(size_px.x, size_px.y) * 0.78
+			var src := Rect2((size_px.x - side) / 2.0, 0.0, side, side)
+			draw_texture_rect_region(face, piece_rect, src)
+			var ring := StyleBoxFlat.new()
+			ring.draw_center = false
+			ring.border_color = Color.WHITE if player_index == active_player else PLAYER_COLORS[player_index].darkened(0.3)
+			ring.set_border_width_all(3)
+			ring.set_corner_radius_all(int(piece * 0.18))
+			draw_style_box(ring, piece_rect.grow(4.0))
+			continue
 		if _icons.has("pawn"):
 			draw_texture_rect(_icons["pawn"], pawn_rect, false, PLAYER_COLORS[player_index])
 		else:
