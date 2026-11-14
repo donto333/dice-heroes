@@ -50,7 +50,7 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		## 영웅별 전적 {id: {"played": n, "wins": n}}
 		"hero_stats": {},
 		"pity": 0,
-		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false},
+		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false, "sweeps": 0},
 		"attendance": {"last_date": "", "count": 0},
 		"settings": {"sfx": true, "bgm": true, "fast": false, "vibrate": true},
 		## 마지막으로 새 소식을 본 버전
@@ -421,7 +421,7 @@ static func _add_stat(profile: Dictionary, key: String, amount: int) -> void:
 static func ensure_daily(profile: Dictionary, today: String) -> bool:
 	if str(profile["daily"].get("date", "")) == today:
 		return false
-	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false}
+	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false, "sweeps": 0}
 	return true
 
 
@@ -1175,3 +1175,23 @@ static func event_scale(events: Dictionary, today: String, effect: String) -> fl
 	for event in active_events(events, today):
 		scale *= float(event.get("effect", {}).get(effect, 1.0))
 	return scale
+
+
+# ---------------------------------------------------------------- 모험 소탕
+
+## 오늘 남은 소탕 횟수
+static func sweeps_left(profile: Dictionary, eco: Dictionary) -> int:
+	return max(0, int(eco.get("sweep", {}).get("per_day", 0)) - int(profile.get("daily", {}).get("sweeps", 0)))
+
+
+## 별 3개로 깬 스테이지이고 오늘 횟수가 남았으면 소탕할 수 있다.
+static func can_sweep(profile: Dictionary, eco: Dictionary, stage_id: String) -> bool:
+	return stage_stars(profile, stage_id) >= 3 and sweeps_left(profile, eco) > 0
+
+
+## 소탕: 대전 없이 모험 승리 보상을 받는다. 못 하면 {}. (전적·미션·패스는 판을 한 것과 같이 오른다)
+static func sweep(profile: Dictionary, eco: Dictionary, stage_id: String, stats: Dictionary = {}) -> Dictionary:
+	if not can_sweep(profile, eco, stage_id):
+		return {}
+	profile["daily"]["sweeps"] = int(profile["daily"].get("sweeps", 0)) + 1
+	return record_match(profile, eco, "adventure", "win", stats)

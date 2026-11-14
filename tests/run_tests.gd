@@ -86,6 +86,7 @@ func _init() -> void:
 	_test_dice_skins()
 	_test_pass()
 	_test_events()
+	_test_sweep()
 	_test_monster_kinds()
 	_test_streak_power()
 	_test_presets()
@@ -1234,3 +1235,22 @@ func _test_events() -> void:
 	# 실제 이벤트 파일의 모양 확인
 	for event in _data["events"].get("events", []):
 		_check(str(event.get("start", "")).length() == 10 and str(event.get("end", "")) >= str(event.get("start", "")), "이벤트 날짜가 이상함: " + str(event.get("id", "")))
+
+
+func _test_sweep() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("소탕", eco)
+	Profile.ensure_daily(profile, "2026-05-01")
+	var per_day := int(eco["sweep"]["per_day"])
+	_check(not Profile.can_sweep(profile, eco, "1-1") and Profile.sweep(profile, eco, "1-1").is_empty(), "깨지 않은 스테이지를 소탕함")
+	profile["adventure"]["1-1"] = 2
+	_check(not Profile.can_sweep(profile, eco, "1-1"), "별 2개인데 소탕함")
+	profile["adventure"]["1-1"] = 3
+	var gold := int(profile["gold"])
+	var reward := Profile.sweep(profile, eco, "1-1")
+	_check(int(reward.get("gold", 0)) == int(eco["rewards"]["adventure"]["win"]["gold"]) and int(profile["gold"]) > gold, "소탕 보상이 틀림")
+	for i in per_day - 1:
+		_check(not Profile.sweep(profile, eco, "1-1").is_empty(), "남은 횟수가 있는데 소탕이 안 됨")
+	_check(Profile.sweeps_left(profile, eco) == 0 and Profile.sweep(profile, eco, "1-1").is_empty(), "하루 횟수를 넘겨 소탕함")
+	Profile.ensure_daily(profile, "2026-05-02")
+	_check(Profile.sweeps_left(profile, eco) == per_day, "다음 날 소탕 횟수가 돌아오지 않음")

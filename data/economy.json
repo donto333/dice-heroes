@@ -749,5 +749,9 @@
     "intellect": 12,
     "grade": 5,
     "level": 6
+  },
+  "sweep": {
+    "_comment": "모험 소탕: 별 3개로 깬 스테이지는 대전 없이 승리 보상(rewards.adventure.win)을 받는다. 하루 per_day번.",
+    "per_day": 5
   }
 }

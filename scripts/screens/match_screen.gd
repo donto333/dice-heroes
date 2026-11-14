@@ -21,6 +21,7 @@ const TurnBanner := preload("res://scripts/ui/turn_banner.gd")
 const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 const BigDice := preload("res://scripts/ui/big_dice.gd")
 const AimBar := preload("res://scripts/ui/aim_bar.gd")
+const Cutin := preload("res://scripts/ui/cutin.gd")
 const VersusOverlay := preload("res://scripts/ui/versus_overlay.gd")
 
 const AI_DELAY := 1.0
@@ -61,6 +62,7 @@ var _big_dice: Control
 var _result_scroll: ScrollContainer
 var _speed_button: Button
 var _aim_bar: Control
+var _cutin: Control
 ## 상대가 이번 판에 쓰는 주사위 스킨 번호(보여 주기용, 판마다 바뀜)
 var _rival_skin := 0
 var _roll_down_at := 0.0
@@ -317,6 +319,8 @@ func _build_ui() -> void:
 	_result_overlay.change_party_pressed.connect(_on_change_party_pressed)
 	_banner = TurnBanner.new()
 	add_child(_banner)
+	_cutin = Cutin.new()
+	add_child(_cutin)
 	_versus = VersusOverlay.new()
 	add_child(_versus)
 
@@ -1095,7 +1099,11 @@ func _present_events() -> void:
 			"tile":
 				await _show_tile(event)
 			"ability":
-				await _show_used(event, "%s!" % event["name"], "%s · %s" % [event["hero"], event["name"]])
+				# 어빌리티는 영웅 그림 컷인으로 보여 준다(누가 쓰든).
+				var caster := int(event["player"])
+				_say(caster, "%s!" % event["name"])
+				_play("good" if _humans[caster] else "bad")
+				await _cutin.play(_character_named(str(event["hero"])), str(event["name"]), str(event.get("text", "")), PLAYER_TEXT_COLORS[caster])
 			"card":
 				await _show_used(event, "카드 %s!" % event["name"], "카드 · %s" % event["name"])
 	if not moves.is_empty():
