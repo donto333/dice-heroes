@@ -10,7 +10,7 @@ const AI := preload("res://scripts/rules/ai.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const MapPreview := preload("res://scripts/ui/map_preview.gd")
 
-const MODE_TITLES := {"rank": "랭크전", "ai": "AI 연습전", "local": "친구 대전", "adventure": "모험"}
+const MODE_TITLES := {"rank": "랭크전", "ai": "AI 연습전", "local": "친구 대전", "adventure": "모험", "challenge": "오늘의 도전"}
 
 var app
 var _params: Dictionary = {}
@@ -89,6 +89,17 @@ func _on_confirmed(party: Dictionary) -> void:
 		var level := int(stage["ai_level"])
 		enemy["levels"] = {"attack": level, "defense": level, "support": level}
 		app.go("match", {"mode": "adventure", "stage": str(stage["id"]), "parties": [mine, enemy], "humans": [true, false], "map": int(found["chapter"]["map"])})
+		return
+	if mode == "challenge":
+		# 상대 파티와 맵은 날짜로 정해져 하루 동안 같다.
+		var day_rng := RandomNumberGenerator.new()
+		day_rng.seed = Profile.challenge_seed(app.profile)
+		var challenger: Dictionary = AI.pick_party(app.data["characters"], Game.POINT_LIMIT, day_rng)
+		challenger["name"] = "오늘의 도전자"
+		var challenge_level := Profile.challenge_level(app.profile, app.eco)
+		challenger["levels"] = {"attack": challenge_level, "defense": challenge_level, "support": challenge_level}
+		app.go("match", {"mode": "challenge", "parties": [mine, challenger], "humans": [true, false],
+			"map": day_rng.randi_range(0, app.data["boards"].size() - 1)})
 		return
 	var theirs: Dictionary = AI.pick_party(app.data["characters"], Game.POINT_LIMIT, app.rng)
 	theirs["name"] = "AI"

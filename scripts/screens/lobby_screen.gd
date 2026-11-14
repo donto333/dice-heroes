@@ -45,13 +45,16 @@ func setup(main_app, params: Dictionary) -> void:
 	modes.add_child(Kit.expand(friend))
 	var extra := Kit.hbox(10)
 	column.add_child(extra)
-	var online := Kit.button("온라인 대전 · 준비 중", Kit.PANEL_LIGHT, 20, 64)
-	online.disabled = true
-	extra.add_child(Kit.expand(online, 1.6))
-	var help := Kit.icon_button("게임 방법", "hidden", Color("7d4fc0"), 22, 64)
+	var done := Profile.challenge_done(app.profile)
+	var challenge := Kit.icon_button("오늘의 도전", "ambush", Color("b8323a") if not done else Color("4a5580"), 24, 76,
+		"오늘 완료!" if done else "하루 한 번 · 이기면 보석 30")
+	challenge.pressed.connect(_on_mode.bind("challenge"))
+	extra.add_child(Kit.expand(challenge, 1.6))
+	var help := Kit.icon_button("게임 방법", "hidden", Color("7d4fc0"), 22, 76)
 	help.pressed.connect(_on_help)
 	extra.add_child(Kit.expand(help))
 
+	column.add_child(Kit.label("온라인 대전은 준비 중이에요", 16, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var nav := BottomNav.new()
 	column.add_child(nav)
 	nav.setup("lobby", app.badges())

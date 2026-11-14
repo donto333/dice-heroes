@@ -38,7 +38,7 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		## 영웅별 전적 {id: {"played": n, "wins": n}}
 		"hero_stats": {},
 		"pity": 0,
-		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0},
+		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false},
 		"attendance": {"last_date": "", "count": 0},
 		"settings": {"sfx": true, "bgm": true, "fast": false},
 		## 마지막으로 새 소식을 본 버전
@@ -312,9 +312,16 @@ static func rank_ai_level(eco: Dictionary, trophies: int) -> int:
 ## stats: {"battle_wins": n, "cards": n} 미션 진행에 쓴다.
 ## 돌려주는 값: {"gold", "gems", "exp", "trophies", "level_ups", "first_win", "tier_before", "tier_after"}
 static func record_match(profile: Dictionary, eco: Dictionary, mode: String, outcome: String, stats: Dictionary) -> Dictionary:
-	var table: Dictionary = eco.get("rewards", {}).get(mode, {}).get(outcome, {})
+	var reward_mode := mode
+	if mode == "challenge":
+		# 오늘의 도전 보상은 하루 한 번. 이미 이겼으면 AI 연습전 보상을 준다.
+		if challenge_done(profile):
+			reward_mode = "ai"
+		elif outcome == "win":
+			profile["daily"]["challenge_done"] = true
+	var table: Dictionary = eco.get("rewards", {}).get(reward_mode, {}).get(outcome, {})
 	var scale := float(stats.get("reward_scale", 1.0))
-	var reward := {"gold": int(round(int(table.get("gold", 0)) * scale)), "gems": 0, "exp": int(round(int(table.get("exp", 0)) * scale)), "trophies": 0,
+	var reward := {"gold": int(round(int(table.get("gold", 0)) * scale)), "gems": int(table.get("gems", 0)), "exp": int(round(int(table.get("exp", 0)) * scale)), "trophies": 0,
 		"level_ups": 0, "first_win": false, "tier_before": "", "tier_after": ""}
 	var played: Dictionary = profile["stats"]
 	played["played"] = int(played["played"]) + 1
@@ -338,7 +345,7 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 	var counts_as_win := outcome == "win" and mode != "local"
 	if counts_as_win and not bool(profile["daily"].get("first_win", false)):
 		profile["daily"]["first_win"] = true
-		reward["gems"] = int(eco.get("rewards", {}).get("first_win_gems", 0))
+		reward["gems"] = int(reward["gems"]) + int(eco.get("rewards", {}).get("first_win_gems", 0))
 		reward["first_win"] = true
 	grant(profile, reward)
 	reward["level_ups"] = add_exp(profile, eco, int(reward["exp"]))
@@ -384,7 +391,7 @@ static func _add_stat(profile: Dictionary, key: String, amount: int) -> void:
 static func ensure_daily(profile: Dictionary, today: String) -> bool:
 	if str(profile["daily"].get("date", "")) == today:
 		return false
-	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0}
+	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false}
 	return true
 
 
@@ -814,3 +821,24 @@ static func favorite_hero(profile: Dictionary) -> String:
 			best_played = int(stats[id]["played"])
 			best = str(id)
 	return best
+
+
+# ---------------------------------------------------------------- 오늘의 도전
+
+## 오늘의 도전을 이미 이겼는지
+static func challenge_done(profile: Dictionary) -> bool:
+	return bool(profile.get("daily", {}).get("challenge_done", false))
+
+
+## 오늘의 도전 상대 영웅 레벨: 내 가장 높은 영웅 레벨 + level_bonus (최고 max_level)
+static func challenge_level(profile: Dictionary, eco: Dictionary) -> int:
+	var best := 1
+	for id in profile.get("owned", {}):
+		best = max(best, int(profile["owned"][id]["level"]))
+	var table: Dictionary = eco.get("challenge", {})
+	return min(int(table.get("max_level", 5)), best + int(table.get("level_bonus", 1)))
+
+
+## 오늘의 도전에 쓸 난수 씨앗(날짜마다 같다). 상대 파티와 맵을 정하는 데 쓴다.
+static func challenge_seed(profile: Dictionary) -> int:
+	return hash("challenge|" + str(profile.get("daily", {}).get("date", "")))

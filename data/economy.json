@@ -123,6 +123,21 @@
         "gold": 30,
         "exp": 15
       }
+    },
+    "challenge": {
+      "win": {
+        "gold": 300,
+        "gems": 30,
+        "exp": 50
+      },
+      "lose": {
+        "gold": 40,
+        "exp": 15
+      },
+      "draw": {
+        "gold": 60,
+        "exp": 20
+      }
     }
   },
   "tiers": [
@@ -434,5 +449,10 @@
         "color": "e0b81b"
       }
     ]
+  },
+  "challenge": {
+    "_comment": "오늘의 도전: 하루 한 번 보상. 상대 레벨 = 내 가장 높은 영웅 레벨 + level_bonus (최고 max_level).",
+    "level_bonus": 1,
+    "max_level": 5
   }
 }
