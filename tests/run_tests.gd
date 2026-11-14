@@ -15,6 +15,7 @@ const HeroesScreen := preload("res://scripts/screens/heroes_screen.gd")
 const SaveStore := preload("res://scripts/save_store.gd")
 const HelpScreen := preload("res://scripts/screens/help_screen.gd")
 const Music := preload("res://scripts/ui/music.gd")
+const AdventureScreen := preload("res://scripts/screens/adventure_screen.gd")
 const BoardView := preload("res://scripts/ui/board_view.gd")
 const DiceView := preload("res://scripts/ui/dice_view.gd")
 const BattleOverlay := preload("res://scripts/ui/battle_overlay.gd")
@@ -69,6 +70,7 @@ func _init() -> void:
 	_test_upgrade_and_level()
 	_test_match_rewards()
 	_test_missions_and_attendance()
+	_test_adventure()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -728,3 +730,37 @@ func _test_missions_and_attendance() -> void:
 		var reward := Profile.check_in(att, eco, today)
 		_check(reward == table[day % table.size()], "출석 보상 순서가 틀림")
 		_check(Profile.check_in(att, eco, today).is_empty(), "하루에 두 번 출석됨")
+
+
+func _test_adventure() -> void:
+	var adventure: Dictionary = _data["adventure"]
+	var chapters: Array = adventure.get("chapters", [])
+	_check(chapters.size() == _data["boards"].size(), "모험 장 수가 맵 수와 다름")
+	var seen := {}
+	for chapter in chapters:
+		_check(int(chapter["map"]) >= 0 and int(chapter["map"]) < _data["boards"].size(), "모험 장의 맵 번호가 잘못됨: " + str(chapter["id"]))
+		_check(chapter["stages"].size() == 3, "장마다 스테이지가 3개가 아님: " + str(chapter["id"]))
+		for stage in chapter["stages"]:
+			_check(not seen.has(stage["id"]), "스테이지 id가 겹침: " + str(stage["id"]))
+			seen[stage["id"]] = true
+			for slot in ["attack", "defense", "support"]:
+				_check(_char_exists(str(stage["enemy"].get(slot, ""))), "스테이지 적이 캐릭터 목록에 없음: %s %s" % [stage["id"], slot])
+			_check(int(stage["ai_level"]) >= 1 and int(stage["ai_level"]) <= 5, "스테이지 AI 레벨이 1~5가 아님: " + str(stage["id"]))
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("모험", eco)
+	var stages := Profile.all_stages(adventure)
+	_check(Profile.stage_unlocked(profile, adventure, str(stages[0]["id"])), "첫 스테이지가 잠겨 있음")
+	_check(not Profile.stage_unlocked(profile, adventure, str(stages[1]["id"])), "두 번째 스테이지가 처음부터 열림")
+	_check(Profile.stars_for(adventure, false, 10, 0) == 0, "지면 별이 0이 아님")
+	_check(Profile.stars_for(adventure, true, 999, 3) == 1, "그냥 이기면 별 1개가 아님")
+	_check(Profile.stars_for(adventure, true, 5, 0) == 3, "빨리·무패로 이기면 별 3개가 아님")
+	var gems := int(profile["gems"])
+	var first := Profile.record_adventure(profile, adventure, str(stages[0]["id"]), true, 5, 0)
+	_check(bool(first["first_clear"]) and int(first["stars"]) == 3, "첫 클리어가 기록되지 않음")
+	_check(int(profile["gems"]) > gems, "첫 클리어·별 3개 보상이 없음")
+	_check(Profile.stage_unlocked(profile, adventure, str(stages[1]["id"])), "앞 스테이지를 깼는데 다음이 안 열림")
+	var again := Profile.record_adventure(profile, adventure, str(stages[0]["id"]), true, 5, 0)
+	_check(not bool(again["first_clear"]) and int(again["reward"]["gems"]) == 0, "첫 클리어 보상을 두 번 줌")
+	Profile.record_adventure(profile, adventure, str(stages[0]["id"]), true, 999, 2)
+	_check(Profile.stage_stars(profile, str(stages[0]["id"])) == 3, "별이 낮은 기록으로 덮어써짐")
+	_check(Profile.total_stars(profile) == 3, "별 합계가 틀림")

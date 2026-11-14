@@ -50,6 +50,7 @@ var _mode := "ai"
 var _parties: Array = []
 var _humans: Array = [true, false]
 var _map_index := 0
+var _stage_id := ""
 var _player_cards: Array = []
 var _start_distance := 1
 var _cards_used := 0
@@ -73,6 +74,7 @@ func setup(main_app, params: Dictionary) -> void:
 		_data["board"] = boards[map_index]
 	_map_index = map_index
 	_mode = str(params.get("mode", "ai"))
+	_stage_id = str(params.get("stage", ""))
 	_parties = params.get("parties", [])
 	_humans = params.get("humans", [true, false])
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -777,9 +779,17 @@ func _record(outcome: String) -> PackedStringArray:
 		return _reward_lines
 	_recorded = true
 	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used})
-	app.save()
 	lines.append("")
 	lines.append("보상: %s  ·  경험치 +%d" % [Kit.reward_line(reward), int(reward["exp"])])
+	if _mode == "adventure" and _stage_id != "":
+		var result := Profile.record_adventure(app.profile, app.data.get("adventure", {}), _stage_id, outcome == "win", int(game.round_number), int(_my_battles[1]))
+		if int(result["stars"]) > 0:
+			lines.append("모험 %s  %s" % [_stage_id, "★".repeat(int(result["stars"])) + "☆".repeat(3 - int(result["stars"]))])
+		if bool(result["first_clear"]):
+			lines.append("첫 클리어 보상: %s" % Kit.reward_line(result["reward"]))
+		elif int(result["reward"].get("gems", 0)) > 0:
+			lines.append("별 3개 보상: %s" % Kit.reward_line(result["reward"]))
+	app.save()
 	if _mode == "rank":
 		lines.append("트로피 %+d → %d (%s)" % [int(reward["trophies"]), int(app.profile["trophies"]), reward["tier_after"]])
 		if str(reward["tier_before"]) != str(reward["tier_after"]):
@@ -796,13 +806,15 @@ func _on_retry_pressed() -> void:
 	_play("click")
 	if _is_local():
 		app.go("match", {"mode": _mode, "parties": _parties, "humans": _humans, "map": app.rng.randi_range(0, app.data["boards"].size() - 1)})
+	elif _mode == "adventure":
+		app.go("party", {"purpose": "match", "mode": "adventure", "stage": _stage_id})
 	else:
 		app.start_mode(_mode)
 
 
 func _on_change_party_pressed() -> void:
 	_play("click")
-	app.go("lobby")
+	app.go("adventure" if _mode == "adventure" else "lobby")
 
 
 ## 나가기. 랭크전에서 도중에 나가면 패배로 기록한다.

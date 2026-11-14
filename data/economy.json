@@ -109,7 +109,21 @@
         "exp": 10
       }
     },
-    "first_win_gems": 30
+    "first_win_gems": 30,
+    "adventure": {
+      "win": {
+        "gold": 60,
+        "exp": 30
+      },
+      "lose": {
+        "gold": 20,
+        "exp": 10
+      },
+      "draw": {
+        "gold": 30,
+        "exp": 15
+      }
+    }
   },
   "tiers": [
     {

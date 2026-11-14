@@ -30,6 +30,8 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false},
 		"attendance": {"last_date": "", "count": 0},
 		"settings": {"sfx": true, "bgm": true},
+		## 모험 진행: {스테이지 id: 얻은 별 수(0~3)}
+		"adventure": {},
 	}
 
 
@@ -438,3 +440,85 @@ static func exchange(profile: Dictionary, eco: Dictionary, index: int) -> bool:
 		return false
 	profile["gold"] = int(profile["gold"]) + int(offer["gold"])
 	return true
+
+
+# ---------------------------------------------------------------- 모험
+
+## 스테이지를 찾는다. 돌려주는 값: {"stage", "chapter", "index"(전체 순번)} 또는 빈 사전.
+static func find_stage(adventure: Dictionary, stage_id: String) -> Dictionary:
+	var index := 0
+	for chapter in adventure.get("chapters", []):
+		for stage in chapter["stages"]:
+			if str(stage["id"]) == stage_id:
+				return {"stage": stage, "chapter": chapter, "index": index}
+			index += 1
+	return {}
+
+
+## 모든 스테이지를 순서대로.
+static func all_stages(adventure: Dictionary) -> Array:
+	var result: Array = []
+	for chapter in adventure.get("chapters", []):
+		for stage in chapter["stages"]:
+			result.append(stage)
+	return result
+
+
+static func stage_stars(profile: Dictionary, stage_id: String) -> int:
+	return int(profile.get("adventure", {}).get(stage_id, 0))
+
+
+## 첫 스테이지는 처음부터 열려 있고, 나머지는 바로 앞 스테이지를 깨야 열린다.
+static func stage_unlocked(profile: Dictionary, adventure: Dictionary, stage_id: String) -> bool:
+	var stages := all_stages(adventure)
+	for index in stages.size():
+		if str(stages[index]["id"]) == stage_id:
+			return index == 0 or stage_stars(profile, str(stages[index - 1]["id"])) > 0
+	return false
+
+
+static func total_stars(profile: Dictionary) -> int:
+	var total := 0
+	for id in profile.get("adventure", {}):
+		total += int(profile["adventure"][id])
+	return total
+
+
+## 별 계산: 이기면 1, 정한 턴 안에 이기면 +1, 전투에서 한 번도 지지 않았으면 +1.
+static func stars_for(adventure: Dictionary, won: bool, turns: int, battle_losses: int) -> int:
+	if not won:
+		return 0
+	var stars := 1
+	if turns <= int(adventure.get("star_rules", {}).get("turns", 24)):
+		stars += 1
+	if battle_losses == 0:
+		stars += 1
+	return stars
+
+
+## 모험 판 결과를 기록한다. 첫 클리어 보상과 처음 별 3개 보상을 준다.
+## 돌려주는 값: {"stars", "best", "first_clear", "reward"(받은 보상 묶음)}
+static func record_adventure(profile: Dictionary, adventure: Dictionary, stage_id: String, won: bool, turns: int, battle_losses: int) -> Dictionary:
+	var found := find_stage(adventure, stage_id)
+	var result := {"stars": 0, "best": stage_stars(profile, stage_id), "first_clear": false, "reward": {}}
+	if found.is_empty():
+		return result
+	if not profile.has("adventure"):
+		profile["adventure"] = {}
+	var stars := stars_for(adventure, won, turns, battle_losses)
+	var before := stage_stars(profile, stage_id)
+	result["stars"] = stars
+	var reward := {"gold": 0, "gems": 0}
+	if stars > 0 and before == 0:
+		result["first_clear"] = true
+		var first: Dictionary = found["stage"].get("reward", {})
+		reward["gold"] += int(first.get("gold", 0))
+		reward["gems"] += int(first.get("gems", 0))
+	if stars == 3 and before < 3:
+		reward["gems"] += int(adventure.get("three_star_gems", 0))
+	if stars > before:
+		profile["adventure"][stage_id] = stars
+	result["best"] = max(before, stars)
+	grant(profile, reward)
+	result["reward"] = reward
+	return result

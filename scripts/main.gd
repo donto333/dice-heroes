@@ -24,6 +24,7 @@ const SCREENS := {
 	"party": preload("res://scripts/screens/party_screen.gd"),
 	"match": preload("res://scripts/screens/match_screen.gd"),
 	"help": preload("res://scripts/screens/help_screen.gd"),
+	"adventure": preload("res://scripts/screens/adventure_screen.gd"),
 }
 const VERSION := "0.5.0"
 
