@@ -72,11 +72,14 @@ func _level_row(number: int, entry: Dictionary, level: int) -> Control:
 	var free := Kit.button("받음  %s" % free_text if claimed else ("받기  %s" % free_text if reached else free_text),
 		Kit.PANEL_LIGHT if claimed or not reached else Color("2f8f4e"), 21, 66)
 	free.disabled = claimed or not reached
+	free.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.45) if claimed else Color(1, 1, 1, 0.78))
 	free.pressed.connect(_on_claim.bind(number))
 	row.add_child(Kit.expand(free))
 	# 프리미엄 보상: 보여 주기만 한다.
 	var premium := Kit.button("잠김  %s" % Kit.reward_line(entry.get("premium", {})), Color("5a4a1c"), 21, 66)
 	premium.disabled = true
+	premium.add_theme_color_override("font_disabled_color", Color(1.0, 0.85, 0.45, 0.8))
+	premium.add_theme_stylebox_override("disabled", Kit.box(Color("3a3014"), Color("7a5a1c"), 2, 16, 8))
 	row.add_child(Kit.expand(premium))
 	return row
 

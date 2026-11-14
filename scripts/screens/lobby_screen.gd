@@ -13,6 +13,10 @@ const SLOT_NAMES := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPO
 
 var app
 var _wheel: Control
+var _notice_label: Label
+var _notice_index := 0
+var _notice_time := 0.0
+const NOTICE_SECONDS := 4.0
 var _spin_button: Button
 var _spin_info: Label
 
@@ -166,15 +170,26 @@ func _showcase() -> Control:
 		var text := Kit.label("%s\n%s\nLv.%d" % [SLOT_NAMES[slot], member.get("name", "-"), Profile.level_of(app.profile, str(party.get(slot, "")))], 17)
 		text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cell.add_child(text)
-	var hint := Kit.label("눌러서 파티 바꾸기", 18, Color(1, 1, 1, 0.8), HORIZONTAL_ALIGNMENT_RIGHT)
-	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hint.anchor_left = 0.0
-	hint.anchor_right = 1.0
-	hint.offset_top = 10
-	hint.offset_right = -14
-	hint.add_theme_constant_override("outline_size", 6)
-	hint.add_theme_color_override("font_outline_color", Color.BLACK)
-	button.add_child(hint)
+	# 그림 위쪽의 공지 줄: 소식이 몇 초마다 바뀐다. 누르면 전체 공지를 본다.
+	var band := Button.new()
+	band.add_theme_stylebox_override("normal", Kit.box(Color(0.02, 0.03, 0.09, 0.72), Color.TRANSPARENT, 0, 0, 0))
+	band.add_theme_stylebox_override("hover", Kit.box(Color(0.06, 0.08, 0.18, 0.8), Color.TRANSPARENT, 0, 0, 0))
+	band.add_theme_stylebox_override("pressed", Kit.box(Color(0.06, 0.08, 0.18, 0.8), Color.TRANSPARENT, 0, 0, 0))
+	band.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	band.anchor_left = 0.0
+	band.anchor_right = 1.0
+	band.offset_bottom = 36
+	band.pressed.connect(_on_notices)
+	button.add_child(band)
+	_notice_label = Kit.label("", 18, Color(1, 1, 1, 0.95))
+	_notice_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_notice_label.clip_text = true
+	_notice_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_notice_label.offset_left = 12
+	_notice_label.offset_right = -12
+	_notice_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	band.add_child(_notice_label)
+	_show_notice()
 	# 왼쪽 위: 우편함 (안 받은 우편이 있으면 빨간 점)
 	var mail := Kit.round_shortcut("우편", "mail", Color("3a8fd0"), Profile.unclaimed_mail_count(app.profile) > 0)
 	mail.pressed.connect(open_mailbox)
@@ -209,6 +224,35 @@ func _showcase() -> Control:
 	deals.pressed.connect(_on_tab.bind("shop"))
 	shortcuts.add_child(deals)
 	return button
+
+
+# ---------------------------------------------------------------- 공지 줄
+
+func _notices() -> Array:
+	return app.data.get("notices", {}).get("notices", [])
+
+
+func _show_notice() -> void:
+	var list := _notices()
+	if _notice_label == null or list.is_empty():
+		return
+	_notice_label.text = "공지 · %s" % str(list[_notice_index % list.size()])
+
+
+func _process(delta: float) -> void:
+	_notice_time += delta
+	if _notice_time >= NOTICE_SECONDS:
+		_notice_time = 0.0
+		_notice_index += 1
+		_show_notice()
+
+
+func _on_notices() -> void:
+	app.play("click")
+	var body := Kit.vbox(8)
+	for line in _notices():
+		body.add_child(Kit.para("· " + str(line), 21, Color.WHITE))
+	app.dialog("공지", body, [["닫기", Kit.PANEL_LIGHT]], 640)
 
 
 # ---------------------------------------------------------------- 우편함
