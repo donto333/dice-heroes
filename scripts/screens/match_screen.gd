@@ -20,6 +20,7 @@ const ABILITY_PORTRAIT_WIDTH := 76.0
 const TurnBanner := preload("res://scripts/ui/turn_banner.gd")
 const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 const BigDice := preload("res://scripts/ui/big_dice.gd")
+const VersusOverlay := preload("res://scripts/ui/versus_overlay.gd")
 
 const AI_DELAY := 1.0
 const LOG_LINES := 4
@@ -55,6 +56,7 @@ var _stage_id := ""
 var _player_cards: Array = []
 var _hint_bubble: Control
 var _big_dice: Control
+var _versus: Control
 var _reward_scale := 1.0
 var _start_distance := 1
 var _cards_used := 0
@@ -230,6 +232,8 @@ func _build_ui() -> void:
 	_result_overlay.change_party_pressed.connect(_on_change_party_pressed)
 	_banner = TurnBanner.new()
 	add_child(_banner)
+	_versus = VersusOverlay.new()
+	add_child(_versus)
 
 
 ## 플레이어 정보판 하나. _player_cards[index]에 부품을 담아 _refresh에서 고친다.
@@ -525,7 +529,22 @@ func _start_game() -> void:
 	_add_result_text("%s 파티: %s" % [game.players[1]["name"], _party_names(1)], PLAYER_TEXT_COLORS[1])
 	_add_result_text("맵: %s(%s)  ·  골의 수호자: %s\n먼저 골(분홍 칸)의 수호자를 이기고 들어가면 승리!" % [game.board_name, game.board_shape, _goal_name()], Color.WHITE)
 	_refresh()
+	var playing = game
+	await _versus.play([_versus_side(0), _versus_side(1)],
+		"%s (%s)" % [game.board_name, game.board_shape], "골의 수호자: %s  ·  %d턴 제한" % [_goal_name(), game.max_rounds])
+	if playing != game or not is_inside_tree():
+		return
 	_advance()
+
+
+## VS 화면에 보여 줄 한쪽 파티.
+func _versus_side(index: int) -> Dictionary:
+	var members: Array = []
+	var levels: Array = []
+	for slot in Game.SLOTS:
+		members.append(game.char_of(index, slot))
+		levels.append(int(game.players[index].get("levels", {}).get(slot, 1)))
+	return {"name": str(game.players[index]["name"]), "color": PLAYER_TEXT_COLORS[index], "members": members, "levels": levels}
 
 
 ## 사람이 입력할 차례가 될 때까지 게임을 진행한다.
