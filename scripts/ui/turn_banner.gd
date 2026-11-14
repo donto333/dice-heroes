@@ -59,13 +59,10 @@ func play(small: String, big: String, color: Color) -> void:
 	_box.rotation = -0.06
 	_box.scale = Vector2(0.3, 0.3)
 	var tween := create_tween()
-	tween.set_parallel(true)
 	tween.tween_property(_box, "scale", Vector2.ONE, POP_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "modulate:a", 1.0, POP_TIME * 0.6)
-	tween.set_parallel(false)
+	tween.parallel().tween_property(self, "modulate:a", 1.0, POP_TIME * 0.6)
 	tween.tween_interval(HOLD_TIME)
-	tween.set_parallel(true)
 	tween.tween_property(_box, "scale", Vector2(1.5, 1.5), OUT_TIME).set_ease(Tween.EASE_IN)
-	tween.tween_property(self, "modulate:a", 0.0, OUT_TIME)
+	tween.parallel().tween_property(self, "modulate:a", 0.0, OUT_TIME)
 	await tween.finished
 	visible = false
