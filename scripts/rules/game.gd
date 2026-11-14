@@ -73,6 +73,9 @@ var board_theme: Dictionary = {}
 var level_battle_bonus: Array = []
 ## 턴 제한
 var max_rounds := MAX_ROUNDS
+## 워프 칸: 두 말의 골까지 거리 차이가 warp_gap칸 이상이면 결투, 이기면 warp_advance칸 전진
+var warp_gap := 10
+var warp_advance := 10
 
 var card_played := false
 var ability_used := false
@@ -96,6 +99,8 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	start_gauge_per_intellect = int(rules.get("start_gauge_per_intellect", 0))
 	level_battle_bonus = rules.get("level_battle_bonus", [])
 	max_rounds = int(rules.get("max_rounds", MAX_ROUNDS))
+	warp_gap = int(rules.get("warp_gap", 10))
+	warp_advance = int(rules.get("warp_advance", 10))
 	characters = {}
 	for character in data.get("characters", []):
 		characters[character["id"]] = character
@@ -613,10 +618,20 @@ func _resolve_tile(depth: int) -> void:
 				_walk(current, amount, false)
 				_resolve_tile(depth + 1)
 		"warp":
-			var to := int(tile["to"])
-			say("  워프! %d번 칸으로 이동합니다." % to)
-			_tile_event("warp", "워프!", true)
-			_step(current, to)
+			# 워프 결투: 두 말의 거리 차이가 크면 상대에게 싸움을 건다. 이기면 전진, 지면 그대로.
+			var gap: int = abs(distance_of(current) - distance_of(1 - current))
+			if gap < warp_gap:
+				say("  워프 칸! 상대와 %d칸 차이라 아무 일도 없습니다. (%d칸 이상 차이가 나야 결투)" % [gap, warp_gap])
+				_tile_event("warp", "워프! 상대와 %d칸 이상\n차이가 나야 결투" % warp_gap, true)
+			elif depth < 3:
+				say("  워프 결투! 상대와 %d칸 차이, %s에게 싸움을 겁니다." % [gap, opponent["name"]])
+				_tile_event("warp", "워프 결투!", true)
+				if _battle_warp():
+					say("  결투 승리! %d칸 전진합니다." % warp_advance)
+					_walk(current, warp_advance, false)
+					_resolve_tile(depth + 1)
+				else:
+					say("  결투 패배. 그대로 머뭅니다.")
 		"luck":
 			_add_gauge(current, 25)
 			say("  행운 칸! 게이지 +25%")
@@ -768,6 +783,26 @@ func _battle_players() -> bool:
 	return false
 
 
+## 워프 결투: 현재 플레이어의 ATTACK과 상대의 DEFENSE가 겨룬다. 이겨도 져도 아무도 거점으로 돌아가지 않는다.
+## 이기면 true (전진은 부른 쪽에서 한다).
+func _battle_warp() -> bool:
+	var attacker: Dictionary = char_of(current, "attack")
+	var defender: Dictionary = char_of(1 - current, "defense")
+	say("  결투! %s(공격) vs %s(방어)" % [attacker["name"], defender["name"]])
+	var attack_dice := _attack_dice(current)
+	var defense_dice := _defense_dice(1 - current)
+	var result := resolve_battle(
+		attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current))
+	if not result["attacker_won"] and _consume_effect(current, "retry"):
+		_say_battle(result)
+		say("  재도전! 한 번 더 굴립니다.")
+		result = resolve_battle(
+			attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current))
+	_say_battle(result)
+	_battle_event(attacker["name"], defender["name"], result, "warp")
+	return bool(result["attacker_won"])
+
+
 ## 현재 플레이어가 칸을 지키는 키퍼를 공격한다. 이기면 true.
 func _battle_keeper(keeper_dice: int, keeper_name: String) -> bool:
 	var player: Dictionary = players[current]
@@ -820,7 +855,7 @@ func _say_battle(result: Dictionary) -> void:
 		str(result["defense_rolls"]), int(result["defense_total"])])
 
 
-## target: "player"(상대 말과 싸움), "keeper"(키퍼를 공격), "ambush"(몬스터의 습격을 막음)
+## target: "player"(상대 말과 싸움), "keeper"(키퍼를 공격), "ambush"(몬스터의 습격을 막음), "warp"(워프 결투, 지는 쪽이 물러나지 않음)
 func _battle_event(attacker_name: String, defender_name: String, result: Dictionary, target: String) -> void:
 	_event({
 		"kind": "battle",

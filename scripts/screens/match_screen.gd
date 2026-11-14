@@ -1053,7 +1053,8 @@ func _show_battle(event: Dictionary) -> void:
 		_add_battle_result(event)
 		_ai_reacts(event["won"] if who == 0 else not event["won"])
 		return
-	var against_player: bool = str(event.get("target", "")) == "player"
+	var warp_duel: bool = str(event.get("target", "")) == "warp"
+	var against_player: bool = str(event.get("target", "")) == "player" or warp_duel
 	var me_attacking := who == 0 or _is_local()
 	var info := {
 		"attacker_side": "공격 · %s" % game.players[who]["name"],
@@ -1069,6 +1070,10 @@ func _show_battle(event: Dictionary) -> void:
 		info["good_for_me"] = not event["won"]
 	else:
 		info["good_for_me"] = not event["won"]
+	if warp_duel:
+		# 워프 결투는 이기면 전진, 지면 제자리(아무도 거점으로 돌아가지 않는다).
+		info["winner_text"] = "%s 결투 승리! %d칸 전진" % [game.players[who]["name"], game.warp_advance]
+		info["loser_text"] = "%s 결투 패배... 제자리" % game.players[who]["name"]
 	info["attacker_character"] = _character_named(str(event["attacker"]))
 	info["defender_character"] = _character_named(str(event["defender"]))
 	await _battle_overlay.play(event, info)
@@ -1165,7 +1170,7 @@ func _add_battle_result(event: Dictionary) -> void:
 		_best_roll = max(_best_roll, my_total)
 		if success:
 			_slot_wins["defense" if ambushed else "attack"] += 1
-	elif str(event.get("target", "")) == "player" and not success:
+	elif str(event.get("target", "")) in ["player", "warp"] and not success:
 		# 상대가 나를 공격했다가 진 것도 내 전투 승리
 		_my_battles[0] += 1
 		_slot_wins["defense"] += 1
