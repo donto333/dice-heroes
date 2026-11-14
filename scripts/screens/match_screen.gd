@@ -136,23 +136,49 @@ func _build_ui() -> void:
 	quit_button.pressed.connect(_on_quit_pressed)
 	status_row.add_child(quit_button)
 
-	# 두 플레이어 정보판: 초상화, 이름, 골까지 남은 거리 막대, 카드·상태
-	var players_row := HBoxContainer.new()
-	players_row.add_theme_constant_override("separation", 8)
-	column.add_child(players_row)
+	# 모두의 마블처럼 판이 화면 대부분을 차지하고,
+	# 플레이어 정보판은 판 모서리(상대 왼쪽 위, 나 왼쪽 아래), 큰 주사위 버튼은 오른쪽 아래에 얹는다.
+	var board_area := Control.new()
+	board_area.custom_minimum_size = Vector2(0, 420)
+	board_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	board_area.size_flags_stretch_ratio = 4.0
+	column.add_child(board_area)
+	_board_view = BoardView.new()
+	_board_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	board_area.add_child(_board_view)
 	for index in 2:
 		var card := _player_card(index)
-		players_row.add_child(card)
+		board_area.add_child(card)
+		card.anchor_left = 0.0
+		card.anchor_right = 0.56
+		if index == 1:
+			card.anchor_top = 0.0
+			card.anchor_bottom = 0.0
+			card.offset_top = 8
+			card.offset_bottom = 92
+		else:
+			card.anchor_top = 1.0
+			card.anchor_bottom = 1.0
+			card.offset_top = -92
+			card.offset_bottom = -8
+		card.offset_left = 8
+		card.offset_right = 0
+		_ignore_mouse(card)
 
-	_board_view = BoardView.new()
-	_board_view.custom_minimum_size = Vector2(0, 300)
-	_board_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_board_view.size_flags_stretch_ratio = 3.0
-	_board_view.size_flags_stretch_ratio = 3.0
-	column.add_child(_board_view)
+	_roll_button = _make_round_button()
+	_roll_button.pressed.connect(_on_roll_pressed)
+	board_area.add_child(_roll_button)
+	_roll_button.anchor_left = 1.0
+	_roll_button.anchor_right = 1.0
+	_roll_button.anchor_top = 1.0
+	_roll_button.anchor_bottom = 1.0
+	_roll_button.offset_left = -172
+	_roll_button.offset_right = -12
+	_roll_button.offset_top = -172
+	_roll_button.offset_bottom = -12
 
 	var result_panel := PanelContainer.new()
-	result_panel.custom_minimum_size = Vector2(0, 180)
+	result_panel.custom_minimum_size = Vector2(0, 120)
 	result_panel.add_theme_stylebox_override("panel", _box(Color("12152b"), Color("3a4466"), 2))
 	column.add_child(result_panel)
 	_result_box = VBoxContainer.new()
@@ -178,9 +204,6 @@ func _build_ui() -> void:
 		card_row.add_child(button)
 		_card_buttons.append(button)
 
-	_roll_button = _make_button(34, 100, ROLL_COLOR)
-	_roll_button.pressed.connect(_on_roll_pressed)
-	column.add_child(_roll_button)
 
 	_log_label = _make_label(17)
 	_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -406,15 +429,64 @@ func _box(fill: Color, border: Color, border_width: int) -> StyleBoxFlat:
 
 
 ## 켜진 버튼은 밝은 색, 꺼진 버튼은 어두운 회색으로 확실히 구분한다.
+## 판 위에 얹는 정보판은 판 끌기·칸 누르기를 막지 않게 한다.
+func _ignore_mouse(node: Node) -> void:
+	if node is Control:
+		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children():
+		_ignore_mouse(child)
+
+
+## 모두의 마블식 큰 동그란 주사위 버튼: 노란 몸통, 짙은 테두리, 두꺼운 아래 그림자.
+func _make_round_button() -> Button:
+	var button := Button.new()
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.add_theme_font_size_override("font_size", 28)
+	var body := Color("ffc62b")
+	var edge := Color("6b3b00")
+	var normal := _round_box(body, edge, 10)
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", _round_box(body.lightened(0.15), edge, 10))
+	button.add_theme_stylebox_override("pressed", _round_box(body.darkened(0.15), edge, 4))
+	button.add_theme_stylebox_override("disabled", _round_box(Color("5a5f78"), Color("2a2d40"), 6))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	for state in ["font_color", "font_hover_color", "font_pressed_color"]:
+		button.add_theme_color_override(state, Color("4a2600"))
+	button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.6))
+	button.add_theme_constant_override("outline_size", 6)
+	button.add_theme_color_override("font_outline_color", Color(1, 1, 1, 0.85))
+	return button
+
+
+func _chunky(style: StyleBoxFlat, bottom: int) -> StyleBoxFlat:
+	style.border_width_bottom = bottom
+	style.set_corner_radius_all(16)
+	return style
+
+
+func _round_box(fill: Color, edge: Color, bottom: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = edge
+	style.set_border_width_all(5)
+	style.border_width_bottom = bottom
+	style.set_corner_radius_all(80)
+	style.shadow_color = Color(0, 0, 0, 0.45)
+	style.shadow_size = 8
+	style.shadow_offset = Vector2(0, 5)
+	style.set_content_margin_all(14)
+	return style
+
+
 func _make_button(font_size: int, height: float, color: Color) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(0, height)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.add_theme_font_size_override("font_size", font_size)
-	button.add_theme_stylebox_override("normal", _box(color, color.lightened(0.35), 3))
-	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12), Color.WHITE, 3))
-	button.add_theme_stylebox_override("pressed", _box(color.darkened(0.25), Color.WHITE, 3))
+	button.add_theme_stylebox_override("normal", _chunky(_box(color, color.darkened(0.5), 3), 7))
+	button.add_theme_stylebox_override("hover", _chunky(_box(color.lightened(0.12), color.darkened(0.5), 3), 7))
+	button.add_theme_stylebox_override("pressed", _chunky(_box(color.darkened(0.2), color.darkened(0.5), 3), 3))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.add_theme_stylebox_override("disabled", _box(DISABLED_COLOR, DISABLED_COLOR, 0))
 	button.add_theme_color_override("font_color", Color.WHITE)
@@ -1006,16 +1078,16 @@ func _refresh() -> void:
 			button.disabled = true
 
 	if game.winner >= 0:
-		_roll_button.text = "결과 보기"
+		_roll_button.text = "결과\n보기"
 		_roll_button.disabled = false
 	elif _choosing_path:
-		_roll_button.text = "위에서 갈 길을 고르세요"
+		_roll_button.text = "길을\n고르세요"
 		_roll_button.disabled = true
 	elif _waiting_for_player:
-		_roll_button.text = "주사위 굴리기"
+		_roll_button.text = "주사위\n굴리기"
 		_roll_button.disabled = false
 	else:
-		_roll_button.text = "AI 차례..." if not _humans[game.current] else "진행 중..."
+		_roll_button.text = "AI\n차례" if not _humans[game.current] else "진행\n중..."
 		_roll_button.disabled = true
 
 	var lines: Array = game.messages.slice(max(0, game.messages.size() - LOG_LINES))
