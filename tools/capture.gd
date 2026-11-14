@@ -124,6 +124,12 @@ func _run() -> void:
 	await _wait(1.6)
 	await _shot("14_match")
 	var match_screen = _app.current_screen
+	match_screen._toggle_emotes()
+	match_screen._say(1, "ㅋㅋㅋ")
+	match_screen._say(0, "가자!")
+	await _wait(0.5)
+	await _shot("14c_emotes")
+	match_screen._toggle_emotes()
 	match_screen._on_card_pressed(0)
 	await _wait(0.4)
 	await _shot("14b_card")
