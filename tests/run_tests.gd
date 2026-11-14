@@ -82,6 +82,7 @@ func _init() -> void:
 	_test_mail()
 	_test_dice_skins()
 	_test_pass()
+	_test_monster_kinds()
 	_test_streak_power()
 	_test_presets()
 	_test_coupon_and_backup()
@@ -1183,3 +1184,17 @@ func _test_streak_power() -> void:
 	var other := str(profile["party"]["defense"])
 	profile["owned"][other]["shards"] = 5
 	_check(Profile.sell_shards(profile, eco, other) == 0, "최고 레벨이 아닌 영웅의 조각을 팖")
+
+
+## 맵에 나오는 적 이름이 모두 그림 종류에 맞게 나뉘는지 본다(뜻밖에 전부 '짐승'으로 가지 않게).
+func _test_monster_kinds() -> void:
+	var BoardView = load("res://scripts/ui/board_view.gd")
+	_check(BoardView.monster_kind("goal", "메두사") == 6, "골의 수호자가 보스 그림이 아님")
+	_check(BoardView.monster_kind("battle", "화산 골렘") == 2 and BoardView.monster_kind("ambush", "유령 병사") == 1, "적 그림 종류가 틀림")
+	_check(BoardView.monster_kind("ambush", "돌풍") == 5 and BoardView.monster_kind("battle", "하늘 고래") == 4, "위험물·새 그림 종류가 틀림")
+	var kinds := {}
+	for board in _data["boards"]:
+		for node in board["nodes"]:
+			if str(node.get("type", "")) in ["battle", "ambush"]:
+				kinds[BoardView.monster_kind(str(node["type"]), str(node.get("name", "")))] = true
+	_check(kinds.size() >= 5, "맵의 적들이 그림 종류 5가지 이상으로 나뉘지 않음: %d" % kinds.size())
