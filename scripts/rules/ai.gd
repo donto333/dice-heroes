@@ -14,7 +14,8 @@ static func take_turn(game) -> void:
 		var card_index := pick_card(game)
 		if card_index >= 0:
 			game.play_card(card_index)
-		game.roll_move()
+		# AI는 늘 높게 노린다(성공 확률은 사람과 같다).
+		game.roll_move("high")
 		var guard := 0
 		while game.awaiting_choice() and guard < 10:
 			game.choose_path(choose(game))
