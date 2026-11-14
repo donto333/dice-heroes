@@ -20,6 +20,7 @@ const ABILITY_PORTRAIT_WIDTH := 76.0
 const TurnBanner := preload("res://scripts/ui/turn_banner.gd")
 const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 const BigDice := preload("res://scripts/ui/big_dice.gd")
+const AimBar := preload("res://scripts/ui/aim_bar.gd")
 const VersusOverlay := preload("res://scripts/ui/versus_overlay.gd")
 
 const AI_DELAY := 1.0
@@ -59,6 +60,8 @@ var _hint_bubble: Control
 var _big_dice: Control
 var _result_scroll: ScrollContainer
 var _speed_button: Button
+var _aim_bar: Control
+var _roll_down_at := 0.0
 var _auto_button: Button
 ## 자동 진행: 켜면 내 차례도 AI가 대신 둔다(한 기기 2인 대전에서는 쓰지 않는다).
 var _auto := false
@@ -80,6 +83,8 @@ var _my_battles := [0, 0]
 var _slot_wins := {"attack": 0, "defense": 0, "support": 0}
 var _abilities_used := 0
 const SLOT_NAMES := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
+## 굴리기 버튼을 이만큼(초) 누르고 있으면 세기 막대가 나온다.
+const HOLD_TO_AIM := 0.22
 ## 대전 중 한마디. AI는 전투가 끝난 뒤 가끔 대꾸한다.
 const EMOTES := ["좋아요!", "ㅋㅋㅋ", "으악!", "잘했어요!", "봐주세요...", "가자!"]
 const AI_HAPPY := ["ㅋㅋㅋ", "좋아요!", "가자!"]
@@ -202,7 +207,19 @@ func _build_ui() -> void:
 	_build_emotes(board_area)
 
 	_roll_button = _make_round_button()
-	_roll_button.pressed.connect(_on_roll_pressed)
+	# 짧게 누르면 그냥 굴리고, 꾹 누르면 세기 막대가 나와 놓는 자리로 낮게·높게를 노린다(주사위 컨트롤).
+	_roll_button.button_down.connect(_on_roll_down)
+	_roll_button.button_up.connect(_on_roll_up)
+	_aim_bar = AimBar.new()
+	board_area.add_child(_aim_bar)
+	_aim_bar.anchor_left = 1.0
+	_aim_bar.anchor_right = 1.0
+	_aim_bar.anchor_top = 1.0
+	_aim_bar.anchor_bottom = 1.0
+	_aim_bar.offset_left = -246
+	_aim_bar.offset_right = -16
+	_aim_bar.offset_top = -250
+	_aim_bar.offset_bottom = -186
 	board_area.add_child(_roll_button)
 	_roll_button.anchor_left = 1.0
 	_roll_button.anchor_right = 1.0
@@ -423,7 +440,7 @@ func _show_tile(event: Dictionary) -> void:
 func _turn_hints() -> void:
 	if not _humans[game.current]:
 		return
-	if _hint("roll", "주사위 굴리기를 누르면 ATTACK 영웅의 이동 주사위만큼 걸어가요. 파란 테두리 초상화가 내 말이에요. 먼저 골(분홍 칸)의 수호자를 이기면 승리!"):
+	if _hint("roll", "주사위 굴리기를 누르면 ATTACK 영웅의 이동 주사위만큼 걸어가요. 꾹 누르면 세기 막대가 나와서 낮게·높게를 노릴 수 있어요. 파란 테두리 초상화가 내 말이에요. 먼저 골(분홍 칸)의 수호자를 이기면 승리!"):
 		return
 	if not game.players[game.current]["hand"].is_empty() and _hint("card", "아이템 카드는 주사위를 굴리기 전에 눌러서 써요. 손에는 3장까지 들 수 있어요."):
 		return
@@ -545,7 +562,7 @@ func _on_auto_pressed() -> void:
 		var card_index := AI.pick_card(game)
 		if card_index >= 0:
 			game.play_card(card_index)
-		game.roll_move()
+		game.roll_move("high")
 		var guard := 0
 		while game.awaiting_choice() and guard < 10:
 			game.choose_path(AI.choose(game))
@@ -872,7 +889,27 @@ func _wait_for_board() -> void:
 		await get_tree().process_frame
 
 
-func _on_roll_pressed() -> void:
+## 굴리기 버튼을 누르기 시작. 내 차례면 잠시 뒤 세기 막대가 나온다.
+func _on_roll_down() -> void:
+	_roll_down_at = Time.get_ticks_msec() / 1000.0
+	if game == null or game.winner >= 0 or not _waiting_for_player:
+		return
+	await get_tree().create_timer(HOLD_TO_AIM).timeout
+	# 아직 누르고 있을 때만 막대를 띄운다.
+	if _roll_down_at > 0.0 and _waiting_for_player and is_instance_valid(_aim_bar):
+		_aim_bar.start()
+
+
+## 버튼에서 손을 뗌. 막대가 떠 있었으면 그 자리의 노림으로, 아니면 그냥 굴린다.
+func _on_roll_up() -> void:
+	_roll_down_at = 0.0
+	var aim := ""
+	if _aim_bar.visible:
+		aim = _aim_bar.stop()
+	_on_roll_pressed(aim)
+
+
+func _on_roll_pressed(aim: String = "") -> void:
 	_close_hint()
 	if game.winner >= 0:
 		_result_overlay.visible = true
@@ -885,7 +922,7 @@ func _on_roll_pressed() -> void:
 	_clear_results()
 	_add_result_header(_turn_title(game.current), PLAYER_TEXT_COLORS[game.current])
 	var playing = game
-	game.roll_move()
+	game.roll_move(aim)
 	await _present_events()
 	if playing != game:
 		return
@@ -1065,6 +1102,11 @@ func _show_move(event: Dictionary) -> void:
 			dice.roll_to(event["rolls"], BigDice.ROLL_TIME)
 		var bonus_text := " (+%d)" % int(event["bonus"]) if int(event["bonus"]) > 0 else ""
 		var caption := "%s 이동" % game.players[who]["name"]
+		var aim_name := "낮게" if str(event.get("aim", "")) == "low" else "높게"
+		if bool(event.get("controlled", false)):
+			caption = "%s 주사위 컨트롤 성공! (%s)" % [game.players[who]["name"], aim_name]
+		elif str(event.get("aim", "")) != "" and _humans[who]:
+			caption = "%s 주사위 컨트롤 실패 (%s)" % [game.players[who]["name"], aim_name]
 		if bool(event.get("catchup", false)):
 			# 많이 뒤처진 쪽은 큰 눈이 잘 나온다는 것을 알려 준다.
 			caption = "%s 따라잡기! 큰 눈이 잘 나와요" % game.players[who]["name"]

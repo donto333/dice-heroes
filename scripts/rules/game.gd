@@ -42,6 +42,8 @@ var abilities: Dictionary = {}
 var characters: Dictionary = {}
 ## 이동 주사위 눈의 비율. "1"은 주사위 1개일 때, "2"는 2개 이상일 때.
 var move_weights: Dictionary = {}
+## 주사위 컨트롤: {"chance": 성공 확률(%), "low": 눈 비율, "high": 눈 비율}
+var dice_control: Dictionary = {}
 ## 따라잡기: 상대보다 catchup_gap칸 이상 뒤처진 쪽의 이동 주사위 눈 비율
 var catchup_gap := 0
 var catchup_weights: Dictionary = {}
@@ -92,6 +94,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	cards = data.get("cards", {})
 	abilities = data.get("abilities", {})
 	move_weights = data.get("rules", {}).get("move_dice_weights", {})
+	dice_control = data.get("rules", {}).get("dice_control", {})
 	catchup_gap = int(data.get("rules", {}).get("catchup_gap", 0))
 	catchup_weights = data.get("rules", {}).get("catchup_move_weights", {})
 	var rules: Dictionary = data.get("rules", {})
@@ -338,6 +341,12 @@ func move_weights_for(count: int, catching_up: bool = false) -> Array:
 	return move_weights.get(key, [])
 
 
+## 주사위 컨트롤이 이번에 성공하는지(확률). 규칙의 난수로 정한다.
+func _control_succeeds() -> bool:
+	var chance := int(dice_control.get("chance", 0))
+	return chance > 0 and rng.randi_range(1, 100) <= chance
+
+
 ## 따라잡기: player_index가 상대보다 catchup_gap칸 이상 뒤처져 있는지. (catchup_gap이 0이면 쓰지 않는다)
 func is_catching_up(player_index: int) -> bool:
 	return catchup_gap > 0 and behind_by(player_index) >= catchup_gap
@@ -411,7 +420,9 @@ func play_card(hand_index: int) -> bool:
 
 ## 이동 주사위를 굴리고 걸어간다. 갈림길에 닿으면 멈추고 pending_choice를 채운다.
 ## 길이 다 정해지면 도착한 칸의 효과와 전투까지 처리한다.
-func roll_move() -> void:
+## aim: 주사위 컨트롤로 노리는 쪽. ""(그냥 굴림), "low"(낮게), "high"(높게).
+## 노리면 dice_control.chance% 확률로 성공해 그쪽 눈이 잘 나온다. 실패하면 보통 굴림과 같다.
+func roll_move(aim: String = "") -> void:
 	if not can_act():
 		return
 	moved = true
@@ -421,6 +432,7 @@ func roll_move() -> void:
 	var total := 0
 	var rolls: Array = []
 	var catching_up := false
+	var controlled := false
 	var fixed := effect_sum(current, "move_fixed")
 	if fixed > 0:
 		total = fixed
@@ -431,9 +443,18 @@ func roll_move() -> void:
 		catching_up = is_catching_up(current)
 		if catching_up:
 			say("  따라잡기! %d칸 이상 뒤처져 있어 큰 눈이 잘 나옵니다." % catchup_gap)
-		rolls = roll_weighted_dice(count, move_weights_for(count, catching_up))
+		var weights: Array = move_weights_for(count, catching_up)
+		if aim == "low" or aim == "high":
+			controlled = _control_succeeds()
+			if controlled:
+				var table: Dictionary = dice_control.get(aim, {})
+				weights = table.get("1" if count <= 1 else "2", weights)
+				say("  주사위 컨트롤 성공! %s 눈이 잘 나옵니다." % ("낮은" if aim == "low" else "높은"))
+			else:
+				say("  주사위 컨트롤 실패. 보통으로 굴립니다.")
+		rolls = roll_weighted_dice(count, weights)
 		if effect_sum(current, "move_best") > 0:
-			var again := roll_weighted_dice(count, move_weights_for(count, catching_up))
+			var again := roll_weighted_dice(count, weights)
 			say("  길잡이 별: %s와 %s 중 큰 쪽" % [str(rolls), str(again)])
 			if _sum(again) > _sum(rolls):
 				rolls = again
@@ -447,7 +468,8 @@ func roll_move() -> void:
 		bonus += ATTR_BONUS
 		total += ATTR_BONUS
 		say("  맵 속성 보너스로 %d칸 더 이동" % ATTR_BONUS)
-	_event({"kind": "move", "player": current, "rolls": rolls, "total": total, "bonus": bonus, "catchup": catching_up})
+	_event({"kind": "move", "player": current, "rolls": rolls, "total": total, "bonus": bonus, "catchup": catching_up,
+		"aim": aim if not rolls.is_empty() else "", "controlled": controlled})
 
 	_continue_walk(total)
 

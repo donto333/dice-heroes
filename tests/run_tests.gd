@@ -309,6 +309,29 @@ func _test_move_dice() -> void:
 		faces[int(value)] = true
 	_check(faces.size() == 6, "이동 주사위에서 나오지 않는 눈이 있음")
 
+	# 주사위 컨트롤: 높게 노리면 평균이 오르고, 낮게 노리면 내려간다. 이동 사건에 노림과 성공 여부가 남는다.
+	var sums := {"": 0, "low": 0, "high": 0}
+	var hits := 0
+	var tries := 600
+	for aim in ["", "low", "high"]:
+		for i in tries:
+			var control = _new_game(1000 + i)
+			control.begin_turn()
+			control.take_events()
+			control.roll_move(aim)
+			for event in control.take_events():
+				if event["kind"] == "move":
+					sums[aim] = int(sums[aim]) + game._sum(event["rolls"])
+					_check(str(event.get("aim", "")) == aim, "이동 사건의 노림이 틀림")
+					if aim == "high" and bool(event.get("controlled", false)):
+						hits += 1
+					if aim == "":
+						_check(not bool(event.get("controlled", false)), "노리지 않았는데 컨트롤 성공")
+	print("[주사위 컨트롤] 평균 눈 합: 낮게 %.2f · 보통 %.2f · 높게 %.2f · 높게 성공 %d/%d" % [
+		float(sums["low"]) / tries, float(sums[""]) / tries, float(sums["high"]) / tries, hits, tries])
+	_check(int(sums["high"]) > int(sums[""]) and int(sums[""]) > int(sums["low"]), "주사위 컨트롤이 평균을 움직이지 않음")
+	_check(hits > tries * 0.25 and hits < tries * 0.45, "주사위 컨트롤 성공 확률이 35%% 근처가 아님: %d/%d" % [hits, tries])
+
 	# 따라잡기: 10칸 이상 뒤처진 쪽은 큰 눈이 더 잘 나온다. 덜 뒤처졌거나 앞서 있으면 보통 비율.
 	_check(game.catchup_gap == 10, "따라잡기 기준이 10칸이 아님")
 	var boosted_one := 0
