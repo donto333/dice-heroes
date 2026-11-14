@@ -149,7 +149,8 @@ func _pick_map(start: Dictionary) -> void:
 	var boards: Array = app.data["boards"]
 	for index in boards.size():
 		var board: Dictionary = boards[index]
-		grid.add_child(_map_cell(index, str(board.get("name", "맵")), str(board.get("shape", "")), board))
+		var note := str(board.get("feature", ""))
+		grid.add_child(_map_cell(index, "%s (%s)" % [board.get("name", "맵"), board.get("shape", "")], note, board))
 	var body := Kit.vbox(8)
 	body.add_child(Kit.para("싸울 맵을 고르세요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	body.add_child(grid)
@@ -187,12 +188,14 @@ func _map_cell(index: int, title: String, note: String, board: Dictionary) -> Co
 		preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		preview.show_board(board)
 		column.add_child(preview)
-	var name_label := Kit.label(title, 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	var name_label := Kit.label(title, 17, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	name_label.clip_text = true
 	name_label.add_theme_constant_override("outline_size", 5)
 	name_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(name_label)
-	var note_label := Kit.label(note, 15, Color(1, 1, 1, 0.8), HORIZONTAL_ALIGNMENT_CENTER)
+	var note_label := Kit.label(note, 14, Color(1, 1, 1, 0.85), HORIZONTAL_ALIGNMENT_CENTER)
+	note_label.clip_text = true
 	note_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(note_label)
 	return button

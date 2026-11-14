@@ -2,6 +2,7 @@
   "_comment": "유적 맵(약 120칸, 계단형). 보물과 함정(저주·감옥)이 함께 많다. tools/make_maps.py로 만든다.",
   "name": "고대 유적",
   "shape": "계단형",
+  "feature": "보물과 함정(저주·감옥)이 함께 많다",
   "theme": {"terrain": "ruins", "bg": "3d3a33", "line": "d9cfa8"},
   "start": 0,
   "nodes": [

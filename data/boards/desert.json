@@ -2,6 +2,7 @@
   "_comment": "사막 맵(약 120칸, 피라미드형). 판정과 보물이 많다. tools/make_maps.py로 만든다.",
   "name": "사막의 길",
   "shape": "피라미드형",
+  "feature": "판정과 보물이 많다",
   "theme": {"terrain": "desert", "bg": "5a4220", "line": "e0b46a"},
   "start": 0,
   "nodes": [

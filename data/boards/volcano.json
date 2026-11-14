@@ -2,6 +2,7 @@
   "_comment": "화산 맵(약 120칸, 산맥형). 키퍼가 강하고 전진 칸이 많다. tools/make_maps.py로 만든다.",
   "name": "화산 산맥",
   "shape": "산맥형",
+  "feature": "키퍼가 강하고 전진 칸이 많다",
   "theme": {"terrain": "volcano", "bg": "4a1f1a", "line": "ff9a6a"},
   "start": 0,
   "nodes": [

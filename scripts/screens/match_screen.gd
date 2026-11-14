@@ -827,7 +827,7 @@ func _start_game() -> void:
 	_refresh()
 	var playing = game
 	await _versus.play([_versus_side(0), _versus_side(1)],
-		"%s (%s)" % [game.board_name, game.board_shape], "골의 수호자: %s  ·  %d턴 제한" % [_goal_name(), game.max_rounds], _mode == "rank")
+		"%s (%s)" % [game.board_name, game.board_shape], "%s\n골의 수호자: %s  ·  %d턴 제한" % [game.board_feature, _goal_name(), game.max_rounds], _mode == "rank")
 	if playing != game or not is_inside_tree():
 		return
 	_advance()

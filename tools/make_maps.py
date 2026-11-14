@@ -295,6 +295,8 @@ def make_board(theme):
         "_comment": theme["comment"],
         "name": theme["name"],
         "shape": theme["shape_name"],
+        # 맵 설명의 가운데 문장("판정과 보물이 많다")을 화면에 보여 줄 특징으로 쓴다.
+        "feature": theme["comment"].split(". ")[1].rstrip("."),
         "theme": theme["colors"],
         "start": start["id"],
         "nodes": nodes,
