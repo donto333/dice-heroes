@@ -793,6 +793,8 @@ func _test_achievements() -> void:
 	Profile.record_match(profile, eco, "ai", "win", {"battle_wins": 3, "cards": 2})
 	_check(int(profile["stats"]["battle_wins_total"]) == 3 and int(profile["stats"]["cards_total"]) == 2, "누적 전투 승리·카드 기록이 안 됨")
 	_check(Profile.has_claimable_achievement(profile, _data), "첫 승리 업적을 받을 수 없음")
+	_check(Profile.claimable_achievement_count(profile, _data) >= 1, "받을 수 있는 업적 수가 0")
+	_check(Profile.claimable_mission_count(profile, eco) >= 0, "받을 수 있는 미션 수가 음수")
 	var gems := int(profile["gems"])
 	_check(not Profile.claim_achievement(profile, _data, "first_win").is_empty(), "첫 승리 업적 보상을 못 받음")
 	_check(int(profile["gems"]) > gems, "업적 보석이 들어오지 않음")

@@ -879,6 +879,7 @@ func _on_path_chosen(index: int) -> void:
 func _on_ability_pressed(slot: String) -> void:
 	var me := _viewer()
 	if _waiting_for_player and game.use_ability(slot):
+		_say(me, "%s!" % str(game.ability_of(me, slot).get("name", "어빌리티")))
 		if me == 0:
 			_abilities_used += 1
 		_add_result_text("어빌리티 [%s] 발동! %s" % [
@@ -1214,6 +1215,8 @@ func _record(outcome: String) -> PackedStringArray:
 	if _recorded or not app.has_profile():
 		return _reward_lines
 	_recorded = true
+	var missions_before := Profile.claimable_mission_count(app.profile, app.eco)
+	var achievements_before := Profile.claimable_achievement_count(app.profile, app.data)
 	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids()})
 	_last_reward = reward
 	if _mode == "adventure" and _stage_id != "":
@@ -1233,6 +1236,13 @@ func _record(outcome: String) -> PackedStringArray:
 		lines.append("오늘 첫 승리 보너스!")
 	if int(reward["level_ups"]) > 0:
 		lines.append("레벨 업! 플레이어 레벨 %d" % int(app.profile["level"]))
+	# 이번 판으로 새로 받을 수 있게 된 미션·업적
+	var new_missions := Profile.claimable_mission_count(app.profile, app.eco) - missions_before
+	var new_achievements := Profile.claimable_achievement_count(app.profile, app.data) - achievements_before
+	if new_missions > 0:
+		lines.append("미션 %d개 완료! 미션 화면에서 보상을 받으세요." % new_missions)
+	if new_achievements > 0:
+		lines.append("업적 %d개 달성! 미션 화면에서 보상을 받으세요." % new_achievements)
 	_reward_lines = lines
 	return lines
 

@@ -613,6 +613,24 @@ static func claim_achievement(profile: Dictionary, data: Dictionary, id: String)
 	return {}
 
 
+## 지금 받을 수 있는(달성했지만 아직 안 받은) 업적 수
+static func claimable_achievement_count(profile: Dictionary, data: Dictionary) -> int:
+	var count := 0
+	for achievement in data.get("achievements", {}).get("achievements", []):
+		if achievement_done(profile, data, achievement) and not achievement_claimed(profile, achievement):
+			count += 1
+	return count
+
+
+## 지금 받을 수 있는 일일 미션 수
+static func claimable_mission_count(profile: Dictionary, eco: Dictionary) -> int:
+	var count := 0
+	for mission in eco.get("missions", []):
+		if mission_done(profile, mission) and not mission_claimed(profile, mission):
+			count += 1
+	return count
+
+
 static func has_claimable_achievement(profile: Dictionary, data: Dictionary) -> bool:
 	for achievement in data.get("achievements", {}).get("achievements", []):
 		if achievement_done(profile, data, achievement) and not achievement_claimed(profile, achievement):
