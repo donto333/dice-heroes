@@ -7,10 +7,14 @@ const Profile := preload("res://scripts/rules/profile.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
+const RouletteWheel := preload("res://scripts/ui/roulette_wheel.gd")
 
 const SLOT_NAMES := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
 
 var app
+var _wheel: Control
+var _spin_button: Button
+var _spin_info: Label
 
 
 func setup(main_app, params: Dictionary) -> void:
@@ -154,12 +158,12 @@ func _showcase() -> Control:
 	# 모두의 마블식 오른쪽 바로가기: 출석 · 미션 · 특가
 	var badges: Dictionary = app.badges()
 	var shortcuts := VBoxContainer.new()
-	shortcuts.add_theme_constant_override("separation", 10)
+	shortcuts.add_theme_constant_override("separation", 6)
 	shortcuts.anchor_left = 1.0
 	shortcuts.anchor_right = 1.0
 	shortcuts.offset_left = -102
 	shortcuts.offset_right = -12
-	shortcuts.offset_top = 46
+	shortcuts.offset_top = 40
 	button.add_child(shortcuts)
 	var attend := Kit.round_shortcut("출석", "treasure", Color("e0a21b"), Profile.can_check_in(app.profile, app.today()))
 	attend.pressed.connect(_on_attendance_shortcut)
@@ -167,10 +171,75 @@ func _showcase() -> Control:
 	var missions := Kit.round_shortcut("미션", "checkpoint", Color("2f80ed"), bool(badges.get("missions", false)))
 	missions.pressed.connect(_on_tab.bind("missions"))
 	shortcuts.add_child(missions)
+	var roulette := Kit.round_shortcut("룰렛", "fate", Color("c2413a"), Profile.can_spin_free(app.profile, app.eco))
+	roulette.pressed.connect(open_roulette)
+	shortcuts.add_child(roulette)
 	var deals := Kit.round_shortcut("특가", "luck", Color("2a9d5c"), bool(badges.get("shop", false)))
 	deals.pressed.connect(_on_tab.bind("shop"))
 	shortcuts.add_child(deals)
 	return button
+
+
+# ---------------------------------------------------------------- 행운의 룰렛
+
+func open_roulette() -> void:
+	app.play("click")
+	var body := Kit.vbox(10)
+	_wheel = RouletteWheel.new()
+	var slots: Array = []
+	for slot in app.eco.get("roulette", {}).get("slots", []):
+		slots.append({"text": Kit.reward_line(slot["reward"]), "color": Color(str(slot.get("color", "3a6fd8")))})
+	_wheel.slots = slots
+	var center := CenterContainer.new()
+	center.add_child(_wheel)
+	body.add_child(center)
+	_spin_info = Kit.para("", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	body.add_child(_spin_info)
+	_spin_button = Kit.button("", Color("e8890c"), 30, 92)
+	_spin_button.pressed.connect(_on_spin)
+	body.add_child(_spin_button)
+	_refresh_roulette()
+	app.dialog("행운의 룰렛", body, [["닫기", Kit.PANEL_LIGHT, _close_roulette]], 660)
+
+
+func _refresh_roulette() -> void:
+	var table: Dictionary = app.eco.get("roulette", {})
+	var cost := Profile.roulette_cost(app.profile, app.eco)
+	var limit := int(table.get("free_per_day", 1)) + int(table.get("max_extra", 0))
+	_spin_info.text = "오늘 %d / %d번 돌렸어요. 하루 한 번은 무료!" % [Profile.roulette_spins(app.profile), limit]
+	if cost < 0:
+		_spin_button.text = "오늘은 다 돌렸어요"
+		_spin_button.disabled = true
+	elif cost == 0:
+		_spin_button.text = "무료로 돌리기"
+		_spin_button.disabled = false
+	else:
+		_spin_button.text = "돌리기  %s" % Kit.money_text("gems", cost)
+		_spin_button.disabled = not Profile.can_pay(app.profile, "gems", cost)
+
+
+func _on_spin() -> void:
+	if _wheel.is_spinning():
+		return
+	var result := Profile.spin_roulette(app.profile, app.eco, app.rng)
+	if result.is_empty():
+		app.toast("지금은 돌릴 수 없어요.")
+		return
+	app.save()
+	app.play("dice")
+	_spin_button.disabled = true
+	_spin_button.text = "돌아가는 중..."
+	await _wheel.spin_to(int(result["index"]))
+	if not is_inside_tree():
+		return
+	app.play("win")
+	app.toast("룰렛 보상: %s" % Kit.reward_line(result["reward"]))
+	_refresh_roulette()
+
+
+## 닫으면 위쪽 재화 표시와 빨간 점이 바뀌도록 로비를 다시 그린다.
+func _close_roulette() -> void:
+	app.go("lobby")
 
 
 func _max_stars() -> int:

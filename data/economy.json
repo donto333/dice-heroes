@@ -313,5 +313,69 @@
         "gold": 2500
       }
     }
+  },
+  "roulette": {
+    "_comment": "행운의 룰렛. 하루 무료 free_per_day번, 그 뒤 extra_cost_gems 보석으로 max_extra번 더. weight가 클수록 잘 나온다.",
+    "free_per_day": 1,
+    "extra_cost_gems": 30,
+    "max_extra": 3,
+    "slots": [
+      {
+        "reward": {
+          "gold": 100
+        },
+        "weight": 24,
+        "color": "3a6fd8"
+      },
+      {
+        "reward": {
+          "gems": 10
+        },
+        "weight": 18,
+        "color": "8a4fd0"
+      },
+      {
+        "reward": {
+          "gold": 300
+        },
+        "weight": 20,
+        "color": "2a9d5c"
+      },
+      {
+        "reward": {
+          "gems": 30
+        },
+        "weight": 10,
+        "color": "d0408a"
+      },
+      {
+        "reward": {
+          "gold": 500
+        },
+        "weight": 13,
+        "color": "d08a1c"
+      },
+      {
+        "reward": {
+          "gems": 50
+        },
+        "weight": 7,
+        "color": "c2413a"
+      },
+      {
+        "reward": {
+          "gold": 1000
+        },
+        "weight": 5,
+        "color": "1c9aa8"
+      },
+      {
+        "reward": {
+          "gems": 100
+        },
+        "weight": 3,
+        "color": "e0b81b"
+      }
+    ]
   }
 }
