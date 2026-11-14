@@ -5,7 +5,10 @@ extends RefCounted
 const CHARACTERS_PATH := "res://data/characters.json"
 const BOARD_PATH := "res://data/board.json"
 ## 대전마다 이 중 하나를 고른다. 첫 번째가 기본 맵.
-const BOARD_PATHS := ["res://data/board.json", "res://data/boards/desert.json", "res://data/boards/frost.json", "res://data/boards/river.json"]
+const BOARD_PATHS := [
+	"res://data/board.json", "res://data/boards/desert.json", "res://data/boards/frost.json", "res://data/boards/river.json",
+	"res://data/boards/ruins.json", "res://data/boards/volcano.json", "res://data/boards/forest.json", "res://data/boards/sky.json",
+]
 const CARDS_PATH := "res://data/cards.json"
 const ABILITIES_PATH := "res://data/abilities.json"
 const RULES_PATH := "res://data/rules.json"
