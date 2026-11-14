@@ -88,6 +88,7 @@ func _init() -> void:
 	_test_events()
 	_test_sweep()
 	_test_double()
+	_test_guide()
 	_test_upgrade_all()
 	_test_monster_kinds()
 	_test_streak_power()
@@ -1275,6 +1276,23 @@ func _test_upgrade_all() -> void:
 	profile["gold"] = 1000000
 	_check(Profile.upgrade_all(profile, eco) == 2 and Profile.level_of(profile, lead) == 3, "일괄 강화가 두 단계를 올리지 않음")
 	_check(Profile.upgrade_all(profile, eco) == 0, "더 올릴 것이 없는데 일괄 강화됨")
+
+
+func _test_guide() -> void:
+	var eco: Dictionary = _data["economy"]
+	var steps: Array = _data["guide"]["steps"]
+	var profile := Profile.new_profile("길잡이", eco)
+	_check(steps.size() >= 5 and not Profile.guide_claimable(profile, _data) and Profile.claim_guide(profile, _data).is_empty(), "하지 않은 길잡이 과제를 받음")
+	for step in steps:
+		_check(Profile.achievement_value(profile, _data, str(step["stat"])) == 0, "길잡이 과제의 값 이름이 틀림: %s" % str(step["stat"]))
+		_check(not (step["reward"] as Dictionary).is_empty() and int(step["goal"]) > 0, "길잡이 과제의 보상이나 목표가 없음")
+	Profile.ensure_daily(profile, "2026-05-01")
+	Profile.record_match(profile, eco, "ai", "lose", {})
+	var gold := int(profile["gold"])
+	_check(Profile.guide_claimable(profile, _data) and not Profile.claim_guide(profile, _data).is_empty(), "한 판을 했는데 첫 과제를 못 받음")
+	_check(int(profile["gold"]) == gold + int(steps[0]["reward"]["gold"]) and int(profile["guide_step"]) == 1, "길잡이 보상이나 다음 단계가 틀림")
+	profile["guide_step"] = steps.size()
+	_check(Profile.guide_current(profile, _data).is_empty() and not Profile.guide_claimable(profile, _data), "끝난 길잡이가 남아 있음")
 
 
 func _test_double() -> void:
