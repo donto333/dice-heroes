@@ -336,6 +336,15 @@ func _refresh_player_cards() -> void:
 
 
 ## 칸 효과를 보드 위에 크게 띄운다. 좋은 일은 금색, 나쁜 일은 붉은색.
+## 어빌리티·카드를 썼을 때: 쓴 사람의 말풍선과 가운데 알림. 내가 쓴 것은 말풍선만(이미 눌러서 알고 있으니 빠르게).
+func _show_used(event: Dictionary, shout: String, title: String) -> void:
+	var who := int(event["player"])
+	_say(who, shout)
+	if _humans[who]:
+		return
+	await _show_tile({"tile": "", "good": false, "text": "%s\n%s" % [title, event.get("text", "")], "small": true})
+
+
 func _show_tile(event: Dictionary) -> void:
 	# 결과 창이 떠 있으면 칸 알림을 띄우지 않는다(결과 창을 가리지 않게).
 	if _result_overlay != null and _result_overlay.visible:
@@ -361,7 +370,12 @@ func _show_tile(event: Dictionary) -> void:
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		row.add_child(icon)
-	var text := _make_label(34, str(event.get("text", "")))
+	var text := _make_label(24 if bool(event.get("small", false)) else 34, str(event.get("text", "")))
+	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if bool(event.get("small", false)):
+		# 긴 설명은 여러 줄로 감는다.
+		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.custom_minimum_size = Vector2(480, 0)
 	text.add_theme_color_override("font_color", color)
 	text.add_theme_constant_override("outline_size", 8)
 	text.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -952,6 +966,10 @@ func _present_events() -> void:
 				await _show_fate(event)
 			"tile":
 				await _show_tile(event)
+			"ability":
+				await _show_used(event, "%s!" % event["name"], "%s · %s" % [event["hero"], event["name"]])
+			"card":
+				await _show_used(event, "카드 %s!" % event["name"], "카드 · %s" % event["name"])
 	if not moves.is_empty():
 		_board_view.push_moves(moves)
 		await _wait_for_board()
@@ -1214,6 +1232,8 @@ func _record(outcome: String) -> PackedStringArray:
 	if _recorded or not app.has_profile():
 		return _reward_lines
 	_recorded = true
+	var missions_before := Profile.claimable_mission_count(app.profile, app.eco)
+	var achievements_before := Profile.claimable_achievement_count(app.profile, app.data)
 	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids()})
 	_last_reward = reward
 	if _mode == "adventure" and _stage_id != "":
@@ -1233,6 +1253,13 @@ func _record(outcome: String) -> PackedStringArray:
 		lines.append("오늘 첫 승리 보너스!")
 	if int(reward["level_ups"]) > 0:
 		lines.append("레벨 업! 플레이어 레벨 %d" % int(app.profile["level"]))
+	# 이번 판으로 새로 받을 수 있게 된 미션·업적
+	var new_missions := Profile.claimable_mission_count(app.profile, app.eco) - missions_before
+	var new_achievements := Profile.claimable_achievement_count(app.profile, app.data) - achievements_before
+	if new_missions > 0:
+		lines.append("미션 %d개 완료! 미션 화면에서 보상을 받으세요." % new_missions)
+	if new_achievements > 0:
+		lines.append("업적 %d개 달성! 미션 화면에서 보상을 받으세요." % new_achievements)
 	_reward_lines = lines
 	return lines
 
