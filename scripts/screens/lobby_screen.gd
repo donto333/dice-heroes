@@ -91,8 +91,19 @@ func _rank_card() -> Control:
 		progress = float(trophies - low) / float(max(high - low, 1))
 	info.add_child(Kit.bar(progress, tier_color, 16))
 	var stats: Dictionary = profile["stats"]
-	info.add_child(Kit.label("전적 %d승 %d패  ·  최고 트로피 %d" % [int(stats["wins"]), int(stats["losses"]), int(profile["best_trophies"])], 18, Kit.MUTED))
+	info.add_child(Kit.label("전적 %d승 %d패  ·  연습 리그 %d위  ·  눌러서 순위표" % [int(stats["wins"]), int(stats["losses"]), Profile.league_rank(profile, app.eco)], 18, Kit.MUTED))
+	# 카드를 누르면 순위표
+	var open := Button.new()
+	for state in ["normal", "hover", "pressed", "focus"]:
+		open.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	open.pressed.connect(_on_league)
+	card.add_child(open)
 	return card
+
+
+func _on_league() -> void:
+	app.play("click")
+	app.show_league()
 
 
 ## 대표 영웅(ATTACK 자리)을 크게, 파티 세 명을 작게 보여 준다. 누르면 영웅 화면.

@@ -43,7 +43,17 @@ func setup(main_app) -> void:
 	money.add_child(_gold)
 	_gems = _chip(Kit.GEM)
 	money.add_child(_gems)
+	add_child(_clear_button(app.show_profile))
 	refresh()
+
+
+## 막대 전체를 덮는 투명 버튼. 누르면 프로필 창.
+func _clear_button(callback: Callable) -> Button:
+	var button := Button.new()
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	button.pressed.connect(callback)
+	return button
 
 
 func _chip(color: Color) -> Label:
