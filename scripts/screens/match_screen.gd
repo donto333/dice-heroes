@@ -321,6 +321,9 @@ func _refresh_player_cards() -> void:
 
 ## 칸 효과를 보드 위에 크게 띄운다. 좋은 일은 금색, 나쁜 일은 붉은색.
 func _show_tile(event: Dictionary) -> void:
+	# 결과 창이 떠 있으면 칸 알림을 띄우지 않는다(결과 창을 가리지 않게).
+	if _result_overlay != null and _result_overlay.visible:
+		return
 	var good := bool(event.get("good", true))
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE

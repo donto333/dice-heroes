@@ -21,7 +21,8 @@ const CATEGORY_COLORS := {
 }
 const GRADE_COLORS := {1: Color("9aa4b8"), 2: Color("6fd3ff"), 3: Color("ffcf4d")}
 const GOLD_ICON := "●"
-const GEM_ICON := "◆"
+## 글꼴(한글 부분집합)에 마름모 기호가 없어서 웹에서 깨진다. 글자로 쓴다.
+const GEM_ICON := "보석"
 
 
 static func box(fill: Color, border: Color = Color.TRANSPARENT, width: int = 0, radius: int = 12, padding: int = 10) -> StyleBoxFlat:
