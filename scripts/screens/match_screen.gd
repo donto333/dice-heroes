@@ -840,7 +840,13 @@ func _versus_side(index: int) -> Dictionary:
 	for slot in Game.SLOTS:
 		members.append(game.char_of(index, slot))
 		levels.append(int(game.players[index].get("levels", {}).get(slot, 1)))
-	return {"name": str(game.players[index]["name"]), "color": PLAYER_TEXT_COLORS[index], "members": members, "levels": levels}
+	var party := {}
+	var level_table := {}
+	for slot_index in Game.SLOTS.size():
+		party[Game.SLOTS[slot_index]] = str(members[slot_index].get("id", ""))
+		level_table[Game.SLOTS[slot_index]] = int(levels[slot_index])
+	return {"name": str(game.players[index]["name"]), "color": PLAYER_TEXT_COLORS[index], "members": members, "levels": levels,
+		"power": Profile.party_power(_data["characters"], app.eco, party, level_table)}
 
 
 ## 사람이 입력할 차례가 될 때까지 게임을 진행한다.
@@ -1373,6 +1379,8 @@ func _result_extras() -> Dictionary:
 		chips.append(["경험치 +%d" % int(_last_reward["exp"]), Color("7ee081")])
 	if int(_last_reward.get("trophies", 0)) != 0:
 		chips.append(["트로피 %+d" % int(_last_reward["trophies"]), Color("ff9a6a")])
+	if int(_last_reward.get("pass_exp", 0)) > 0:
+		chips.append(["패스 +%d" % int(_last_reward["pass_exp"]), Color("d08aff")])
 	extras["chips"] = chips
 	# 모험에서 이겼고 다음 스테이지가 있으면 오른쪽 버튼이 '다음 스테이지'가 된다.
 	_next_stage = ""
@@ -1406,6 +1414,8 @@ func _record(outcome: String) -> PackedStringArray:
 		lines.append("트로피 %+d → %d (%s)" % [int(reward["trophies"]), int(app.profile["trophies"]), reward["tier_after"]])
 		if str(reward["tier_before"]) != str(reward["tier_after"]):
 			lines.append("티어 변경: %s → %s" % [reward["tier_before"], reward["tier_after"]])
+	if int(reward.get("streak", 0)) >= 2:
+		lines.append("%d연승! 연승 보너스 골드 +%d" % [int(reward["streak"]), int(reward.get("streak_gold", 0))])
 	if bool(reward["first_win"]):
 		lines.append("오늘 첫 승리 보너스!")
 	if int(reward["level_ups"]) > 0:

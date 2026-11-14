@@ -27,7 +27,7 @@ static func profile_body(app) -> Control:
 	info.add_child(Kit.label(str(profile["nickname"]), 36))
 	info.add_child(Kit.label("플레이어 레벨 %d" % int(profile["level"]), 22, Kit.GOLD))
 	info.add_child(Kit.label("%s  ·  트로피 %d" % [tier["name"], int(profile["trophies"])], 24, Color(str(tier.get("color", "ffffff")))))
-	info.add_child(Kit.label("연습 리그 %d위" % Profile.league_rank(profile, app.eco), 20, Kit.MUTED))
+	info.add_child(Kit.label("연습 리그 %d위  ·  전투력 %d" % [Profile.league_rank(profile, app.eco), Profile.my_power(profile, app.data["characters"], app.eco)], 20, Kit.MUTED))
 
 	var stats: Dictionary = profile["stats"]
 	var played := int(stats["played"])
@@ -45,7 +45,7 @@ static func profile_body(app) -> Control:
 		["최고 트로피", str(int(profile["best_trophies"]))],
 		["영웅", "%d / %d명" % [profile["owned"].size(), app.data["characters"].size()]],
 		["모험 별", "★ %d" % Profile.total_stars(profile)],
-		["전투 승리", "%d번" % int(stats.get("battle_wins_total", 0))],
+		["최고 연승", "%d연승" % int(stats.get("best_streak", 0))],
 		["업적", "%d / %d" % [profile.get("achievements", []).size(), achievements.size()]],
 	]:
 		var cell := Kit.panel(Color("14182f"), Kit.LINE, 10)

@@ -82,6 +82,7 @@ func _init() -> void:
 	_test_mail()
 	_test_dice_skins()
 	_test_pass()
+	_test_streak_power()
 	_test_presets()
 	_test_coupon_and_backup()
 	if _failures.is_empty():
@@ -1148,3 +1149,37 @@ func _test_presets() -> void:
 	_check(not Profile.save_preset(profile, characters, 0, bad, Game.POINT_LIMIT), "같은 영웅이 두 번 든 파티를 저장함")
 	profile.erase("party_presets")
 	_check(Profile.save_preset(profile, characters, 2, party, Game.POINT_LIMIT) and profile["party_presets"].size() == 3, "예전 프로필에 저장 칸이 안 생김")
+
+
+func _test_streak_power() -> void:
+	var eco: Dictionary = _data["economy"]
+	var characters: Array = _data["characters"]
+	var profile := Profile.new_profile("연승", eco)
+	Profile.ensure_daily(profile, "2026-05-01")
+	var base := int(eco["rewards"]["rank"]["win"]["gold"])
+	var per := int(eco["rewards"]["streak"]["gold_per_win"])
+	var first := Profile.record_match(profile, eco, "rank", "win", {})
+	_check(int(first["streak"]) == 1 and int(first["gold"]) == base, "1연승에 보너스가 붙음")
+	var second := Profile.record_match(profile, eco, "rank", "win", {})
+	_check(int(second["streak"]) == 2 and int(second["gold"]) == base + per, "2연승 보너스가 틀림")
+	for i in 6:
+		Profile.record_match(profile, eco, "rank", "win", {})
+	var capped := Profile.record_match(profile, eco, "rank", "win", {})
+	_check(int(capped["streak_gold"]) == (int(eco["rewards"]["streak"]["max_count"]) - 1) * per, "연승 보너스 상한이 틀림")
+	Profile.record_match(profile, eco, "ai", "lose", {})
+	_check(Profile.streak(profile) == 9, "AI전 패배로 랭크 연승이 끊김")
+	Profile.record_match(profile, eco, "rank", "lose", {})
+	_check(Profile.streak(profile) == 0 and int(profile["stats"]["best_streak"]) == 9, "연승이 끊기지 않거나 최고 연승이 틀림")
+	_check(int(first["pass_exp"]) == int(eco["pass"]["exp"]["win"]), "결과에 패스 경험치가 없음")
+	var power := Profile.my_power(profile, characters, eco)
+	_check(power > 0, "전투력이 0")
+	var id := str(profile["party"]["attack"])
+	profile["owned"][id]["level"] = 5
+	_check(Profile.my_power(profile, characters, eco) == power + 4 * int(eco["power"]["level"]), "레벨이 전투력에 반영되지 않음")
+	profile["owned"][id]["shards"] = 7
+	var gold := int(profile["gold"])
+	_check(Profile.sell_shards(profile, eco, id) == 7 and int(profile["gold"]) == gold + 7 * int(eco["upgrade"]["shard_sell_gold"]), "조각 팔기가 틀림")
+	_check(Profile.sell_shards(profile, eco, id) == 0, "조각이 없는데 팔림")
+	var other := str(profile["party"]["defense"])
+	profile["owned"][other]["shards"] = 5
+	_check(Profile.sell_shards(profile, eco, other) == 0, "최고 레벨이 아닌 영웅의 조각을 팖")

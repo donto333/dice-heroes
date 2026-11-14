@@ -334,7 +334,7 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 	var table: Dictionary = eco.get("rewards", {}).get(reward_mode, {}).get(outcome, {})
 	var scale := float(stats.get("reward_scale", 1.0))
 	var reward := {"gold": int(round(int(table.get("gold", 0)) * scale)), "gems": int(table.get("gems", 0)), "exp": int(round(int(table.get("exp", 0)) * scale)), "trophies": 0,
-		"level_ups": 0, "first_win": false, "tier_before": "", "tier_after": ""}
+		"level_ups": 0, "first_win": false, "tier_before": "", "tier_after": "", "streak": 0, "streak_gold": 0, "pass_exp": 0}
 	var played: Dictionary = profile["stats"]
 	played["played"] = int(played["played"]) + 1
 	match outcome:
@@ -354,6 +354,20 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 		reward["tier_after"] = tier_of(eco, after)["name"]
 		if outcome == "win":
 			played["rank_wins"] = int(played["rank_wins"]) + 1
+		# 연승: 이기면 +1, 지면 0. 비기면 그대로. 2연승부터 골드를 더 준다.
+		var streak := int(played.get("streak", 0))
+		if outcome == "win":
+			streak += 1
+		elif outcome == "lose":
+			streak = 0
+		played["streak"] = streak
+		played["best_streak"] = max(int(played.get("best_streak", 0)), streak)
+		reward["streak"] = streak
+		if outcome == "win" and streak >= 2:
+			var bonus_table: Dictionary = eco.get("rewards", {}).get("streak", {})
+			var counted: int = min(streak, int(bonus_table.get("max_count", 5))) - 1
+			reward["streak_gold"] = counted * int(bonus_table.get("gold_per_win", 0))
+			reward["gold"] = int(reward["gold"]) + int(reward["streak_gold"])
 	var counts_as_win := outcome == "win" and mode != "local"
 	if counts_as_win and not bool(profile["daily"].get("first_win", false)):
 		profile["daily"]["first_win"] = true
@@ -374,7 +388,8 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 	_add_stat(profile, "cards_total", int(stats.get("cards", 0)))
 	_record_heroes(profile, stats.get("party", []), outcome == "win")
 	if mode != "local":
-		add_pass_exp(profile, eco, int(eco.get("pass", {}).get("exp", {}).get(outcome, 0)))
+		reward["pass_exp"] = int(eco.get("pass", {}).get("exp", {}).get(outcome, 0))
+		add_pass_exp(profile, eco, int(reward["pass_exp"]))
 	return reward
 
 
@@ -1090,3 +1105,53 @@ static func save_preset(profile: Dictionary, characters: Array, index: int, part
 		profile["party_presets"].append({})
 	profile["party_presets"][index] = {"attack": str(party["attack"]), "defense": str(party["defense"]), "support": str(party["support"])}
 	return true
+
+
+# ---------------------------------------------------------------- 연승·전투력·조각 팔기
+
+## 지금 랭크전 연승 수
+static func streak(profile: Dictionary) -> int:
+	return int(profile.get("stats", {}).get("streak", 0))
+
+
+## 파티 전투력(보여 주기용). party: {"attack": id, ...}, levels: {"attack": 레벨, ...} (없으면 1).
+static func party_power(characters: Array, eco: Dictionary, party: Dictionary, levels: Dictionary = {}) -> int:
+	var weight: Dictionary = eco.get("power", {})
+	var by_id := {}
+	for character in characters:
+		by_id[str(character["id"])] = character
+	var total := 0
+	for slot in ["attack", "defense", "support"]:
+		var hero: Dictionary = by_id.get(str(party.get(slot, "")), {})
+		if hero.is_empty():
+			continue
+		match slot:
+			"attack":
+				total += int(hero["attack"]) * int(weight.get("attack", 10)) + int(hero["move"]) * int(weight.get("move", 8))
+			"defense":
+				total += int(hero["defense"]) * int(weight.get("defense", 10))
+			"support":
+				total += int(hero["intellect"]) * int(weight.get("intellect", 12))
+		total += int(hero["grade"]) * int(weight.get("grade", 5))
+		total += (int(levels.get(slot, 1)) - 1) * int(weight.get("level", 6))
+	return total
+
+
+## 내 파티의 전투력(가진 영웅 레벨 반영)
+static func my_power(profile: Dictionary, characters: Array, eco: Dictionary) -> int:
+	var levels := {}
+	for slot in ["attack", "defense", "support"]:
+		levels[slot] = level_of(profile, str(profile["party"].get(slot, "")))
+	return party_power(characters, eco, profile["party"], levels)
+
+
+## 최고 레벨 영웅의 남는 조각을 골드로 판다. 판 조각 수를 돌려준다(못 팔면 0).
+static func sell_shards(profile: Dictionary, eco: Dictionary, id: String) -> int:
+	if not owns(profile, id) or level_of(profile, id) < int(eco.get("upgrade", {}).get("max_level", 5)):
+		return 0
+	var shards := int(profile["owned"][id]["shards"])
+	if shards <= 0:
+		return 0
+	profile["owned"][id]["shards"] = 0
+	grant(profile, {"gold": shards * int(eco.get("upgrade", {}).get("shard_sell_gold", 0))})
+	return shards
