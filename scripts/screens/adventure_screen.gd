@@ -111,7 +111,28 @@ func _on_stage(id: String) -> void:
 	var reward: Dictionary = stage.get("reward", {})
 	var cleared := Profile.stage_stars(app.profile, id) > 0
 	body.add_child(Kit.para("첫 클리어 보상  %s%s  ·  처음 별 3개 보석 %d" % [Kit.reward_line(reward), "  (받음)" if cleared else "", int(adventure.get("three_star_gems", 0))], 20, Kit.GOLD))
-	app.dialog("", body, [["출전", Color("c4861c"), _start_stage.bind(id)], ["닫기", Kit.PANEL_LIGHT]], 660)
+	var buttons: Array = [["출전", Color("c4861c"), _start_stage.bind(id)]]
+	# 별 3개로 깬 곳은 대전 없이 보상만 받을 수 있다(하루 횟수 제한).
+	if Profile.stage_stars(app.profile, id) >= 3:
+		var left := Profile.sweeps_left(app.profile, app.eco)
+		body.add_child(Kit.para("소탕: 별 3개로 깬 곳은 대전 없이 승리 보상을 받아요. 오늘 %d번 남았어요." % left, 18, Kit.MUTED))
+		if left > 0:
+			buttons.append(["소탕 (%d)" % left, Color("2a7d4f"), _sweep.bind(id)])
+	buttons.append(["닫기", Kit.PANEL_LIGHT])
+	app.dialog("", body, buttons, 660)
+
+
+func _sweep(id: String) -> void:
+	var reward := Profile.sweep(app.profile, app.eco, id, {
+		"event_gold_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "match_gold_scale"),
+		"event_pass_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "pass_exp_scale")})
+	if reward.is_empty():
+		app.toast("지금은 소탕할 수 없어요.")
+		return
+	app.save()
+	app.play("win")
+	app.go("adventure")
+	app.toast("소탕 완료: %s · 경험치 +%d" % [Kit.reward_line(reward), int(reward["exp"])])
 
 
 func _start_stage(id: String) -> void:
