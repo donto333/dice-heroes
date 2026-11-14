@@ -7,6 +7,8 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 
 
 ## 내 프로필: 대표 영웅, 티어, 전적, 수집, 가장 많이 쓴 영웅.
+const MODE_NAMES := {"rank": "랭크전", "ai": "AI 연습전", "local": "친구 대전", "adventure": "모험", "challenge": "오늘의 도전"}
+
 static func profile_body(app) -> Control:
 	var profile: Dictionary = app.profile
 	var body := Kit.vbox(12)
@@ -66,6 +68,22 @@ static func profile_body(app) -> Control:
 		small.show_character(app.character(favorite), Kit.LINE)
 		row.add_child(small)
 		row.add_child(Kit.expand(Kit.para("가장 많이 함께한 영웅\n%s  ·  %d판 %d승" % [app.character(favorite).get("name", ""), int(record["played"]), int(record["wins"])], 22, Color.WHITE)))
+	# 최근 전적(가장 최근이 왼쪽)
+	var history: Array = profile.get("history", [])
+	if not history.is_empty():
+		body.add_child(Kit.label("최근 전적", 20, Kit.MUTED))
+		var marks := Kit.hbox(6)
+		body.add_child(marks)
+		for entry in history:
+			var outcome := str(entry.get("outcome", ""))
+			var color := Color("2a7d4f") if outcome == "win" else (Color("8a2f3a") if outcome == "lose" else Color("4a5070"))
+			var chip := Kit.panel(color, color.lightened(0.3), 6)
+			chip.custom_minimum_size = Vector2(52, 48)
+			chip.add_child(Kit.label("승" if outcome == "win" else ("패" if outcome == "lose" else "무"), 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+			marks.add_child(chip)
+		var last: Dictionary = history[0]
+		var where := str(last.get("map", ""))
+		body.add_child(Kit.label("마지막 판: %s%s · %d턴" % [MODE_NAMES.get(str(last.get("mode", "")), "대전"), (" · " + where) if where != "" else "", int(last.get("turns", 0))], 18, Kit.MUTED))
 	return body
 
 

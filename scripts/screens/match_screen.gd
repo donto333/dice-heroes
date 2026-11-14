@@ -1408,6 +1408,7 @@ func _record(outcome: String) -> PackedStringArray:
 	var missions_before := Profile.claimable_mission_count(app.profile, app.eco)
 	var achievements_before := Profile.claimable_achievement_count(app.profile, app.data)
 	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids(),
+		"map": game.board_name, "turns": int(game.round_number),
 		"event_gold_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "match_gold_scale"),
 		"event_pass_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "pass_exp_scale")})
 	_last_reward = reward
