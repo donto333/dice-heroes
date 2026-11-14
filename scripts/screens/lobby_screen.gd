@@ -17,6 +17,13 @@ var _notice_label: Label
 var _notice_index := 0
 var _notice_time := 0.0
 const NOTICE_SECONDS := 4.0
+## 로비에서 대표 영웅이 건네는 말(분류별)
+const GREETINGS := {
+	"영웅": ["오늘도 한판 붙어 볼까!", "선봉은 내게 맡겨라.", "주사위는 던져졌다. 가자!", "이길 준비는 됐겠지?"],
+	"위인": ["좋은 수가 떠올랐어요.", "서두르지 말고 한 칸씩 가 봅시다.", "오늘은 어떤 길을 고를까요?", "지혜로운 한 수를 기대할게요."],
+	"신화": ["내가 지키는 한 걱정 마라.", "하늘의 뜻이 우리와 함께하길.", "오래 기다렸다. 시작하자.", "오늘의 운은 우리 편이다."],
+	"근현대": ["새로운 길을 찾아 떠나 볼까요?", "한 걸음 더 멀리 가 봅시다!", "오늘은 느낌이 좋아요.", "출발 준비 끝났어요!"],
+}
 var _spin_button: Button
 var _spin_info: Label
 
@@ -149,6 +156,17 @@ func _showcase() -> Control:
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	button.add_child(shade)
 	# 아래쪽 띠: 파티 세 명
+	# 대표 영웅의 한마디: 분류마다 말투가 다르고, 들어올 때마다 바뀐다.
+	var lines: Array = GREETINGS.get(str(leader.get("category", "")), GREETINGS["영웅"])
+	var greeting := Kit.label(str(lines[app.rng.randi_range(0, lines.size() - 1)]), 20, Color("1b1f3b"))
+	greeting.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	greeting.add_theme_stylebox_override("normal", Kit.box(Color(1, 1, 1, 0.94), Kit.GOLD, 3, 16, 10))
+	greeting.anchor_top = 1.0
+	greeting.anchor_bottom = 1.0
+	greeting.offset_left = 110
+	greeting.offset_top = -196
+	greeting.offset_bottom = -150
+	button.add_child(greeting)
 	var strip := PanelContainer.new()
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	strip.add_theme_stylebox_override("panel", Kit.box(Color(0.02, 0.03, 0.09, 0.82), Color.TRANSPARENT, 0, 0, 10))
