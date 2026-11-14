@@ -216,12 +216,16 @@ func _build_ui() -> void:
 	ability_row.add_theme_constant_override("separation", 8)
 	column.add_child(ability_row)
 	for slot in Game.SLOTS:
-		var button := _make_button(15, 120, SLOT_COLORS[slot])
+		var button := _make_button(16, 142, SLOT_COLORS[slot])
 		button.pressed.connect(_on_ability_pressed.bind(slot))
 		# 쓸 수 있을 때: 금색 테두리 / 아직 못 쓸 때: 어두운 자리 색(글자는 잘 보이게)
 		var ready_style := _chunky(_box(SLOT_COLORS[slot], Color("ffcf4d"), 4), 8)
+		var off_style := _chunky(_box(SLOT_COLORS[slot].darkened(0.6), SLOT_COLORS[slot].darkened(0.75), 3), 5)
+		# 아래쪽에 게이지 막대가 들어갈 자리를 비워 둔다.
+		ready_style.content_margin_bottom = 26
+		off_style.content_margin_bottom = 26
 		button.add_theme_stylebox_override("normal", ready_style)
-		button.add_theme_stylebox_override("disabled", _chunky(_box(SLOT_COLORS[slot].darkened(0.6), SLOT_COLORS[slot].darkened(0.75), 3), 5))
+		button.add_theme_stylebox_override("disabled", off_style)
 		button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.72))
 		var gauge := Kit.bar(0.0, Color("ffcf4d"), 10)
 		gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -230,10 +234,10 @@ func _build_ui() -> void:
 		gauge.anchor_right = 1.0
 		gauge.anchor_top = 1.0
 		gauge.anchor_bottom = 1.0
-		gauge.offset_left = 8
-		gauge.offset_right = -8
-		gauge.offset_top = -20
-		gauge.offset_bottom = -10
+		gauge.offset_left = ABILITY_PORTRAIT_WIDTH + 14
+		gauge.offset_right = -10
+		gauge.offset_top = -24
+		gauge.offset_bottom = -12
 		_ability_gauges[slot] = gauge
 		ability_row.add_child(button)
 		_ability_buttons[slot] = button
@@ -732,7 +736,7 @@ func _start_game() -> void:
 	_refresh()
 	var playing = game
 	await _versus.play([_versus_side(0), _versus_side(1)],
-		"%s (%s)" % [game.board_name, game.board_shape], "골의 수호자: %s  ·  %d턴 제한" % [_goal_name(), game.max_rounds])
+		"%s (%s)" % [game.board_name, game.board_shape], "골의 수호자: %s  ·  %d턴 제한" % [_goal_name(), game.max_rounds], _mode == "rank")
 	if playing != game or not is_inside_tree():
 		return
 	_advance()
