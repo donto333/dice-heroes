@@ -76,6 +76,18 @@ func has_profile() -> bool:
 	return not profile.is_empty()
 
 
+## 옮기기 코드로 받은 프로필로 바꾼다. 코드가 틀리면 false.
+func import_profile(text: String) -> bool:
+	var imported := SaveStore.import_text(text)
+	if imported.is_empty():
+		return false
+	profile = imported
+	Profile.repair(profile, eco)
+	Profile.ensure_daily(profile, today())
+	save()
+	return true
+
+
 func load_profile() -> void:
 	profile = SaveStore.load_profile()
 	if not profile.is_empty():

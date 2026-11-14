@@ -8,6 +8,8 @@ const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 
 var app
 var _name_edit: LineEdit
+var _coupon_edit: LineEdit
+var _code_edit: TextEdit
 
 
 func setup(main_app, _params: Dictionary) -> void:
@@ -73,6 +75,25 @@ func setup(main_app, _params: Dictionary) -> void:
 	hint_button.pressed.connect(_on_hints)
 	hint_row.add_child(hint_button)
 
+	var coupon_panel := Kit.panel()
+	body.add_child(coupon_panel)
+	var coupon_column := Kit.vbox(10)
+	coupon_panel.add_child(coupon_column)
+	coupon_column.add_child(Kit.label("쿠폰", 26))
+	var coupon_row := Kit.hbox(10)
+	coupon_column.add_child(coupon_row)
+	_coupon_edit = LineEdit.new()
+	_coupon_edit.placeholder_text = "쿠폰 코드를 입력하세요"
+	_coupon_edit.max_length = 20
+	_coupon_edit.custom_minimum_size = Vector2(0, 64)
+	_coupon_edit.add_theme_font_size_override("font_size", 24)
+	_coupon_edit.add_theme_stylebox_override("normal", Kit.box(Color("0d1026"), Kit.LINE, 2, 10, 12))
+	coupon_row.add_child(Kit.expand(_coupon_edit))
+	var redeem := Kit.button("받기", Color("e8890c"), 22, 64)
+	redeem.custom_minimum_size = Vector2(140, 64)
+	redeem.pressed.connect(_on_coupon)
+	coupon_row.add_child(redeem)
+
 	var name_panel := Kit.panel()
 	body.add_child(name_panel)
 	var name_column := Kit.vbox(10)
@@ -113,6 +134,15 @@ func setup(main_app, _params: Dictionary) -> void:
 	var link := Kit.button("계정 연결 (준비 중)", Kit.PANEL_LIGHT, 22, 64)
 	link.disabled = true
 	account_column.add_child(link)
+	account_column.add_child(Kit.para("기기를 바꿀 때는 '옮기기 코드'를 복사해 새 기기에서 붙여 넣으면 이어 할 수 있어요.", 18, Kit.MUTED))
+	var move_row := Kit.hbox(10)
+	account_column.add_child(move_row)
+	var export_button := Kit.button("옮기기 코드 만들기", Kit.ACCENT, 20, 64)
+	export_button.pressed.connect(_on_export)
+	move_row.add_child(Kit.expand(export_button))
+	var import_button := Kit.button("코드로 불러오기", Color("2a7d4f"), 20, 64)
+	import_button.pressed.connect(_on_import)
+	move_row.add_child(Kit.expand(import_button))
 	var reset := Kit.button("데이터 초기화", Kit.BAD, 22, 64)
 	reset.pressed.connect(_on_reset)
 	account_column.add_child(reset)
@@ -188,6 +218,64 @@ func _on_rename() -> void:
 	app.play("good")
 	app.toast("닉네임을 바꿨어요.")
 	app.go("settings")
+
+
+func _on_coupon() -> void:
+	var result := Profile.redeem_coupon(app.profile, app.data.get("coupons", {}), _coupon_edit.text)
+	if bool(result["ok"]):
+		app.save()
+		app.play("win")
+		app.go("settings")
+		app.toast("%s: %s" % [result["text"], Kit.reward_line(result["reward"])])
+	elif str(result["reason"]) == "used":
+		app.play("bad")
+		app.toast("이미 사용한 쿠폰이에요.")
+	else:
+		app.play("bad")
+		app.toast("없는 쿠폰 코드예요.")
+
+
+## 옮기기 코드를 만들어 보여 주고, 될 수 있으면 복사도 해 둔다.
+func _on_export() -> void:
+	app.play("click")
+	var text: String = app.SaveStore.export_text(app.profile)
+	DisplayServer.clipboard_set(text)
+	var body := Kit.vbox(10)
+	body.add_child(Kit.para("아래 코드를 복사해서 새 기기의 '코드로 불러오기'에 붙여 넣으세요. (방금 복사해 두었어요. 안 되면 길게 눌러 직접 복사하세요.)", 18, Kit.MUTED))
+	body.add_child(_code_box(text, false))
+	app.dialog("옮기기 코드", body, [["닫기", Kit.PANEL_LIGHT]], 660)
+
+
+func _on_import() -> void:
+	app.play("click")
+	var body := Kit.vbox(10)
+	body.add_child(Kit.para("다른 기기에서 만든 옮기기 코드를 붙여 넣으세요. 지금 이 기기의 데이터는 그 코드의 데이터로 바뀌어요.", 18, Color("ff9a6a")))
+	_code_edit = _code_box("", true)
+	body.add_child(_code_edit)
+	app.dialog("코드로 불러오기", body, [["불러오기", Color("2a7d4f"), _confirm_import], ["취소", Kit.PANEL_LIGHT]], 660)
+
+
+func _code_box(text: String, editable: bool) -> TextEdit:
+	var box := TextEdit.new()
+	box.text = text
+	box.editable = editable
+	box.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	box.custom_minimum_size = Vector2(0, 260)
+	box.add_theme_font_size_override("font_size", 16)
+	box.add_theme_stylebox_override("normal", Kit.box(Color("0d1026"), Kit.LINE, 2, 10, 10))
+	box.add_theme_stylebox_override("read_only", Kit.box(Color("0d1026"), Kit.LINE, 2, 10, 10))
+	return box
+
+
+func _confirm_import() -> void:
+	var text: String = _code_edit.text if _code_edit != null and is_instance_valid(_code_edit) else ""
+	if app.import_profile(text):
+		app.play("win")
+		app.go_loading("lobby", {}, "데이터를 불러오는 중...", 0.9)
+		app.toast("데이터를 불러왔어요.")
+	else:
+		app.play("bad")
+		app.toast("코드가 올바르지 않아요.")
 
 
 func _on_reset() -> void:

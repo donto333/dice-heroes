@@ -82,6 +82,7 @@ func _init() -> void:
 	_test_mail()
 	_test_dice_skins()
 	_test_pass()
+	_test_coupon_and_backup()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -1112,3 +1113,22 @@ func _test_pass() -> void:
 	_check(int(Profile.claim_all_pass(profile, eco)["count"]) == 1, "패스 모두 받기 개수가 틀림")
 	Profile.add_pass_exp(profile, eco, 999999)
 	_check(Profile.pass_level(profile, eco) == levels.size() and Profile.pass_progress(profile, eco) == 1.0, "패스 최고 레벨 처리가 틀림")
+
+
+func _test_coupon_and_backup() -> void:
+	var eco: Dictionary = _data["economy"]
+	var coupons: Dictionary = _data["coupons"]
+	var profile := Profile.new_profile("쿠폰", eco)
+	var gems := int(profile["gems"])
+	var result := Profile.redeem_coupon(profile, coupons, " welcome ")
+	_check(bool(result["ok"]) and int(profile["gems"]) == gems + 300, "쿠폰(소문자·공백 포함)을 못 씀")
+	_check(str(Profile.redeem_coupon(profile, coupons, "WELCOME")["reason"]) == "used", "쿠폰을 두 번 씀")
+	_check(str(Profile.redeem_coupon(profile, coupons, "없는코드")["reason"]) == "unknown", "없는 쿠폰이 통함")
+	_check(str(Profile.redeem_coupon(profile, coupons, "")["reason"]) == "unknown", "빈 쿠폰이 통함")
+	# 옮기기 코드: 내보냈다가 불러오면 같은 프로필이어야 한다.
+	var code := SaveStore.export_text(profile)
+	var back := SaveStore.import_text("  " + code + "\n")
+	_check(str(back.get("nickname", "")) == "쿠폰" and int(back.get("gems", -1)) == int(profile["gems"]), "옮기기 코드로 프로필이 돌아오지 않음")
+	_check(back["owned"].size() == profile["owned"].size(), "옮기기 코드에서 영웅 수가 달라짐")
+	_check(SaveStore.import_text("아무 글자").is_empty() and SaveStore.import_text("DH1:엉터리").is_empty(), "틀린 옮기기 코드가 통함")
+	_check(SaveStore.import_text("DH1:" + Marshalls.utf8_to_base64("{\"a\": 1}")).is_empty(), "프로필이 아닌 코드가 통함")

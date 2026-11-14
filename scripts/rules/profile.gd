@@ -33,6 +33,8 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"tutorial": {},
 		## 위쪽 막대에 보일 대표 영웅 id (비어 있으면 ATTACK 영웅)
 		"avatar": "",
+		## 이미 쓴 쿠폰 코드
+		"coupons_used": [],
 		## 시즌 패스: 쌓은 경험치와 이미 받은 무료 보상 레벨(1부터)
 		"pass": {"exp": 0, "claimed": []},
 		## 가진 주사위 스킨 id와 지금 쓰는 스킨
@@ -1054,3 +1056,21 @@ static func claim_all_pass(profile: Dictionary, eco: Dictionary) -> Dictionary:
 			total["gems"] = int(total["gems"]) + int(reward.get("gems", 0))
 			total["count"] = int(total["count"]) + 1
 	return total
+
+
+# ---------------------------------------------------------------- 쿠폰
+
+## 쿠폰 코드를 쓴다. 결과: {"ok": 성공 여부, "reason": 실패 이유("unknown"·"used"), "reward": 보상, "text": 쿠폰 이름}
+static func redeem_coupon(profile: Dictionary, coupons: Dictionary, code: String) -> Dictionary:
+	var key := code.strip_edges().to_upper()
+	var table: Dictionary = coupons.get("coupons", {})
+	if key == "" or not table.has(key):
+		return {"ok": false, "reason": "unknown"}
+	if not profile.has("coupons_used"):
+		profile["coupons_used"] = []
+	if key in profile["coupons_used"]:
+		return {"ok": false, "reason": "used"}
+	profile["coupons_used"].append(key)
+	var reward: Dictionary = table[key].get("reward", {})
+	grant(profile, reward)
+	return {"ok": true, "reason": "", "reward": reward, "text": str(table[key].get("text", ""))}
