@@ -93,6 +93,8 @@ func _on_stage(id: String) -> void:
 	var stage: Dictionary = found["stage"]
 	var body := Kit.vbox(12)
 	body.add_child(Kit.label("%s  %s" % [id, stage["name"]], 30, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	if str(stage.get("story", "")) != "":
+		body.add_child(Kit.para(str(stage["story"]), 20, Color(1, 1, 1, 0.9), HORIZONTAL_ALIGNMENT_CENTER))
 	var faces := Kit.hbox(8)
 	body.add_child(faces)
 	for slot in ["attack", "defense", "support"]:

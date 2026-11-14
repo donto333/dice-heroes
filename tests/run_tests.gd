@@ -740,6 +740,9 @@ func _test_missions_and_attendance() -> void:
 
 
 func _test_adventure() -> void:
+	for chapter in _data["adventure"].get("chapters", []):
+		for stage in chapter["stages"]:
+			_check(str(stage.get("story", "")) != "", "모험 이야기가 없음: " + str(stage["id"]))
 	var adventure: Dictionary = _data["adventure"]
 	var chapters: Array = adventure.get("chapters", [])
 	_check(chapters.size() == _data["boards"].size(), "모험 장 수가 맵 수와 다름")
