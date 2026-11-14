@@ -1003,7 +1003,7 @@ func _test_warp_duel() -> void:
 			if event["kind"] == "battle" and str(event.get("target", "")) == "warp":
 				fought = true
 				won = bool(event["won"])
-		_check(fought, "거리 차이가 11칸인데 워프 결투가 없음")
+		_check(fought, "11칸 뒤처져 있는데 워프 결투가 없음")
 		_check(int(game.players[1]["pos"]) == 12, "워프 결투로 상대가 물러남")
 		if won:
 			wins += 1
@@ -1022,3 +1022,13 @@ func _test_warp_duel() -> void:
 	for event in calm.take_events():
 		_check(event["kind"] != "battle", "거리 차이가 작은데 워프 결투가 일어남")
 	_check(int(calm.players[0]["pos"]) == 1, "거리 차이가 작은데 워프로 움직임")
+	# 내가 11칸 앞서 있으면(뒤처진 게 아니면) 결투하지 않는다.
+	var ahead = _new_game(5)
+	ahead.nodes[12]["type"] = "warp"
+	_place(ahead, 0, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+	_place(ahead, 1, [0, 1])
+	ahead.take_events()
+	ahead._resolve_tile(0)
+	for event in ahead.take_events():
+		_check(event["kind"] != "battle", "앞서 있는데 워프 결투가 일어남")
+	_check(int(ahead.players[0]["pos"]) == 12 and int(ahead.players[1]["pos"]) == 1, "앞서 있는데 워프로 말이 움직임")
