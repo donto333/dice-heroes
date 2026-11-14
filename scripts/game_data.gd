@@ -15,6 +15,7 @@ const RULES_PATH := "res://data/rules.json"
 const ECONOMY_PATH := "res://data/economy.json"
 const ADVENTURE_PATH := "res://data/adventure.json"
 const ACHIEVEMENTS_PATH := "res://data/achievements.json"
+const MAILS_PATH := "res://data/mails.json"
 
 
 static func load_json(path: String) -> Dictionary:
@@ -52,6 +53,7 @@ static func load_all() -> Dictionary:
 		"economy": load_json(ECONOMY_PATH),
 		"adventure": load_json(ADVENTURE_PATH),
 		"achievements": load_json(ACHIEVEMENTS_PATH),
+		"mails": load_json(MAILS_PATH),
 	}
 
 

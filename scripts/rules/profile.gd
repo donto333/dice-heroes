@@ -33,6 +33,9 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"tutorial": {},
 		## 위쪽 막대에 보일 대표 영웅 id (비어 있으면 ATTACK 영웅)
 		"avatar": "",
+		## 우편함: [{"id", "title", "text", "reward", "claimed"}], mail_delivered: 이미 배달된 우편 id
+		"mail": [],
+		"mail_delivered": [],
 		## 마지막으로 고른 AI 연습전 난이도 id
 		"ai_difficulty": "easy",
 		## 영웅별 전적 {id: {"played": n, "wins": n}}
@@ -874,4 +877,55 @@ static func claim_everything(profile: Dictionary, eco: Dictionary, data: Diction
 		total["gold"] = int(total["gold"]) + int(reward.get("gold", 0))
 		total["gems"] = int(total["gems"]) + int(reward.get("gems", 0))
 		total["count"] = int(total["count"]) + 1
+	return total
+
+
+# ---------------------------------------------------------------- 우편함
+
+## data/mails.json의 우편 중 아직 안 받은 것을 우편함에 넣는다. 새로 넣은 수를 돌려준다.
+static func deliver_mails(profile: Dictionary, mails: Dictionary) -> int:
+	if not profile.has("mail"):
+		profile["mail"] = []
+	if not profile.has("mail_delivered"):
+		profile["mail_delivered"] = []
+	var added := 0
+	for mail in mails.get("mails", []):
+		var id := str(mail["id"])
+		if id in profile["mail_delivered"]:
+			continue
+		profile["mail_delivered"].append(id)
+		profile["mail"].append({"id": id, "title": str(mail.get("title", "")), "text": str(mail.get("text", "")),
+			"reward": (mail.get("reward", {}) as Dictionary).duplicate(), "claimed": false})
+		added += 1
+	return added
+
+
+## 아직 보상을 안 받은 우편 수
+static func unclaimed_mail_count(profile: Dictionary) -> int:
+	var count := 0
+	for mail in profile.get("mail", []):
+		if not bool(mail.get("claimed", false)):
+			count += 1
+	return count
+
+
+## 우편 하나의 보상을 받는다. 이미 받았거나 없으면 {}.
+static func claim_mail(profile: Dictionary, id: String) -> Dictionary:
+	for mail in profile.get("mail", []):
+		if str(mail["id"]) == id and not bool(mail.get("claimed", false)):
+			mail["claimed"] = true
+			grant(profile, mail["reward"])
+			return mail["reward"]
+	return {}
+
+
+## 안 받은 우편을 모두 받는다. 합계 {"gold", "gems", "count"}.
+static func claim_all_mail(profile: Dictionary) -> Dictionary:
+	var total := {"gold": 0, "gems": 0, "count": 0}
+	for mail in profile.get("mail", []):
+		var reward := claim_mail(profile, str(mail["id"]))
+		if not reward.is_empty():
+			total["gold"] = int(total["gold"]) + int(reward.get("gold", 0))
+			total["gems"] = int(total["gems"]) + int(reward.get("gems", 0))
+			total["count"] = int(total["count"]) + 1
 	return total

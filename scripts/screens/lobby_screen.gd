@@ -24,6 +24,9 @@ func setup(main_app, params: Dictionary) -> void:
 	column.add_child(top)
 	top.setup(app)
 
+	# 새 우편이 있으면 우편함에 넣는다.
+	if Profile.deliver_mails(app.profile, app.data.get("mails", {})) > 0:
+		app.save()
 	column.add_child(_rank_card())
 	column.add_child(_showcase())
 
@@ -172,6 +175,12 @@ func _showcase() -> Control:
 	hint.add_theme_constant_override("outline_size", 6)
 	hint.add_theme_color_override("font_outline_color", Color.BLACK)
 	button.add_child(hint)
+	# 왼쪽 위: 우편함 (안 받은 우편이 있으면 빨간 점)
+	var mail := Kit.round_shortcut("우편", "mail", Color("3a8fd0"), Profile.unclaimed_mail_count(app.profile) > 0)
+	mail.pressed.connect(open_mailbox)
+	button.add_child(mail)
+	mail.position = Vector2(12, 40)
+	mail.size = Vector2(88, 88)
 	# 모두의 마블식 오른쪽 바로가기: 출석 · 미션 · 특가
 	var badges: Dictionary = app.badges()
 	var shortcuts := VBoxContainer.new()
@@ -195,6 +204,68 @@ func _showcase() -> Control:
 	deals.pressed.connect(_on_tab.bind("shop"))
 	shortcuts.add_child(deals)
 	return button
+
+
+# ---------------------------------------------------------------- 우편함
+
+func open_mailbox() -> void:
+	app.play("click")
+	var body := Kit.vbox(10)
+	var mails: Array = app.profile.get("mail", [])
+	if mails.is_empty():
+		body.add_child(Kit.para("받은 우편이 없어요.", 22, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	# 새 우편이 위로 오게 거꾸로 보여 준다.
+	for index in range(mails.size() - 1, -1, -1):
+		var entry: Dictionary = mails[index]
+		var claimed := bool(entry.get("claimed", false))
+		var card := Kit.panel(Color("14182f"), Kit.LINE if claimed else Kit.GOLD, 12)
+		var row := Kit.hbox(10)
+		card.add_child(row)
+		var info := Kit.vbox(4)
+		row.add_child(Kit.expand(info))
+		info.add_child(Kit.label(str(entry["title"]), 24, Kit.MUTED if claimed else Color.WHITE))
+		info.add_child(Kit.para(str(entry["text"]), 18, Kit.MUTED))
+		info.add_child(Kit.label("선물 %s" % Kit.reward_line(entry["reward"]), 20, Kit.GOLD))
+		var take := Kit.button("받음" if claimed else "받기", Kit.PANEL_LIGHT if claimed else Color("e8890c"), 22, 64)
+		take.custom_minimum_size = Vector2(120, 64)
+		take.disabled = claimed
+		take.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		take.pressed.connect(_on_mail_claim.bind(str(entry["id"])))
+		row.add_child(take)
+		body.add_child(card)
+	var buttons: Array = []
+	if Profile.unclaimed_mail_count(app.profile) > 1:
+		buttons.append(["모두 받기", Color("e8890c"), _on_mail_claim_all])
+	buttons.append(["닫기", Kit.PANEL_LIGHT, _close_roulette])
+	app.dialog("우편함", body, buttons, 660)
+
+
+func _on_mail_claim(id: String) -> void:
+	var reward := Profile.claim_mail(app.profile, id)
+	if reward.is_empty():
+		return
+	app.save()
+	app.play("win")
+	_close_all_dialogs()
+	app.go("lobby")
+	app.toast("우편 선물: %s" % Kit.reward_line(reward))
+
+
+func _on_mail_claim_all() -> void:
+	var total := Profile.claim_all_mail(app.profile)
+	if int(total["count"]) == 0:
+		return
+	app.save()
+	app.play("win")
+	app.go("lobby")
+	app.toast("우편 선물 %d개: %s" % [int(total["count"]), Kit.reward_line({"gold": int(total["gold"]), "gems": int(total["gems"])})])
+
+
+## 창 안의 버튼으로 화면을 바꿀 때, 떠 있는 창을 먼저 닫는다.
+func _close_all_dialogs() -> void:
+	for child in app.get_children():
+		if child.has_method("close") and child.has_signal("closed"):
+			child.close()
 
 
 # ---------------------------------------------------------------- 행운의 룰렛
