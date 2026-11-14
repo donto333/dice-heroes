@@ -577,7 +577,7 @@ func _test_full_games() -> void:
 					shown[int(event["player"])] = int(event["to"])
 					_check(game.nodes.has(int(event["to"])), "없는 칸으로 이동함")
 				elif event["kind"] == "battle":
-					_check(str(event.get("target", "")) in ["player", "keeper", "ambush"], "전투 사건의 target이 잘못됨")
+					_check(str(event.get("target", "")) in ["player", "keeper", "ambush", "card"], "전투 사건의 target이 잘못됨")
 					if event["target"] == "player":
 						player_battles += 1
 					else:
