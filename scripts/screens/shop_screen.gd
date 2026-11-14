@@ -33,6 +33,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	body.add_child(_deals_panel())
 	body.add_child(_dice_panel())
 	body.add_child(_exchange_panel())
+	body.add_child(_gem_pack_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
 	var nav := BottomNav.new()
@@ -177,6 +178,37 @@ func _on_dice_skin(id: String) -> void:
 		return
 	app.save()
 	app.go("shop")
+
+
+## 보석 상품: 정식 버전에서 팔 구성을 미리 보여 준다. 아직 결제가 없어서 살 수 없다.
+func _gem_pack_panel() -> Control:
+	var table: Dictionary = app.eco.get("gem_packs", {})
+	var card := Kit.panel(Color("1c2440"), Kit.GEM, 14)
+	var column := Kit.vbox(10)
+	card.add_child(column)
+	var head := Kit.hbox(8)
+	column.add_child(head)
+	head.add_child(Kit.expand(Kit.label("보석 상점", 30, Kit.GOLD)))
+	head.add_child(Kit.label("준비 중", 20, Color("ff9a6a")))
+	column.add_child(Kit.para("정식 버전에서 열릴 상품이에요. 지금은 살 수 없고, 보석은 출석·미션·업적·패스·우편으로 모을 수 있어요.", 18, Kit.MUTED))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	column.add_child(grid)
+	for pack in table.get("packs", []):
+		var cell := Kit.panel(Color("14182f"), Kit.LINE, 10)
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var text := Kit.vbox(2)
+		cell.add_child(text)
+		text.add_child(Kit.label(str(pack["name"]), 22))
+		text.add_child(Kit.label(Kit.money_text("gems", int(pack["gems"])), 22, Kit.GEM))
+		text.add_child(Kit.label(str(pack.get("note", "")), 16, Kit.MUTED))
+		var buy := Kit.button("준비 중", Kit.PANEL_LIGHT, 18, 50)
+		buy.disabled = true
+		text.add_child(buy)
+		grid.add_child(cell)
+	return card
 
 
 func _exchange_panel() -> Control:
