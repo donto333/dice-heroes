@@ -454,5 +454,85 @@
     "_comment": "오늘의 도전: 하루 한 번 보상. 상대 레벨 = 내 가장 높은 영웅 레벨 + level_bonus (최고 max_level).",
     "level_bonus": 1,
     "max_level": 5
-  }
+  },
+  "dice_skins": [
+    {
+      "id": "classic",
+      "name": "기본 주사위",
+      "body": "f8f4ea",
+      "edge": "9a9484",
+      "pip": "1b1f3b",
+      "cost": {}
+    },
+    {
+      "id": "ruby",
+      "name": "루비 주사위",
+      "body": "d8343f",
+      "edge": "7a1420",
+      "pip": "ffffff",
+      "cost": {
+        "gold": 3000
+      }
+    },
+    {
+      "id": "sapphire",
+      "name": "사파이어 주사위",
+      "body": "2f6fe0",
+      "edge": "143a8a",
+      "pip": "ffffff",
+      "cost": {
+        "gold": 3000
+      }
+    },
+    {
+      "id": "jade",
+      "name": "비취 주사위",
+      "body": "2fae6a",
+      "edge": "12603a",
+      "pip": "fff6c8",
+      "cost": {
+        "gold": 5000
+      }
+    },
+    {
+      "id": "night",
+      "name": "밤하늘 주사위",
+      "body": "1b1f3b",
+      "edge": "0a0c1c",
+      "pip": "ffcf4d",
+      "cost": {
+        "gems": 300
+      }
+    },
+    {
+      "id": "gold",
+      "name": "황금 주사위",
+      "body": "ffc62b",
+      "edge": "8a5a00",
+      "pip": "4a2600",
+      "cost": {
+        "gems": 500
+      }
+    },
+    {
+      "id": "candy",
+      "name": "솜사탕 주사위",
+      "body": "ff9ac8",
+      "edge": "b04a80",
+      "pip": "ffffff",
+      "cost": {
+        "gems": 300
+      }
+    },
+    {
+      "id": "amethyst",
+      "name": "자수정 주사위",
+      "body": "8a4fd0",
+      "edge": "4a2488",
+      "pip": "ffffff",
+      "cost": {
+        "gems": 500
+      }
+    }
+  ]
 }

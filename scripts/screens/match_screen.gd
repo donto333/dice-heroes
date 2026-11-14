@@ -61,6 +61,8 @@ var _big_dice: Control
 var _result_scroll: ScrollContainer
 var _speed_button: Button
 var _aim_bar: Control
+## 상대가 이번 판에 쓰는 주사위 스킨 번호(보여 주기용, 판마다 바뀜)
+var _rival_skin := 0
 var _roll_down_at := 0.0
 var _auto_button: Button
 ## 자동 진행: 켜면 내 차례도 AI가 대신 둔다(한 기기 2인 대전에서는 쓰지 않는다).
@@ -540,6 +542,16 @@ func _box(fill: Color, border: Color, border_width: int) -> StyleBoxFlat:
 
 
 ## 켜진 버튼은 밝은 색, 꺼진 버튼은 어두운 회색으로 확실히 구분한다.
+## 굴리는 쪽의 주사위 스킨. 나는 장착한 스킨, 상대(AI·친구)는 이번 판에 정해진 스킨.
+func _dice_skin_of(who: int) -> Dictionary:
+	if who == 0 and app.has_profile():
+		return Profile.current_dice_skin(app.profile, app.eco)
+	var skins: Array = app.eco.get("dice_skins", [])
+	if skins.is_empty():
+		return {}
+	return skins[_rival_skin % skins.size()]
+
+
 # ---------------------------------------------------------------- 자동 진행·진동
 
 func _on_auto_pressed() -> void:
@@ -804,6 +816,7 @@ func _start_game() -> void:
 	_recorded = false
 	_reward_lines = PackedStringArray()
 	_last_reward = {}
+	_rival_skin = _fx_rng.randi_range(0, 99)
 	_auto = false
 	_auto_button.text = "자동 꺼짐"
 	Kit.paint(_auto_button, Color("4a5580"))
@@ -1110,6 +1123,7 @@ func _show_move(event: Dictionary) -> void:
 		if bool(event.get("catchup", false)):
 			# 많이 뒤처진 쪽은 큰 눈이 잘 나온다는 것을 알려 준다.
 			caption = "%s 따라잡기! 큰 눈이 잘 나와요" % game.players[who]["name"]
+		_big_dice.skin = _dice_skin_of(who)
 		await _big_dice.play(caption, event["rolls"], "%d칸!%s" % [int(event["total"]), bonus_text], PLAYER_TEXT_COLORS[who])
 		# 연출을 기다리는 사이에 결과 줄이 지워졌을 수 있다(다시 하기 등).
 		if is_instance_valid(row):

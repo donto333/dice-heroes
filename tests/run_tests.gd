@@ -80,6 +80,7 @@ func _init() -> void:
 	_test_league()
 	_test_challenge()
 	_test_mail()
+	_test_dice_skins()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -1066,3 +1067,22 @@ func _test_mail() -> void:
 	old.erase("mail_delivered")
 	Profile.repair(old, eco)
 	_check(Profile.deliver_mails(old, mails) == mails["mails"].size(), "예전 프로필에 우편이 배달되지 않음")
+
+
+func _test_dice_skins() -> void:
+	var eco: Dictionary = _data["economy"]
+	var skins: Array = eco["dice_skins"]
+	_check(skins.size() >= 6 and str(skins[0]["id"]) == "classic", "주사위 스킨 목록이 이상함")
+	var profile := Profile.new_profile("스킨", eco)
+	_check(str(Profile.current_dice_skin(profile, eco)["id"]) == "classic", "처음 스킨이 기본이 아님")
+	_check(not Profile.equip_dice_skin(profile, "ruby"), "없는 스킨을 장착함")
+	profile["gold"] = 0
+	_check(not Profile.buy_dice_skin(profile, eco, "ruby"), "골드 없이 스킨을 삼")
+	profile["gold"] = 3000
+	_check(Profile.buy_dice_skin(profile, eco, "ruby") and int(profile["gold"]) == 0, "스킨을 못 사거나 값이 틀림")
+	_check(str(Profile.current_dice_skin(profile, eco)["id"]) == "ruby", "산 스킨이 장착되지 않음")
+	profile["gold"] = 3000
+	_check(not Profile.buy_dice_skin(profile, eco, "ruby") and int(profile["gold"]) == 3000, "같은 스킨을 두 번 삼")
+	_check(Profile.equip_dice_skin(profile, "classic") and str(profile["dice_skin"]) == "classic", "기본 스킨으로 못 돌아감")
+	profile["dice_skin"] = "없는것"
+	_check(str(Profile.current_dice_skin(profile, eco)["id"]) == "classic", "모르는 스킨이면 기본이어야 함")

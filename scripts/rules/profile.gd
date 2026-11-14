@@ -33,6 +33,9 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"tutorial": {},
 		## 위쪽 막대에 보일 대표 영웅 id (비어 있으면 ATTACK 영웅)
 		"avatar": "",
+		## 가진 주사위 스킨 id와 지금 쓰는 스킨
+		"dice_skins": ["classic"],
+		"dice_skin": "classic",
 		## 우편함: [{"id", "title", "text", "reward", "claimed"}], mail_delivered: 이미 배달된 우편 id
 		"mail": [],
 		"mail_delivered": [],
@@ -929,3 +932,50 @@ static func claim_all_mail(profile: Dictionary) -> Dictionary:
 			total["gems"] = int(total["gems"]) + int(reward.get("gems", 0))
 			total["count"] = int(total["count"]) + 1
 	return total
+
+
+# ---------------------------------------------------------------- 주사위 스킨
+
+## 스킨 정보. 모르는 id면 첫 번째(기본).
+static func dice_skin(eco: Dictionary, id: String) -> Dictionary:
+	var list: Array = eco.get("dice_skins", [])
+	for entry in list:
+		if str(entry["id"]) == id:
+			return entry
+	return list[0] if not list.is_empty() else {"id": "classic", "name": "기본 주사위"}
+
+
+static func owns_dice_skin(profile: Dictionary, id: String) -> bool:
+	return id == "classic" or id in profile.get("dice_skins", [])
+
+
+## 지금 쓰는 스킨 정보
+static func current_dice_skin(profile: Dictionary, eco: Dictionary) -> Dictionary:
+	var id := str(profile.get("dice_skin", "classic"))
+	return dice_skin(eco, id if owns_dice_skin(profile, id) else "classic")
+
+
+## 스킨을 산다(한 번 사면 계속 쓴다). 이미 있거나 재화가 모자라면 false. 사면 바로 장착한다.
+static func buy_dice_skin(profile: Dictionary, eco: Dictionary, id: String) -> bool:
+	var skin := dice_skin(eco, id)
+	if str(skin.get("id", "")) != id or owns_dice_skin(profile, id):
+		return false
+	var cost: Dictionary = skin.get("cost", {})
+	for currency in cost:
+		if not can_pay(profile, str(currency), int(cost[currency])):
+			return false
+	for currency in cost:
+		pay(profile, str(currency), int(cost[currency]))
+	if not profile.has("dice_skins"):
+		profile["dice_skins"] = ["classic"]
+	profile["dice_skins"].append(id)
+	profile["dice_skin"] = id
+	return true
+
+
+## 가진 스킨으로 바꾼다.
+static func equip_dice_skin(profile: Dictionary, id: String) -> bool:
+	if not owns_dice_skin(profile, id):
+		return false
+	profile["dice_skin"] = id
+	return true

@@ -6,6 +6,7 @@ extends Control
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
+const DiePreview := preload("res://scripts/ui/die_preview.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 
@@ -30,6 +31,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	scroll.add_child(body)
 	body.add_child(_summon_panel())
 	body.add_child(_deals_panel())
+	body.add_child(_dice_panel())
 	body.add_child(_exchange_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
@@ -126,6 +128,55 @@ func _on_deal(index: int) -> void:
 		app.play("good")
 		app.toast("%s 조각 +%d" % [app.character(str(deals[index]["id"]))["name"], int(deals[index]["shards"])])
 		app.go("shop")
+
+
+## 주사위 상점: 한 번 사면 계속 쓰는 꾸밈 주사위. 능력 차이는 없다.
+func _dice_panel() -> Control:
+	var card := Kit.panel(Color("241c34"), Color("7d4fc0"), 14)
+	var column := Kit.vbox(10)
+	card.add_child(column)
+	var head := Kit.hbox(8)
+	column.add_child(head)
+	head.add_child(Kit.expand(Kit.label("주사위 상점", 30, Kit.GOLD)))
+	head.add_child(Kit.label("모양만 달라요 · 한 번 사면 계속 써요", 17, Kit.MUTED))
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 10)
+	column.add_child(grid)
+	var using := str(Profile.current_dice_skin(app.profile, app.eco).get("id", "classic"))
+	for skin in app.eco.get("dice_skins", []):
+		var id := str(skin["id"])
+		var cell := Kit.vbox(4)
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var preview := DiePreview.new()
+		preview.skin = skin
+		preview.face = 6 if id == using else 5
+		preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		cell.add_child(preview)
+		cell.add_child(Kit.label(str(skin["name"]).replace(" 주사위", ""), 17, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+		var owned := Profile.owns_dice_skin(app.profile, id)
+		var text := "사용 중" if id == using else ("쓰기" if owned else Kit.reward_line(skin.get("cost", {})))
+		var button := Kit.button(text, Kit.PANEL_LIGHT if id == using else (Kit.ACCENT if owned else Color("7d4fc0")), 17, 54)
+		button.disabled = id == using
+		button.pressed.connect(_on_dice_skin.bind(id))
+		cell.add_child(button)
+		grid.add_child(cell)
+	return card
+
+
+func _on_dice_skin(id: String) -> void:
+	if Profile.owns_dice_skin(app.profile, id):
+		Profile.equip_dice_skin(app.profile, id)
+		app.play("click")
+	elif Profile.buy_dice_skin(app.profile, app.eco, id):
+		app.play("win")
+		app.toast("%s를 샀어요! 바로 쓸게요." % Profile.dice_skin(app.eco, id)["name"])
+	else:
+		app.toast("골드나 보석이 모자라요.")
+		return
+	app.save()
+	app.go("shop")
 
 
 func _exchange_panel() -> Control:
