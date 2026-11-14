@@ -66,6 +66,8 @@ var pending_choice: Dictionary = {}
 var traps: Dictionary = {}
 ## 후공 보정으로 둘째 플레이어가 받는 첫 게이지
 var second_player_gauge := 0
+## 더블(이동 주사위 2개 이상이 모두 같은 눈)이면 차는 어빌리티 게이지(%)
+var double_gauge := 0
 ## 게이지 수치. data/rules.json에서 읽는다.
 var gauge_base := 10
 var gauge_per_intellect := 5
@@ -101,6 +103,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	catchup_weights = data.get("rules", {}).get("catchup_move_weights", {})
 	var rules: Dictionary = data.get("rules", {})
 	second_player_gauge = int(rules.get("second_player_gauge", 0))
+	double_gauge = int(rules.get("double_gauge", 0))
 	gauge_base = int(rules.get("gauge_base", 10))
 	gauge_per_intellect = int(rules.get("gauge_per_intellect", 5))
 	start_gauge_per_intellect = int(rules.get("start_gauge_per_intellect", 0))
@@ -425,6 +428,16 @@ func play_card(hand_index: int) -> bool:
 ## 길이 다 정해지면 도착한 칸의 효과와 전투까지 처리한다.
 ## aim: 주사위 컨트롤로 노리는 쪽. ""(그냥 굴림), "low"(낮게), "high"(높게).
 ## 노리면 dice_control.chance% 확률로 성공해 그쪽 눈이 잘 나온다. 실패하면 보통 굴림과 같다.
+## 더블인가: 주사위가 2개 이상이고 눈이 모두 같다.
+static func is_double(rolls: Array) -> bool:
+	if rolls.size() < 2:
+		return false
+	for value in rolls:
+		if int(value) != int(rolls[0]):
+			return false
+	return true
+
+
 func roll_move(aim: String = "") -> void:
 	if not can_act():
 		return
@@ -471,8 +484,12 @@ func roll_move(aim: String = "") -> void:
 		bonus += ATTR_BONUS
 		total += ATTR_BONUS
 		say("  맵 속성 보너스로 %d칸 더 이동" % ATTR_BONUS)
+	var doubled := is_double(rolls) and double_gauge > 0
+	if doubled:
+		_add_gauge(current, double_gauge)
+		say("  더블! 어빌리티 게이지 +%d%%" % double_gauge)
 	_event({"kind": "move", "player": current, "rolls": rolls, "total": total, "bonus": bonus, "catchup": catching_up,
-		"aim": aim if not rolls.is_empty() else "", "controlled": controlled})
+		"aim": aim if not rolls.is_empty() else "", "controlled": controlled, "double": doubled})
 
 	_continue_walk(total)
 
