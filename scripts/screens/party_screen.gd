@@ -8,11 +8,14 @@ const Profile := preload("res://scripts/rules/profile.gd")
 const PartySelect := preload("res://scripts/ui/party_select.gd")
 const AI := preload("res://scripts/rules/ai.gd")
 const Game := preload("res://scripts/rules/game.gd")
+const MapPreview := preload("res://scripts/ui/map_preview.gd")
 
 const MODE_TITLES := {"rank": "랭크전", "ai": "AI 연습전", "local": "친구 대전", "adventure": "모험"}
 
 var app
 var _params: Dictionary = {}
+var _map_window: Control
+var _pending: Dictionary = {}
 
 
 func setup(main_app, params: Dictionary) -> void:
@@ -67,7 +70,7 @@ func _on_confirmed(party: Dictionary) -> void:
 		first["name"] = "플레이어 1"
 		var second := party.duplicate()
 		second["name"] = "플레이어 2"
-		app.go("match", {"mode": "local", "parties": [first, second], "humans": [true, true], "map": _random_map()})
+		_pick_map({"mode": "local", "parties": [first, second], "humans": [true, true]})
 		return
 	if not Profile.party_ok(app.profile, app.data["characters"], party, Game.POINT_LIMIT):
 		app.toast("가진 영웅으로만 파티를 짤 수 있어요.")
@@ -106,7 +109,80 @@ func _on_confirmed(party: Dictionary) -> void:
 			theirs = AI.pick_party(app.data["characters"], Game.POINT_LIMIT, app.rng, 1)
 		theirs["name"] = "AI(%s)" % difficulty["name"]
 	theirs["levels"] = {"attack": ai_level, "defense": ai_level, "support": ai_level}
-	app.go("match", {"mode": mode, "parties": [mine, theirs], "humans": [true, false], "map": _random_map(), "reward_scale": scale})
+	var start := {"mode": mode, "parties": [mine, theirs], "humans": [true, false], "reward_scale": scale}
+	if mode == "ai":
+		_pick_map(start)
+		return
+	start["map"] = _random_map()
+	app.go("match", start)
+
+
+## AI 연습전·친구 대전은 시작하기 전에 맵을 고른다. (랭크전은 늘 무작위, 모험은 장마다 정해짐)
+func _pick_map(start: Dictionary) -> void:
+	_pending = start
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	grid.add_child(_map_cell(-1, "무작위", "어떤 맵이 나올까?", {}))
+	var boards: Array = app.data["boards"]
+	for index in boards.size():
+		var board: Dictionary = boards[index]
+		grid.add_child(_map_cell(index, str(board.get("name", "맵")), str(board.get("shape", "")), board))
+	var body := Kit.vbox(8)
+	body.add_child(Kit.para("싸울 맵을 고르세요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	body.add_child(grid)
+	_map_window = app.dialog("맵 고르기", body, [["취소", Kit.PANEL_LIGHT]], 680)
+
+
+func _map_cell(index: int, title: String, note: String, board: Dictionary) -> Control:
+	var theme: Dictionary = board.get("theme", {})
+	var fill := Color(str(theme.get("bg", "2a3164")))
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(204, 176)
+	for state in ["normal", "hover", "pressed"]:
+		var style := Kit.box(fill if state == "normal" else fill.lightened(0.15), Kit.GOLD if state != "normal" else fill.lightened(0.4), 3, 14, 6)
+		style.border_width_bottom = 7
+		button.add_theme_stylebox_override(state, style)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	button.pressed.connect(_on_map_picked.bind(index))
+	var column := Kit.vbox(2)
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	column.offset_left = 8
+	column.offset_right = -8
+	column.offset_top = 8
+	column.offset_bottom = -12
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(column)
+	if board.is_empty():
+		var mark := Kit.label("?", 70, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+		mark.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(mark)
+	else:
+		var preview := MapPreview.new()
+		preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		preview.show_board(board)
+		column.add_child(preview)
+	var name_label := Kit.label(title, 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	name_label.add_theme_constant_override("outline_size", 5)
+	name_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(name_label)
+	var note_label := Kit.label(note, 15, Color(1, 1, 1, 0.8), HORIZONTAL_ALIGNMENT_CENTER)
+	note_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(note_label)
+	return button
+
+
+func _on_map_picked(index: int) -> void:
+	app.play("good")
+	if _map_window != null and is_instance_valid(_map_window):
+		_map_window.close()
+	_pending["map"] = index if index >= 0 else _random_map()
+	app.go("match", _pending)
 
 
 func _random_map() -> int:
