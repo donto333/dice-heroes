@@ -57,6 +57,14 @@ func setup(main_app, _params: Dictionary) -> void:
 	fast_toggle.custom_minimum_size = Vector2(150, 64)
 	fast_toggle.pressed.connect(_on_fast)
 	fast_row.add_child(fast_toggle)
+	var buzz_row := Kit.hbox(10)
+	play_column.add_child(buzz_row)
+	buzz_row.add_child(Kit.expand(Kit.label("내 차례 진동 알림", 26)))
+	var buzz_on := bool(app.profile["settings"].get("vibrate", true))
+	var buzz_toggle := Kit.button("켜짐" if buzz_on else "꺼짐", Kit.GOOD if buzz_on else Kit.PANEL_LIGHT, 24, 64)
+	buzz_toggle.custom_minimum_size = Vector2(150, 64)
+	buzz_toggle.pressed.connect(_on_vibrate)
+	buzz_row.add_child(buzz_toggle)
 	var hint_row := Kit.hbox(10)
 	play_column.add_child(hint_row)
 	hint_row.add_child(Kit.expand(Kit.para("첫 판 안내 말풍선을 처음부터 다시 볼 수 있어요.", 20)))
@@ -145,6 +153,15 @@ func _on_fast() -> void:
 	app.profile["settings"]["fast"] = not bool(app.profile["settings"].get("fast", false))
 	app.save()
 	app.play("click")
+	app.go("settings")
+
+
+func _on_vibrate() -> void:
+	app.profile["settings"]["vibrate"] = not bool(app.profile["settings"].get("vibrate", true))
+	app.save()
+	app.play("click")
+	if bool(app.profile["settings"]["vibrate"]):
+		Input.vibrate_handheld(40)
 	app.go("settings")
 
 
