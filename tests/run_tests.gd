@@ -87,6 +87,7 @@ func _init() -> void:
 	_test_pass()
 	_test_events()
 	_test_sweep()
+	_test_double()
 	_test_monster_kinds()
 	_test_streak_power()
 	_test_presets()
@@ -1259,3 +1260,9 @@ func _test_sweep() -> void:
 	_check(history.size() == Profile.HISTORY_LIMIT and int(history[0]["turns"]) == 11 and str(history[0]["outcome"]) == "lose", "최근 전적이 틀림")
 	Profile.ensure_daily(profile, "2026-05-02")
 	_check(Profile.sweeps_left(profile, eco) == per_day, "다음 날 소탕 횟수가 돌아오지 않음")
+
+
+func _test_double() -> void:
+	_check(Game.is_double([3, 3]) and Game.is_double([6, 6, 6]), "같은 눈인데 더블이 아님")
+	_check(not Game.is_double([3]) and not Game.is_double([2, 5]) and not Game.is_double([]), "더블이 아닌데 더블임")
+	_check(int(_data["rules"].get("double_gauge", 0)) > 0 and int(_data["rules"]["double_gauge"]) <= 20, "더블 게이지가 없거나 너무 큼")

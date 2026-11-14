@@ -1138,7 +1138,11 @@ func _show_move(event: Dictionary) -> void:
 			# 많이 뒤처진 쪽은 큰 눈이 잘 나온다는 것을 알려 준다.
 			caption = "%s 따라잡기! 큰 눈이 잘 나와요" % game.players[who]["name"]
 		_big_dice.skin = _dice_skin_of(who)
-		await _big_dice.play(caption, event["rolls"], "%d칸!%s" % [int(event["total"]), bonus_text], PLAYER_TEXT_COLORS[who])
+		var doubled := bool(event.get("double", false))
+		await _big_dice.play(caption, event["rolls"], ("더블! %d칸!%s" if doubled else "%d칸!%s") % [int(event["total"]), bonus_text], PLAYER_TEXT_COLORS[who])
+		if doubled:
+			_say(who, "더블! 게이지 +%d%%" % game.double_gauge)
+			_play("good" if _humans[who] else "bad")
 		# 연출을 기다리는 사이에 결과 줄이 지워졌을 수 있다(다시 하기 등).
 		if is_instance_valid(row):
 			var end: Label = row.get_meta("tail")
