@@ -35,7 +35,11 @@ func setup(main_app, params: Dictionary) -> void:
 	column.add_child(_showcase())
 
 	var tier: Dictionary = Profile.tier_of(app.eco, int(app.profile["trophies"]))
-	var rank_button := Kit.icon_button("랭크전", "battle", Color("e8890c"), 44, 124, "%s · 트로피 %d · 이기면 +30" % [tier["name"], int(app.profile["trophies"])])
+	var streak := Profile.streak(app.profile)
+	var rank_note := "%s · 트로피 %d · 이기면 +30" % [tier["name"], int(app.profile["trophies"])]
+	if streak >= 2:
+		rank_note = "%d연승 중! 이기면 골드 보너스 · 트로피 %d" % [streak, int(app.profile["trophies"])]
+	var rank_button := Kit.icon_button("랭크전", "battle", Color("e8890c"), 44, 124, rank_note)
 	rank_button.pressed.connect(_on_mode.bind("rank"))
 	column.add_child(rank_button)
 	var modes := Kit.hbox(10)
@@ -104,7 +108,7 @@ func _rank_card() -> Control:
 		progress = float(trophies - low) / float(max(high - low, 1))
 	info.add_child(Kit.bar(progress, tier_color, 16))
 	var stats: Dictionary = profile["stats"]
-	info.add_child(Kit.label("전적 %d승 %d패  ·  연습 리그 %d위  ·  눌러서 순위표" % [int(stats["wins"]), int(stats["losses"]), Profile.league_rank(profile, app.eco)], 18, Kit.MUTED))
+	info.add_child(Kit.label("전투력 %d  ·  %d승 %d패  ·  리그 %d위  ·  눌러서 순위표" % [Profile.my_power(profile, app.data["characters"], app.eco), int(stats["wins"]), int(stats["losses"]), Profile.league_rank(profile, app.eco)], 18, Kit.MUTED))
 	# 카드를 누르면 순위표
 	var open := Button.new()
 	for state in ["normal", "hover", "pressed", "focus"]:

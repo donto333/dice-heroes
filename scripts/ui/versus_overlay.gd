@@ -144,6 +144,8 @@ func _side(side: Dictionary, flip: bool) -> Control:
 	column.add_theme_constant_override("separation", 8)
 	panel.add_child(column)
 	column.add_child(_text(str(side["name"]), 28, color, 6))
+	if side.has("power"):
+		column.add_child(_text("전투력 %d" % int(side["power"]), 20, Color("ffcf4d"), 4))
 	var members: Array = side["members"]
 	var levels: Array = side.get("levels", [])
 	for index in members.size():

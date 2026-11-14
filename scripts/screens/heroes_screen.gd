@@ -204,6 +204,11 @@ func show_hero(id: String) -> void:
 			body.add_child(Kit.para("다음 레벨 보너스 +%d  (전투에서 주사위 합에 더해져요)" % int(bonus_table[level]), 18, Kit.MUTED))
 		if cost.is_empty():
 			body.add_child(Kit.label("최고 레벨입니다.", 20, Kit.MUTED))
+			# 더 쓸 데가 없는 조각은 골드로 판다.
+			if shards > 0:
+				var price := shards * int(app.eco["upgrade"].get("shard_sell_gold", 0))
+				body.add_child(Kit.para("남는 조각 %d개를 %s에 팔 수 있어요." % [shards, Kit.money_text("gold", price)], 20))
+				buttons.append(["조각 팔기", Color("2a7d4f"), _sell_shards.bind(id)])
 		else:
 			var need := int(cost["shards"])
 			body.add_child(Kit.para("조각 %d / %d  ·  강화 비용 %s" % [shards, need, Kit.money_text("gold", int(cost["gold"]))], 20))
@@ -218,6 +223,16 @@ func show_hero(id: String) -> void:
 		buttons.append(["상점으로", Color("c4861c"), func(): app.go("shop")])
 	buttons.append(["닫기", Kit.PANEL_LIGHT])
 	app.dialog("", body, buttons, 660)
+
+
+func _sell_shards(id: String) -> void:
+	var sold := Profile.sell_shards(app.profile, app.eco, id)
+	if sold <= 0:
+		return
+	app.save()
+	app.play("good")
+	app.toast("조각 %d개를 팔았어요." % sold)
+	app.go("heroes", {"filter": _filter})
 
 
 ## 위쪽 막대에 보이는 대표 영웅을 바꾼다.

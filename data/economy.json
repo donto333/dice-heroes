@@ -54,7 +54,8 @@
       1000,
       2000,
       4000
-    ]
+    ],
+    "shard_sell_gold": 30
   },
   "player_level": {
     "_comment": "레벨 n에서 다음 레벨까지 필요한 경험치 = base + per_level × (n-1). 레벨이 오르면 보석을 준다.",
@@ -138,6 +139,11 @@
         "gold": 60,
         "exp": 20
       }
+    },
+    "streak": {
+      "_comment": "랭크전 연승 보너스. 2연승부터 연승마다 gold_per_win 골드를 더 주고, max_count연승까지만 늘어난다.",
+      "gold_per_win": 30,
+      "max_count": 5
     }
   },
   "tiers": [
@@ -734,5 +740,14 @@
         "note": "30일 동안 매일 100개씩"
       }
     ]
+  },
+  "power": {
+    "_comment": "파티 전투력(보여 주기용 숫자). ATTACK 자리는 공격·이동, DEFENSE는 방어, SUPPORT는 지력을 본다.",
+    "attack": 10,
+    "move": 8,
+    "defense": 10,
+    "intellect": 12,
+    "grade": 5,
+    "level": 6
   }
 }
