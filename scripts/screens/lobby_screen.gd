@@ -273,7 +273,7 @@ func _todo_items() -> Array:
 		["일일 미션", "%d / %d 달성" % [missions_done, missions.size()], missions_done >= missions.size() and Profile.claimable_mission_count(profile, app.eco) == 0, _on_tab.bind("missions")],
 		["우편함", "안 받은 우편 %d통" % Profile.unclaimed_mail_count(profile), Profile.unclaimed_mail_count(profile) == 0, open_mailbox],
 		["시즌 패스", "받을 보상 %d개" % Profile.pass_claimable_count(profile, app.eco), Profile.pass_claimable_count(profile, app.eco) == 0, _on_tab.bind("pass")],
-		["모험 소탕", "오늘 %d번 남음 (별 3개 스테이지)" % sweeps, sweeps <= 0, _on_mode.bind("adventure")],
+		["모험 소탕", "오늘 %d번 남음 (별 3개로 깬 곳만)" % sweeps, sweeps <= 0 or Profile.three_star_count(profile) == 0, _on_mode.bind("adventure")],
 	]
 
 
