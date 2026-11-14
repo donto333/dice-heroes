@@ -277,7 +277,133 @@ THEMES = {
 }
 
 
+# ---------------------------------------------------------------- 칸 위의 적 그림 (32x32)
+
+def monster_beast(d):
+    shadow(d, width=22)
+    dark, mid, light = hexc("5a3a1e"), hexc("8a5a2e"), hexc("b8834a")
+    d.ellipse((5, 14, 25, 27), fill=dark)
+    d.ellipse((6, 14, 24, 25), fill=mid)
+    d.ellipse((15, 7, 28, 19), fill=dark)
+    d.ellipse((16, 8, 27, 18), fill=mid)
+    d.polygon([(17, 9), (18, 3), (21, 8)], fill=dark)
+    d.polygon([(24, 8), (27, 3), (27, 10)], fill=dark)
+    d.rectangle((20, 12, 21, 13), fill=(255, 230, 80))
+    d.rectangle((25, 12, 26, 13), fill=(255, 230, 80))
+    d.rectangle((22, 16, 26, 16), fill=(255, 255, 255))
+    for x in (8, 12, 18, 22):
+        d.rectangle((x, 25, x + 2, 29), fill=dark)
+    d.line([(6, 18), (2, 12)], fill=dark, width=2)
+    d.line([(9, 16), (20, 16)], fill=light)
+
+
+def monster_soldier(d):
+    shadow(d, width=18)
+    armor, trim, skin = hexc("5a6a8a"), hexc("8a9ac0"), hexc("e0b890")
+    d.rectangle((11, 14, 20, 26), fill=armor)
+    d.rectangle((12, 15, 15, 24), fill=trim)
+    d.rectangle((11, 26, 14, 29), fill=hexc("3a2a1e"))
+    d.rectangle((17, 26, 20, 29), fill=hexc("3a2a1e"))
+    d.ellipse((11, 5, 20, 14), fill=skin)
+    d.pieslice((10, 3, 21, 14), 180, 360, fill=armor)
+    d.rectangle((10, 8, 21, 9), fill=trim)
+    d.rectangle((13, 10, 14, 11), fill=(20, 20, 30))
+    d.rectangle((17, 10, 18, 11), fill=(20, 20, 30))
+    d.line([(25, 3), (25, 29)], fill=hexc("7a4a22"), width=2)
+    d.polygon([(25, 0), (22, 6), (28, 6)], fill=hexc("d8dce8"))
+    d.ellipse((3, 14, 12, 25), fill=hexc("8a2a22"))
+    d.ellipse((5, 16, 10, 23), fill=hexc("c2413a"))
+
+
+def monster_golem(d):
+    shadow(d, width=24)
+    dark, mid, light = hexc("4a4a52"), hexc("7a7a84"), hexc("a8a8b4")
+    d.rectangle((8, 11, 23, 26), fill=dark)
+    d.rectangle((9, 12, 21, 24), fill=mid)
+    d.rectangle((10, 13, 14, 16), fill=light)
+    d.rectangle((11, 3, 20, 11), fill=dark)
+    d.rectangle((12, 4, 19, 10), fill=mid)
+    d.rectangle((13, 6, 14, 7), fill=(120, 255, 255))
+    d.rectangle((17, 6, 18, 7), fill=(120, 255, 255))
+    d.rectangle((3, 12, 8, 23), fill=dark)
+    d.rectangle((23, 12, 28, 23), fill=dark)
+    d.rectangle((4, 13, 6, 21), fill=mid)
+    d.rectangle((24, 13, 26, 21), fill=mid)
+    d.rectangle((9, 26, 14, 29), fill=dark)
+    d.rectangle((17, 26, 22, 29), fill=dark)
+    d.line([(15, 14), (17, 19), (14, 23)], fill=dark)
+
+
+def monster_spirit(d):
+    shadow(d, width=14)
+    dark, mid, light = hexc("3a5ad0"), hexc("6a9aff"), hexc("c8e0ff")
+    d.polygon([(16, 1), (25, 12), (26, 22), (22, 28), (19, 24), (16, 29), (13, 24), (10, 28), (6, 22), (7, 12)], fill=dark)
+    d.polygon([(16, 4), (23, 13), (24, 21), (21, 25), (19, 21), (16, 25), (13, 21), (11, 25), (8, 21), (9, 13)], fill=mid)
+    d.ellipse((11, 8, 17, 14), fill=light)
+    d.rectangle((12, 14, 14, 17), fill=(20, 20, 60))
+    d.rectangle((18, 14, 20, 17), fill=(20, 20, 60))
+    d.rectangle((14, 20, 18, 21), fill=(20, 20, 60))
+
+
+def monster_bird(d):
+    shadow(d, width=18)
+    dark, mid, light = hexc("7a2a8a"), hexc("b05ac8"), hexc("e0a8f0")
+    d.polygon([(16, 10), (1, 4), (4, 16), (12, 20)], fill=dark)
+    d.polygon([(16, 10), (31, 4), (28, 16), (20, 20)], fill=dark)
+    d.polygon([(15, 11), (4, 7), (6, 14), (12, 18)], fill=mid)
+    d.polygon([(17, 11), (28, 7), (26, 14), (20, 18)], fill=mid)
+    d.ellipse((11, 9, 21, 25), fill=dark)
+    d.ellipse((12, 10, 20, 23), fill=mid)
+    d.ellipse((13, 11, 17, 16), fill=light)
+    d.rectangle((13, 13, 14, 14), fill=(20, 20, 30))
+    d.rectangle((18, 13, 19, 14), fill=(20, 20, 30))
+    d.polygon([(15, 16), (17, 16), (16, 20)], fill=(255, 190, 40))
+    d.line([(14, 25), (13, 29)], fill=(255, 190, 40))
+    d.line([(18, 25), (19, 29)], fill=(255, 190, 40))
+
+
+def monster_hazard(d):
+    shadow(d, width=22)
+    d.polygon([(16, 2), (30, 27), (2, 27)], fill=hexc("7a1a14"))
+    d.polygon([(16, 6), (27, 25), (5, 25)], fill=hexc("e0342b"))
+    d.rectangle((15, 11, 17, 19), fill=(255, 255, 255))
+    d.rectangle((15, 21, 17, 23), fill=(255, 255, 255))
+
+
+def monster_boss(d):
+    shadow(d, width=26)
+    dark, mid, light = hexc("4a1a5a"), hexc("8a3aa8"), hexc("c88ae0")
+    d.polygon([(6, 12), (2, 1), (11, 8)], fill=hexc("e8d8b0"))
+    d.polygon([(26, 12), (30, 1), (21, 8)], fill=hexc("e8d8b0"))
+    d.ellipse((4, 6, 28, 28), fill=dark)
+    d.ellipse((5, 7, 27, 26), fill=mid)
+    d.ellipse((8, 9, 16, 15), fill=light)
+    d.polygon([(8, 14), (14, 15), (9, 18)], fill=(255, 220, 60))
+    d.polygon([(24, 14), (18, 15), (23, 18)], fill=(255, 220, 60))
+    d.rectangle((10, 15, 11, 16), fill=(120, 0, 0))
+    d.rectangle((21, 15, 22, 16), fill=(120, 0, 0))
+    d.rectangle((10, 21, 22, 23), fill=(30, 10, 30))
+    for x in (11, 14, 17, 20):
+        d.polygon([(x, 21), (x + 2, 21), (x + 1, 24)], fill=(255, 255, 255))
+    d.polygon([(11, 6), (13, 1), (15, 5), (16, 0), (17, 5), (19, 1), (21, 6)], fill=(255, 200, 40))
+
+
+MONSTERS = [monster_beast, monster_soldier, monster_golem, monster_spirit, monster_bird, monster_hazard, monster_boss]
+
+
+def make_monsters():
+    """칸 위에 서 있는 적 그림 시트. 순서: 짐승, 병사, 골렘, 정령, 새, 위험물, 보스 (scripts/ui/board_view.gd의 MONSTER_KINDS와 같다)."""
+    sheet = Image.new("RGBA", (32 * len(MONSTERS), 32), (0, 0, 0, 0))
+    for slot, painter in enumerate(MONSTERS):
+        cell = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+        painter(ImageDraw.Draw(cell))
+        sheet.paste(cell, (slot * 32, 0))
+    sheet.save(os.path.join(OUT, "monsters.png"))
+    print("만듦: monsters")
+
+
 def main():
+    make_monsters()
     os.makedirs(OUT, exist_ok=True)
     for index, (name, theme) in enumerate(THEMES.items()):
         rng = random.Random(1000 + index)

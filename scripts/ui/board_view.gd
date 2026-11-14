@@ -94,6 +94,18 @@ var _terrain_name := ""
 var _terrain: Texture2D = null
 var _deco: Texture2D = null
 var _occupied: Dictionary = {}
+## 칸 위에 서 있는 적 그림 시트(assets/terrain/monsters.png, tools/make_terrain.py). 32px 그림이 가로로 붙어 있다.
+var _monsters: Texture2D = null
+## 시트의 그림 순서와, 이름에 이 낱말이 들어가면 그 그림을 쓴다. 맞는 게 없으면 짐승.
+const MONSTER_KINDS := [
+	["늑대", "들개", "멧돼지", "곰", "악어", "도마뱀", "개구리", "전갈", "벌레", "거미", "뱀", "괴물", "설인"],
+	["기사", "병사", "산적", "도굴꾼", "도적", "강도", "지기", "두목"],
+	["골렘", "석상", "수호병"],
+	["정령", "유령", "그림자", "귀신", "마법사"],
+	["하피", "독수리", "고래", "새"],
+	["천장", "화살", "돌풍", "화산탄"],
+]
+const MONSTER_BOSS := 6
 const TERRAIN_SCALE := 4.0
 const HEX_SQUASH := 0.84
 const HEX_DEPTH := 0.13
@@ -108,6 +120,8 @@ func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	# 지형 바탕을 이어 붙여 그리려면 반복이 켜져 있어야 한다.
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	if ResourceLoader.exists("res://assets/terrain/monsters.png"):
+		_monsters = load("res://assets/terrain/monsters.png")
 	# 카메라로 보는 큰 맵이 판 밖으로 삐져나오지 않게 자른다.
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -303,6 +317,17 @@ func _drag_by(relative: Vector2, world: Vector2) -> void:
 	queue_redraw()
 
 
+## 칸 종류와 적 이름으로 시트의 몇 번째 그림을 쓸지 정한다. 골의 수호자는 늘 보스 그림.
+static func monster_kind(tile_type: String, monster_name: String) -> int:
+	if tile_type == "goal":
+		return MONSTER_BOSS
+	for index in MONSTER_KINDS.size():
+		for word in MONSTER_KINDS[index]:
+			if monster_name.contains(str(word)):
+				return index
+	return 0
+
+
 func _load_terrain(name: String) -> void:
 	if name == _terrain_name:
 		return
@@ -437,7 +462,15 @@ func _draw() -> void:
 			label = ""
 			icon_name = "hidden"
 		_draw_hex(rect.get_center(), half, cell, color, id in highlight)
-		if _icons.has(icon_name):
+		var monster := -1
+		if not game.is_hidden(id) and tile.get("type", "") in ["battle", "ambush", "goal"]:
+			monster = monster_kind(str(tile.get("type", "")), str(tile.get("name", "")))
+		if monster >= 0 and _monsters != null:
+			# 키퍼·습격·골 칸에는 아이콘 대신 적이 서 있다(살짝 위로 올려 서 있는 느낌).
+			var stand := rect.size.x * (0.86 if tile.get("type", "") == "goal" else 0.7)
+			var stand_rect := Rect2(rect.get_center().x - stand / 2.0, rect.position.y + rect.size.y * 0.5 - stand * 0.92, stand, stand)
+			draw_texture_rect_region(_monsters, stand_rect, Rect2(monster * 32, 0, 32, 32))
+		elif _icons.has(icon_name):
 			var icon_size := rect.size.x * 0.52
 			var icon_rect := Rect2(rect.position + Vector2((rect.size.x - icon_size) / 2.0, rect.size.y * 0.09),
 				Vector2(icon_size, icon_size))
