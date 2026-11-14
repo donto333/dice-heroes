@@ -27,6 +27,24 @@ PALETTE = {
 }
 
 ICONS = {
+    "mail": """
+................
+................
+.wwwwwwwwwwwwww.
+.wsswwwwwwwwssw.
+.wwsswwwwwwssww.
+.wwwsswwwwsswww.
+.wwwwsswwsswwww.
+.wwwwwsssswwwww.
+.wwwwwwrrwwwwww.
+.wwwwwwrrwwwwww.
+.wwwwwwwwwwwwww.
+.wwwwwwwwwwwwww.
+.wwwwwwwwwwwwww.
+.ssssssssssssss.
+................
+................
+""",
     "ambush": """
 ..ssssssssssss..
 .sgggggggggggrs.

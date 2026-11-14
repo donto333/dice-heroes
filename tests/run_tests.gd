@@ -79,6 +79,7 @@ func _init() -> void:
 	_test_font_coverage()
 	_test_league()
 	_test_challenge()
+	_test_mail()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -960,3 +961,23 @@ func _test_challenge() -> void:
 	Profile.ensure_daily(profile, "2026-05-02")
 	_check(not Profile.challenge_done(profile), "다음 날 도전이 다시 열리지 않음")
 	_check(Profile.challenge_seed(profile) != seed_today, "날이 바뀌어도 도전 상대가 같음")
+
+
+func _test_mail() -> void:
+	var eco: Dictionary = _data["economy"]
+	var mails: Dictionary = _data["mails"]
+	var profile := Profile.new_profile("우편", eco)
+	_check(Profile.deliver_mails(profile, mails) == mails["mails"].size(), "우편이 배달되지 않음")
+	_check(Profile.deliver_mails(profile, mails) == 0, "같은 우편이 두 번 배달됨")
+	_check(Profile.unclaimed_mail_count(profile) == mails["mails"].size(), "안 받은 우편 수가 틀림")
+	var gems := int(profile["gems"])
+	var reward := Profile.claim_mail(profile, "test_gems_10000")
+	_check(int(reward.get("gems", 0)) == 10000 and int(profile["gems"]) == gems + 10000, "테스트 선물 보석 1만 개가 안 들어옴")
+	_check(Profile.claim_mail(profile, "test_gems_10000").is_empty(), "우편 선물을 두 번 받음")
+	_check(int(Profile.claim_all_mail(profile)["count"]) == 0, "받을 우편이 없는데 모두 받기가 됨")
+	# 예전 저장 파일(우편함이 없던 프로필)도 고쳐서 받을 수 있어야 한다.
+	var old := Profile.new_profile("옛날", eco)
+	old.erase("mail")
+	old.erase("mail_delivered")
+	Profile.repair(old, eco)
+	_check(Profile.deliver_mails(old, mails) == mails["mails"].size(), "예전 프로필에 우편이 배달되지 않음")
