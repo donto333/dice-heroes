@@ -253,7 +253,7 @@ func _start_game() -> void:
 	_reward_lines = PackedStringArray()
 	_clear_results()
 	_add_result_text("%s 파티: %s" % [game.players[1]["name"], _party_names(1)], PLAYER_TEXT_COLORS[1])
-	_add_result_text("맵: %s  ·  골의 수호자: %s\n먼저 골(분홍 칸)의 수호자를 이기고 들어가면 승리!" % [game.board_name, _goal_name()], Color.WHITE)
+	_add_result_text("맵: %s(%s)  ·  골의 수호자: %s\n먼저 골(분홍 칸)의 수호자를 이기고 들어가면 승리!" % [game.board_name, game.board_shape, _goal_name()], Color.WHITE)
 	_refresh()
 	_advance()
 

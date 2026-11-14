@@ -333,7 +333,8 @@ func _draw() -> void:
 ## 오른쪽 위의 작은 전체 지도: 칸은 점, 말은 색 점, 지금 보이는 곳은 흰 네모.
 func _draw_minimap(layout: Dictionary) -> void:
 	var grid := _grid_size()
-	var dot: float = MINIMAP_WIDTH / grid.x
+	# 아주 긴 맵(직선형)은 작은 지도를 가로로 더 길게 쓴다.
+	var dot: float = min(MINIMAP_WIDTH * 1.8 / grid.x, MINIMAP_WIDTH / grid.y)
 	var map_size := Vector2(grid.x, grid.y) * dot
 	var corner := Vector2(size.x - map_size.x - 10.0, 10.0)
 	var panel := StyleBoxFlat.new()

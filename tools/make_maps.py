@@ -14,47 +14,157 @@ import random
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-WIDTH = 10
-LAYOUT = ["P", "P", "F", "P", "P", "F", "P", "F", "P"]
+MAIN_LENGTH = 93   # 갈림길 길을 뺀 큰길 칸 수 (출발~골 가장 짧은 길)
+LANE_LENGTH = 8    # 갈림길 한 갈래의 칸 수
+FORKS = 3
+
+
+# ---------------------------------------------------------------- 경로 모양
+# 각 모양 함수는 큰길 좌표 목록(한 칸씩 이어진)을 돌려준다. 칸은 가로·세로·대각선으로 이웃해야 한다.
+
+def _walk(points, direction, steps):
+    x, y = points[-1]
+    dx, dy = direction
+    for _ in range(steps):
+        x += dx
+        y += dy
+        points.append((x, y))
+
+
+def shape_uturn():
+    """유턴형: 긴 가로줄을 달리다 끝에서 세로로 3칸 내려와 반대로 달린다."""
+    points = [(0, 0)]
+    direction = 1
+    while len(points) < MAIN_LENGTH:
+        _walk(points, (direction, 0), 24)
+        _walk(points, (0, 1), 4)
+        direction *= -1
+    return points[:MAIN_LENGTH]
+
+
+def shape_pyramid():
+    """피라미드형: 아래 넓은 줄에서 시작해 위로 갈수록 줄이 짧아지고, 줄 사이는 대각선 계단."""
+    points = [(0, 0)]
+    width = 32
+    direction = 1
+    while len(points) < MAIN_LENGTH:
+        _walk(points, (direction, 0), width - 1)
+        # 다음 줄은 양쪽이 3칸씩 좁다. 대각선으로 3칸 올라가며 안쪽으로 들어간다.
+        _walk(points, (-direction, -1), 4)
+        width -= 8
+        direction *= -1
+        if width < 4:
+            break
+    points = points[:MAIN_LENGTH]
+    return points
+
+
+def shape_spiral():
+    """나선형: 바깥 둘레에서 안쪽으로 감아 들어가 한가운데가 골."""
+    points = [(0, 0)]
+    sides = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+    lengths = [16, 16, 16, 13, 13, 10, 10, 7, 7, 4]
+    for index, length in enumerate(lengths):
+        if len(points) >= MAIN_LENGTH:
+            break
+        _walk(points, sides[index % 4], length)
+    return points[:MAIN_LENGTH]
+
+
+def shape_straight():
+    """직선형: 오른쪽으로 쭉 가면서 완만하게 위아래로 물결친다."""
+    points = [(0, 0)]
+    up = True
+    while len(points) < MAIN_LENGTH:
+        _walk(points, (1, 0), 14)
+        _walk(points, (1, -1 if up else 1), 3)
+        up = not up
+    return points[:MAIN_LENGTH]
+
+
+SHAPES = {"uturn": shape_uturn, "pyramid": shape_pyramid, "spiral": shape_spiral, "straight": shape_straight}
+
+
+# ---------------------------------------------------------------- 갈림길(마름모) 넣기
+
+def _find_fork_windows(points):
+    """큰길에서 곧게 뻗은 구간을 골라 갈림길 마름모를 넣을 자리 3곳을 정한다.
+    마름모: 갈림길 칸 p[i] → 위쪽 갈래(LANE_LENGTH칸)와 아래쪽 갈래 → 거점 칸 p[i+LANE_LENGTH+1].
+    두 갈래는 큰길에서 한 칸 옆으로 비켜 간다. 가운데 큰길 칸은 없앤다."""
+    used = set(points)
+    windows = []
+    taken = set()
+    span = LANE_LENGTH + 1
+    targets = [int(len(points) * f) for f in (0.22, 0.5, 0.75)]
+    for target in targets:
+        found = None
+        for offset in range(0, len(points)):
+            for i in (target + offset, target - offset):
+                if i < 3 or i + span >= len(points) - 3:
+                    continue
+                seg = points[i:i + span + 1]
+                dx = seg[1][0] - seg[0][0]
+                dy = seg[1][1] - seg[0][1]
+                straight = all(seg[k + 1][0] - seg[k][0] == dx and seg[k + 1][1] - seg[k][1] == dy for k in range(span))
+                if not straight or (dx != 0 and dy != 0):
+                    continue
+                perp = (-dy, dx)
+                lanes = []
+                ok = True
+                for sign in (1, -1):
+                    lane = [(p[0] + perp[0] * sign, p[1] + perp[1] * sign) for p in seg[1:-1]]
+                    for c in lane:
+                        if c in used or c in taken:
+                            ok = False
+                        # 옆 칸까지 비어 있어야 다른 길과 붙어 보이지 않는다.
+                        outer = (c[0] + perp[0] * sign, c[1] + perp[1] * sign)
+                        if outer in used:
+                            ok = False
+                    lanes.append(lane)
+                if any(abs(i - w[0]) < span + 4 for w in windows):
+                    ok = False
+                if ok:
+                    found = (i, lanes)
+                    break
+            if found:
+                break
+        if found is None:
+            raise SystemExit("갈림길 자리를 찾지 못함")
+        windows.append(found)
+        for lane in found[1]:
+            taken.update(lane)
+    windows.sort()
+    return windows
 
 
 def make_board(theme):
     rng = random.Random(theme["seed"])
+    points = SHAPES[theme["shape"]]()
+    windows = _find_fork_windows(points)
     nodes = []
 
-    def add(x, y, kind="normal"):
-        node = {"id": len(nodes), "type": kind, "x": x, "y": y, "next": []}
+    def add(xy, kind="normal"):
+        node = {"id": len(nodes), "type": kind, "x": xy[0], "y": xy[1], "next": []}
         nodes.append(node)
         return node
 
     def link(a, b):
         a["next"].append(b["id"])
 
-    # 1) 자리와 연결만 먼저 만든다.
-    main_path = []  # 갈림길 길을 뺀 큰길 칸 순서 (내용 정하기에 씀)
-    lanes = []      # [(A길 칸들, B길 칸들, 갈림길 칸, 거점 칸)]
-    y = 0
-    direction = 1
+    main_path = []
+    lanes = []
+    window_starts = {w[0]: w for w in windows}
     previous = None
-    for index, block in enumerate(LAYOUT):
-        xs = list(range(WIDTH)) if direction == 1 else list(range(WIDTH - 1, -1, -1))
-        if block == "P":
-            row = []
-            for x in xs:
-                node = add(x, y)
-                if previous is not None:
-                    link(previous, node)
-                previous = node
-                row.append(node)
-            main_path.extend(row)
-            y += 1
-        else:
-            # 갈림길 칸은 이 줄의 첫 칸. A길은 같은 줄, B길은 아래 줄. 거점은 아래 줄 끝.
-            fork = add(xs[0], y, "fork")
-            link(previous, fork)
-            lane_a = [add(x, y) for x in xs[1:-1]]
-            lane_b = [add(x, y + 1) for x in xs[:-1]]
-            merge = add(xs[-1], y + 1, "checkpoint")
+    i = 0
+    while i < len(points):
+        if i in window_starts:
+            _, (lane_up, lane_down) = window_starts[i]
+            fork = add(points[i], "fork")
+            if previous is not None:
+                link(previous, fork)
+            lane_a = [add(c) for c in lane_up]
+            lane_b = [add(c) for c in lane_down]
+            merge = add(points[i + LANE_LENGTH + 1], "checkpoint")
             link(fork, lane_a[0])
             link(fork, lane_b[0])
             for a, b in zip(lane_a, lane_a[1:]):
@@ -63,12 +173,23 @@ def make_board(theme):
                 link(a, b)
             link(lane_a[-1], merge)
             link(lane_b[-1], merge)
-            main_path.append(fork)
-            main_path.append(merge)
+            main_path.extend([fork, merge])
             lanes.append((lane_a, lane_b, fork, merge))
             previous = merge
-            y += 2
-        direction *= -1
+            i += LANE_LENGTH + 2
+            continue
+        node = add(points[i])
+        if previous is not None:
+            link(previous, node)
+        previous = node
+        main_path.append(node)
+        i += 1
+    # 좌표를 0부터 시작하게 옮긴다.
+    min_x = min(n["x"] for n in nodes)
+    min_y = min(n["y"] for n in nodes)
+    for n in nodes:
+        n["x"] -= min_x
+        n["y"] -= min_y
     start = main_path[0]
     goal = main_path[-1]
     start["type"] = "start"
@@ -76,7 +197,7 @@ def make_board(theme):
     goal["name"] = theme["boss"]
     goal["dice"] = 4
 
-    # 2) 큰길 내용: 거점은 10칸 안팎마다, 키퍼는 7~9칸마다, 나머지는 비율대로.
+    # 큰길 내용: 거점은 10칸 안팎마다, 키퍼는 7~9칸마다, 나머지는 비율대로.
     total = len(main_path)
     since_checkpoint = 0
     since_keeper = 0
@@ -101,12 +222,12 @@ def make_board(theme):
             continue
         _fill(node, theme["weights"], theme, rng)
 
-    # 3) 갈림길 길: A길은 짧고 위험(키퍼·판정), B길은 길고 안전(보물·행운).
+    # 갈림길: 위쪽 갈래(A)는 위험(키퍼·판정), 아래쪽 갈래(B)는 안전(보물·행운).
     for number, (lane_a, lane_b, fork, merge) in enumerate(lanes):
         routes = theme["routes"][number % len(theme["routes"])]
         progress = main_path.index(fork) / total
-        for i, node in enumerate(lane_a):
-            if i in (2, 5):
+        for k, node in enumerate(lane_a):
+            if k in (2, 5):
                 _make_keeper(node, theme, min(1.0, progress + 0.15), rng, ambush_rate=theme["ambush_rate"])
             else:
                 _fill(node, theme["risky"], theme, rng)
@@ -115,10 +236,10 @@ def make_board(theme):
         lane_a[0]["route"] = routes[0]
         lane_b[0]["route"] = routes[1]
 
-    # 4) 속성 칸 4개를 큰길에 고르게 둔다.
+    # 속성 칸 4개를 큰길에 고르게 둔다.
     plain = [n for n in main_path if n["type"] in ("normal", "random")]
-    for i, attr in enumerate(["영웅", "위인", "신화", "근현대"]):
-        spot = plain[int(len(plain) * (i + 0.5) / 4)]
+    for k, attr in enumerate(["영웅", "위인", "신화", "근현대"]):
+        spot = plain[int(len(plain) * (k + 0.5) / 4)]
         spot["type"] = "attr"
         spot["attr"] = attr
         spot.pop("hidden", None)
@@ -126,6 +247,7 @@ def make_board(theme):
     return {
         "_comment": theme["comment"],
         "name": theme["name"],
+        "shape": theme["shape_name"],
         "theme": theme["colors"],
         "start": start["id"],
         "nodes": nodes,
@@ -166,7 +288,8 @@ COMMON_POOL = [
 THEMES = [
     {
         "file": "data/board.json", "seed": 101, "name": "초원의 길", "boss": "메두사",
-        "comment": "초원 맵(약 120칸). 고르게 섞인 기본 맵. tools/make_maps.py로 만든다.",
+        "shape": "uturn", "shape_name": "유턴형",
+        "comment": "초원 맵(약 120칸, 유턴형). 고르게 섞인 기본 맵. tools/make_maps.py로 만든다.",
         "colors": {"bg": "24452e", "line": "9fe0a8"},
         "keepers": ["들개 무리", "굶주린 늑대", "산적", "멧돼지", "석상 병사", "늪의 큰뱀", "외눈 거인"],
         "ambushers": ["산적 두목", "숲의 그림자", "독수리 떼"],
@@ -179,7 +302,8 @@ THEMES = [
     },
     {
         "file": "data/boards/desert.json", "seed": 202, "name": "사막의 길", "boss": "스핑크스",
-        "comment": "사막 맵(약 120칸). 판정과 보물이 많다. tools/make_maps.py로 만든다.",
+        "shape": "pyramid", "shape_name": "피라미드형",
+        "comment": "사막 맵(약 120칸, 피라미드형). 판정과 보물이 많다. tools/make_maps.py로 만든다.",
         "colors": {"bg": "5a4220", "line": "e0b46a"},
         "keepers": ["사막 전갈", "미라 병사", "모래 벌레", "도굴꾼", "독사 떼", "황금 골렘"],
         "ambushers": ["모래 도적단", "사막 늑대", "사자 석상"],
@@ -200,7 +324,8 @@ THEMES = [
     },
     {
         "file": "data/boards/frost.json", "seed": 303, "name": "설원의 성채", "boss": "서리 거인",
-        "comment": "설원 맵(약 120칸). 습격이 많아 DEFENSE가 중요하다. tools/make_maps.py로 만든다.",
+        "shape": "spiral", "shape_name": "나선형",
+        "comment": "설원 맵(약 120칸, 나선형). 습격이 많아 DEFENSE가 중요하다. tools/make_maps.py로 만든다.",
         "colors": {"bg": "1f4a6e", "line": "a8d8ff"},
         "keepers": ["얼음 정령", "성채 수비대", "설원 곰", "얼음 골렘", "서리 늑대"],
         "ambushers": ["설인", "눈늑대", "서리 기사", "빙결 마법사", "얼음 거미", "눈사태 정령"],
@@ -216,6 +341,20 @@ THEMES = [
             {"weight": 1, "tile": {"type": "curse"}},
             {"weight": 2, "tile": {"type": "forward", "amount": 3}},
         ],
+    },
+    {
+        "file": "data/boards/river.json", "seed": 404, "name": "강변의 길", "boss": "히드라",
+        "shape": "straight", "shape_name": "직선형",
+        "comment": "강변 맵(약 120칸, 직선형). 전진·행운이 많아 빠르지만 저주와 판정도 있다. tools/make_maps.py로 만든다.",
+        "colors": {"bg": "1d4a4a", "line": "8fe8e0"},
+        "keepers": ["강도떼", "물뱀", "늪 악어", "다리 지기", "강의 거인"],
+        "ambushers": ["물귀신", "갈대숲 도적", "거대 개구리"],
+        "ambush_rate": 0.35,
+        "weights": {"normal": 3, "random": 4, "forward": 2, "luck": 2, "treasure": 2, "curse": 1.5, "fate": 1, "prison": 0.4},
+        "risky": {"random": 2, "fate": 2, "forward": 2, "curse": 1},
+        "safe": {"treasure": 3, "luck": 2, "random": 2, "normal": 1},
+        "routes": [["급류 길 (짧고 위험)", "둑길 (안전)"], ["나룻배 (판정)", "다리 길 (보물)"], ["폭포 옆 (위험)", "갈대밭 길 (행운)"]],
+        "random_pool": COMMON_POOL,
     },
 ]
 
@@ -261,4 +400,6 @@ if __name__ == "__main__":
         counts = {}
         for n in board["nodes"]:
             counts[n["type"]] = counts.get(n["type"], 0) + 1
-        print(theme["name"], len(board["nodes"]), "칸, 가장 짧은 길", shortest(board), counts)
+        w = max(n["x"] for n in board["nodes"]) + 1
+        h = max(n["y"] for n in board["nodes"]) + 1
+        print(theme["name"], theme["shape_name"], len(board["nodes"]), "칸, 가로", w, "세로", h, "가장 짧은 길", shortest(board))
