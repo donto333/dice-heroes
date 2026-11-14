@@ -74,6 +74,13 @@ var _my_battles := [0, 0]
 var _slot_wins := {"attack": 0, "defense": 0, "support": 0}
 var _abilities_used := 0
 const SLOT_NAMES := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
+## 대전 중 한마디. AI는 전투가 끝난 뒤 가끔 대꾸한다.
+const EMOTES := ["좋아요!", "ㅋㅋㅋ", "으악!", "잘했어요!", "봐주세요...", "가자!"]
+const AI_HAPPY := ["ㅋㅋㅋ", "좋아요!", "가자!"]
+const AI_SAD := ["으악!", "봐주세요...", "잘했어요!"]
+var _board_area: Control
+var _emote_panel: Control
+var _fx_rng := RandomNumberGenerator.new()
 var _best_roll := 0
 
 
@@ -175,6 +182,8 @@ func _build_ui() -> void:
 
 	_big_dice = BigDice.new()
 	board_area.add_child(_big_dice)
+	_board_area = board_area
+	_build_emotes(board_area)
 
 	_roll_button = _make_round_button()
 	_roll_button.pressed.connect(_on_roll_pressed)
@@ -474,6 +483,88 @@ func _box(fill: Color, border: Color, border_width: int) -> StyleBoxFlat:
 
 
 ## 켜진 버튼은 밝은 색, 꺼진 버튼은 어두운 회색으로 확실히 구분한다.
+# ---------------------------------------------------------------- 한마디 말풍선
+
+## 판 오른쪽 가운데의 '말' 버튼과, 누르면 펼쳐지는 한마디 목록.
+func _build_emotes(board_area: Control) -> void:
+	var toggle := Kit.round_shortcut("한마디", "start", Color("7d4fc0"))
+	toggle.custom_minimum_size = Vector2(76, 76)
+	board_area.add_child(toggle)
+	toggle.anchor_left = 1.0
+	toggle.anchor_right = 1.0
+	toggle.anchor_top = 0.5
+	toggle.anchor_bottom = 0.5
+	toggle.offset_left = -88
+	toggle.offset_right = -12
+	toggle.offset_top = -38
+	toggle.offset_bottom = 38
+	toggle.pressed.connect(_toggle_emotes)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _box(Color(0.05, 0.06, 0.14, 0.92), Color("7d4fc0"), 3))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	panel.add_child(grid)
+	for text in EMOTES:
+		var button := Kit.button(text, Color("5a3d99"), 20, 56)
+		button.custom_minimum_size = Vector2(150, 56)
+		button.pressed.connect(_on_emote.bind(text))
+		grid.add_child(button)
+	board_area.add_child(panel)
+	panel.anchor_left = 1.0
+	panel.anchor_right = 1.0
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -430
+	panel.offset_right = -98
+	panel.offset_top = -110
+	panel.offset_bottom = 110
+	panel.visible = false
+	_emote_panel = panel
+
+
+func _toggle_emotes() -> void:
+	_play("click")
+	_emote_panel.visible = not _emote_panel.visible
+
+
+func _on_emote(text: String) -> void:
+	_emote_panel.visible = false
+	_play("click")
+	_say(_viewer(), text)
+
+
+## 플레이어 정보판 옆에 잠깐 뜨는 말풍선. index 0은 아래(나), 1은 위(상대).
+func _say(index: int, text: String) -> void:
+	if _board_area == null or game == null:
+		return
+	var bubble := _make_label(26, text)
+	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bubble.add_theme_color_override("font_color", Color("1b1f3b"))
+	var style := _box(Color.WHITE, PLAYER_TEXT_COLORS[index], 4)
+	style.set_corner_radius_all(18)
+	style.set_content_margin_all(12)
+	bubble.add_theme_stylebox_override("normal", style)
+	_board_area.add_child(bubble)
+	bubble.position = Vector2(118, 100 if index == 1 else _board_area.size.y - 160)
+	bubble.pivot_offset = Vector2(0, 30)
+	bubble.scale = Vector2(0.3, 0.3)
+	var tween := bubble.create_tween()
+	tween.tween_property(bubble, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(1.7)
+	tween.tween_property(bubble, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(bubble.queue_free)
+
+
+## 전투가 끝난 뒤 AI가 가끔 한마디 한다. happy: AI에게 좋은 결과였는지.
+func _ai_reacts(happy: bool) -> void:
+	if _is_local() or game == null or _fx_rng.randf() > 0.45:
+		return
+	var lines: Array = AI_HAPPY if happy else AI_SAD
+	_say(1, str(lines[_fx_rng.randi_range(0, lines.size() - 1)]))
+
+
 ## 판 위에 얹는 정보판은 판 끌기·칸 누르기를 막지 않게 한다.
 func _ignore_mouse(node: Node) -> void:
 	if node is Control:
@@ -893,6 +984,7 @@ func _show_battle(event: Dictionary) -> void:
 			"defender_character": _character_named(str(event["defender"])),
 		})
 		_add_battle_result(event)
+		_ai_reacts(event["won"] if who == 0 else not event["won"])
 		return
 	var against_player: bool = str(event.get("target", "")) == "player"
 	var me_attacking := who == 0 or _is_local()
@@ -914,6 +1006,7 @@ func _show_battle(event: Dictionary) -> void:
 	info["defender_character"] = _character_named(str(event["defender"]))
 	await _battle_overlay.play(event, info)
 	_add_battle_result(event)
+	_ai_reacts(not bool(info["good_for_me"]))
 
 
 ## 전투 사건에는 이름만 있으므로 이름으로 캐릭터를 찾는다. 키퍼·몬스터면 빈 사전.
