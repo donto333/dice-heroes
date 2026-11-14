@@ -124,6 +124,10 @@ func _run() -> void:
 	await _wait(1.6)
 	await _shot("14_match")
 	var match_screen = _app.current_screen
+	match_screen._on_card_pressed(0)
+	await _wait(0.4)
+	await _shot("14b_card")
+	_close_dialogs()
 	match_screen._on_roll_pressed()
 	await _wait(0.95)
 	await _shot("15a_big_dice")
