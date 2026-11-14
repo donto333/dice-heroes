@@ -113,6 +113,12 @@ func _run() -> void:
 	_app.go("shop")
 	await _wait(0.4)
 	await _shot("08_shop")
+	var shop_scroll := _find_scroll(_app.current_screen)
+	if shop_scroll != null:
+		shop_scroll.scroll_vertical = 100000
+		await _wait(0.3)
+		await _shot("08b_dice_shop")
+		shop_scroll.scroll_vertical = 0
 	_app.current_screen._on_paid(10)
 	await _wait(2.0)
 	await _shot("09_summon")
@@ -143,6 +149,11 @@ func _run() -> void:
 	_app.start_mode("rank")
 	await _wait(0.4)
 	await _shot("12_party")
+	var picker = _app.current_screen.get_child(0)
+	picker._on_save_mode_pressed()
+	picker._on_preset_pressed(0)
+	await _wait(0.3)
+	await _shot("12c_presets")
 	_app.current_screen.get_child(0)._on_start_pressed()
 	await _wait(0.6)
 	await _shot("12a_searching")
