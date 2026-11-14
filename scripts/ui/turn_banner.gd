@@ -1,73 +1,68 @@
 extends Control
-## 턴이 바뀔 때 화면 가운데를 가로지르는 띠. "3턴 · 내 차례"처럼 누구 차례인지 알려 준다.
-## play()는 띠가 들어왔다 나갈 때까지 기다린다. 화면 입력은 막지 않는다.
+## 턴이 바뀔 때 화면 가운데에 튀어나오는 글자. "내 차례! START!"처럼 누구 차례인지 알려 준다.
+## play()는 글자가 나왔다 사라질 때까지 기다린다. 화면 입력은 막지 않는다.
 
-const SLIDE_TIME := 0.22
-const HOLD_TIME := 0.55
+const POP_TIME := 0.22
+const HOLD_TIME := 0.5
+const OUT_TIME := 0.16
 
-var _band: PanelContainer
+var _box: VBoxContainer
 var _small: Label
 var _big: Label
-var _style: StyleBoxFlat
+var _start: Label
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
-
-	_band = PanelContainer.new()
-	_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_style = StyleBoxFlat.new()
-	_style.bg_color = Color(0.05, 0.06, 0.14, 0.92)
-	_style.border_width_top = 4
-	_style.border_width_bottom = 4
-	_style.set_content_margin_all(14)
-	_band.add_theme_stylebox_override("panel", _style)
-	add_child(_band)
-
-	var column := VBoxContainer.new()
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_theme_constant_override("separation", 0)
-	_band.add_child(column)
-	_small = _label(24)
-	column.add_child(_small)
-	_big = _label(64)
-	_big.add_theme_constant_override("outline_size", 10)
-	_big.add_theme_color_override("font_outline_color", Color.BLACK)
-	column.add_child(_big)
+	_box = VBoxContainer.new()
+	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_box.add_theme_constant_override("separation", -14)
+	_box.anchor_left = 0.0
+	_box.anchor_right = 1.0
+	_box.anchor_top = 0.36
+	_box.anchor_bottom = 0.36
+	add_child(_box)
+	_small = _label(26, 8)
+	_box.add_child(_small)
+	_big = _label(84, 20)
+	_box.add_child(_big)
+	_start = _label(64, 18)
+	_start.text = "START!"
+	_box.add_child(_start)
 
 
-func _label(font_size: int) -> Label:
+func _label(font_size: int, outline: int) -> Label:
 	var label := Label.new()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_constant_override("outline_size", outline)
+	label.add_theme_color_override("font_outline_color", Color("2a1200"))
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
 
-## 띠를 보여 준다. small은 위의 작은 글씨, big은 큰 글씨.
+## 글자를 보여 준다. small은 위의 작은 글씨("3 / 50턴"), big은 큰 글씨("내 차례!").
 func play(small: String, big: String, color: Color) -> void:
 	_small.text = small
-	_small.add_theme_color_override("font_color", Color(1, 1, 1, 0.75))
-	_big.text = big
-	_big.add_theme_color_override("font_color", color)
-	_style.border_color = color
+	_small.add_theme_color_override("font_color", Color.WHITE)
+	_big.text = big + "!"
+	_big.add_theme_color_override("font_color", color.lightened(0.25))
+	_start.add_theme_color_override("font_color", Color("ffcf4d"))
 	visible = true
+	modulate.a = 0.0
 	await get_tree().process_frame
-	var width := size.x
-	var band_height := _band.get_combined_minimum_size().y
-	_band.size = Vector2(width, band_height)
-	var y := size.y * 0.42 - band_height * 0.5
-	_band.position = Vector2(-width, y)
-	_band.modulate.a = 0.0
+	if not is_inside_tree():
+		return
+	_box.pivot_offset = Vector2(size.x * 0.5, _box.size.y * 0.5)
+	_box.rotation = -0.06
+	_box.scale = Vector2(0.3, 0.3)
 	var tween := create_tween()
-	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_band, "position:x", 0.0, SLIDE_TIME)
-	tween.parallel().tween_property(_band, "modulate:a", 1.0, SLIDE_TIME)
+	tween.tween_property(_box, "scale", Vector2.ONE, POP_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(self, "modulate:a", 1.0, POP_TIME * 0.6)
 	tween.tween_interval(HOLD_TIME)
-	tween.set_ease(Tween.EASE_IN)
-	tween.tween_property(_band, "position:x", width, SLIDE_TIME)
-	tween.parallel().tween_property(_band, "modulate:a", 0.0, SLIDE_TIME)
+	tween.tween_property(_box, "scale", Vector2(1.5, 1.5), OUT_TIME).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(self, "modulate:a", 0.0, OUT_TIME)
 	await tween.finished
 	visible = false

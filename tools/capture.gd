@@ -142,9 +142,11 @@ func _run() -> void:
 		"winner_text": "나 승리!", "loser_text": "나 패배...", "good_for_me": true,
 		"attacker_character": _app.character("lubu"),
 	})
-	await _wait(2.0)
+	await _wait(1.2)
+	await _shot("16a_battle_rolling")
+	await _wait(2.3)
 	await _shot("16_battle")
-	await _wait(3.0)
+	await _wait(2.4)
 
 	if _app.current_screen == match_screen and match_screen.game != null:
 		match_screen.game.winner = 0
