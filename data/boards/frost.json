@@ -128,7 +128,6 @@
     {"weight": 2, "tile": {"type": "luck"}},
     {"weight": 2, "tile": {"type": "ambush", "name": "눈보라 늑대", "dice": 3}},
     {"weight": 1, "tile": {"type": "curse"}},
-    {"weight": 2, "tile": {"type": "forward", "amount": 3}},
-    {"weight": 2, "tile": {"type": "warp"}}
+    {"weight": 2, "tile": {"type": "forward", "amount": 3}}
   ]
 }

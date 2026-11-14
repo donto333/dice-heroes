@@ -129,7 +129,6 @@
     {"weight": 2, "tile": {"type": "curse"}},
     {"weight": 1, "tile": {"type": "forward", "amount": 3}},
     {"weight": 1, "tile": {"type": "prison"}},
-    {"weight": 1, "tile": {"type": "fate"}},
-    {"weight": 2, "tile": {"type": "warp"}}
+    {"weight": 1, "tile": {"type": "fate"}}
   ]
 }

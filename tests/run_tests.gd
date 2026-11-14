@@ -70,7 +70,6 @@ func _init() -> void:
 	_test_upgrade_and_level()
 	_test_match_rewards()
 	_test_missions_and_attendance()
-	_test_warp_duel()
 	_test_adventure()
 	_test_achievements()
 	_test_ai_difficulty()
@@ -982,53 +981,3 @@ func _test_mail() -> void:
 	old.erase("mail_delivered")
 	Profile.repair(old, eco)
 	_check(Profile.deliver_mails(old, mails) == mails["mails"].size(), "예전 프로필에 우편이 배달되지 않음")
-
-
-## 워프 칸: 거리 차이가 크면 결투. 이기면 전진, 지면 그대로. 어느 쪽도 거점으로 돌아가지 않는다.
-func _test_warp_duel() -> void:
-	_check(int(_data["rules"].get("warp_gap", 0)) == 10 and int(_data["rules"].get("warp_advance", 0)) == 10, "워프 수치(10칸)가 틀림")
-	var wins := 0
-	var losses := 0
-	for seed_value in range(1, 41):
-		var game = _new_game(seed_value)
-		game.nodes[1]["type"] = "warp"
-		game.warp_advance = 2
-		_place(game, 0, [0, 1])
-		_place(game, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
-		game.take_events()
-		game._resolve_tile(0)
-		var fought := false
-		var won := false
-		for event in game.take_events():
-			if event["kind"] == "battle" and str(event.get("target", "")) == "warp":
-				fought = true
-				won = bool(event["won"])
-		_check(fought, "11칸 뒤처져 있는데 워프 결투가 없음")
-		_check(int(game.players[1]["pos"]) == 12, "워프 결투로 상대가 물러남")
-		if won:
-			wins += 1
-			_check(int(game.players[0]["pos"]) == 3, "워프 결투에서 이겼는데 전진하지 않음")
-		else:
-			losses += 1
-			_check(int(game.players[0]["pos"]) == 1, "워프 결투에서 졌는데 자리가 바뀜")
-	_check(wins > 0 and losses > 0, "워프 결투 결과가 한쪽으로만 나옴 (승 %d, 패 %d)" % [wins, losses])
-	# 차이가 10칸 미만이면 아무 일도 없다.
-	var calm = _new_game(5)
-	calm.nodes[1]["type"] = "warp"
-	_place(calm, 0, [0, 1])
-	_place(calm, 1, [0, 1, 2, 3])
-	calm.take_events()
-	calm._resolve_tile(0)
-	for event in calm.take_events():
-		_check(event["kind"] != "battle", "거리 차이가 작은데 워프 결투가 일어남")
-	_check(int(calm.players[0]["pos"]) == 1, "거리 차이가 작은데 워프로 움직임")
-	# 내가 11칸 앞서 있으면(뒤처진 게 아니면) 결투하지 않는다.
-	var ahead = _new_game(5)
-	ahead.nodes[12]["type"] = "warp"
-	_place(ahead, 0, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
-	_place(ahead, 1, [0, 1])
-	ahead.take_events()
-	ahead._resolve_tile(0)
-	for event in ahead.take_events():
-		_check(event["kind"] != "battle", "앞서 있는데 워프 결투가 일어남")
-	_check(int(ahead.players[0]["pos"]) == 12 and int(ahead.players[1]["pos"]) == 1, "앞서 있는데 워프로 말이 움직임")
