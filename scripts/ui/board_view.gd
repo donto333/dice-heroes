@@ -87,6 +87,9 @@ var active_player := -1
 var _anim_time := 0.0
 ## 통통 튀는 이동: 말마다 {"from": 칸 id, "t": 0~1}. 없으면 멈춰 있는 것.
 var _hops: Dictionary = {}
+## 판 위에 얹힌 것(정보판, 주사위 버튼)이 가리는 위·아래 높이(픽셀)
+var pad_top := 0.0
+var pad_bottom := 0.0
 const HOP_HEIGHT := 0.42
 
 
@@ -219,7 +222,9 @@ func _layout() -> Dictionary:
 
 func _clamped_camera(world: Vector2) -> Vector2:
 	var half := size / 2.0
-	return Vector2(clampf(_camera.x, half.x, max(half.x, world.x - half.x)), clampf(_camera.y, half.y, max(half.y, world.y - half.y)))
+	# 위아래 여백만큼 맵 밖까지 밀 수 있게 해서, 가장자리 칸이 판 위에 얹힌 정보판에 가려지지 않게 한다.
+	return Vector2(clampf(_camera.x, half.x, max(half.x, world.x - half.x)),
+		clampf(_camera.y, half.y - pad_top, max(half.y - pad_top, world.y - half.y + pad_bottom)))
 
 
 ## 카메라가 따라갈 말의 맵 위 위치(픽셀)
