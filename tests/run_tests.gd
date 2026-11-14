@@ -88,6 +88,7 @@ func _init() -> void:
 	_test_events()
 	_test_sweep()
 	_test_double()
+	_test_upgrade_all()
 	_test_monster_kinds()
 	_test_streak_power()
 	_test_presets()
@@ -1263,6 +1264,17 @@ func _test_sweep() -> void:
 	_check(Profile.three_star_count(profile) == 1, "별 3개 스테이지 수가 틀림")
 	Profile.ensure_daily(profile, "2026-05-02")
 	_check(Profile.sweeps_left(profile, eco) == per_day, "다음 날 소탕 횟수가 돌아오지 않음")
+
+
+func _test_upgrade_all() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("강화", eco)
+	_check(Profile.upgrade_all(profile, eco) == 0, "조각이 없는데 일괄 강화됨")
+	var lead := str(profile["party"]["attack"])
+	profile["owned"][lead]["shards"] = int(eco["upgrade"]["shards"][0]) + int(eco["upgrade"]["shards"][1])
+	profile["gold"] = 1000000
+	_check(Profile.upgrade_all(profile, eco) == 2 and Profile.level_of(profile, lead) == 3, "일괄 강화가 두 단계를 올리지 않음")
+	_check(Profile.upgrade_all(profile, eco) == 0, "더 올릴 것이 없는데 일괄 강화됨")
 
 
 func _test_double() -> void:
