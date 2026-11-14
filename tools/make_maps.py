@@ -82,7 +82,54 @@ def shape_straight():
     return points[:MAIN_LENGTH]
 
 
-SHAPES = {"uturn": shape_uturn, "pyramid": shape_pyramid, "spiral": shape_spiral, "straight": shape_straight}
+def shape_stairs():
+    """계단형: 오른쪽으로 11칸 가고 아래로 3칸 내려가기를 되풀이하는 큰 계단."""
+    points = [(0, 0)]
+    while len(points) < MAIN_LENGTH:
+        _walk(points, (1, 0), 11)
+        _walk(points, (0, 1), 3)
+    return points[:MAIN_LENGTH]
+
+
+def shape_mountain():
+    """산맥형: 평지를 달리다 대각선으로 봉우리를 오르고 내려온다. 봉우리 높이가 조금씩 다르다."""
+    points = [(0, 0)]
+    peaks = [5, 7, 4, 6, 5, 7]
+    index = 0
+    while len(points) < MAIN_LENGTH:
+        _walk(points, (1, 0), 11)
+        height = peaks[index % len(peaks)]
+        _walk(points, (1, -1), height)
+        _walk(points, (1, 0), 2)
+        _walk(points, (1, 1), height)
+        index += 1
+    return points[:MAIN_LENGTH]
+
+
+def shape_vertical():
+    """세로 S자형: 아래로 15칸, 오른쪽 5칸, 위로 15칸을 되풀이하며 오른쪽으로 간다."""
+    points = [(0, 0)]
+    direction = 1
+    while len(points) < MAIN_LENGTH:
+        _walk(points, (0, direction), 15)
+        _walk(points, (1, 0), 5)
+        direction *= -1
+    return points[:MAIN_LENGTH]
+
+
+def shape_twin_rings():
+    """쌍고리형: 왼쪽 고리를 한 바퀴 돌고 가운데 다리를 건너 오른쪽 고리를 돌아 안쪽에서 끝난다(8자처럼)."""
+    points = [(12, 0)]
+    for direction, steps in [((-1, 0), 12), ((0, 1), 12), ((1, 0), 12), ((0, -1), 9),
+                             ((1, 0), 4), ((0, -1), 3), ((1, 0), 12), ((0, 1), 12), ((-1, 0), 12), ((0, -1), 7)]:
+        _walk(points, direction, steps)
+    return points[:MAIN_LENGTH]
+
+
+SHAPES = {
+    "uturn": shape_uturn, "pyramid": shape_pyramid, "spiral": shape_spiral, "straight": shape_straight,
+    "stairs": shape_stairs, "mountain": shape_mountain, "vertical": shape_vertical, "twin_rings": shape_twin_rings,
+}
 
 
 # ---------------------------------------------------------------- 갈림길(마름모) 넣기
@@ -354,6 +401,62 @@ THEMES = [
         "risky": {"random": 2, "fate": 2, "forward": 2, "curse": 1},
         "safe": {"treasure": 3, "luck": 2, "random": 2, "normal": 1},
         "routes": [["급류 길 (짧고 위험)", "둑길 (안전)"], ["나룻배 (판정)", "다리 길 (보물)"], ["폭포 옆 (위험)", "갈대밭 길 (행운)"]],
+        "random_pool": COMMON_POOL,
+    },
+    {
+        "file": "data/boards/ruins.json", "seed": 505, "name": "고대 유적", "boss": "고대 골렘",
+        "shape": "stairs", "shape_name": "계단형",
+        "comment": "유적 맵(약 120칸, 계단형). 보물과 함정(저주·감옥)이 함께 많다. tools/make_maps.py로 만든다.",
+        "colors": {"bg": "3d3a33", "line": "d9cfa8"},
+        "keepers": ["돌 수호병", "해골 병사", "도굴꾼 두목", "석상 사자", "고대 거미"],
+        "ambushers": ["함정 화살", "무너지는 천장", "유령 병사"],
+        "ambush_rate": 0.35,
+        "weights": {"normal": 2, "random": 4, "treasure": 3, "curse": 2, "prison": 1, "luck": 1, "fate": 1, "forward": 1},
+        "risky": {"random": 2, "curse": 2, "fate": 2, "treasure": 1},
+        "safe": {"treasure": 3, "luck": 2, "random": 2, "normal": 1},
+        "routes": [["무너진 회랑 (짧고 위험)", "기둥 사이 길 (안전)"], ["지하 묘실 (보물·함정)", "정원 길 (행운)"], ["낡은 다리 (짧음)", "벽화 복도 (보물)"]],
+        "random_pool": COMMON_POOL,
+    },
+    {
+        "file": "data/boards/volcano.json", "seed": 606, "name": "화산 산맥", "boss": "불사조",
+        "shape": "mountain", "shape_name": "산맥형",
+        "comment": "화산 맵(약 120칸, 산맥형). 키퍼가 강하고 전진 칸이 많다. tools/make_maps.py로 만든다.",
+        "colors": {"bg": "4a1f1a", "line": "ff9a6a"},
+        "keepers": ["용암 도마뱀", "불꽃 정령", "화산 골렘", "재의 기사", "화염 박쥐"],
+        "ambushers": ["불꽃 늑대", "용암 뱀", "화산탄"],
+        "ambush_rate": 0.3,
+        "weights": {"normal": 3, "random": 4, "forward": 2, "treasure": 2, "luck": 1, "curse": 1.5, "fate": 1.5, "prison": 0.3},
+        "risky": {"forward": 3, "fate": 2, "random": 2, "curse": 1},
+        "safe": {"treasure": 3, "luck": 2, "random": 2, "normal": 1},
+        "routes": [["용암 길 (짧고 위험)", "식은 바위 길 (안전)"], ["분화구 가장자리 (짧음)", "온천 길 (행운)"], ["불꽃 다리 (위험)", "동굴 길 (보물)"]],
+        "random_pool": COMMON_POOL,
+    },
+    {
+        "file": "data/boards/forest.json", "seed": 707, "name": "깊은 숲", "boss": "고목 정령",
+        "shape": "vertical", "shape_name": "세로 S자형",
+        "comment": "숲 맵(약 120칸, 세로 S자형). 숨은 칸과 행운이 많다. tools/make_maps.py로 만든다.",
+        "colors": {"bg": "1a3a22", "line": "b6f0a0"},
+        "keepers": ["숲 곰", "가시덩굴 괴물", "산적", "멧돼지 무리", "버섯 거인"],
+        "ambushers": ["숲의 그림자", "늑대 무리", "독거미"],
+        "ambush_rate": 0.35,
+        "weights": {"normal": 2, "random": 6, "luck": 2, "treasure": 2, "curse": 1, "forward": 1, "fate": 1, "prison": 0.4},
+        "risky": {"random": 3, "curse": 1, "fate": 2, "forward": 1},
+        "safe": {"luck": 3, "treasure": 2, "random": 2, "normal": 1},
+        "routes": [["가시덤불 길 (짧고 위험)", "오솔길 (안전)"], ["늪지 (판정)", "꽃 피는 길 (행운)"], ["안개 계곡 (짧음)", "샘물 길 (보물)"]],
+        "random_pool": COMMON_POOL,
+    },
+    {
+        "file": "data/boards/sky.json", "seed": 808, "name": "하늘 섬", "boss": "천둥새",
+        "shape": "twin_rings", "shape_name": "쌍고리형",
+        "comment": "하늘 맵(약 120칸, 쌍고리형). 판정과 전진이 많아 변화가 크다. tools/make_maps.py로 만든다.",
+        "colors": {"bg": "23366b", "line": "c8d8ff"},
+        "keepers": ["구름 정령", "바람 기사", "하피", "번개 정령", "하늘 고래"],
+        "ambushers": ["돌풍", "독수리 떼", "구름 도적"],
+        "ambush_rate": 0.3,
+        "weights": {"normal": 3, "random": 4, "fate": 2, "forward": 2, "luck": 2, "treasure": 2, "curse": 1, "prison": 0.3},
+        "risky": {"fate": 3, "forward": 2, "random": 2},
+        "safe": {"treasure": 3, "luck": 2, "random": 2, "normal": 1},
+        "routes": [["구름 다리 (짧고 위험)", "섬 가장자리 (안전)"], ["돌풍 길 (판정)", "무지개 길 (행운)"], ["번개 구름 (위험)", "정원 섬 (보물)"]],
         "random_pool": COMMON_POOL,
     },
 ]
