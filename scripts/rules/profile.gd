@@ -851,3 +851,27 @@ static func challenge_level(profile: Dictionary, eco: Dictionary) -> int:
 ## 오늘의 도전에 쓸 난수 씨앗(날짜마다 같다). 상대 파티와 맵을 정하는 데 쓴다.
 static func challenge_seed(profile: Dictionary) -> int:
 	return hash("challenge|" + str(profile.get("daily", {}).get("date", "")))
+
+
+# ---------------------------------------------------------------- 모두 받기
+
+## 받을 수 있는 미션·모두 완료 보너스·업적 보상을 한꺼번에 받는다. 받은 합계 {"gold", "gems", "count"}를 돌려준다.
+static func claim_everything(profile: Dictionary, eco: Dictionary, data: Dictionary) -> Dictionary:
+	var total := {"gold": 0, "gems": 0, "count": 0}
+	var rewards: Array = []
+	for mission in active_missions(profile, eco):
+		var reward := claim_mission(profile, eco, str(mission["id"]))
+		if not reward.is_empty():
+			rewards.append(reward)
+	var bonus := claim_all_clear(profile, eco)
+	if not bonus.is_empty():
+		rewards.append(bonus)
+	for achievement in data.get("achievements", {}).get("achievements", []):
+		var reward := claim_achievement(profile, data, str(achievement["id"]))
+		if not reward.is_empty():
+			rewards.append(reward)
+	for reward in rewards:
+		total["gold"] = int(total["gold"]) + int(reward.get("gold", 0))
+		total["gems"] = int(total["gems"]) + int(reward.get("gems", 0))
+		total["count"] = int(total["count"]) + 1
+	return total
