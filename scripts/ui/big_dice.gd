@@ -1,91 +1,93 @@
 extends Control
-## 판 가운데에 크게 뜨는 주사위 연출(모두의 마블처럼 큰 주사위가 통통 튀다 멈춘다).
+## 판 위로 던져지는 큰 주사위 연출. 굴리기 버튼(오른쪽 아래) 쪽에서 날아와 통통 튀며 구르다가 가운데에서 멈춘다.
 ## 보여 주기만 한다. 실제 눈은 규칙 코드(scripts/rules/game.gd)가 이미 정한 값을 받는다.
 ## play()는 연출이 끝날 때까지 기다린다. 화면 입력은 막지 않는다.
 
-const DiceView := preload("res://scripts/ui/dice_view.gd")
-
-const ROLL_TIME := 0.7
-const HOLD_TIME := 0.55
+const PIPS := {
+	1: [Vector2(0.5, 0.5)],
+	2: [Vector2(0.27, 0.27), Vector2(0.73, 0.73)],
+	3: [Vector2(0.27, 0.27), Vector2(0.5, 0.5), Vector2(0.73, 0.73)],
+	4: [Vector2(0.27, 0.27), Vector2(0.73, 0.27), Vector2(0.27, 0.73), Vector2(0.73, 0.73)],
+	5: [Vector2(0.27, 0.27), Vector2(0.73, 0.27), Vector2(0.5, 0.5), Vector2(0.27, 0.73), Vector2(0.73, 0.73)],
+	6: [Vector2(0.27, 0.25), Vector2(0.73, 0.25), Vector2(0.27, 0.5), Vector2(0.73, 0.5), Vector2(0.27, 0.75), Vector2(0.73, 0.75)],
+}
+const ROLL_TIME := 0.95
+const HOLD_TIME := 0.6
 const FADE_TIME := 0.2
+const DIE := 92.0
+const BOUNCES := 3.0
+const FACE_TIME := 0.07
 
-var _panel: PanelContainer
-var _style: StyleBoxFlat
-var _dice: Control
+var _rolls: Array = []
+var _faces: Array = []
+var _t := 0.0
+var _playing := false
+var _face_timer := 0.0
+var _fx_rng := RandomNumberGenerator.new()
 var _caption: Label
 var _total: Label
+var _color := Color.WHITE
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	visible = false
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(center)
-	_panel = PanelContainer.new()
-	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_style = StyleBoxFlat.new()
-	_style.bg_color = Color(0.04, 0.05, 0.12, 0.88)
-	_style.set_border_width_all(4)
-	_style.set_corner_radius_all(26)
-	_style.set_content_margin_all(22)
-	_style.shadow_color = Color(0, 0, 0, 0.5)
-	_style.shadow_size = 10
-	_panel.add_theme_stylebox_override("panel", _style)
-	center.add_child(_panel)
-	var column := VBoxContainer.new()
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_theme_constant_override("separation", 8)
-	_panel.add_child(column)
-	_caption = _label(24)
-	column.add_child(_caption)
-	_dice = DiceView.new()
-	_dice.die_size = 104.0
-	_dice.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_dice.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	column.add_child(_dice)
-	_total = _label(54)
-	_total.add_theme_constant_override("outline_size", 10)
-	_total.add_theme_color_override("font_outline_color", Color.BLACK)
-	column.add_child(_total)
+	_caption = _label(26)
+	_caption.anchor_top = 0.5
+	_caption.anchor_bottom = 0.5
+	_caption.offset_top = -150
+	_caption.offset_bottom = -110
+	add_child(_caption)
+	_total = _label(64)
+	_total.anchor_top = 0.5
+	_total.anchor_bottom = 0.5
+	_total.offset_top = 62
+	_total.offset_bottom = 150
+	add_child(_total)
 
 
 func _label(font_size: int) -> Label:
 	var label := Label.new()
+	label.anchor_left = 0.0
+	label.anchor_right = 1.0
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_constant_override("outline_size", 12)
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
 
-## caption: 위의 작은 글씨("내 이동"), rolls: 주사위 눈들, result: 멈춘 뒤 큰 글씨("6칸!").
+## caption: 위의 작은 글씨("나 이동"), rolls: 주사위 눈들, result: 멈춘 뒤 큰 글씨("6칸!").
 func play(caption: String, rolls: Array, result: String, color: Color) -> void:
 	if rolls.is_empty():
 		return
+	_rolls = rolls
+	_faces = rolls.duplicate()
+	_color = color
 	_caption.text = caption
 	_caption.add_theme_color_override("font_color", color)
-	_total.text = " "
+	_total.text = ""
 	_total.add_theme_color_override("font_color", Color("ffcf4d"))
-	_style.border_color = color
-	_dice.values = rolls
+	_fx_rng.randomize()
+	_t = 0.0
+	_playing = true
 	modulate.a = 1.0
 	visible = true
-	await get_tree().process_frame
+	while _t < 1.0 and is_inside_tree():
+		await get_tree().process_frame
 	if not is_inside_tree():
 		return
-	_panel.pivot_offset = _panel.size * 0.5
-	_panel.scale = Vector2(0.5, 0.5)
-	var pop := create_tween()
-	pop.tween_property(_panel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	await _dice.roll_to(rolls, ROLL_TIME)
-	if not is_inside_tree():
-		return
+	_playing = false
+	_faces = rolls.duplicate()
+	queue_redraw()
 	_total.text = result
-	var bump := create_tween()
-	bump.tween_property(_panel, "scale", Vector2(1.12, 1.12), 0.09)
-	bump.tween_property(_panel, "scale", Vector2.ONE, 0.12)
+	_total.pivot_offset = _total.size * 0.5
+	_total.scale = Vector2(0.3, 0.3)
+	var pop := create_tween()
+	pop.tween_property(_total, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	await get_tree().create_timer(HOLD_TIME).timeout
 	if not is_inside_tree():
 		return
@@ -93,3 +95,58 @@ func play(caption: String, rolls: Array, result: String, color: Color) -> void:
 	fade.tween_property(self, "modulate:a", 0.0, FADE_TIME)
 	await fade.finished
 	visible = false
+
+
+func _process(delta: float) -> void:
+	if not _playing:
+		return
+	_t = min(1.0, _t + delta / ROLL_TIME)
+	_face_timer -= delta
+	if _face_timer <= 0.0 and _t < 0.82:
+		_face_timer = FACE_TIME
+		for index in _faces.size():
+			_faces[index] = _fx_rng.randi_range(1, 6)
+	elif _t >= 0.82:
+		_faces = _rolls.duplicate()
+	queue_redraw()
+
+
+func _draw() -> void:
+	if _rolls.is_empty():
+		return
+	var count := _rolls.size()
+	var gap := DIE * 1.25
+	var start := Vector2(size.x - 90.0, size.y - 90.0)
+	var ease_t := 1.0 - pow(1.0 - _t, 2.2)
+	for index in count:
+		var rest := Vector2(size.x * 0.5 + (index - (count - 1) * 0.5) * gap, size.y * 0.5)
+		var ground := start.lerp(rest, ease_t)
+		# 튈수록 낮아지는 통통 튀기
+		var hop := absf(sin(_t * PI * BOUNCES + index * 0.5)) * 150.0 * (1.0 - _t) * (1.0 - _t)
+		var spin := (1.0 - ease_t) * TAU * (2.0 + index * 0.5) * (1.0 if index % 2 == 0 else -1.0)
+		var scale_now := 1.0 + hop / 500.0
+		draw_set_transform(ground + Vector2(0, DIE * 0.5), 0.0, Vector2(1.0, 0.35))
+		draw_circle(Vector2.ZERO, DIE * 0.5 * (1.0 - hop / 400.0), Color(0, 0, 0, 0.35))
+		draw_set_transform(ground - Vector2(0, hop), spin, Vector2(scale_now, scale_now))
+		_draw_die(int(_faces[index]))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## 가운데가 (0,0)인 주사위 하나. 둥근 모서리, 아래 두께, 눈.
+func _draw_die(value: int) -> void:
+	var half := DIE * 0.5
+	var body := StyleBoxFlat.new()
+	body.bg_color = Color("f8f4ea")
+	body.set_corner_radius_all(16)
+	body.border_color = Color("9a9484")
+	body.set_border_width_all(3)
+	body.border_width_bottom = 9
+	draw_style_box(body, Rect2(Vector2(-half, -half), Vector2(DIE, DIE)))
+	var shine := StyleBoxFlat.new()
+	shine.bg_color = Color(1, 1, 1, 0.75)
+	shine.set_corner_radius_all(10)
+	draw_style_box(shine, Rect2(Vector2(-half + 8, -half + 7), Vector2(DIE - 16, 10)))
+	var pip_color := Color("c0392b") if value == 1 else Color("1b1f3b")
+	var pip_size := DIE * (0.14 if value == 1 else 0.095)
+	for pip in PIPS[clampi(value, 1, 6)]:
+		draw_circle(Vector2(-half, -half - 3) + pip * DIE, pip_size, pip_color)
