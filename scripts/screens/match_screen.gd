@@ -22,6 +22,8 @@ const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 const BigDice := preload("res://scripts/ui/big_dice.gd")
 const AimBar := preload("res://scripts/ui/aim_bar.gd")
 const Cutin := preload("res://scripts/ui/cutin.gd")
+## 턴 제한이 이만큼 남으면 턴 배너에 남은 턴을 보여 준다.
+const LAST_TURNS_WARNING := 5
 const VersusOverlay := preload("res://scripts/ui/versus_overlay.gd")
 
 const AI_DELAY := 1.0
@@ -861,8 +863,12 @@ func _advance() -> void:
 		if playing != game:
 			return
 		_board_view.focus_on(game.current)
-		await _banner.play("%d / %d턴" % [min(game.round_number, game.max_rounds), game.max_rounds],
-			_turn_title(game.current), PLAYER_TEXT_COLORS[game.current])
+		# 턴 제한이 가까우면 남은 턴을 알려 준다(끝나면 골까지 남은 거리로 판정).
+		var turns_left: int = game.max_rounds - int(game.round_number) + 1
+		var small := "%d / %d턴" % [min(game.round_number, game.max_rounds), game.max_rounds]
+		if turns_left <= LAST_TURNS_WARNING and turns_left >= 1:
+			small = "마지막 턴!" if turns_left == 1 else "남은 턴 %d" % turns_left
+		await _banner.play(small, _turn_title(game.current), PLAYER_TEXT_COLORS[game.current])
 		if playing != game:
 			return
 		if _humans[game.current] and not _auto:
