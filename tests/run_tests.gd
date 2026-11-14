@@ -309,6 +309,32 @@ func _test_move_dice() -> void:
 		faces[int(value)] = true
 	_check(faces.size() == 6, "이동 주사위에서 나오지 않는 눈이 있음")
 
+	# 따라잡기: 10칸 이상 뒤처진 쪽은 큰 눈이 더 잘 나온다. 덜 뒤처졌거나 앞서 있으면 보통 비율.
+	_check(game.catchup_gap == 10, "따라잡기 기준이 10칸이 아님")
+	var boosted_one := 0
+	var boosted_two := 0
+	for i in trials:
+		boosted_one += game._sum(game.roll_weighted_dice(1, game.move_weights_for(1, true)))
+		boosted_two += game._sum(game.roll_weighted_dice(2, game.move_weights_for(2, true)))
+	print("[따라잡기 주사위] 1개 평균 %.2f칸 · 2개 평균 %.2f칸" % [float(boosted_one) / trials, float(boosted_two) / trials])
+	_check(float(boosted_one) / trials > one_mean + 0.3, "따라잡기 주사위 1개가 보통보다 크지 않음")
+	_check(float(boosted_two) / trials > two_mean + 0.3, "따라잡기 주사위 2개가 보통보다 크지 않음")
+	var chase = _new_game(22)
+	chase.begin_turn()
+	_place(chase, 0, [0, 1])
+	_place(chase, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+	_check(chase.is_catching_up(0) and not chase.is_catching_up(1), "11칸 뒤처진 쪽만 따라잡기여야 함")
+	chase.take_events()
+	chase.roll_move()
+	var flagged := false
+	for event in chase.take_events():
+		if event["kind"] == "move":
+			flagged = bool(event.get("catchup", false))
+	_check(flagged, "따라잡기 굴림인데 이동 사건에 표시가 없음")
+	_place(chase, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+	_place(chase, 0, [0, 1])
+	_check(not chase.is_catching_up(0), "9칸 뒤처졌는데 따라잡기가 됨")
+
 
 ## 갈림길(13번)에서 멈추고, 고른 길로 남은 칸만큼 가는지 확인한다.
 func _test_fork_choice() -> void:

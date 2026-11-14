@@ -42,6 +42,9 @@ var abilities: Dictionary = {}
 var characters: Dictionary = {}
 ## 이동 주사위 눈의 비율. "1"은 주사위 1개일 때, "2"는 2개 이상일 때.
 var move_weights: Dictionary = {}
+## 따라잡기: 상대보다 catchup_gap칸 이상 뒤처진 쪽의 이동 주사위 눈 비율
+var catchup_gap := 0
+var catchup_weights: Dictionary = {}
 
 var players: Array = []
 var current := 0
@@ -89,6 +92,8 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	cards = data.get("cards", {})
 	abilities = data.get("abilities", {})
 	move_weights = data.get("rules", {}).get("move_dice_weights", {})
+	catchup_gap = int(data.get("rules", {}).get("catchup_gap", 0))
+	catchup_weights = data.get("rules", {}).get("catchup_move_weights", {})
 	var rules: Dictionary = data.get("rules", {})
 	second_player_gauge = int(rules.get("second_player_gauge", 0))
 	gauge_base = int(rules.get("gauge_base", 10))
@@ -325,8 +330,17 @@ func roll_weighted_dice(count: int, weights: Array) -> Array:
 
 
 ## 이동 주사위 개수에 맞는 눈 비율.
-func move_weights_for(count: int) -> Array:
-	return move_weights.get("1" if count <= 1 else "2", [])
+## catching_up이 true면(많이 뒤처진 쪽) 큰 눈이 더 잘 나오는 비율을 쓴다.
+func move_weights_for(count: int, catching_up: bool = false) -> Array:
+	var key := "1" if count <= 1 else "2"
+	if catching_up and catchup_weights.has(key):
+		return catchup_weights[key]
+	return move_weights.get(key, [])
+
+
+## 따라잡기: player_index가 상대보다 catchup_gap칸 이상 뒤처져 있는지. (catchup_gap이 0이면 쓰지 않는다)
+func is_catching_up(player_index: int) -> bool:
+	return catchup_gap > 0 and behind_by(player_index) >= catchup_gap
 
 
 func _sum(values: Array) -> int:
@@ -406,15 +420,20 @@ func roll_move() -> void:
 
 	var total := 0
 	var rolls: Array = []
+	var catching_up := false
 	var fixed := effect_sum(current, "move_fixed")
 	if fixed > 0:
 		total = fixed
 		say("%s: 이동 %d칸 (고정)" % [player["name"], total])
 	else:
 		var count: int = max(1, int(mover["move"]) + effect_sum(current, "move_dice"))
-		rolls = roll_weighted_dice(count, move_weights_for(count))
+		# 따라잡기: 많이 뒤처진 쪽은 큰 눈이 더 잘 나온다.
+		catching_up = is_catching_up(current)
+		if catching_up:
+			say("  따라잡기! %d칸 이상 뒤처져 있어 큰 눈이 잘 나옵니다." % catchup_gap)
+		rolls = roll_weighted_dice(count, move_weights_for(count, catching_up))
 		if effect_sum(current, "move_best") > 0:
-			var again := roll_weighted_dice(count, move_weights_for(count))
+			var again := roll_weighted_dice(count, move_weights_for(count, catching_up))
 			say("  길잡이 별: %s와 %s 중 큰 쪽" % [str(rolls), str(again)])
 			if _sum(again) > _sum(rolls):
 				rolls = again
@@ -428,7 +447,7 @@ func roll_move() -> void:
 		bonus += ATTR_BONUS
 		total += ATTR_BONUS
 		say("  맵 속성 보너스로 %d칸 더 이동" % ATTR_BONUS)
-	_event({"kind": "move", "player": current, "rolls": rolls, "total": total, "bonus": bonus})
+	_event({"kind": "move", "player": current, "rolls": rolls, "total": total, "bonus": bonus, "catchup": catching_up})
 
 	_continue_walk(total)
 
