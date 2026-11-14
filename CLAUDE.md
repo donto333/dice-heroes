@@ -19,6 +19,7 @@
 - `scripts/main.gd`: 화면 전환 틀(app). `scripts/screens/`: 타이틀·로그인·로비·영웅·상점·미션·설정·파티·대전 화면.
 - `scripts/rules/game.gd`: 판 규칙. `scripts/rules/profile.gd`: 게임 밖 성장(재화·소환·강화·보상·랭크·미션·출석). 수치는 `data/economy.json`.
 - 저장은 `scripts/save_store.gd`(기기 안 user://). 온라인 서버(Nakama)는 아직 없음.
+- 보드 바탕 지형·꾸밈 그림은 `tools/make_terrain.py`로 만든다(assets/terrain, 직접 그린 도트). 칸은 두께 있는 육각형으로 그린다(scripts/ui/board_view.gd).
 - 화면 확인은 CI의 `tools/capture.gd` 자동 사진(로그에 base64로 남음).
 
 ## 게임 요약

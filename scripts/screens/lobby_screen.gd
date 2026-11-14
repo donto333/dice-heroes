@@ -188,7 +188,9 @@ func open_roulette() -> void:
 	_wheel = RouletteWheel.new()
 	var slots: Array = []
 	for slot in app.eco.get("roulette", {}).get("slots", []):
-		slots.append({"text": Kit.reward_line(slot["reward"]), "color": Color(str(slot.get("color", "3a6fd8")))})
+		var reward: Dictionary = slot["reward"]
+		var text: String = "보석 %d" % int(reward["gems"]) if reward.has("gems") else "골드 %d" % int(reward.get("gold", 0))
+		slots.append({"text": text, "color": Color(str(slot.get("color", "3a6fd8")))})
 	_wheel.slots = slots
 	var center := CenterContainer.new()
 	center.add_child(_wheel)
