@@ -223,6 +223,12 @@ func _showcase() -> Control:
 	button.add_child(season)
 	season.position = Vector2(12, 134)
 	season.size = Vector2(88, 88)
+	# 오늘 할 일: 남은 것이 있으면 빨간 점
+	var todo := Kit.round_shortcut("할 일", "start", Color("7a4fd0"), _todo_left() > 0)
+	todo.pressed.connect(open_todo)
+	button.add_child(todo)
+	todo.position = Vector2(12, 228)
+	todo.size = Vector2(88, 88)
 	# 모두의 마블식 오른쪽 바로가기: 출석 · 미션 · 특가
 	var badges: Dictionary = app.badges()
 	var shortcuts := VBoxContainer.new()
@@ -246,6 +252,74 @@ func _showcase() -> Control:
 	deals.pressed.connect(_on_tab.bind("shop"))
 	shortcuts.add_child(deals)
 	return button
+
+
+# ---------------------------------------------------------------- 오늘 할 일
+
+## 오늘 할 일 목록. 각 줄은 [이름, 설명, 끝났나, 누르면 할 일].
+func _todo_items() -> Array:
+	var profile: Dictionary = app.profile
+	var missions: Array = Profile.active_missions(profile, app.eco)
+	var missions_done := 0
+	for mission in missions:
+		if Profile.mission_progress(profile, mission) >= int(mission["goal"]):
+			missions_done += 1
+	var sweeps := Profile.sweeps_left(profile, app.eco)
+	return [
+		["출석 체크", "하루 한 번 출석 보상", not Profile.can_check_in(profile, app.today()), _on_attendance_shortcut],
+		["무료 소환", "오늘 %d번 남음" % Profile.free_summons_left(profile, app.eco), Profile.free_summons_left(profile, app.eco) <= 0, _on_tab.bind("shop")],
+		["행운의 룰렛", "하루 한 번 무료", not Profile.can_spin_free(profile, app.eco), open_roulette],
+		["오늘의 도전", "이기면 보석", Profile.challenge_done(profile), _on_mode.bind("challenge")],
+		["일일 미션", "%d / %d 달성" % [missions_done, missions.size()], missions_done >= missions.size() and Profile.claimable_mission_count(profile, app.eco) == 0, _on_tab.bind("missions")],
+		["우편함", "안 받은 우편 %d통" % Profile.unclaimed_mail_count(profile), Profile.unclaimed_mail_count(profile) == 0, open_mailbox],
+		["시즌 패스", "받을 보상 %d개" % Profile.pass_claimable_count(profile, app.eco), Profile.pass_claimable_count(profile, app.eco) == 0, _on_tab.bind("pass")],
+		["모험 소탕", "오늘 %d번 남음 (별 3개 스테이지)" % sweeps, sweeps <= 0, _on_mode.bind("adventure")],
+	]
+
+
+func _todo_left() -> int:
+	var left := 0
+	for item in _todo_items():
+		# 소탕은 별 3개 스테이지가 있어야 할 수 있어서 빨간 점에는 넣지 않는다.
+		if not bool(item[2]) and str(item[0]) != "모험 소탕":
+			left += 1
+	return left
+
+
+func open_todo() -> void:
+	app.play("click")
+	var body := Kit.vbox(8)
+	var window: Control = null
+	var rows: Array = []
+	for item in _todo_items():
+		var done := bool(item[2])
+		var line := Kit.panel(Color("14182f") if not done else Color("10131f"), Kit.LINE, 10)
+		var row := Kit.hbox(10)
+		line.add_child(row)
+		var text := Kit.vbox(0)
+		text.add_child(Kit.label(str(item[0]), 24, Color.WHITE if not done else Kit.MUTED))
+		text.add_child(Kit.label(str(item[1]), 17, Kit.MUTED))
+		row.add_child(Kit.expand(text))
+		if done:
+			var mark := Kit.label("완료", 22, Color("6fd08c"), HORIZONTAL_ALIGNMENT_CENTER)
+			mark.custom_minimum_size = Vector2(120, 0)
+			row.add_child(mark)
+		else:
+			var go := Kit.button("가기", Kit.ACCENT, 22, 56)
+			go.custom_minimum_size = Vector2(120, 56)
+			rows.append([go, item[3]])
+			row.add_child(go)
+		body.add_child(line)
+	window = app.dialog("오늘 할 일", body, [["닫기", Kit.PANEL_LIGHT]], 640)
+	for pair in rows:
+		(pair[0] as Button).pressed.connect(_todo_go.bind(window.get_instance_id(), pair[1]))
+
+
+func _todo_go(window_id: int, action: Callable) -> void:
+	var window := instance_from_id(window_id)
+	if is_instance_valid(window):
+		window.call("close")
+	action.call()
 
 
 # ---------------------------------------------------------------- 공지 줄
