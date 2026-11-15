@@ -228,6 +228,11 @@ func _run() -> void:
 	await _shot("13_match_banner")
 	await _wait(1.6)
 	await _shot("14_match")
+	_app.current_screen._show_skill_info("attack")
+	await _wait(0.3)
+	await _shot("14s_skill_info")
+	_close_dialogs()
+	await _wait(0.2)
 	# 연출 확인용 사진: 효과 그림들이 실제로 어떻게 겹쳐 보이는지 한 화면에 터뜨려 찍는다.
 	var fx_layer = _app.current_screen.get("_fx")
 	if fx_layer != null:

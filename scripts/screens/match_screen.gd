@@ -304,13 +304,20 @@ func _build_ui() -> void:
 	ability_row.anchor_top = 1.0
 	ability_row.anchor_bottom = 1.0
 	ability_row.anchor_left = 1.0
-	ability_row.offset_left = -190 - 3 * 176
+	ability_row.offset_left = -190 - 3 * 176 - 76
 	ability_row.offset_right = -190
 	ability_row.offset_top = -112
 	ability_row.offset_bottom = -6
+	# 스킬 설명 버튼: 언제든 세 영웅의 스킬 설명을 볼 수 있다.
+	var info_button := Kit.button("스킬\n설명", Color("6f9bd6"), 17, 104)
+	info_button.custom_minimum_size = Vector2(68, 104)
+	info_button.pressed.connect(_show_skill_info.bind(""))
+	ability_row.add_child(info_button)
 	for slot in Game.SLOTS:
 		var button := _make_button(16, 104, SLOT_COLORS[slot])
 		button.pressed.connect(_on_ability_pressed.bind(slot))
+		# 아직 못 쓰는(꺼진) 스킬 버튼을 눌러도 설명 창이 뜬다.
+		button.gui_input.connect(_on_ability_input.bind(slot))
 		# 광택 스킬 버튼: 못 쓸 때도 자리 색이 어둡게 남고, 쓸 수 있으면 금색 테가 빛나며 빛이 훑고 지나간다.
 		Kit.paint(button, SLOT_COLORS[slot])
 		var gloss = button.get_node("Gloss")
@@ -453,6 +460,50 @@ func _show_used(event: Dictionary, shout: String, title: String) -> void:
 	if _humans[who]:
 		return
 	await _show_tile({"tile": "", "good": false, "text": "%s\n%s" % [title, event.get("text", "")], "small": true})
+
+
+## 꺼진 스킬 버튼을 눌렀다 떼면 설명 창을 연다(켜진 버튼은 바로 스킬을 쓴다).
+func _on_ability_input(event: InputEvent, slot: String) -> void:
+	var button: Button = _ability_buttons[slot]
+	if not button.disabled:
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+		_show_skill_info(slot)
+
+
+## 세 영웅의 스킬 설명 창. focus 자리의 스킬은 금색 테로 강조한다.
+func _show_skill_info(focus: String) -> void:
+	if game == null:
+		return
+	_play("click")
+	var viewer := _viewer()
+	var me: Dictionary = game.players[viewer]
+	var body := Kit.vbox(8)
+	for slot in Game.SLOTS:
+		var character: Dictionary = game.char_of(viewer, slot)
+		var ability: Dictionary = game.ability_of(viewer, slot)
+		var card := Kit.panel(SLOT_COLORS[slot].darkened(0.45), Kit.TRIM if slot == focus else SLOT_COLORS[slot].lightened(0.3), 8)
+		body.add_child(card)
+		var row := Kit.hbox(12)
+		card.add_child(row)
+		var face := Portrait.new()
+		face.custom_minimum_size = Vector2(76, 76)
+		face.border = SLOT_COLORS[slot].lightened(0.4)
+		face.border_width = 3.0
+		face.show_character(character, SLOT_COLORS[slot].darkened(0.3))
+		row.add_child(face)
+		var words := Kit.vbox(2)
+		row.add_child(Kit.expand(words))
+		var head := Kit.hbox(8)
+		words.add_child(head)
+		head.add_child(Kit.label("%s · %s" % [Game.SLOT_LABELS[slot], character.get("name", "")], 18, Kit.MUTED))
+		var is_ready: bool = _waiting_for_player and game.can_use_ability(slot)
+		var gauge_label := Kit.label("사용 가능!" if is_ready else "게이지 %d%%" % int(me["gauge"][slot]), 18, Kit.GOLD if is_ready else Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
+		head.add_child(Kit.expand(gauge_label))
+		words.add_child(Kit.label(str(ability.get("name", "-")), 26, Kit.GOLD))
+		words.add_child(Kit.para(str(ability.get("text", "")), 19))
+	body.add_child(Kit.para("게이지가 100%가 되면 내 차례에 버튼이 금빛으로 빛나고, 누르면 스킬을 써요.", 16, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	app.dialog("스킬 설명", body, [["닫기", Kit.PANEL_LIGHT]], 760)
 
 
 ## 스킬 알림 띠: 왼쪽에서 미끄러져 나와 영웅 얼굴·스킬 이름·한 줄 설명을 보여 주고 잠시 뒤 들어간다.
