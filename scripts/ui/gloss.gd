@@ -13,7 +13,12 @@ var radius := 0.0
 var depth := 7.0
 ## 광택 띠를 그릴지(아주 작은 버튼은 끈다)
 var shine := true
+## 꺼져 있어도 회색으로 바꾸지 않고 제 색을 어둡게만 한다(스킬 버튼처럼 늘 색이 보여야 할 때).
+var keep_color := false
+## 켜져 있을 때 금색 테가 숨 쉬듯 빛난다("지금 쓸 수 있어요").
+var alert := false
 var _button: BaseButton
+var _time := 0.0
 
 
 func _init() -> void:
@@ -31,6 +36,12 @@ func _ready() -> void:
 		_button.draw.connect(queue_redraw)
 		_button.button_down.connect(_on_down)
 		_button.button_up.connect(_on_up)
+
+
+func _process(delta: float) -> void:
+	if alert and _button != null and not _button.disabled:
+		_time += delta
+		queue_redraw()
 
 
 func paint(fill: Color, rim: Color) -> void:
@@ -70,6 +81,9 @@ func _draw() -> void:
 		over = mode == BaseButton.DRAW_HOVER
 	var fill := DISABLED if off else color
 	var rim := DISABLED.darkened(0.45) if off else edge
+	if off and keep_color:
+		fill = color.darkened(0.42)
+		rim = edge
 	if over:
 		fill = fill.lightened(0.08)
 	var r := radius if radius > 0.0 else minf(22.0, size.y * 0.5)
@@ -143,3 +157,14 @@ func _draw() -> void:
 	line.set_corner_radius_all(int(inner))
 	line.anti_aliasing_size = 1.2
 	draw_style_box(line, body)
+
+	# 6) 쓸 수 있을 때 숨 쉬는 금색 테
+	if alert and not off:
+		var pulse := 0.5 + 0.5 * sin(_time * 5.0)
+		var halo := StyleBoxFlat.new()
+		halo.draw_center = false
+		halo.border_color = Color(1.0, 0.86, 0.3, 0.55 + pulse * 0.45)
+		halo.set_border_width_all(int(4.0 + pulse * 2.0))
+		halo.set_corner_radius_all(int(r + 4.0))
+		halo.anti_aliasing_size = 1.2
+		draw_style_box(halo, Rect2(-3, sink - 3, size.x + 6, size.y - sink + 6))

@@ -15,7 +15,7 @@ const DiePreview := preload("res://scripts/ui/die_preview.gd")
 const ROLL_TIME := 0.95
 const HOLD_TIME := 0.6
 const FADE_TIME := 0.2
-const DIE := 92.0
+const DIE := 108.0
 const BOUNCES := 3.0
 const FACE_TIME := 0.07
 
@@ -23,6 +23,8 @@ var _rolls: Array = []
 var _faces: Array = []
 var _t := 0.0
 var _playing := false
+## 멈춘 뒤 흐른 시간(빛살·고리용)
+var _settle := 0.0
 var _face_timer := 0.0
 var _fx_rng := RandomNumberGenerator.new()
 var _caption: Label
@@ -40,14 +42,14 @@ func _ready() -> void:
 	_caption = _label(26)
 	_caption.anchor_top = 0.5
 	_caption.anchor_bottom = 0.5
-	_caption.offset_top = -150
-	_caption.offset_bottom = -110
+	_caption.offset_top = -166
+	_caption.offset_bottom = -126
 	add_child(_caption)
 	_total = _label(64)
 	_total.anchor_top = 0.5
 	_total.anchor_bottom = 0.5
-	_total.offset_top = 62
-	_total.offset_bottom = 150
+	_total.offset_top = 78
+	_total.offset_bottom = 166
 	add_child(_total)
 
 
@@ -101,8 +103,14 @@ func play(caption: String, rolls: Array, result: String, color: Color) -> void:
 
 
 func _process(delta: float) -> void:
-	if not _playing:
+	if not visible:
 		return
+	if not _playing:
+		# 멈춘 뒤: 빛 고리가 퍼지고 뒤에서 빛살이 돈다.
+		_settle += delta
+		queue_redraw()
+		return
+	_settle = 0.0
 	_t = min(1.0, _t + delta / ROLL_TIME)
 	_face_timer -= delta
 	if _face_timer <= 0.0 and _t < 0.82:
@@ -114,23 +122,68 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+## 굴러가는 도중 t일 때 index번째 주사위의 [바닥 위치, 뜬 높이, 돈 각도].
+func _pose(index: int, count: int, t: float) -> Array:
+	var gap := DIE * 1.25
+	var start := Vector2(size.x - 90.0, size.y - 90.0)
+	var ease_t := 1.0 - pow(1.0 - t, 2.2)
+	var rest := Vector2(size.x * 0.5 + (index - (count - 1) * 0.5) * gap, size.y * 0.5)
+	var ground := start.lerp(rest, ease_t)
+	# 튈수록 낮아지는 통통 튀기
+	var hop := absf(sin(t * PI * BOUNCES + index * 0.5)) * 150.0 * (1.0 - t) * (1.0 - t)
+	var spin := (1.0 - ease_t) * TAU * (2.0 + index * 0.5) * (1.0 if index % 2 == 0 else -1.0)
+	return [ground, hop, spin]
+
+
 func _draw() -> void:
 	if _rolls.is_empty():
 		return
 	var count := _rolls.size()
-	var gap := DIE * 1.25
-	var start := Vector2(size.x - 90.0, size.y - 90.0)
-	var ease_t := 1.0 - pow(1.0 - _t, 2.2)
+	# 주사위에 눈이 가도록 가운데를 살짝 어둡게(위아래로 번지는 띠)
+	var dim := minf(_t * 4.0, 1.0) * 0.34
+	var band := Rect2(0, size.y * 0.5 - 190.0, size.x, 380.0)
+	draw_rect(band, Color(0, 0.02, 0.1, dim))
+	draw_rect(Rect2(band.position - Vector2(0, 26), Vector2(size.x, 26)), Color(0, 0.02, 0.1, dim * 0.5))
+	draw_rect(Rect2(Vector2(0, band.end.y), Vector2(size.x, 26)), Color(0, 0.02, 0.1, dim * 0.5))
+	if not _playing:
+		# 멈춘 주사위 뒤에서 도는 빛살과 퍼지는 고리
+		for index in count:
+			var rest: Vector2 = _pose(index, count, 1.0)[0]
+			var beams := 10
+			for beam in beams:
+				var angle := _settle * 1.4 + TAU * beam / beams
+				var reach := DIE * (1.25 + 0.15 * sin(_settle * 5.0 + beam))
+				var wide := 0.12
+				draw_polygon(PackedVector2Array([rest,
+					rest + Vector2(cos(angle - wide), sin(angle - wide)) * reach,
+					rest + Vector2(cos(angle + wide), sin(angle + wide)) * reach]),
+					PackedColorArray([Color(1, 0.92, 0.5, 0.55), Color(1, 0.92, 0.5, 0.0), Color(1, 0.92, 0.5, 0.0)]))
+			var ring_t := clampf(_settle / 0.45, 0.0, 1.0)
+			if ring_t < 1.0:
+				draw_arc(rest, DIE * (0.6 + ring_t * 1.1), 0.0, TAU, 40, Color(1, 1, 1, 1.0 - ring_t), 7.0 * (1.0 - ring_t) + 1.0)
+	else:
+		# 굴러오는 동안 뒤에 남는 잔상
+		for ghost: int in [3, 2, 1]:
+			var past: float = _t - float(ghost) * 0.035
+			if past <= 0.0 or _t > 0.85:
+				continue
+			for index in count:
+				var pose := _pose(index, count, past)
+				var where: Vector2 = pose[0]
+				draw_set_transform(where - Vector2(0, float(pose[1])), float(pose[2]), Vector2.ONE)
+				draw_rect(Rect2(Vector2(-DIE, -DIE) * 0.5, Vector2(DIE, DIE)), Color(_color.r, _color.g, _color.b, 0.16 / float(ghost)))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for index in count:
-		var rest := Vector2(size.x * 0.5 + (index - (count - 1) * 0.5) * gap, size.y * 0.5)
-		var ground := start.lerp(rest, ease_t)
-		# 튈수록 낮아지는 통통 튀기
-		var hop := absf(sin(_t * PI * BOUNCES + index * 0.5)) * 150.0 * (1.0 - _t) * (1.0 - _t)
-		var spin := (1.0 - ease_t) * TAU * (2.0 + index * 0.5) * (1.0 if index % 2 == 0 else -1.0)
+		var pose := _pose(index, count, _t)
+		var ground: Vector2 = pose[0]
+		var hop := float(pose[1])
 		var scale_now := 1.0 + hop / 500.0
+		if not _playing:
+			# 멈추는 순간 통 하고 커졌다 돌아온다.
+			scale_now = 1.0 + 0.22 * maxf(1.0 - _settle / 0.2, 0.0)
 		draw_set_transform(ground + Vector2(0, DIE * 0.5), 0.0, Vector2(1.0, 0.35))
 		draw_circle(Vector2.ZERO, DIE * 0.5 * (1.0 - hop / 400.0), Color(0, 0, 0, 0.35))
-		draw_set_transform(ground - Vector2(0, hop), spin, Vector2(scale_now, scale_now))
+		draw_set_transform(ground - Vector2(0, hop), float(pose[2]), Vector2(scale_now, scale_now))
 		DiePreview.draw_die(self, DIE, clampi(int(_faces[index]), 1, 6), skin)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 

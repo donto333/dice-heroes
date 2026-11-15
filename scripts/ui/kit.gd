@@ -4,6 +4,8 @@ extends RefCounted
 ## 2026-11 리뉴얼: 밝고 통통한 캐주얼(하늘색 바탕, 파란 판, 흰 글자, 노랑·주황·초록 버튼).
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const Gloss := preload("res://scripts/ui/gloss.gd")
+const Ambience := preload("res://scripts/ui/ambience.gd")
+const Sweep := preload("res://scripts/ui/sweep.gd")
 const BG := Color("2a8be6")
 ## 바탕은 위가 밝고 아래가 짙은 하늘색으로 번진다(sky()).
 const BG_TOP := Color("58b8ff")
@@ -228,7 +230,18 @@ static func backdrop(parent: Control, art_name: String, strength: float = 1.0) -
 	view.fade_top = 0.18
 	view.fade_bottom = 0.25
 	parent.add_child(view)
+	# 바탕 위에 떠다니는 빛 알갱이와 빛줄기
+	view.add_child(Ambience.new())
 	return view
+
+
+## 큰 버튼 위를 몇 초마다 훑고 지나가는 빛을 붙인다. 가장 눈에 띄어야 하는 버튼에만 쓴다.
+static func shimmer(target: Button, delay: float = 0.0) -> void:
+	if target.has_node("Sweep"):
+		return
+	var sweep := Sweep.new()
+	sweep.offset = delay
+	target.add_child(sweep)
 
 
 ## 버튼 안쪽에 일러스트를 깔고, 글자가 잘 보이게 아래쪽을 어둡게 한다. 그림이 있으면 true.
@@ -366,6 +379,8 @@ static func tile_button(text: String, icon_name: String, color: Color, sub: Stri
 		small.add_theme_color_override("font_outline_color", color.darkened(0.6))
 		small.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		column.add_child(small)
+	# 큰 타일 버튼은 저마다 다른 때에 빛이 훑고 지나간다.
+	shimmer(result, float(text.length() % 5) * 0.6)
 	return result
 
 

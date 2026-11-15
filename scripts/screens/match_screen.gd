@@ -266,7 +266,7 @@ func _build_ui() -> void:
 	var result_panel := PanelContainer.new()
 	# 기록 칸은 높이를 고정한다. 내용이 넘치면 안에서 스크롤되어 판이 줄어들지 않는다.
 	result_panel.custom_minimum_size = Vector2(0, 132)
-	result_panel.add_theme_stylebox_override("panel", _box(Color("2a8be6"), Color("8fd0ff"), 2))
+	result_panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.2, 0.46, 0.94), Color("8fd0ff"), 3))
 	column.add_child(result_panel)
 	_result_scroll = ScrollContainer.new()
 	_result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -282,15 +282,18 @@ func _build_ui() -> void:
 	for slot in Game.SLOTS:
 		var button := _make_button(16, 142, SLOT_COLORS[slot])
 		button.pressed.connect(_on_ability_pressed.bind(slot))
-		# 쓸 수 있을 때: 금색 테두리 / 아직 못 쓸 때: 어두운 자리 색(글자는 잘 보이게)
-		var ready_style := _chunky(_box(SLOT_COLORS[slot], Color("ffcf4d"), 4), 8)
-		var off_style := _chunky(_box(SLOT_COLORS[slot].darkened(0.6), SLOT_COLORS[slot].darkened(0.75), 3), 5)
-		# 아래쪽에 게이지 막대가 들어갈 자리를 비워 둔다.
-		ready_style.content_margin_bottom = 26
-		off_style.content_margin_bottom = 26
-		button.add_theme_stylebox_override("normal", ready_style)
-		button.add_theme_stylebox_override("disabled", off_style)
-		button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.72))
+		# 광택 스킬 버튼: 못 쓸 때도 자리 색이 어둡게 남고, 쓸 수 있으면 금색 테가 빛나며 빛이 훑고 지나간다.
+		Kit.paint(button, SLOT_COLORS[slot])
+		var gloss = button.get_node("Gloss")
+		gloss.keep_color = true
+		gloss.alert = true
+		Kit.shimmer(button, float(Game.SLOTS.find(slot)) * 0.4)
+		for state in ["normal", "hover", "pressed", "disabled"]:
+			var space: StyleBox = button.get_theme_stylebox(state).duplicate()
+			# 아래쪽에 게이지 막대가 들어갈 자리를 비워 둔다.
+			space.content_margin_bottom = 30
+			button.add_theme_stylebox_override(state, space)
+		button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.78))
 		var gauge := Kit.bar(0.0, Color("ffcf4d"), 10)
 		gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(gauge)
@@ -300,8 +303,8 @@ func _build_ui() -> void:
 		gauge.anchor_bottom = 1.0
 		gauge.offset_left = ABILITY_PORTRAIT_WIDTH + 14
 		gauge.offset_right = -10
-		gauge.offset_top = -24
-		gauge.offset_bottom = -12
+		gauge.offset_top = -30
+		gauge.offset_bottom = -18
 		_ability_gauges[slot] = gauge
 		ability_row.add_child(button)
 		_ability_buttons[slot] = button
@@ -630,8 +633,8 @@ func _make_label(font_size: int, text: String = "") -> Label:
 ## 버튼 왼쪽에 초상화를 붙이고, 글자가 초상화와 겹치지 않게 왼쪽 여백을 늘린다.
 func _add_side_portrait(button: Button) -> Control:
 	for state in ["normal", "hover", "pressed", "disabled"]:
-		var box: StyleBoxFlat = button.get_theme_stylebox(state).duplicate()
-		box.content_margin_left = ABILITY_PORTRAIT_WIDTH + 12.0
+		var box: StyleBox = button.get_theme_stylebox(state).duplicate()
+		box.content_margin_left = ABILITY_PORTRAIT_WIDTH + 14.0
 		button.add_theme_stylebox_override(state, box)
 	var portrait := Portrait.new()
 	portrait.border_width = 2.0
@@ -1051,6 +1054,7 @@ func _advance() -> void:
 	if happy:
 		_fx.flash(Color(1.0, 0.95, 0.6, 0.6), 0.5)
 		_fx.shower("petal", 70)
+		_fx.rays(true, size * Vector2(0.5, 0.36), Color(1.0, 0.9, 0.4, 0.16))
 		move_child(_fx, get_child_count() - 1)
 	else:
 		_fx.flash(Color(0.1, 0.0, 0.2, 0.6), 0.8)
