@@ -91,11 +91,38 @@ static var _art: Dictionary = {}
 static var _enemy_ids: Dictionary = {}
 
 
+## 세로 화면 때의 그림 이름 → 가로 화면용 넓은 그림(assets/art/wide)
+const WIDE_ART := {
+	"ui/title_keyart": "wide/title", "ui/loading_bg": "wide/loading", "ui/bg_shop": "wide/shop", "ui/bg_heroes": "wide/heroes",
+	"ui/bg_missions": "wide/missions", "ui/bg_adventure": "wide/adventure", "ui/bg_party": "wide/party",
+	"ui/bg_settings": "wide/settings", "ui/bg_pass": "wide/pass", "ui/battle_bg": "wide/battle",
+	"ui/victory": "wide/victory", "ui/defeat": "wide/defeat",
+}
+const LOGO_PATH := "res://assets/logos/%s.png"
+const OBJECT_PATH := "res://assets/objects/%s.png"
+
+
+## 입체 로고 글자 그림(BATTLE, VS, WIN...). 없으면 null.
+static func logo(name: String) -> Texture2D:
+	return _cached_texture("logo/" + name, LOGO_PATH % name)
+
+
+## 판 위 물건 그림(굴리기 버튼, 받침대, 보물상자, 깃발...). 없으면 null.
+static func object(name: String) -> Texture2D:
+	return _cached_texture("object/" + name, OBJECT_PATH % name)
+
+
 ## 화면용 일러스트. name은 assets/art 안의 경로(확장자 없이). 예: "ui/title_keyart", "cards/banner"
 ## 그림이 없으면 null이라 화면은 기존 모양을 쓴다.
 static func art(name: String) -> Texture2D:
 	if _art.has(name):
 		return _art[name]
+	# 가로 화면용으로 새로 그린 넓은 배경이 있으면 그것을 쓴다.
+	if WIDE_ART.has(name):
+		var wide_path := ART_PATH % str(WIDE_ART[name])
+		if ResourceLoader.exists(wide_path):
+			_art[name] = load(wide_path)
+			return _art[name]
 	var path := ART_PATH % name
 	var texture: Texture2D = null
 	if name != "" and ResourceLoader.exists(path):

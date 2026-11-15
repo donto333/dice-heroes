@@ -2,6 +2,7 @@ extends Control
 ## 턴이 바뀔 때 화면 가운데에 튀어나오는 글자. "내 차례! START!"처럼 누구 차례인지 알려 준다.
 ## play()는 글자가 나왔다 사라질 때까지 기다린다. 화면 입력은 막지 않는다.
 
+const GameData := preload("res://scripts/game_data.gd")
 const POP_TIME := 0.22
 const HOLD_TIME := 0.5
 const OUT_TIME := 0.16
@@ -30,7 +31,20 @@ func _ready() -> void:
 	_box.add_child(_big)
 	_start = _label(64, 18)
 	_start.text = "START!"
-	_box.add_child(_start)
+	var start_logo: Texture2D = GameData.logo("start")
+	if start_logo != null:
+		# 입체 로고 그림이 있으면 글자 대신 그림을 쓴다.
+		var picture := TextureRect.new()
+		picture.texture = start_logo
+		picture.custom_minimum_size = Vector2(0, 120)
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		picture.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_box.add_child(Control.new())
+		_box.add_child(picture)
+	else:
+		_box.add_child(_start)
 
 
 func _label(font_size: int, outline: int) -> Label:

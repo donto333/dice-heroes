@@ -55,6 +55,12 @@ func _ready() -> void:
 	_title = _label("BATTLE", 50, GOLD)
 	_title.add_theme_constant_override("outline_size", 10)
 	_title.add_theme_color_override("font_outline_color", Color("5a3a00"))
+	var battle_logo: Texture2D = GameData.logo("battle")
+	if battle_logo != null:
+		# 입체 로고가 있으면 글자는 비우고 그 자리에 그림을 얹는다.
+		_title.text = " "
+		_title.custom_minimum_size = Vector2(0, 96)
+		_title.add_child(_picture(battle_logo))
 	column.add_child(_title)
 
 	var row := HBoxContainer.new()
@@ -116,6 +122,11 @@ func _ready() -> void:
 			var versus := _label("VS", 48, LOSE_COLOR)
 			versus.add_theme_constant_override("outline_size", 8)
 			versus.add_theme_color_override("font_outline_color", Color.BLACK)
+			var vs_logo: Texture2D = GameData.logo("vs")
+			if vs_logo != null:
+				versus.text = " "
+				versus.custom_minimum_size = Vector2(130, 110)
+				versus.add_child(_picture(vs_logo))
 			versus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			row.add_child(versus)
 
@@ -125,6 +136,18 @@ func _ready() -> void:
 	column.add_child(_verdict)
 	_hint = _label("화면을 누르면 넘어갑니다", 18, Color(1, 1, 1, 0.45))
 	column.add_child(_hint)
+
+
+## 글자 칸을 꽉 채우는 로고 그림
+func _picture(texture: Texture2D) -> TextureRect:
+	var picture := TextureRect.new()
+	picture.texture = texture
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	picture.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	picture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	return picture
 
 
 func _label(text: String, font_size: int, color: Color) -> Label:
@@ -332,6 +355,13 @@ func _stamp(side: Dictionary, text: String, color: Color, tilt: float) -> void:
 	var stamp: Label = side["stamp"]
 	stamp.text = text
 	stamp.add_theme_color_override("font_color", color)
+	for old in stamp.get_children():
+		old.queue_free()
+	var stamp_logo: Texture2D = GameData.logo(text.to_lower())
+	if stamp_logo != null:
+		stamp.text = " "
+		stamp.custom_minimum_size = Vector2(210, 110)
+		stamp.add_child(_picture(stamp_logo))
 	stamp.visible = true
 	stamp.pivot_offset = stamp.size / 2.0
 	stamp.rotation = tilt
@@ -344,6 +374,12 @@ func _stamp(side: Dictionary, text: String, color: Color, tilt: float) -> void:
 
 ## 모형 발밑의 돌 받침대(납작한 원기둥)와 그림자.
 func _draw_pedestal(figure: Control) -> void:
+	var stone: Texture2D = GameData.object("pedestal_green" if figure == _sides[0]["pedestal"] else "pedestal_red") if not _sides.is_empty() else null
+	if stone != null:
+		var stone_wide := figure.size.x * 1.15
+		var stone_tall := stone_wide * float(stone.get_height()) / float(stone.get_width())
+		figure.draw_texture_rect(stone, Rect2((figure.size.x - stone_wide) * 0.5, figure.size.y - stone_tall * 0.52, stone_wide, stone_tall), false)
+		return
 	var foot := Vector2(figure.size.x * 0.5, figure.size.y - 6.0)
 	var wide := figure.size.x * 0.46
 	figure.draw_set_transform(foot + Vector2(0, 16), 0.0, Vector2(1.0, 0.3))

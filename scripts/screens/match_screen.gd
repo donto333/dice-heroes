@@ -48,6 +48,8 @@ var _status_label: Label
 var _board_view: Control
 var _result_box: VBoxContainer
 var _result_panel: PanelContainer
+var _roll_art: TextureRect = null
+var _roll_caption: Label = null
 var _log_tween: Tween
 var _ability_buttons: Dictionary = {}
 var _card_buttons: Array = []
@@ -875,7 +877,45 @@ func _make_round_button() -> Button:
 	button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.6))
 	button.add_theme_constant_override("outline_size", 6)
 	button.add_theme_color_override("font_outline_color", Color(1, 1, 1, 0.85))
+	var crystal: Texture2D = GameData.object("roll_button")
+	if crystal != null:
+		# 원작처럼 판 위에 놓인 입체 굴리기 버튼. 상태 글자는 버튼 아래 작은 띠에 따로 쓴다.
+		gloss.visible = false
+		_roll_art = TextureRect.new()
+		_roll_art.texture = crystal
+		_roll_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_roll_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_roll_art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		_roll_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_roll_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_roll_art.offset_bottom = -22
+		button.add_child(_roll_art)
+		_roll_caption = _make_label(18)
+		_roll_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_roll_caption.add_theme_constant_override("outline_size", 7)
+		_roll_caption.add_theme_color_override("font_outline_color", Color("0a1a4a"))
+		_roll_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_roll_caption.anchor_left = 0.0
+		_roll_caption.anchor_right = 1.0
+		_roll_caption.anchor_top = 1.0
+		_roll_caption.anchor_bottom = 1.0
+		_roll_caption.offset_top = -30
+		_roll_caption.offset_bottom = 0
+		button.add_child(_roll_caption)
+		# 누르거나 꺼지면 수정 그림도 따라 바뀐다.
+		button.draw.connect(func() -> void:
+			var down := button.get_draw_mode() == BaseButton.DRAW_PRESSED or button.get_draw_mode() == BaseButton.DRAW_HOVER_PRESSED
+			_roll_art.modulate = Color(0.5, 0.52, 0.62) if button.disabled else Color.WHITE
+			_roll_art.offset_top = 8.0 if down else 0.0)
 	return button
+
+
+## 굴리기 버튼의 상태 글자. 입체 버튼 그림을 쓸 때는 버튼 아래 작은 띠에 한 줄로 쓴다.
+func _set_roll_text(text: String) -> void:
+	if _roll_caption != null:
+		_roll_caption.text = text.replace("\n", " ")
+	else:
+		_roll_button.text = text
 
 
 func _chunky(style: StyleBoxFlat, bottom: int) -> StyleBoxFlat:
@@ -1799,16 +1839,16 @@ func _refresh() -> void:
 			button.visible = false
 
 	if game.winner >= 0:
-		_roll_button.text = "결과\n보기"
+		_set_roll_text("결과\n보기")
 		_roll_button.disabled = false
 	elif _choosing_path:
-		_roll_button.text = "길을\n고르세요"
+		_set_roll_text("길을\n고르세요")
 		_roll_button.disabled = true
 	elif _waiting_for_player:
-		_roll_button.text = "주사위\n굴리기"
+		_set_roll_text("주사위\n굴리기")
 		_roll_button.disabled = false
 	else:
-		_roll_button.text = "AI\n차례" if not _humans[game.current] else "진행\n중..."
+		_set_roll_text("AI\n차례" if not _humans[game.current] else "진행\n중...")
 		_roll_button.disabled = true
 
 	var lines: Array = game.messages.slice(max(0, game.messages.size() - LOG_LINES))

@@ -3,6 +3,7 @@ extends Control
 ## play()는 화면이 사라질 때까지 기다린다. 누르면 바로 넘어간다.
 
 const Portrait := preload("res://scripts/ui/portrait.gd")
+const GameData := preload("res://scripts/game_data.gd")
 
 const HOLD_TIME := 2.4
 ## 대전 시작 때 영웅이 하는 한마디(분류마다 말투가 다르다)
@@ -86,6 +87,17 @@ func play(sides: Array, map_text: String, goal_text: String, searching: bool = f
 	versus.offset_top = -100
 	versus.offset_bottom = 100
 	versus.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var vs_logo: Texture2D = GameData.logo("vs")
+	if vs_logo != null:
+		versus.text = " "
+		var picture := TextureRect.new()
+		picture.texture = vs_logo
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		picture.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		picture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		versus.add_child(picture)
 	add_child(versus)
 	var skip := _text("화면을 누르면 넘어갑니다", 20, Color(1, 1, 1, 0.6), 4)
 	skip.anchor_left = 0.0

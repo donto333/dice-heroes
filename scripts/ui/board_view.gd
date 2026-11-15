@@ -132,6 +132,8 @@ var _deco: Texture2D = null
 var _occupied: Dictionary = {}
 ## 이 맵의 빈자리에 놓을 꾸밈 모형들
 var _props: Array = []
+## 칸 위에 세우는 입체 물건
+const TOPPERS := {"treasure": "chest_closed", "checkpoint": "flag_blue", "warp": "portal", "start": "flag_red"}
 const PROP_NAMES := {
 	"grass": ["plain_haystack", "plain_tent", "plain_signpost", "plain_flowers", "castle_tower", "castle_wall", "castle_banner", "castle_catapult", "forest_tree"],
 	"desert": ["desert_palm", "desert_pyramid", "desert_cactus", "desert_obelisk"],
@@ -771,7 +773,7 @@ func _draw() -> void:
 			icon_name = "hidden"
 		var hex_name := "hidden" if game.is_hidden(id) else str(tile.get("type", ""))
 		if tile.get("type", "") == "attr":
-			hex_name = ""
+			hex_name = str(ATTR_ICONS.get(tile.get("attr", ""), ""))
 		# 칸 그림이 있으면 그림 하나만 보여 준다(원작처럼 글자·작은 아이콘 없이).
 		if _draw_hex(rect.get_center(), half, cell, color, id in highlight, hex_name):
 			icon_name = ""
@@ -825,6 +827,15 @@ func _draw() -> void:
 				Vector2(icon_size, icon_size))
 			draw_texture_rect(_icons[icon_name], icon_rect, false)
 		if not game.is_hidden(id):
+			# 보물상자·거점 깃발·워프 문은 칸 위에 입체 물건으로 서 있다.
+			var topper_name: String = TOPPERS.get(str(tile.get("type", "")), "")
+			var topper: Texture2D = GameData.object(topper_name) if topper_name != "" else null
+			if topper != null:
+				var topper_tall := cell * 0.62 * (1.0 + 0.03 * sin(_anim_time * 2.2 + float(int(id) % 7)))
+				var topper_wide := cell * 0.62 * float(topper.get_width()) / float(topper.get_height())
+				var topper_foot := rect.get_center() + Vector2(cell * 0.2, cell * 0.02)
+				_cast_shadow(topper, topper_foot, topper_wide, topper_tall)
+				draw_texture_rect(topper, Rect2(topper_foot.x - topper_wide / 2.0, topper_foot.y - topper_tall, topper_wide, topper_tall), false)
 			_draw_tile_fx(str(tile.get("type", "")), rect.get_center(), cell, int(id))
 		if label != "":
 			draw_string_outline(font, rect.position + Vector2(0, rect.size.y * 0.74), label,

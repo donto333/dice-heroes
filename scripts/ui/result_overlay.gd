@@ -10,6 +10,7 @@ const Kit := preload("res://scripts/ui/kit.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const Confetti := preload("res://scripts/ui/confetti.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
+const GameData := preload("res://scripts/game_data.gd")
 
 const GOLD := Color("ffcf4d")
 const WIN_COLOR := Color("7ee081")
@@ -27,6 +28,7 @@ var _mvp_name: Label
 var _mvp_note: Label
 var _chips: HFlowContainer
 ## 승리·패배 그림(assets/art/ui/victory.jpg, defeat.jpg)
+var _logo: TextureRect = null
 var _banner: Control
 
 
@@ -194,6 +196,24 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 		_confetti.stop()
 	_banner.show_art("ui/defeat" if outcome == "lose" else "ui/victory")
 	_banner.visible = _banner.has_art()
+	# 배너 위에 입체 로고(VICTORY·DEFEAT·DRAW)를 얹는다.
+	var logo_name := "victory" if outcome == "win" else ("defeat" if outcome == "lose" else "draw")
+	var logo_texture: Texture2D = GameData.logo(logo_name)
+	if _logo == null:
+		_logo = TextureRect.new()
+		_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_logo.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		_logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_logo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_logo.offset_top = 14
+		_logo.offset_bottom = -14
+		_banner.add_child(_logo)
+	_logo.texture = logo_texture
+	if logo_texture != null and _banner.visible:
+		_logo.pivot_offset = _logo.size * 0.5
+		_logo.scale = Vector2(0.3, 0.3)
+		_logo.create_tween().tween_property(_logo, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	match outcome:
 		"win":
 			_title.text = "승리!"

@@ -12,6 +12,7 @@ const PIPS := {
 	6: [Vector2(0.27, 0.25), Vector2(0.73, 0.25), Vector2(0.27, 0.5), Vector2(0.73, 0.5), Vector2(0.27, 0.75), Vector2(0.73, 0.75)],
 }
 const DiePreview := preload("res://scripts/ui/die_preview.gd")
+const GameData := preload("res://scripts/game_data.gd")
 const ROLL_TIME := 0.95
 const HOLD_TIME := 0.6
 const FADE_TIME := 0.2
@@ -186,9 +187,16 @@ func _draw() -> void:
 		# 합계 글자 뒤의 금색 원판(모두의 마블의 합계 표시처럼) 둘레로 작은 빛 알이 돈다.
 		var badge := Vector2(size.x * 0.5, size.y * 0.5 - DIE * 1.35)
 		var pop := 1.0 + 0.2 * maxf(1.0 - _settle / 0.2, 0.0)
-		draw_circle(badge, 50.0 * pop, Color("7a4a00"))
-		draw_circle(badge, 45.0 * pop, Color("ffc62b"))
-		draw_circle(badge + Vector2(0, -8), 36.0 * pop, Color(1, 1, 1, 0.22))
+		var medal: Texture2D = GameData.object("total_badge")
+		if medal != null:
+			var medal_size := 150.0 * pop
+			draw_set_transform(badge, _settle * 0.6, Vector2.ONE)
+			draw_texture_rect(medal, Rect2(-medal_size / 2.0, -medal_size / 2.0, medal_size, medal_size), false)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		else:
+			draw_circle(badge, 50.0 * pop, Color("7a4a00"))
+			draw_circle(badge, 45.0 * pop, Color("ffc62b"))
+			draw_circle(badge + Vector2(0, -8), 36.0 * pop, Color(1, 1, 1, 0.22))
 		for spark in 10:
 			var angle := _settle * 1.8 + TAU * spark / 10.0
 			draw_circle(badge + Vector2(cos(angle), sin(angle)) * 60.0, 4.0, Color(1, 0.97, 0.7, 0.9))
