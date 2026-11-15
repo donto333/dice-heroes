@@ -1389,6 +1389,7 @@ func _show_battle(event: Dictionary) -> void:
 	var who := int(event["player"])
 	var other := 1 - who
 	if str(event.get("target", "")) == "ambush":
+		_hide_log()
 		await _battle_overlay.play(event, {
 			"boss_name": _goal_name(),
 			"attacker_side": "습격 · 몬스터",
@@ -1427,6 +1428,7 @@ func _show_battle(event: Dictionary) -> void:
 	info["boss_name"] = _goal_name()
 	info["attacker_character"] = _character_named(str(event["attacker"]))
 	info["defender_character"] = _character_named(str(event["defender"]))
+	_hide_log()
 	await _battle_overlay.play(event, info)
 	_add_battle_result(event)
 	_ai_reacts(not bool(info["good_for_me"]))
@@ -1455,6 +1457,14 @@ func _flash_log() -> void:
 	_log_tween = _result_panel.create_tween()
 	_log_tween.tween_interval(3.2)
 	_log_tween.tween_property(_result_panel, "modulate:a", 0.0, 0.8)
+
+
+## 전투처럼 화면 가운데를 쓰는 연출 동안은 기록 칸을 바로 숨긴다.
+func _hide_log() -> void:
+	if _log_tween != null and _log_tween.is_valid():
+		_log_tween.kill()
+	if _result_panel != null:
+		_result_panel.modulate.a = 0.0
 
 
 func _trim_results() -> void:
