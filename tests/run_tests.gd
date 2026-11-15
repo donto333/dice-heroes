@@ -1092,6 +1092,7 @@ func _test_mail() -> void:
 	var reward := Profile.claim_mail(profile, "test_gems_10000")
 	_check(int(reward.get("gems", 0)) == 10000 and int(profile["gems"]) == gems + 10000, "테스트 선물 보석 1만 개가 안 들어옴")
 	_check(Profile.claim_mail(profile, "test_gems_10000").is_empty(), "우편 선물을 두 번 받음")
+	_check(int(Profile.claim_all_mail(profile)["count"]) == mails["mails"].size() - 1, "남은 우편 모두 받기가 틀림")
 	_check(int(Profile.claim_all_mail(profile)["count"]) == 0, "받을 우편이 없는데 모두 받기가 됨")
 	# 예전 저장 파일(우편함이 없던 프로필)도 고쳐서 받을 수 있어야 한다.
 	var old := Profile.new_profile("옛날", eco)
