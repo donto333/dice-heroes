@@ -89,6 +89,7 @@ func _init() -> void:
 	_test_sweep()
 	_test_double()
 	_test_gate()
+	_test_album_and_weekday()
 	_test_guide()
 	_test_upgrade_all()
 	_test_monster_kinds()
@@ -1359,3 +1360,28 @@ func _test_gate() -> void:
 			if str(node.get("type", "")) == "gate":
 				gates += 1
 		_check(gates == 3, "%s 맵의 관문이 3개가 아님: %d개" % [board.get("name", ""), gates])
+
+
+func _test_album_and_weekday() -> void:
+	var eco: Dictionary = _data["economy"]
+	var characters: Array = _data["characters"]
+	var profile := Profile.new_profile("앨범", eco)
+	var steps: Array = eco["album"]["steps"]
+	_check(steps.size() == (eco["album"]["rewards"] as Array).size(), "앨범 단계와 보상 수가 다름")
+	profile["owned"] = {}
+	_check(not Profile.album_has_claimable(profile, eco, characters), "영웅이 없는데 앨범 보상이 있음")
+	var added := 0
+	for character in characters:
+		if str(character["category"]) == "위인" and added < int(steps[1]):
+			profile["owned"][str(character["id"])] = {"level": 1, "shards": 0}
+			added += 1
+	_check(Profile.album_count(profile, characters, "위인") == int(steps[1]) and Profile.album_claimable(profile, eco, characters, "위인").size() == 2, "앨범 단계 계산이 틀림")
+	var gems := int(profile["gems"])
+	var reward := Profile.claim_album(profile, eco, characters, "위인")
+	_check(int(reward.get("gems", 0)) == int(eco["album"]["rewards"][0].get("gems", 0)) and int(profile["gems"]) == gems + int(reward.get("gems", 0)), "앨범 보상이 틀림")
+	_check(Profile.claim_album(profile, eco, characters, "위인").is_empty() and Profile.claim_album(profile, eco, characters, "신화").is_empty(), "앨범 보상을 두 번 받음")
+	# 요일 이벤트: 2026-11-14는 토요일, 11-16은 월요일
+	var events := {"events": [{"id": "w", "weekdays": [6, 0], "effect": {"match_gold_scale": 1.3}}]}
+	_check(absf(Profile.event_scale(events, "2026-11-14", "match_gold_scale") - 1.3) < 0.001, "토요일 이벤트가 안 열림")
+	_check(absf(Profile.event_scale(events, "2026-11-15", "match_gold_scale") - 1.3) < 0.001, "일요일 이벤트가 안 열림")
+	_check(absf(Profile.event_scale(events, "2026-11-16", "match_gold_scale") - 1.0) < 0.001, "월요일에 주말 이벤트가 열림")

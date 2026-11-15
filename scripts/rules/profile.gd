@@ -1189,7 +1189,14 @@ static func sell_shards(profile: Dictionary, eco: Dictionary, id: String) -> int
 static func active_events(events: Dictionary, today: String) -> Array:
 	var result: Array = []
 	for event in events.get("events", []):
-		if today >= str(event.get("start", "")) and today <= str(event.get("end", "")):
+		if event.has("weekdays"):
+			# 요일 이벤트: 0=일요일 … 6=토요일
+			var weekday := int(Time.get_datetime_dict_from_datetime_string(today, true).get("weekday", -1))
+			for day in event["weekdays"]:
+				if int(day) == weekday:
+					result.append(event)
+					break
+		elif today >= str(event.get("start", "")) and today <= str(event.get("end", "")):
 			result.append(event)
 	return result
 
@@ -1281,3 +1288,51 @@ static func claim_guide(profile: Dictionary, data: Dictionary) -> Dictionary:
 	profile["guide_step"] = int(profile.get("guide_step", 0)) + 1
 	grant(profile, step["reward"])
 	return step["reward"]
+
+
+# ---------------------------------------------------------------- 수집 앨범
+
+## 그 분류에서 가진 영웅 수
+static func album_count(profile: Dictionary, characters: Array, category: String) -> int:
+	var count := 0
+	for character in characters:
+		if str(character.get("category", "")) == category and profile.get("owned", {}).has(str(character["id"])):
+			count += 1
+	return count
+
+
+## 받을 수 있는 앨범 보상 단계(0부터)의 목록
+static func album_claimable(profile: Dictionary, eco: Dictionary, characters: Array, category: String) -> Array:
+	var result: Array = []
+	var steps: Array = eco.get("album", {}).get("steps", [])
+	var owned := album_count(profile, characters, category)
+	for index in steps.size():
+		if owned >= int(steps[index]) and not album_claimed(profile, category, index):
+			result.append(index)
+	return result
+
+
+static func album_claimed(profile: Dictionary, category: String, index: int) -> bool:
+	return (profile.get("album", []) as Array).has("%s:%d" % [category, index])
+
+
+## 받을 수 있는 앨범 보상이 하나라도 있나
+static func album_has_claimable(profile: Dictionary, eco: Dictionary, characters: Array) -> bool:
+	for category in ["영웅", "위인", "신화", "근현대"]:
+		if not album_claimable(profile, eco, characters, category).is_empty():
+			return true
+	return false
+
+
+## 그 분류의 받을 수 있는 앨범 보상을 모두 받는다. 받은 것을 합쳐 돌려준다(없으면 {}).
+static func claim_album(profile: Dictionary, eco: Dictionary, characters: Array, category: String) -> Dictionary:
+	var total := {}
+	var claimed: Array = profile.get("album", [])
+	for index in album_claimable(profile, eco, characters, category):
+		var reward: Dictionary = eco["album"]["rewards"][index]
+		grant(profile, reward)
+		claimed.append("%s:%d" % [category, index])
+		for key in reward:
+			total[key] = int(total.get(key, 0)) + int(reward[key])
+	profile["album"] = claimed
+	return total
