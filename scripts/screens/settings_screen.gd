@@ -153,6 +153,9 @@ func setup(main_app, _params: Dictionary) -> void:
 	about.add_child(about_column)
 	about_column.add_child(Kit.label("주사위 영웅전  버전 %s" % app.VERSION, 22))
 	about_column.add_child(Kit.para("글꼴: Noto Sans KR (SIL Open Font License)\n엔진: Godot Engine (MIT)\n영웅 그림: AI 도구로 만든 창작 일러스트", 17, Kit.MUTED))
+	var news := Kit.button("새 소식 다시 보기", Color("19a8c9"), 22, 64)
+	news.pressed.connect(_on_news)
+	about_column.add_child(news)
 	var help := Kit.button("게임 방법", Color("6f43a6"), 22, 64)
 	help.pressed.connect(_on_help)
 	about_column.add_child(help)
@@ -164,6 +167,13 @@ func setup(main_app, _params: Dictionary) -> void:
 	column.add_child(nav)
 	nav.setup("settings", app.badges())
 	nav.tab_pressed.connect(_on_tab)
+
+
+## 로비로 가서 새 소식 창을 다시 띄운다.
+func _on_news() -> void:
+	app.profile["seen_version"] = ""
+	app.save()
+	app.go("lobby")
 
 
 func _on_help() -> void:
