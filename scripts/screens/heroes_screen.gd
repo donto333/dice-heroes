@@ -44,6 +44,10 @@ func setup(main_app, params: Dictionary) -> void:
 	column.add_child(header)
 	_count_label = Kit.label("", 26, Kit.GOLD)
 	header.add_child(Kit.expand(_count_label))
+	var album := Kit.button("앨범", Kit.PRIMARY if Profile.album_has_claimable(app.profile, app.eco, app.data["characters"]) else Color("8a55e0"), 20, 56)
+	album.custom_minimum_size = Vector2(96, 56)
+	album.pressed.connect(_open_album)
+	header.add_child(album)
 	var all_up := Kit.button("일괄 강화", Color("27a35a"), 20, 56)
 	all_up.custom_minimum_size = Vector2(150, 56)
 	all_up.disabled = not bool(app.badges().get("heroes", false))
@@ -255,6 +259,57 @@ func _upgrade(id: String) -> void:
 		app.toast("%s 레벨 %d!" % [app.character(id)["name"], Profile.level_of(app.profile, id)])
 		app.go("heroes", {"filter": _filter})
 		app.current_screen.show_hero(id)
+
+
+## 수집 앨범: 분류마다 모은 수와 단계 보상
+func _open_album() -> void:
+	app.play("click")
+	var body := Kit.vbox(10)
+	body.add_child(Kit.para("분류마다 영웅을 모으면 보상을 받아요.", 18, Kit.MUTED))
+	var steps: Array = app.eco["album"]["steps"]
+	var rewards: Array = app.eco["album"]["rewards"]
+	var characters: Array = app.data["characters"]
+	var window: Control = null
+	var claims: Array = []
+	for category in ["영웅", "위인", "신화", "근현대"]:
+		var owned := Profile.album_count(app.profile, characters, category)
+		var color: Color = Kit.CATEGORY_COLORS.get(category, Kit.LINE)
+		var card := Kit.panel(Kit.INSET, color, 10)
+		var column := Kit.vbox(6)
+		card.add_child(column)
+		var top := Kit.hbox(10)
+		column.add_child(top)
+		top.add_child(Kit.expand(Kit.label("%s  %d / %d" % [category, owned, int(steps[steps.size() - 1])], 24, Color.WHITE)))
+		var ready: Array = Profile.album_claimable(app.profile, app.eco, characters, category)
+		var claim := Kit.button("받기" if not ready.is_empty() else "모으는 중", Kit.PRIMARY if not ready.is_empty() else Kit.PANEL_LIGHT, 18, 48)
+		claim.custom_minimum_size = Vector2(120, 48)
+		claim.disabled = ready.is_empty()
+		claims.append([claim, category])
+		top.add_child(claim)
+		column.add_child(Kit.bar(float(owned) / float(int(steps[steps.size() - 1])), color, 10))
+		var marks := Kit.hbox(6)
+		column.add_child(marks)
+		for index in steps.size():
+			var got := Profile.album_claimed(app.profile, category, index)
+			var text := "%d명 %s%s" % [int(steps[index]), Kit.reward_line(rewards[index]), " (받음)" if got else ""]
+			marks.add_child(Kit.expand(Kit.label(text, 14, Kit.MUTED if got else Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER)))
+		body.add_child(card)
+	window = app.dialog("수집 앨범", body, [["닫기", Kit.PANEL_LIGHT]], 680)
+	for pair in claims:
+		(pair[0] as Button).pressed.connect(_claim_album.bind(str(pair[1]), window.get_instance_id()))
+
+
+func _claim_album(category: String, window_id: int) -> void:
+	var reward := Profile.claim_album(app.profile, app.eco, app.data["characters"], category)
+	if reward.is_empty():
+		return
+	app.save()
+	app.play("win")
+	var window := instance_from_id(window_id)
+	if is_instance_valid(window):
+		window.call("close")
+	app.go("heroes", {"filter": _filter})
+	app.toast("앨범 보상: %s" % Kit.reward_line(reward))
 
 
 ## 강화할 수 있는 영웅을 한꺼번에 올린다(파티원 먼저).

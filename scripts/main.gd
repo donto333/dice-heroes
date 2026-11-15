@@ -166,7 +166,7 @@ func badges() -> Dictionary:
 	return {
 		"missions": Profile.has_claimable(profile, eco) or Profile.can_check_in(profile, today()) or Profile.has_claimable_achievement(profile, data) or Profile.guide_claimable(profile, data),
 		"shop": Profile.free_summons_left(profile, eco) > 0,
-		"heroes": _any_upgradable(),
+		"heroes": _any_upgradable() or Profile.album_has_claimable(profile, eco, data["characters"]),
 	}
 
 
