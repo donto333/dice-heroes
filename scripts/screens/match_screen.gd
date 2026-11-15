@@ -47,6 +47,8 @@ var _choosing_path := false
 var _status_label: Label
 var _board_view: Control
 var _result_box: VBoxContainer
+var _result_panel: PanelContainer
+var _log_tween: Tween
 var _ability_buttons: Dictionary = {}
 var _card_buttons: Array = []
 var _roll_button: Button
@@ -273,8 +275,10 @@ func _build_ui() -> void:
 	status_row.offset_bottom = 58
 	var result_panel := PanelContainer.new()
 	# 기록 칸은 작고 반투명하게. 내용이 넘치면 안에서 스크롤된다.
-	result_panel.add_theme_stylebox_override("panel", _box(Color(0.03, 0.12, 0.32, 0.72), Color(0.56, 0.82, 1.0, 0.6), 2))
+	result_panel.add_theme_stylebox_override("panel", Kit.plate(Color(0.07, 0.1, 0.34, 0.8), Kit.TRIM, 16.0, 10, false))
 	board_area.add_child(result_panel)
+	_result_panel = result_panel
+	result_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	result_panel.anchor_left = 0.0
 	result_panel.anchor_right = 1.0
 	result_panel.offset_left = 416
@@ -296,12 +300,13 @@ func _build_ui() -> void:
 	ability_row.anchor_right = 1.0
 	ability_row.anchor_top = 1.0
 	ability_row.anchor_bottom = 1.0
-	ability_row.offset_left = 416
+	ability_row.anchor_left = 1.0
+	ability_row.offset_left = -190 - 3 * 176
 	ability_row.offset_right = -190
-	ability_row.offset_top = -128
+	ability_row.offset_top = -112
 	ability_row.offset_bottom = -6
 	for slot in Game.SLOTS:
-		var button := _make_button(15, 120, SLOT_COLORS[slot])
+		var button := _make_button(16, 104, SLOT_COLORS[slot])
 		button.pressed.connect(_on_ability_pressed.bind(slot))
 		# 광택 스킬 버튼: 못 쓸 때도 자리 색이 어둡게 남고, 쓸 수 있으면 금색 테가 빛나며 빛이 훑고 지나간다.
 		Kit.paint(button, SLOT_COLORS[slot])
@@ -434,7 +439,7 @@ func _refresh_player_cards() -> void:
 		parts["detail"].text = "골까지 %d칸 · 카드 %d%s" % [game.distance_of(index), player["hand"].size(), ("  " + " ".join(flags)) if not flags.is_empty() else ""]
 		var current: bool = game.current == index and game.winner < 0
 		var edge: Color = PLAYER_TEXT_COLORS[index] if current else Color("8fd0ff")
-		parts["panel"].add_theme_stylebox_override("panel", _box(Color("164c9e") if current else Color("2a8be6"), edge, 3 if current else 1))
+		parts["panel"].add_theme_stylebox_override("panel", Kit.plate(Color("243a9c") if current else Color(0.1, 0.16, 0.42, 0.86), edge if current else Color("8fa6d8"), 16.0, 8, false))
 
 
 ## 칸 효과를 보드 위에 크게 띄운다. 좋은 일은 금색, 나쁜 일은 붉은색.
@@ -521,7 +526,7 @@ func _show_tile(event: Dictionary) -> void:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var color := Color("ffcf4d") if good else Color("ff6b6b")
-	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.24, 0.52, 0.95), color, 4))
+	panel.add_theme_stylebox_override("panel", Kit.plate(Color(0.12, 0.16, 0.5, 0.96), color, 20.0, 14))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -603,7 +608,7 @@ func _hint(key: String, text: String) -> bool:
 	if _hint_bubble != null and is_instance_valid(_hint_bubble):
 		_hint_bubble.queue_free()
 	var bubble := PanelContainer.new()
-	bubble.add_theme_stylebox_override("panel", _box(Color(0.06, 0.24, 0.52, 0.96), Color("ffcf4d"), 3))
+	bubble.add_theme_stylebox_override("panel", Kit.plate(Color(0.12, 0.16, 0.5, 0.97), Kit.TRIM, 20.0, 14))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	bubble.add_child(row)
@@ -781,7 +786,7 @@ func _build_emotes(board_area: Control) -> void:
 	toggle.offset_bottom = 38
 	toggle.pressed.connect(_toggle_emotes)
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.24, 0.52, 0.95), Color.WHITE, 3))
+	panel.add_theme_stylebox_override("panel", Kit.plate(Color(0.12, 0.16, 0.5, 0.96), Kit.TRIM, 18.0, 12))
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 8)
@@ -974,6 +979,9 @@ func _start_game() -> void:
 	for index in 2:
 		_board_view.piece_textures[index] = GameData.portrait(str(game.char_of(index, "attack").get("id", "")))
 		_board_view.piece_standees[index] = GameData.standee(str(game.char_of(index, "attack").get("id", "")))
+		_board_view.party_standees[index] = [
+			GameData.standee(str(game.char_of(index, "defense").get("id", ""))),
+			GameData.standee(str(game.char_of(index, "support").get("id", "")))]
 	game.take_events()
 	_board_view.game = game
 	_board_view.reset_pieces()
@@ -1437,7 +1445,20 @@ func _clear_results() -> void:
 		child.queue_free()
 
 
+## 기록 칸은 새 소식이 있을 때만 또렷해지고, 잠시 뒤 흐려져 판을 가리지 않는다.
+func _flash_log() -> void:
+	if _result_panel == null:
+		return
+	if _log_tween != null and _log_tween.is_valid():
+		_log_tween.kill()
+	_result_panel.modulate.a = 1.0
+	_log_tween = _result_panel.create_tween()
+	_log_tween.tween_interval(3.2)
+	_log_tween.tween_property(_result_panel, "modulate:a", 0.0, 0.8)
+
+
 func _trim_results() -> void:
+	_flash_log()
 	var children := _result_box.get_children().filter(func(node): return not node.is_queued_for_deletion())
 	while children.size() > MAX_RESULT_BLOCKS + 2:
 		children.pop_front().queue_free()
@@ -1743,9 +1764,9 @@ func _refresh() -> void:
 		var ability: Dictionary = game.ability_of(viewer, slot)
 		var is_ready: bool = _waiting_for_player and game.can_use_ability(slot)
 		var gauge_text := "[사용 가능]" if is_ready else "%d%%" % int(me["gauge"][slot])
-		button.text = "%s %s\n%s %s\n%s" % [
-			Game.SLOT_LABELS[slot], character["name"],
-			ability.get("name", "-"), gauge_text, ability.get("text", "")]
+		# 버튼에는 이름과 게이지만. 설명은 버튼을 길게 눌러 보는 대신 쓸 때 알림으로 나온다.
+		button.text = "%s\n%s\n%s" % [Game.SLOT_LABELS[slot], ability.get("name", "-"), gauge_text]
+		button.tooltip_text = str(ability.get("text", ""))
 		button.disabled = not is_ready
 		_ability_gauges[slot].value = clampf(float(me["gauge"][slot]) / 100.0, 0.0, 1.0)
 		var portrait = _ability_portraits[slot]

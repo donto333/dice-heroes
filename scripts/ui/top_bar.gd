@@ -22,8 +22,7 @@ func setup(main_app) -> void:
 	frame.shadow_color = Color(0, 0.05, 0.2, 0.4)
 	frame.shadow_size = 6
 	frame.shadow_offset = Vector2(0, 3)
-	add_theme_stylebox_override("panel", frame)
-	Kit.sheen(self, 22)
+	add_theme_stylebox_override("panel", Kit.plate(Color("17357f"), Kit.TRIM, 24.0, 10, false))
 	var row := Kit.hbox(12)
 	add_child(row)
 	_avatar = Portrait.new()

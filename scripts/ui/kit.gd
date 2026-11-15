@@ -6,6 +6,10 @@ const ArtView := preload("res://scripts/ui/art_view.gd")
 const Gloss := preload("res://scripts/ui/gloss.gd")
 const Ambience := preload("res://scripts/ui/ambience.gd")
 const Sweep := preload("res://scripts/ui/sweep.gd")
+const OrnateBox := preload("res://scripts/ui/ornate_box.gd")
+const Ribbon := preload("res://scripts/ui/ribbon.gd")
+## 판 테두리의 금색
+const TRIM := Color("f2c14e")
 const BG := Color("2a8be6")
 ## 바탕은 위가 밝고 아래가 짙은 하늘색으로 번진다(sky()).
 const BG_TOP := Color("58b8ff")
@@ -127,15 +131,25 @@ static func _chunky(fill: Color, edge: Color, bottom: int) -> StyleBoxFlat:
 
 static func panel(fill: Color = PANEL, border: Color = LINE, padding: int = 14) -> PanelContainer:
 	var result := PanelContainer.new()
-	var style := box(fill, border, 3, 22, padding)
-	style.border_width_bottom = 5
-	style.anti_aliasing_size = 1.2
-	style.shadow_color = Color(0, 0.05, 0.2, 0.4)
-	style.shadow_size = 7
-	style.shadow_offset = Vector2(0, 4)
-	result.add_theme_stylebox_override("panel", style)
-	sheen(result, 19)
+	# 기본 하늘색 테는 금색 장식 테로 바꾼다. 따로 색을 준 판은 그 색 금속 테가 된다.
+	result.add_theme_stylebox_override("panel", plate(fill, TRIM if border == LINE else border, 20.0, padding + 4))
 	return result
+
+
+## 장식 판 상자(그림자, 번지는 몸통, 금속 테, 안쪽 선, 귀퉁이 보석). 글·설명 칸, 창, 말풍선에 쓴다.
+static func plate(fill: Color = PANEL, trim: Color = TRIM, radius: float = 20.0, padding: int = 16, gems: bool = true) -> StyleBox:
+	var style := OrnateBox.new()
+	style.fill = fill
+	style.trim = trim
+	style.radius = radius
+	style.gems = gems
+	style.set_content_margin_all(padding)
+	return style
+
+
+## 제목 리본(양 끝이 갈라진 깃발 띠).
+static func ribbon(text: String, font_size: int = 34, color: Color = Color("7a2fd0")) -> Control:
+	return Ribbon.new(text, font_size, color)
 
 
 ## 판 위쪽에 옅은 밝은 면을 얹어 볼록한 유리판처럼 보이게 한다(판 바탕 위, 내용 아래에 그려진다).

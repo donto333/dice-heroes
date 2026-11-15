@@ -25,7 +25,7 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 	for child in get_children():
 		child.queue_free()
 	var dim := ColorRect.new()
-	dim.color = Color(0.02, 0.1, 0.28, 0.72)
+	dim.color = Color(0.04, 0.02, 0.16, 0.74)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 	var center := CenterContainer.new()
@@ -33,25 +33,16 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 	add_child(center)
 	_panel = PanelContainer.new()
 	_panel.custom_minimum_size = Vector2(width, 0)
-	var frame := Kit.box(Color("1f66c8"), Color.WHITE, 5, 32, 22)
-	frame.border_width_bottom = 9
-	frame.anti_aliasing_size = 1.2
-	frame.shadow_color = Color(0, 0.05, 0.2, 0.55)
-	frame.shadow_size = 14
-	frame.shadow_offset = Vector2(0, 7)
+	# 장식 창: 깊은 남보라 몸통에 금색 두 줄 테와 귀퉁이 보석
+	var frame = Kit.plate(Color("243a9c"), Kit.TRIM, 28.0, 24)
+	frame.trim_width = 5.0
 	_panel.add_theme_stylebox_override("panel", frame)
-	Kit.sheen(_panel, 26, 0.08)
 	center.add_child(_panel)
 	_column = Kit.vbox(16)
 	_panel.add_child(_column)
 	if title_text != "":
-		# 제목 띠: 짙은 남색 알약 위에 금색 글자
-		var ribbon := PanelContainer.new()
-		var band := Kit.box(Color("0c2f6e"), Color("ffd45a"), 3, 26, 8)
-		band.border_width_bottom = 5
-		ribbon.add_theme_stylebox_override("panel", band)
-		ribbon.add_child(Kit.title(title_text, 36))
-		_column.add_child(ribbon)
+		# 제목 리본
+		_column.add_child(Kit.ribbon(title_text, 32))
 	if body != null:
 		if body.get_combined_minimum_size().y > BODY_MAX_HEIGHT:
 			# 긴 내용: 창 안에서 끌어 내린다.
@@ -67,7 +58,7 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 		var row := Kit.hbox(10)
 		_column.add_child(row)
 		for spec in buttons:
-			var button := Kit.button(str(spec[0]), spec[1] if spec.size() > 1 else Kit.ACCENT, 26, 84)
+			var button := Kit.button(str(spec[0]), spec[1] if spec.size() > 1 else Kit.ACCENT, 26, 72)
 			Kit.expand(button)
 			var callback: Callable = spec[2] if spec.size() > 2 else Callable()
 			button.pressed.connect(_on_button.bind(callback))

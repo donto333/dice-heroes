@@ -107,6 +107,8 @@ var focus_player := 0
 var piece_textures: Array = [null, null]
 ## 말로 세울 입체 모형 그림(플레이어마다, 바탕이 투명한 전신 그림). 없으면 둥근 초상화 말.
 var piece_standees: Array = [null, null]
+## 말 뒤를 따라다니는 파티원(방어·지원) 모형들. 플레이어마다 [그림, 그림].
+var party_standees: Array = [[], []]
 ## 말이 보는 방향(1 오른쪽, -1 왼쪽). 움직인 쪽을 본다.
 var _facing: Array = [1.0, 1.0]
 ## 착지 직후 눌렸다 펴지는 정도(말마다 0~1, 시간이 지나면 0으로)
@@ -626,6 +628,24 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 	var facing := float(_facing[player_index]) if player_index < _facing.size() else 1.0
 	if not flinging and lift < cell * 0.5:
 		_cast_shadow(texture, foot, width, height, facing)
+	# 파티원 두 명이 선봉 뒤 양옆에 조금 작게 서서 함께 움직인다(원작의 3인 파티).
+	if not flinging and player_index < party_standees.size():
+		var followers: Array = party_standees[player_index]
+		for follow_index in followers.size():
+			var follower: Texture2D = followers[follow_index]
+			if follower == null:
+				continue
+			var side := -1.0 if follow_index == 0 else 1.0
+			var small_height := height * 0.8
+			var small_width := small_height * float(follower.get_width()) / maxf(float(follower.get_height()), 1.0)
+			var delay := 0.0
+			if hop_t >= 0.0:
+				# 한 박자 늦게 따라 뛴다.
+				delay = -sin(clampf(hop_t - 0.18 * (follow_index + 1), 0.0, 1.0) * PI) * cell * HOP_HEIGHT * 0.8 + lift
+			var spot := base + Vector2(side * cell * 0.3 - facing * cell * 0.1, -cell * 0.13 + delay)
+			draw_set_transform(spot, 0.0, Vector2(facing, 1.0))
+			draw_texture_rect(follower, Rect2(-small_width / 2.0, -small_height, small_width, small_height), false, Color(0.9, 0.9, 0.95))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if flinging:
 		# 빙글빙글 돌며 날아간다.
 		draw_set_transform(base - Vector2(0, height * 0.5), hop_t * TAU * 2.0, Vector2(facing, 1.0))
