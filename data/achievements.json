@@ -270,6 +270,24 @@
       "reward": {
         "gems": 150
       }
+    },
+    {
+      "id": "chapters_9",
+      "text": "모험 9장 모두 끝내기",
+      "stat": "chapters_cleared",
+      "goal": 9,
+      "reward": {
+        "gems": 500
+      }
+    },
+    {
+      "id": "stars_81",
+      "text": "모험 별 81개 모두",
+      "stat": "adventure_stars",
+      "goal": 81,
+      "reward": {
+        "gems": 600
+      }
     }
   ]
 }
