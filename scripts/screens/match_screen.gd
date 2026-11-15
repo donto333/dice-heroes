@@ -1209,7 +1209,7 @@ func _show_battle(event: Dictionary) -> void:
 	var me_attacking := who == 0 or _is_local()
 	var info := {
 		"attacker_side": "공격 · %s" % game.players[who]["name"],
-		"defender_side": "방어 · %s" % (game.players[other]["name"] if against_player else "키퍼"),
+		"defender_side": "방어 · %s" % (game.players[other]["name"] if against_player else ("관문지기" if str(event["defender"]).begins_with("관문지기") else ("골의 수호자" if str(event["defender"]) == _goal_name() else "키퍼"))),
 		"attacker_color": PLAYER_TEXT_COLORS[who],
 		"defender_color": PLAYER_TEXT_COLORS[other] if against_player else Color("ffcf66"),
 		"winner_text": "%s 승리!" % game.players[who]["name"],
@@ -1376,6 +1376,8 @@ func _show_game_over() -> void:
 	if not _is_local():
 		details.insert(2, "내 전투: %d승 %d패  ·  최고 주사위 합 %d" % [_my_battles[0], _my_battles[1], _best_roll])
 		details.insert(3, "카드 %d장 · 어빌리티 %d번 사용" % [_cards_used, _abilities_used])
+	if not _is_local():
+		details.append("뚫은 관문: %d / %d" % [(game.gates_cleared[0] as Dictionary).size(), _gate_count()])
 	details.append_array(_record(outcome))
 	var shown_outcome := outcome
 	if _is_local() and outcome != "draw":
@@ -1600,3 +1602,12 @@ func _state_text(player: Dictionary) -> String:
 		return ""
 	return " (" + ", ".join(PackedStringArray(parts)) + ")"
 
+
+
+## 이 맵의 관문 수
+func _gate_count() -> int:
+	var count := 0
+	for id in game.nodes:
+		if str(game.nodes[id].get("type", "")) == "gate":
+			count += 1
+	return count
