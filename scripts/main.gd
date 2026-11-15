@@ -31,7 +31,7 @@ const SCREENS := {
 	"adventure": preload("res://scripts/screens/adventure_screen.gd"),
 	"pass": preload("res://scripts/screens/pass_screen.gd"),
 }
-const VERSION := "0.12.0"
+const VERSION := "0.13.0"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -205,7 +205,11 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 	if not instant:
 		# 새 화면이 부드럽게 나타난다.
 		screen.modulate.a = 0.0
-		screen.create_tween().tween_property(screen, "modulate:a", 1.0, 0.16)
+		screen.pivot_offset = get_viewport_rect().size * 0.5
+		screen.scale = Vector2(1.035, 1.035)
+		var enter := screen.create_tween().set_parallel(true)
+		enter.tween_property(screen, "modulate:a", 1.0, 0.18)
+		enter.tween_property(screen, "scale", Vector2.ONE, 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	music.play_track(SCREEN_MUSIC.get(screen_name, "lobby"))
 
 

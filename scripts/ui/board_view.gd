@@ -463,6 +463,63 @@ func _draw_hex(center: Vector2, _half: Vector2, cell: float, color: Color, lit: 
 		draw_style_box(ring, top.grow(4.0))
 
 
+## 칸 종류마다 다른 살아 있는 효과(워프 소용돌이, 보물 반짝임, 저주 연기, 감옥 창살, 전투 칸 붉은 숨결).
+## 가벼운 선·점만 그려서 칸이 많아도 느려지지 않는다.
+func _draw_tile_fx(kind: String, center: Vector2, cell: float, id: int) -> void:
+	var top := center - Vector2(0, cell * BLOCK_DEPTH * 0.5)
+	var beat := _anim_time + float(id % 11) * 0.37
+	match kind:
+		"warp":
+			draw_set_transform(top, 0.0, Vector2(1.0, TILT))
+			for index in 3:
+				var start := beat * 2.6 + TAU * index / 3.0
+				draw_arc(Vector2.ZERO, cell * (0.2 + index * 0.08), start, start + 2.2, 14, Color(0.6, 1.0, 0.95, 0.75 - index * 0.18), 3.0)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		"treasure", "luck":
+			for index in 3:
+				var phase := fposmod(beat * 0.9 + index * 0.33, 1.0)
+				var spot := top + Vector2(cos(index * 2.3 + id) * cell * 0.3, -cell * (0.1 + phase * 0.42))
+				var arm := cell * 0.07 * sin(phase * PI)
+				var glint := Color(1.0, 0.97, 0.7, sin(phase * PI))
+				draw_line(spot - Vector2(arm, 0), spot + Vector2(arm, 0), glint, 2.0)
+				draw_line(spot - Vector2(0, arm), spot + Vector2(0, arm), glint, 2.0)
+		"curse":
+			for index in 3:
+				var phase := fposmod(beat * 0.6 + index * 0.33, 1.0)
+				var spot := top + Vector2(sin(beat * 2.0 + index * 2.0) * cell * 0.16 + (index - 1) * cell * 0.16, -cell * phase * 0.55)
+				draw_circle(spot, cell * (0.05 + phase * 0.05), Color(0.72, 0.4, 1.0, (1.0 - phase) * 0.55))
+		"prison":
+			var bar_top := top.y - cell * 0.5
+			var bar_bottom := top.y + cell * TILT * 0.3
+			for index in 5:
+				var x := center.x + (index - 2) * cell * 0.17
+				draw_line(Vector2(x, bar_top), Vector2(x, bar_bottom), Color(0.12, 0.13, 0.18, 0.9), cell * 0.055)
+				draw_line(Vector2(x - cell * 0.012, bar_top), Vector2(x - cell * 0.012, bar_bottom), Color(0.8, 0.84, 0.9, 0.7), cell * 0.016)
+			draw_line(Vector2(center.x - cell * 0.4, bar_top), Vector2(center.x + cell * 0.4, bar_top), Color(0.12, 0.13, 0.18, 0.95), cell * 0.07)
+		"battle", "ambush", "gate":
+			var breath := 0.5 + 0.5 * sin(beat * 3.2)
+			draw_set_transform(top, 0.0, Vector2(1.0, TILT))
+			draw_arc(Vector2.ZERO, cell * (0.44 + breath * 0.04), 0.0, TAU, 28, Color(1.0, 0.3, 0.2, 0.25 + breath * 0.35), 3.0)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		"forward":
+			for index in 2:
+				var phase := fposmod(beat * 1.2 + index * 0.5, 1.0)
+				var tip := top + Vector2(-cell * 0.3 + phase * cell * 0.6, cell * 0.2)
+				var arrow := Color(0.9, 1.0, 0.6, sin(phase * PI) * 0.8)
+				draw_line(tip - Vector2(cell * 0.08, cell * 0.06), tip, arrow, 3.0)
+				draw_line(tip - Vector2(cell * 0.08, -cell * 0.06), tip, arrow, 3.0)
+		"checkpoint":
+			var wave := fposmod(beat * 0.7, 1.0)
+			draw_set_transform(top, 0.0, Vector2(1.0, TILT))
+			draw_arc(Vector2.ZERO, cell * (0.3 + wave * 0.26), 0.0, TAU, 28, Color(0.7, 0.92, 1.0, (1.0 - wave) * 0.7), 3.0)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		"fate":
+			var spin := beat * 1.5
+			for index in 4:
+				var spot := top + Vector2(cos(spin + TAU * index / 4.0) * cell * 0.36, sin(spin + TAU * index / 4.0) * cell * 0.36 * TILT)
+				draw_circle(spot, cell * 0.035, Color(1.0, 0.85, 0.3, 0.85))
+
+
 ## 말이 서 있는 곳(이 보드 안의 좌표). 연출 층이 여기서 알갱이를 터뜨린다.
 func piece_point(player_index: int) -> Vector2:
 	if game == null or player_index >= shown_pos.size() or not game.nodes.has(int(shown_pos[player_index])):
@@ -653,9 +710,13 @@ func _draw() -> void:
 			draw_texture_rect_region(_monsters, stand_rect, Rect2(monster * 32, 0, 32, 32))
 		elif _icons.has(icon_name):
 			var icon_size := rect.size.x * 0.62
-			var icon_rect := Rect2(rect.position + Vector2((rect.size.x - icon_size) / 2.0, rect.size.y * -0.06),
+			# 아이콘은 칸마다 다른 박자로 살짝 둥실거린다.
+			var bob := sin(_anim_time * 2.4 + float(int(id) % 7) * 0.9) * cell * 0.035
+			var icon_rect := Rect2(rect.position + Vector2((rect.size.x - icon_size) / 2.0, rect.size.y * -0.06 + bob),
 				Vector2(icon_size, icon_size))
 			draw_texture_rect(_icons[icon_name], icon_rect, false)
+		if not game.is_hidden(id):
+			_draw_tile_fx(str(tile.get("type", "")), rect.get_center(), cell, int(id))
 		if label != "":
 			draw_string_outline(font, rect.position + Vector2(0, rect.size.y * 0.74), label,
 				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, small, 5, Color(0, 0, 0, 0.8))
