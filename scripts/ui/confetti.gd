@@ -1,6 +1,7 @@
 extends Control
 ## 승리했을 때 화면 위에서 떨어지는 색종이. 보여 주기만 하고 입력은 막지 않는다.
 
+const Fx := preload("res://scripts/ui/fx.gd")
 const COLORS := [Color("ffcf4d"), Color("ff6b6b"), Color("4fc3f7"), Color("7ee081"), Color("d08aff"), Color.WHITE]
 const COUNT := 90
 
@@ -52,8 +53,18 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	# 그려 둔 색종이·꽃잎 조각 그림을 쓴다. 없으면 색 네모로 대신한다.
+	var art: Array = Fx.pieces("confetti") + Fx.pieces("petal")
+	var index := 0
 	for piece in _pieces:
 		var piece_size: Vector2 = piece["size"]
 		draw_set_transform(piece["pos"], float(piece["angle"]), Vector2(1.0, absf(cos(float(piece["sway"]))) * 0.8 + 0.2))
-		draw_rect(Rect2(-piece_size / 2.0, piece_size), piece["color"])
+		if art.is_empty():
+			draw_rect(Rect2(-piece_size / 2.0, piece_size), piece["color"])
+		else:
+			var texture: Texture2D = art[index % art.size()]
+			var wide := piece_size.x * 2.6
+			var tall := wide * float(texture.get_height()) / maxf(float(texture.get_width()), 1.0)
+			draw_texture_rect(texture, Rect2(-wide / 2.0, -tall / 2.0, wide, tall), false)
+		index += 1
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
