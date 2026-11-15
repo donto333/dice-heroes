@@ -74,6 +74,7 @@ func _build() -> void:
 	background.color = Color("2a8be6")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
+	KitStyle.backdrop(self, "ui/bg_party", 0.5)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

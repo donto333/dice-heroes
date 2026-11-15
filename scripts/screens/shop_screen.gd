@@ -25,6 +25,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
 	_tab = str(_params.get("tab", "summon"))
 	var column := Kit.screen_frame(self, 16)
+	move_child(Kit.backdrop(self, "ui/bg_shop", 0.5), 1)
 	var top := TopBar.new()
 	column.add_child(top)
 	top.setup(app)
@@ -216,6 +217,14 @@ func _relic_panel() -> Control:
 		var line := Kit.panel(Kit.INSET, Kit.GOLD if id == using else Kit.LINE, 8)
 		var row := Kit.hbox(10)
 		line.add_child(row)
+		var picture := ArtView.new()
+		picture.show_art("relics/" + id)
+		if picture.has_art():
+			picture.custom_minimum_size = Vector2(72, 72)
+			picture.focus_y = 0.5
+			row.add_child(picture)
+		else:
+			picture.free()
 		var words := Kit.vbox(0)
 		words.add_child(Kit.label(str(item["name"]), 22, Kit.GOLD if id == using else Color.WHITE))
 		words.add_child(Kit.label(str(item["text"]), 16, Kit.MUTED))

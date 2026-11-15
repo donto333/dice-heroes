@@ -51,6 +51,7 @@ func setup(main_app, params: Dictionary) -> void:
 	app = main_app
 	_back = str(params.get("back", "lobby"))
 	var column := Kit.screen_frame(self, 18)
+	move_child(Kit.backdrop(self, "ui/bg_settings", 0.5), 1)
 	column.add_child(Kit.title("게임 방법", 48))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
