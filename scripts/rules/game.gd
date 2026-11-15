@@ -69,6 +69,8 @@ var gates_cleared: Array = [{}, {}]
 var gate_fails: Array = [{}, {}]
 ## 관문에서 한 번 질 때마다 그 관문지기의 주사위가 이만큼 줄어든다(끝없이 막히지 않게).
 var gate_weaken := 1
+## 골의 수호자 주사위가 줄어드는 한계
+var goal_min_dice := 3
 ## 후공 보정으로 둘째 플레이어가 받는 첫 게이지
 var second_player_gauge := 0
 ## 더블(이동 주사위 2개 이상이 모두 같은 눈)이면 차는 어빌리티 게이지(%)
@@ -110,6 +112,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	second_player_gauge = int(rules.get("second_player_gauge", 0))
 	double_gauge = int(rules.get("double_gauge", 0))
 	gate_weaken = int(rules.get("gate_weaken", 1))
+	goal_min_dice = int(rules.get("goal_min_dice", 3))
 	gauge_base = int(rules.get("gauge_base", 10))
 	gauge_per_intellect = int(rules.get("gauge_per_intellect", 5))
 	start_gauge_per_intellect = int(rules.get("start_gauge_per_intellect", 0))
@@ -785,9 +788,14 @@ func _resolve_tile(depth: int) -> void:
 			_resolve_fate()
 		"goal":
 			say("  골 앞의 수호자 [%s] 등장!" % tile["name"])
-			if _battle_keeper(int(tile["dice"]), tile["name"]):
+			# 수호자도 질 때마다 조금씩 지친다(goal_min_dice개 밑으로는 안 내려간다).
+			var goal_dice := maxi(mini(goal_min_dice, int(tile["dice"])), int(tile["dice"]) - gate_weaken * int(gate_fails[current].get(pos, 0)))
+			if _battle_keeper(goal_dice, tile["name"]):
 				winner = current
 				say("%s 골인! 승리!" % player["name"])
+			else:
+				gate_fails[current][pos] = int(gate_fails[current].get(pos, 0)) + 1
+				say("  수호자가 조금 지쳤습니다.")
 
 
 ## 화면에 크게 알릴 칸 효과. good이면 좋은 일(밝은 색), 아니면 나쁜 일.

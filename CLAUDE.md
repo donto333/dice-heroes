@@ -30,6 +30,7 @@
   마지막에 한 판을 끝까지 자동으로 플레이한다(`_play_full_game`, 로그의 `FULLGAME` 줄). 이 단계의 오류는 빌드를 실패시키지 않으므로 로그에서 `SCRIPT ERROR`와 `ERROR:`를 직접 찾아본다.
 - 편의·운영: 모험 소탕(`Profile.sweep`, economy.json의 sweep), 오늘 할 일 창(`lobby_screen.gd`의 `open_todo`), 일괄 강화(`Profile.upgrade_all`), 최근 전적·맵별 전적(`profile["history"]`, `profile["map_stats"]`), 초보자 길잡이 과제(`data/guide.json`, `Profile.claim_guide`), 우편·쿠폰·공지·이벤트(`data/mails.json` 등), 시즌 패스·주사위 상점. 결제는 없고 보석 상품·묶음은 '준비 중'으로만 보인다(economy.json의 gem_packs).
 - 어빌리티 컷인: `scripts/ui/cutin.gd`. 전투 창의 예상 승률은 `Game.win_chance()`(주사위를 굴리지 않고 셈만 함).
+- 상점과 미션 화면은 탭으로 나뉜다(상점: 소환·성장·꾸미기·보석, 미션: 오늘·업적). `app.go("shop", {"tab": ...})`. 보석 마일리지는 `Profile.claim_mileage`.
 - 더 생긴 것: 수집 앨범(`Profile.claim_album`, economy.json album), 유물(`relics`, 내 파티 시작 보너스·랭크전 상대 강화 `rank_boost`), 홀짝 미니게임(`odd_even`), 주간 리그 보상·훈장(`Profile.settle_league`), 원정 보상(`Profile.claim_idle`, idle), 요일 이벤트(events.json의 weekdays).
 - 매일 바뀌는 것(날짜 씨앗): 오늘의 미션 6개(`Profile.active_missions`), 오늘의 특가, 오늘의 도전(상대·맵). 하루 기록은 `profile["daily"]`.
 
@@ -41,7 +42,8 @@
 - 등급 ★★★/★★/★ = 소환 포인트 3/2/1, 파티 합계 6 이하
 - 전투: 이동해 온 쪽이 공격. 양쪽이 주사위를 굴려 합이 큰 쪽이 이김. 지면 직전 거점으로
 - 주사위 컨트롤: 굴리기 버튼을 꾹 눌러 낮게·높게를 노리면 35% 확률로 그쪽 눈 비율을 쓴다(`game.roll_move(aim)`, data/rules.json의 dice_control, 화면은 `scripts/ui/aim_bar.gd`). AI는 늘 높게 노린다
-- 관문(gate 칸, 강제 전투): 맵마다 큰길 28%·52%·76% 지점에 3개(tools/make_maps.py). 지나가다가도 멈춰 관문지기와 싸운다. 관문지기 주사위는 3·4·4개, 골의 수호자는 5개. 이기면 카드 1장, 그 플레이어는 그 관문을 다시 싸우지 않는다(`game.gates_cleared`). 지면 직전 거점으로 가고 관문지기 주사위가 1개 줄어든다(data/rules.json의 gate_weaken)
+- 관문(gate 칸, 강제 전투): 맵마다 큰길 28%·52%·76% 지점에 3개(tools/make_maps.py). 지나가다가도 멈춰 관문지기와 싸운다. 관문지기 주사위는 3·4·4개, 골의 수호자는 5개. 이기면 카드 1장, 그 플레이어는 그 관문을 다시 싸우지 않는다(`game.gates_cleared`). 지면 직전 거점으로 가고 관문지기 주사위가 1개 줄어든다(data/rules.json의 gate_weaken). 골의 수호자도 질 때마다 1개씩 줄되 goal_min_dice(3개)까지
+- 시너지: 파티 세 명이 같은 분류면 결속(시작 게이지 +15%), 모두 다른 분류면 조화(부적). data/rules.json의 synergy, `Game.synergy_of`
 - 더블: 이동 주사위 2개 이상이 모두 같은 눈이면 어빌리티 게이지 +12%(data/rules.json의 double_gauge)
 - 따라잡기: 상대보다 10칸 이상 뒤처진 쪽은 이동 주사위에서 큰 눈이 더 잘 나온다(data/rules.json의 catchup_gap·catchup_move_weights). 전투 주사위는 그대로
 - 보드 약 120칸, 맵 9종(유턴형·피라미드형·나선형·직선형·계단형·산맥형·세로 S자형·쌍고리형·성벽형, tools/make_maps.py로 생성), 거점은 10칸 안팎마다, 갈림길(마름모) 3개, 50턴 제한(data/rules.json)
