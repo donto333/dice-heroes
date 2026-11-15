@@ -135,7 +135,11 @@ var _occupied: Dictionary = {}
 ## 이 맵의 빈자리에 놓을 꾸밈 모형들
 var _props: Array = []
 ## 칸 위에 세우는 입체 물건
-const TOPPERS := {"treasure": "chest_closed", "checkpoint": "flag_blue", "warp": "portal", "start": "flag_red"}
+const TOPPERS := {
+	"treasure": "chest_closed", "checkpoint": "flag_blue", "warp": "portal", "start": "start_arch",
+	"gate": "gate_closed", "goal": "goal_throne", "prison": "prison_cage", "luck": "luck_statue", "fate": "fate_orb",
+	"curse": "curse_totem", "fork": "fork_sign", "forward": "forward_sign", "battle": "battle_stand", "ambush": "ambush_skulls",
+}
 const PROP_NAMES := {
 	"grass": ["plain_haystack", "plain_tent", "plain_signpost", "plain_flowers", "castle_tower", "castle_wall", "castle_banner", "castle_catapult", "forest_tree"],
 	"desert": ["desert_palm", "desert_pyramid", "desert_cactus", "desert_obelisk"],
@@ -568,14 +572,6 @@ func _draw_tile_fx(kind: String, center: Vector2, cell: float, id: int) -> void:
 				var phase := fposmod(beat * 0.6 + index * 0.33, 1.0)
 				var spot := top + Vector2(sin(beat * 2.0 + index * 2.0) * cell * 0.16 + (index - 1) * cell * 0.16, -cell * phase * 0.55)
 				draw_circle(spot, cell * (0.05 + phase * 0.05), Color(0.72, 0.4, 1.0, (1.0 - phase) * 0.55))
-		"prison":
-			var bar_top := top.y - cell * 0.5
-			var bar_bottom := top.y + cell * TILT * 0.3
-			for index in 5:
-				var x := center.x + (index - 2) * cell * 0.17
-				draw_line(Vector2(x, bar_top), Vector2(x, bar_bottom), Color(0.12, 0.13, 0.18, 0.9), cell * 0.055)
-				draw_line(Vector2(x - cell * 0.012, bar_top), Vector2(x - cell * 0.012, bar_bottom), Color(0.8, 0.84, 0.9, 0.7), cell * 0.016)
-			draw_line(Vector2(center.x - cell * 0.4, bar_top), Vector2(center.x + cell * 0.4, bar_top), Color(0.12, 0.13, 0.18, 0.95), cell * 0.07)
 		"battle", "ambush", "gate":
 			var breath := 0.5 + 0.5 * sin(beat * 3.2)
 			draw_set_transform(top, 0.0, Vector2(1.0, TILT))
@@ -879,7 +875,8 @@ func _draw() -> void:
 		if not game.is_hidden(id):
 			# 보물상자·거점 깃발·워프 문은 칸 위에 입체 물건으로 서 있다.
 			var topper_name: String = TOPPERS.get(str(tile.get("type", "")), "")
-			var topper: Texture2D = GameData.object(topper_name) if topper_name != "" else null
+			# 적 모형이 서 있는 칸에는 물건을 세우지 않는다(겹치지 않게).
+			var topper: Texture2D = GameData.object(topper_name) if topper_name != "" and monster < 0 else null
 			if topper != null:
 				var topper_tall := cell * 0.62 * (1.0 + 0.03 * sin(_anim_time * 2.2 + float(int(id) % 7)))
 				var topper_wide := cell * 0.62 * float(topper.get_width()) / float(topper.get_height())
