@@ -32,7 +32,7 @@ func setup(active: String, badges: Dictionary) -> void:
 		var screen_name: String = spec[0]
 		var on := screen_name == active
 		var color := Color("ffc62b") if on else Color("2f74d6")
-		var button := Kit.button("", color, 20, 98)
+		var button := Kit.button("", color, 20, 104)
 		Kit.expand(button)
 		button.pressed.connect(_on_pressed.bind(screen_name))
 		row.add_child(button)
@@ -40,13 +40,13 @@ func setup(active: String, badges: Dictionary) -> void:
 		# 아이콘 위, 이름 아래
 		var column := VBoxContainer.new()
 		column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		column.offset_top = 4
-		column.offset_bottom = -12
+		column.offset_top = 2
+		column.offset_bottom = -16
 		column.alignment = BoxContainer.ALIGNMENT_CENTER
-		column.add_theme_constant_override("separation", -4)
+		column.add_theme_constant_override("separation", -8)
 		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(column)
-		var picture := Kit.icon(str(spec[2]), 54.0 if on else 46.0)
+		var picture := Kit.icon(str(spec[2]), 50.0 if on else 44.0)
 		picture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		column.add_child(picture)
 		var caption := Kit.label(str(spec[1]), 21 if on else 19, Color("5a3200") if on else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)

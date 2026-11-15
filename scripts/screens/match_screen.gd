@@ -143,6 +143,7 @@ func _build_ui() -> void:
 	background.color = Color("1c5cb8")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
+	add_child(Kit.sky())
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -239,7 +240,7 @@ func _build_ui() -> void:
 
 	var result_panel := PanelContainer.new()
 	# 기록 칸은 높이를 고정한다. 내용이 넘치면 안에서 스크롤되어 판이 줄어들지 않는다.
-	result_panel.custom_minimum_size = Vector2(0, 168)
+	result_panel.custom_minimum_size = Vector2(0, 132)
 	result_panel.add_theme_stylebox_override("panel", _box(Color("2a8be6"), Color("8fd0ff"), 2))
 	column.add_child(result_panel)
 	_result_scroll = ScrollContainer.new()
@@ -311,6 +312,8 @@ func _build_ui() -> void:
 	_log_label.clip_text = true
 	_log_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	column.add_child(_log_label)
+	# 진행 기록 글줄은 화면을 어수선하게 해서 숨긴다(판에 자리를 더 준다). 기록은 위의 결과 칸에 나온다.
+	_log_label.visible = false
 
 	_board_view.stepped.connect(func(): _play("step"))
 	_battle_overlay = BattleOverlay.new()
@@ -405,15 +408,11 @@ func _show_tile(event: Dictionary) -> void:
 	var icon_name := str(event.get("tile", ""))
 	if icon_name == "attr":
 		icon_name = "attr_hero"
-	var icon_path := "res://assets/icons/%s.png" % icon_name
-	if ResourceLoader.exists(icon_path):
-		var icon := TextureRect.new()
-		icon.texture = load(icon_path)
-		icon.custom_minimum_size = Vector2(72, 72)
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		row.add_child(icon)
+	var glossy_name := str(BoardView.GLOSSY_ICONS.get(icon_name, icon_name))
+	if ResourceLoader.exists("res://assets/ui_icons/%s.png" % glossy_name):
+		row.add_child(Kit.icon(glossy_name, 84.0))
+	elif ResourceLoader.exists("res://assets/icons/%s.png" % icon_name):
+		row.add_child(Kit.icon(icon_name, 72.0))
 	var text := _make_label(24 if bool(event.get("small", false)) else 34, str(event.get("text", "")))
 	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if bool(event.get("small", false)):
@@ -543,8 +542,14 @@ func _box(fill: Color, border: Color, border_width: int) -> StyleBoxFlat:
 	box.bg_color = fill
 	box.border_color = border
 	box.set_border_width_all(border_width)
-	box.set_corner_radius_all(10)
+	box.set_corner_radius_all(16)
 	box.set_content_margin_all(8)
+	box.anti_aliasing_size = 1.2
+	if border_width > 0:
+		box.border_width_bottom = border_width + 2
+		box.shadow_color = Color(0, 0.04, 0.16, 0.35)
+		box.shadow_size = 5
+		box.shadow_offset = Vector2(0, 3)
 	return box
 
 
@@ -722,13 +727,11 @@ func _make_round_button() -> Button:
 	var button := Button.new()
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.add_theme_font_size_override("font_size", 28)
-	var body := Color("ffc62b")
-	var edge := Color("6b3b00")
-	var normal := _round_box(body, edge, 10)
-	button.add_theme_stylebox_override("normal", normal)
-	button.add_theme_stylebox_override("hover", _round_box(body.lightened(0.15), edge, 10))
-	button.add_theme_stylebox_override("pressed", _round_box(body.darkened(0.15), edge, 4))
-	button.add_theme_stylebox_override("disabled", _round_box(Color("5a5f78"), Color("2a2d40"), 6))
+	# 크고 둥근 노란 광택 버튼
+	Kit.paint(button, Color("ffc62b"), Color("6b3b00"))
+	var gloss = button.get_node("Gloss")
+	gloss.radius = 80.0
+	gloss.depth = 10.0
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	for state in ["font_color", "font_hover_color", "font_pressed_color"]:
 		button.add_theme_color_override(state, Color("4a2600"))

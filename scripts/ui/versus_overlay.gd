@@ -172,8 +172,8 @@ func _side(side: Dictionary, flip: bool) -> Control:
 	words.add_theme_constant_override("separation", -6)
 	words.anchor_left = 0.04
 	words.anchor_right = 0.96
-	words.anchor_top = 0.5 if not flip else 0.06
-	words.anchor_bottom = 0.5 if not flip else 0.06
+	words.anchor_top = 0.5 if not flip else 0.3
+	words.anchor_bottom = 0.5 if not flip else 0.3
 	words.offset_bottom = 200
 	words.rotation = deg_to_rad(-6.0)
 	panel.add_child(words)
