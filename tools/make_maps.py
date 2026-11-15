@@ -126,9 +126,21 @@ def shape_twin_rings():
     return points[:MAIN_LENGTH]
 
 
+def shape_battlement():
+    """성벽형: 오른쪽으로 12칸 가고 위로 4칸, 다시 12칸 가고 아래로 4칸. 성벽의 톱니처럼 오르내린다."""
+    points = [(0, 0)]
+    direction = -1
+    while len(points) < MAIN_LENGTH:
+        _walk(points, (1, 0), 12)
+        _walk(points, (0, direction), 4)
+        direction *= -1
+    return points[:MAIN_LENGTH]
+
+
 SHAPES = {
     "uturn": shape_uturn, "pyramid": shape_pyramid, "spiral": shape_spiral, "straight": shape_straight,
     "stairs": shape_stairs, "mountain": shape_mountain, "vertical": shape_vertical, "twin_rings": shape_twin_rings,
+    "battlement": shape_battlement,
 }
 
 
@@ -457,6 +469,20 @@ THEMES = [
         "risky": {"random": 3, "curse": 1, "fate": 2, "forward": 1},
         "safe": {"luck": 3, "treasure": 2, "random": 2, "normal": 1},
         "routes": [["가시덤불 길 (짧고 위험)", "오솔길 (안전)"], ["늪지 (판정)", "꽃 피는 길 (행운)"], ["안개 계곡 (짧음)", "샘물 길 (보물)"]],
+        "random_pool": COMMON_POOL,
+    },
+    {
+        "file": "data/boards/castle.json", "seed": 909, "name": "왕국의 성벽", "boss": "철갑 대장군",
+        "shape": "battlement", "shape_name": "성벽형",
+        "comment": "성벽 맵(약 120칸, 성벽형). 전진 칸과 감옥이 많다. tools/make_maps.py로 만든다.",
+        "colors": {"terrain": "grass", "bg": "2c3f52", "line": "cfe0f0"},
+        "keepers": ["성벽 수비대", "창 기사", "석상 병사", "궁수 병사", "성문 지기"],
+        "ambushers": ["매복 병사", "투석기 화살", "순찰 기사"],
+        "ambush_rate": 0.25,
+        "weights": {"normal": 3, "random": 3, "forward": 2.5, "treasure": 2, "luck": 2, "curse": 1, "fate": 1, "prison": 1.2},
+        "risky": {"forward": 3, "fate": 2, "random": 2, "prison": 1},
+        "safe": {"treasure": 3, "luck": 2, "random": 2, "normal": 1},
+        "routes": [["성벽 위 길 (짧고 위험)", "성 안 길 (안전)"], ["무너진 탑 (짧음)", "정원 길 (행운)"], ["병영 길 (전투)", "창고 길 (보물)"]],
         "random_pool": COMMON_POOL,
     },
     {
