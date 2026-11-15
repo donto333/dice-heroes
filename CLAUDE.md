@@ -29,6 +29,8 @@
 - 화면 확인은 CI의 `tools/capture.gd` 자동 사진(로그에 base64로 남음).
   마지막에 한 판을 끝까지 자동으로 플레이한다(`_play_full_game`, 로그의 `FULLGAME` 줄). 이 단계의 오류는 빌드를 실패시키지 않으므로 로그에서 `SCRIPT ERROR`와 `ERROR:`를 직접 찾아본다.
 - 편의·운영: 모험 소탕(`Profile.sweep`, economy.json의 sweep), 오늘 할 일 창(`lobby_screen.gd`의 `open_todo`), 일괄 강화(`Profile.upgrade_all`), 최근 전적·맵별 전적(`profile["history"]`, `profile["map_stats"]`), 초보자 길잡이 과제(`data/guide.json`, `Profile.claim_guide`), 우편·쿠폰·공지·이벤트(`data/mails.json` 등), 시즌 패스·주사위 상점. 결제는 없고 보석 상품·묶음은 '준비 중'으로만 보인다(economy.json의 gem_packs).
+- 화면 일러스트: `assets/art/`(ui·chapters·cards)와 적 초상화 `assets/enemies/`. `GameData.art("ui/title_keyart")`, `GameData.enemy_portrait(이름)`(이름→파일은 `data/enemies.json`), 그리는 부품은 `scripts/ui/art_view.gd`, 바탕은 `Kit.backdrop()`, 버튼 그림은 `Kit.button_art()`. 그림 파일이 없으면 예전 모양으로 보인다. 오프닝 영상은 `scripts/ui/opening.gd`(`app.play_opening()`).
+- 그림 만들기: PC의 Codex 앱(dice-heroes 프로젝트)에 `codex_work/job.md`를 읽고 그리게 한다. 결과(`codex_work/out`, 저장소에는 안 올림)를 `tools/import_art.py`로 줄여 넣는다.
 - 어빌리티 컷인: `scripts/ui/cutin.gd`. 전투 창의 예상 승률은 `Game.win_chance()`(주사위를 굴리지 않고 셈만 함).
 - 상점과 미션 화면은 탭으로 나뉜다(상점: 소환·성장·꾸미기·보석, 미션: 오늘·업적). `app.go("shop", {"tab": ...})`. 보석 마일리지는 `Profile.claim_mileage`.
 - 더 생긴 것: 수집 앨범(`Profile.claim_album`, economy.json album), 유물(`relics`, 내 파티 시작 보너스·랭크전 상대 강화 `rank_boost`), 홀짝 미니게임(`odd_even`), 주간 리그 보상·훈장(`Profile.settle_league`), 원정 보상(`Profile.claim_idle`, idle), 요일 이벤트(events.json의 weekdays).
