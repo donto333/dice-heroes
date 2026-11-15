@@ -164,6 +164,9 @@ func _run() -> void:
 	print("SCROLLCHECK 미션 화면을 끌어 내린 값: %d" % moved)
 	await _wait(0.2)
 	await _shot("10a_missions_scrolled")
+	_app.go("missions", {"tab": "achievements"})
+	await _wait(0.4)
+	await _shot("10b_achievements")
 	var mission_scroll := _find_scroll(_app.current_screen)
 	if mission_scroll != null:
 		mission_scroll.scroll_vertical = 100000

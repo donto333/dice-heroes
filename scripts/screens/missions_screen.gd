@@ -10,12 +10,29 @@ const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 var app
 
 
+## 미션 탭: 오늘(길잡이·출석·일일 미션) / 업적
+var _tab := "today"
+
+
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
+	_tab = str(_params.get("tab", "today"))
 	var column := Kit.screen_frame(self, 16)
 	var top := TopBar.new()
 	column.add_child(top)
 	top.setup(app)
+	var tabs := Kit.hbox(8)
+	column.add_child(tabs)
+	var ready_achievements: int = Profile.claimable_achievement_count(app.profile, app.data)
+	for spec in [["today", "오늘"], ["achievements", "업적%s" % (" (%d)" % ready_achievements if ready_achievements > 0 else "")]]:
+		var on: bool = str(spec[0]) == _tab
+		var tab_button := Kit.button(str(spec[1]), Color("ffc62b") if on else Color("2f74d6"), 24, 64)
+		if on:
+			for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+				tab_button.add_theme_color_override(state, Color("5a3200"))
+			tab_button.add_theme_constant_override("outline_size", 0)
+		tab_button.pressed.connect(_on_mission_tab.bind(str(spec[0])))
+		tabs.add_child(Kit.expand(tab_button))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -28,15 +45,24 @@ func setup(main_app, _params: Dictionary) -> void:
 		var all := Kit.button("보상 %d개 모두 받기" % waiting, Color("e8890c"), 28, 84)
 		all.pressed.connect(_on_claim_everything)
 		body.add_child(all)
-	if not Profile.guide_current(app.profile, app.data).is_empty():
-		body.add_child(_guide_panel())
-	body.add_child(_attendance_panel())
-	body.add_child(_missions_panel())
-	body.add_child(_achievements_panel())
+	if _tab == "achievements":
+		body.add_child(_achievements_panel())
+	else:
+		if not Profile.guide_current(app.profile, app.data).is_empty():
+			body.add_child(_guide_panel())
+		body.add_child(_attendance_panel())
+		body.add_child(_missions_panel())
 	var nav := BottomNav.new()
 	column.add_child(nav)
 	nav.setup("missions", app.badges())
 	nav.tab_pressed.connect(_on_tab)
+
+
+func _on_mission_tab(id: String) -> void:
+	if id == _tab:
+		return
+	app.play("click")
+	app.go("missions", {"tab": id})
 
 
 func _attendance_panel() -> Control:
@@ -151,7 +177,7 @@ func _on_guide() -> void:
 	app.save()
 	app.play("win")
 	app.toast("길잡이 보상: %s" % Kit.reward_line(reward))
-	app.go("missions")
+	app.go("missions", {"tab": _tab})
 
 
 func _achievement_row(achievement: Dictionary) -> Control:
@@ -187,7 +213,7 @@ func _on_achievement(id: String) -> void:
 	app.save()
 	app.play("win")
 	app.toast("업적 보상: %s" % Kit.reward_line(reward))
-	app.go("missions")
+	app.go("missions", {"tab": _tab})
 
 
 func _mission_row(mission: Dictionary) -> Control:
@@ -223,7 +249,7 @@ func _on_check_in() -> void:
 	app.save()
 	app.play("win")
 	app.toast("출석 보상: %s" % Kit.reward_line(reward))
-	app.go("missions")
+	app.go("missions", {"tab": _tab})
 
 
 func _on_claim(id: String) -> void:
@@ -233,7 +259,7 @@ func _on_claim(id: String) -> void:
 	app.save()
 	app.play("good")
 	app.toast("미션 보상: %s" % Kit.reward_line(reward))
-	app.go("missions")
+	app.go("missions", {"tab": _tab})
 
 
 func _on_all_clear() -> void:
@@ -243,7 +269,7 @@ func _on_all_clear() -> void:
 	app.save()
 	app.play("win")
 	app.toast("모든 미션 완료! %s" % Kit.reward_line(reward))
-	app.go("missions")
+	app.go("missions", {"tab": _tab})
 
 
 func _on_claim_everything() -> void:
@@ -253,7 +279,7 @@ func _on_claim_everything() -> void:
 	app.save()
 	app.play("win")
 	app.toast("보상 %d개: %s" % [int(total["count"]), Kit.reward_line({"gold": int(total["gold"]), "gems": int(total["gems"])})])
-	app.go("missions")
+	app.go("missions", {"tab": _tab})
 
 
 func _on_tab(screen_name: String) -> void:
