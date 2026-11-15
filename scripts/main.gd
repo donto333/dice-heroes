@@ -52,6 +52,7 @@ var _characters_by_id: Dictionary = {}
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_setup_font()
 	rng.randomize()
 	data = GameData.load_all()
 	eco = data.get("economy", {})
@@ -69,6 +70,15 @@ func _ready() -> void:
 	load_profile()
 	music.enabled = bgm_on()
 	go("title")
+
+
+## 기본 글꼴(둥글고 굵은 주아체)에 없는 글자·기호는 노토 산스로 메운다.
+func _setup_font() -> void:
+	var main_font: FontFile = load("res://assets/fonts/Jua-Regular.ttf")
+	var backup: FontFile = load("res://assets/fonts/NotoSansKR-Regular-subset.otf")
+	if main_font != null and backup != null:
+		var extra: Array[Font] = [backup]
+		main_font.fallbacks = extra
 
 
 # ---------------------------------------------------------------- 프로필
