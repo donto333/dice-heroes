@@ -268,8 +268,11 @@ func _run() -> void:
 		"attack_rolls": [6, 5, 3, 2, 1], "defense_rolls": [4, 4, 3, 2],
 		"attack_total": 17, "defense_total": 13, "won": true,
 	}
+	# 자동 진행 중인 컷인·알림이 전투 창을 가리지 않게 맨 앞으로 올린다.
+	match_screen.move_child(match_screen._battle_overlay, match_screen.get_child_count() - 1)
 	match_screen._battle_overlay.play(fake_battle, {
-		"attacker_side": "공격 · 나", "defender_side": "방어 · 키퍼",
+		"boss_name": "메두사",
+		"attacker_side": "공격 · 나", "defender_side": "방어 · 골의 수호자",
 		"attacker_color": Color("4fc3f7"), "defender_color": Color("ffcf66"),
 		"winner_text": "나 승리!", "loser_text": "나 패배...", "good_for_me": true,
 		"attacker_character": _app.character("lubu"),
