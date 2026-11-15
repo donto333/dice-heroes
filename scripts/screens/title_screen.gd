@@ -76,15 +76,28 @@ func setup(main_app, _params: Dictionary) -> void:
 	var band_style := Kit.box(Color(0.06, 0.3, 0.7, 0.9), Kit.GOLD, 0, 0, 18)
 	band_style.border_width_top = 4
 	band_style.border_width_bottom = 4
+	if has_keyart:
+		# 그림이 있으면 띠 없이 큰 제목만 얹는다(외곽선과 그림자로 또렷하게).
+		band_style = Kit.box(Color(0, 0, 0, 0), Color.TRANSPARENT, 0, 0, 6)
+		var emblem_icon := Kit.icon("dice", 150.0)
+		emblem_icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		column.add_child(emblem_icon)
 	band.add_theme_stylebox_override("panel", band_style)
 	column.add_child(band)
 	var band_text := Kit.vbox(6)
 	band_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	band.add_child(band_text)
-	var logo := Kit.title("주사위 영웅전", 104)
-	logo.add_theme_constant_override("outline_size", 20)
+	var logo := Kit.title("주사위 영웅전", 118 if has_keyart else 104)
+	logo.add_theme_constant_override("outline_size", 30 if has_keyart else 20)
+	logo.add_theme_color_override("font_outline_color", Color("5a1e00"))
+	logo.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
+	logo.add_theme_constant_override("shadow_offset_y", 10)
+	logo.add_theme_constant_override("shadow_outline_size", 30)
 	band_text.add_child(logo)
-	band_text.add_child(Kit.label("영웅과 함께 굴리는 주사위 보드 RPG", 28, Color(1, 1, 1, 0.9), HORIZONTAL_ALIGNMENT_CENTER))
+	var tagline := Kit.label("영웅과 함께 굴리는 주사위 보드 RPG", 28, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	tagline.add_theme_constant_override("outline_size", 8)
+	tagline.add_theme_color_override("font_outline_color", Color("0c2f6e"))
+	band_text.add_child(tagline)
 	column.add_child(Kit.spacer(0))
 	_hint = Kit.label("화면을 누르세요", 34, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	_hint.add_theme_constant_override("outline_size", 8)
