@@ -467,6 +467,22 @@ func _draw() -> void:
 		var monster := -1
 		if not game.is_hidden(id) and tile.get("type", "") in ["battle", "ambush", "gate", "goal"]:
 			monster = monster_kind(str(tile.get("type", "")), str(tile.get("name", "")))
+		if tile.get("type", "") == "gate" and not game.is_hidden(id):
+			# 관문: 돌기둥 두 개와 가로대. 내가(0번) 이미 뚫었으면 초록 가로대에 '통과', 적은 사라진다.
+			var passed: bool = game.gates_cleared[0].has(id)
+			var width := rect.size.x
+			var foot := rect.position.y + rect.size.y * 0.5
+			var pillar := Vector2(width * 0.15, width * 0.95)
+			for side in [-1.0, 1.0]:
+				var left: float = rect.get_center().x + side * width * 0.47 - pillar.x / 2.0
+				draw_rect(Rect2(left, foot - pillar.y, pillar.x, pillar.y), Color("9aa6b2"))
+				draw_rect(Rect2(left, foot - pillar.y, pillar.x, pillar.y), Color("3f4852"), false, 2.0)
+				draw_rect(Rect2(left - width * 0.03, foot - pillar.y - width * 0.07, pillar.x + width * 0.06, width * 0.09), Color("3f4852"))
+			draw_rect(Rect2(rect.get_center().x - width * 0.5, foot - pillar.y + width * 0.02, width, width * 0.11),
+				Color("2fb457") if passed else Color("c2272f"))
+			if passed:
+				monster = -1
+				label = "통과"
 		if monster >= 0 and _monsters != null:
 			# 키퍼·습격·골 칸에는 아이콘 대신 적이 서 있다(살짝 위로 올려 서 있는 느낌).
 			var stand := rect.size.x * (0.86 if tile.get("type", "") in ["goal", "gate"] else 0.7)
