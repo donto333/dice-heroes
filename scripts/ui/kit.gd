@@ -81,7 +81,7 @@ static func button(text: String, color: Color = ACCENT, font_size: int = 26, hei
 	result.add_theme_color_override("font_hover_color", TEXT)
 	result.add_theme_color_override("font_pressed_color", TEXT)
 	result.add_theme_color_override("font_focus_color", TEXT)
-	result.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.35))
+	result.add_theme_color_override("font_disabled_color", Color("e3ebf7"))
 	paint(result, color)
 	result.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	return result
@@ -266,6 +266,34 @@ static func icon_button(text: String, icon_name: String, color: Color, font_size
 		small.add_theme_color_override("font_outline_color", color.darkened(0.6))
 		small.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		texts.add_child(small)
+	return result
+
+
+## 네모 타일 버튼: 위에 아이콘, 아래에 이름과 작은 설명. 로비의 모드 고르기에 쓴다.
+static func tile_button(text: String, icon_name: String, color: Color, sub: String = "", height: float = 150.0) -> Button:
+	var result := button("", color, 26, height)
+	var column := VBoxContainer.new()
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	column.offset_top = 8
+	column.offset_bottom = -14
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_theme_constant_override("separation", 0)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	result.add_child(column)
+	var picture := icon(icon_name, 60.0)
+	picture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(picture)
+	var main := label(text, 26, TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	main.add_theme_constant_override("outline_size", 7)
+	main.add_theme_color_override("font_outline_color", color.darkened(0.6))
+	main.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(main)
+	if sub != "":
+		var small := label(sub, 16, Color(1, 1, 1, 0.95), HORIZONTAL_ALIGNMENT_CENTER)
+		small.add_theme_constant_override("outline_size", 4)
+		small.add_theme_color_override("font_outline_color", color.darkened(0.6))
+		small.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(small)
 	return result
 
 

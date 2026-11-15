@@ -20,7 +20,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	var level := Profile.pass_level(app.profile, app.eco)
 	var per := int(table.get("exp_per_level", 100))
 
-	var head := Kit.panel(Color("2a2140"), Kit.GOLD, 14)
+	var head := Kit.panel(Color("6a3fd0"), Kit.GOLD, 14)
 	column.add_child(head)
 	var head_column := Kit.vbox(6)
 	head.add_child(head_column)
@@ -79,7 +79,7 @@ func _level_row(number: int, entry: Dictionary, level: int) -> Control:
 	var premium := Kit.button("잠김  %s" % Kit.reward_line(entry.get("premium", {})), Color("5a4a1c"), 21, 66)
 	premium.disabled = true
 	premium.add_theme_color_override("font_disabled_color", Color(1.0, 0.85, 0.45, 0.8))
-	premium.add_theme_stylebox_override("disabled", Kit.box(Color("3a3014"), Color("7a5a1c"), 2, 16, 8))
+	premium.add_theme_stylebox_override("disabled", Kit.box(Color("8f7b3c"), Color("d9b85a"), 2, 16, 8))
 	row.add_child(Kit.expand(premium))
 	return row
 

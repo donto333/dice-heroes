@@ -44,7 +44,7 @@ func _chapter_card(chapter: Dictionary, adventure: Dictionary) -> Control:
 	var theme_color := Color(str(board.get("theme", {}).get("bg", "1d2246")))
 	var first_stage := str(chapter["stages"][0]["id"])
 	var open := Profile.stage_unlocked(app.profile, adventure, first_stage)
-	var card := Kit.panel(theme_color.darkened(0.35) if open else Color("13458f"), theme_color.lightened(0.3) if open else Kit.LINE, 14)
+	var card := Kit.panel(theme_color.darkened(0.05) if open else Color("13458f"), theme_color.lightened(0.3) if open else Kit.LINE, 14)
 	var column := Kit.vbox(10)
 	card.add_child(column)
 	var head := Kit.hbox(12)

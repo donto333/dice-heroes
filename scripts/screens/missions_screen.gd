@@ -52,7 +52,7 @@ func _attendance_panel() -> Control:
 	for day in table.size():
 		var done := day < today_index or (day == today_index and not can)
 		var now := day == today_index and can
-		var fill: Color = Kit.PANEL_LIGHT if now else (Color("13458f") if done else Color("232955"))
+		var fill: Color = Kit.PANEL_LIGHT if now else (Color("13458f") if done else Kit.PANEL)
 		var cell := Kit.label("%d일\n%s%s" % [day + 1, Kit.reward_line(table[day]).replace("  ", "\n"), "\n✓" if done else ""], 15,
 			Kit.GOLD if now else (Kit.MUTED if done else Color.WHITE), HORIZONTAL_ALIGNMENT_CENTER)
 		cell.custom_minimum_size = Vector2(0, 110)
@@ -117,10 +117,10 @@ func _guide_panel() -> Control:
 	var step: Dictionary = Profile.guide_current(app.profile, app.data)
 	var total: int = (app.data.get("guide", {}).get("steps", []) as Array).size()
 	var index := int(app.profile.get("guide_step", 0))
-	var card := Kit.panel(Color("1f2a1c"), Color("6fd08c"), 14)
+	var card := Kit.panel(Color("1e9a5a"), Color("b6ffd0"), 14)
 	var column := Kit.vbox(8)
 	card.add_child(column)
-	column.add_child(Kit.label("길잡이 과제  %d / %d" % [index + 1, total], 30, Color("9ff0b4")))
+	column.add_child(Kit.label("길잡이 과제  %d / %d" % [index + 1, total], 30, Color("eaffef")))
 	var row := Kit.hbox(10)
 	column.add_child(row)
 	var info := Kit.vbox(4)

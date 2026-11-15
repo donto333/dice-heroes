@@ -44,7 +44,7 @@ func setup(main_app, _params: Dictionary) -> void:
 
 func _summon_panel() -> Control:
 	var summon: Dictionary = app.eco.get("summon", {})
-	var card := Kit.panel(Color("1f1838"), Kit.GOLD.darkened(0.3), 16)
+	var card := Kit.panel(Color("5b35c0"), Kit.GOLD, 16)
 	var column := Kit.vbox(12)
 	card.add_child(column)
 	column.add_child(Kit.title("영웅 소환", 44))
@@ -82,7 +82,7 @@ func _summon_panel() -> Control:
 
 ## 오늘의 특가: 가진 영웅의 강화 조각을 골드로. 매일 바뀐다.
 func _deals_panel() -> Control:
-	var card := Kit.panel(Color("1c2a24"), Color("3f8f5f"), 14)
+	var card := Kit.panel(Color("1e8f5a"), Color("b6ffd0"), 14)
 	var column := Kit.vbox(10)
 	card.add_child(column)
 	var head := Kit.hbox(8)
@@ -133,7 +133,7 @@ func _on_deal(index: int) -> void:
 
 ## 주사위 상점: 한 번 사면 계속 쓰는 꾸밈 주사위. 능력 차이는 없다.
 func _dice_panel() -> Control:
-	var card := Kit.panel(Color("241c34"), Color("7d4fc0"), 14)
+	var card := Kit.panel(Color("7a3fc0"), Color("e0c4ff"), 14)
 	var column := Kit.vbox(10)
 	card.add_child(column)
 	var head := Kit.hbox(8)
@@ -183,7 +183,7 @@ func _on_dice_skin(id: String) -> void:
 ## 보석 상품: 정식 버전에서 팔 구성을 미리 보여 준다. 아직 결제가 없어서 살 수 없다.
 func _gem_pack_panel() -> Control:
 	var table: Dictionary = app.eco.get("gem_packs", {})
-	var card := Kit.panel(Color("1c2440"), Kit.GEM, 14)
+	var card := Kit.panel(Color("1a7fd0"), Kit.GEM, 14)
 	var column := Kit.vbox(10)
 	card.add_child(column)
 	var head := Kit.hbox(8)
