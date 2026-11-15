@@ -567,7 +567,15 @@ func _draw_tile_fx(kind: String, center: Vector2, cell: float, id: int) -> void:
 	var top := center - Vector2(0, cell * BLOCK_DEPTH * 0.5)
 	var beat := _anim_time + float(id % 11) * 0.37
 	# 효과 그림이 있으면 소용돌이·반짝임·연기는 빛 층(_draw_glow)이 그린다.
-	if Fx.tex("portal_swirl") != null and kind in ["warp", "treasure", "luck", "curse", "fate"]:
+	if Fx.tex("portal_swirl_a") != null and kind in ["warp", "treasure", "luck", "curse", "fate", "checkpoint"]:
+		match kind:
+			"warp":
+				_flat_sprite("portal_swirl_a", top, cell * 1.0, Color(1, 1, 1, 0.9), beat * 1.8)
+			"fate":
+				_flat_sprite("ring_double_a", top, cell * 0.95, Color(1.0, 0.85, 0.5, 0.6 + 0.25 * sin(beat * 2.0)), -beat * 0.9)
+			"checkpoint":
+				var wave_t := fposmod(beat * 0.5, 1.0)
+				_flat_sprite("ring_shock_a", top, cell * (0.6 + wave_t * 0.6), Color(0.75, 0.94, 1.0, (1.0 - wave_t) * 0.8), 0.0)
 		return
 	match kind:
 		"warp":
@@ -613,6 +621,16 @@ func _draw_tile_fx(kind: String, center: Vector2, cell: float, id: int) -> void:
 				draw_circle(spot, cell * 0.035, Color(1.0, 0.85, 0.3, 0.85))
 
 
+## 바닥에 누운 효과 그림(투명 바탕)을 판 자체에 그린다. 말·물건보다 먼저 그려져 그 아래에 깔린다.
+func _flat_sprite(name: String, center: Vector2, wide: float, tint: Color, turn: float) -> void:
+	var texture: Texture2D = Fx.tex(name)
+	if texture == null:
+		return
+	draw_set_transform_matrix(Transform2D(0.0, Vector2(1.0, TILT), 0.0, center) * Transform2D(turn, Vector2.ZERO))
+	draw_texture_rect(texture, Rect2(-wide / 2.0, -wide / 2.0, wide, wide), false, tint)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+
+
 ## 그림 한 장을 가운데 맞춰 그린다(빛 층용). squash는 세로 눌림(바닥에 누운 그림).
 func _glow_sprite(name: String, center: Vector2, wide: float, tint: Color, turn: float = 0.0, squash: float = 1.0) -> void:
 	var texture: Texture2D = Fx.tex(name)
@@ -639,8 +657,6 @@ func _draw_glow() -> void:
 			continue
 		var beat := _anim_time + float(int(id) % 11) * 0.37
 		match str(game.nodes[id].get("type", "")):
-			"warp":
-				_glow_sprite("portal_swirl", spot, cell * 1.15, Color(1, 1, 1, 0.75), beat * 1.8, TILT)
 			"curse":
 				var drift := fposmod(beat * 0.35, 1.0)
 				_glow_sprite("dark_aura", spot - Vector2(0, cell * (0.25 + drift * 0.3)), cell * 0.9, Color(1, 1, 1, 0.75 * sin(drift * PI)))
@@ -649,18 +665,6 @@ func _draw_glow() -> void:
 					var phase := fposmod(beat * 0.7 + index * 0.33, 1.0)
 					var twinkle := spot + Vector2(cos(index * 2.3 + int(id)) * cell * 0.34, -cell * (0.15 + 0.35 * fposmod(index * 0.37 + int(id) * 0.11, 1.0)))
 					_glow_sprite("flare_cross", twinkle, cell * 0.42 * sin(phase * PI), Color(1.0, 0.95, 0.7, sin(phase * PI)), phase * 1.5)
-			"fate":
-				_glow_sprite("ring_double", spot, cell * 1.05, Color(1.0, 0.85, 0.5, 0.55 + 0.25 * sin(beat * 2.0)), -beat * 0.9, TILT)
-			"checkpoint":
-				var wave_t := fposmod(beat * 0.5, 1.0)
-				_glow_sprite("ring_shock", spot, cell * (0.7 + wave_t * 0.8), Color(0.7, 0.92, 1.0, (1.0 - wave_t) * 0.6), 0.0, TILT)
-	# 차례인 말 발밑에서 도는 마법진
-	if active_player >= 0 and active_player < shown_pos.size():
-		var feet := piece_point(active_player) + Vector2(0, cell * 0.42)
-		var breathe := 0.8 + 0.2 * sin(_anim_time * 3.0)
-		var circle := "magic_circle_blue" if active_player == 0 else "magic_circle_gold"
-		_glow_sprite(circle, feet, cell * 1.5, Color(1, 1, 1, breathe), _anim_time * 1.1, TILT)
-		_glow_sprite("glow_soft", feet, cell * 1.7, Color(PLAYER_COLORS[active_player].r, PLAYER_COLORS[active_player].g, PLAYER_COLORS[active_player].b, 0.35 * breathe), 0.0, TILT)
 	# 착지 충격 고리
 	for ring in _rings:
 		if not game.nodes.has(int(ring["id"])):
@@ -750,11 +754,20 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 	var shade := 1.0 - minf(lift / (cell * 2.4), 1.0) * 0.6
 	draw_set_transform(foot, 0.0, Vector2(1.0, 0.4))
 	draw_circle(Vector2.ZERO, cell * 0.3 * shade, Color(0, 0, 0, 0.36 * shade))
-	draw_arc(Vector2.ZERO, cell * 0.36, 0.0, TAU, 32, player_color, 6.0)
-	if active:
-		var pulse := 0.5 + 0.5 * sin(_anim_time * 5.0)
-		draw_arc(Vector2.ZERO, cell * (0.44 + pulse * 0.05), 0.0, TAU, 32, Color(1, 1, 1, 0.9 - pulse * 0.5), 4.0)
+	var circle_name := "magic_circle_blue_a" if player_index == 0 else "magic_circle_gold_a"
+	var has_circle: bool = Fx.tex(circle_name) != null
+	if not has_circle:
+		draw_arc(Vector2.ZERO, cell * 0.36, 0.0, TAU, 32, player_color, 6.0)
+		if active:
+			var pulse := 0.5 + 0.5 * sin(_anim_time * 5.0)
+			draw_arc(Vector2.ZERO, cell * (0.44 + pulse * 0.05), 0.0, TAU, 32, Color(1, 1, 1, 0.9 - pulse * 0.5), 4.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if has_circle:
+		# 발밑의 마법진: 내 말은 파랑, 상대는 금색. 차례인 말은 크게 돌고 숨 쉬듯 밝아진다.
+		var breathe := 0.75 + 0.25 * sin(_anim_time * 3.0)
+		if active:
+			_flat_sprite("glow_soft_a", foot, cell * 1.5, Color(player_color.r, player_color.g, player_color.b, 0.5 * breathe), 0.0)
+		_flat_sprite(circle_name, foot, cell * (1.25 if active else 0.85), Color(1, 1, 1, breathe if active else 0.6), _anim_time * (1.1 if active else 0.4))
 
 	var height := cell * 1.02
 	var texture_size := texture.get_size()

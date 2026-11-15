@@ -405,7 +405,8 @@ func _draw_glow() -> void:
 		var beams := tex("rays_burst")
 		if beams != null:
 			var reach := size.length() * 1.3
-			var tint := Color(_rays_color.r, _rays_color.g, _rays_color.b, minf(_rays_color.a * 2.6, 1.0))
+			# 화면을 하얗게 덮지 않도록 은은하게
+			var tint := Color(_rays_color.r, _rays_color.g, _rays_color.b, minf(_rays_color.a * 1.5, 0.4))
 			for layer in 2:
 				_glow.draw_set_transform(center, _time * (0.22 if layer == 0 else -0.15), Vector2.ONE)
 				_glow.draw_texture_rect(beams, Rect2(-reach / 2.0, -reach / 2.0, reach, reach), false, tint)
@@ -413,7 +414,7 @@ func _draw_glow() -> void:
 			var core := tex("glow_soft")
 			if core != null:
 				var core_size := size.y * (0.9 + 0.06 * sin(_time * 2.0))
-				_glow.draw_texture_rect(core, Rect2(center - Vector2(core_size, core_size) * 0.5, Vector2(core_size, core_size)), false, tint)
+				_glow.draw_texture_rect(core, Rect2(center - Vector2(core_size, core_size) * 0.5, Vector2(core_size, core_size)), false, Color(tint.r, tint.g, tint.b, tint.a * 0.5))
 		else:
 			var reach := size.length()
 			for index in 12:
