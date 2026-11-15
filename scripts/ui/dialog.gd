@@ -11,7 +11,12 @@ var _column: VBoxContainer
 var _panel: PanelContainer
 
 
+## 내용이 이보다 길면 창 안에서 끌어 내릴 수 있게 한다.
+const BODY_MAX_HEIGHT := 860.0
+
+
 func _ready() -> void:
+	add_to_group("modal")
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
@@ -39,7 +44,16 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 	if title_text != "":
 		_column.add_child(Kit.title(title_text, 38))
 	if body != null:
-		_column.add_child(body)
+		if body.get_combined_minimum_size().y > BODY_MAX_HEIGHT:
+			# 긴 내용: 창 안에서 끌어 내린다.
+			var scroll := ScrollContainer.new()
+			scroll.custom_minimum_size = Vector2(0, BODY_MAX_HEIGHT)
+			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+			body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			scroll.add_child(body)
+			_column.add_child(scroll)
+		else:
+			_column.add_child(body)
 	if not buttons.is_empty():
 		var row := Kit.hbox(10)
 		_column.add_child(row)
