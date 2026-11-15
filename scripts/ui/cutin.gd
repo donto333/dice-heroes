@@ -22,7 +22,7 @@ func _ready() -> void:
 	_band = Panel.new()
 	_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_style = StyleBoxFlat.new()
-	_style.bg_color = Color(0.03, 0.04, 0.1, 0.92)
+	_style.bg_color = Color(0.05, 0.22, 0.5, 0.95)
 	_style.border_width_top = 5
 	_style.border_width_bottom = 5
 	_band.add_theme_stylebox_override("panel", _style)
