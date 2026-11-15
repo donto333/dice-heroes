@@ -77,6 +77,10 @@ var _ground: Texture2D = null
 var _styles: Dictionary = {}
 
 signal stepped
+## 말이 칸에 내려앉았을 때(player, flung: 날아가 떨어진 것인지)
+signal landed(player_index: int, flung: bool)
+## 말이 져서 날아가기 시작할 때
+signal flung_away(player_index: int)
 
 var game = null
 ## 화면에 그려지는 말의 위치(칸 id). 규칙상 위치를 따라 한 칸씩 움직인다.
@@ -219,6 +223,7 @@ func _process(delta: float) -> void:
 			var flung := bool(hop.get("fling", false))
 			_hops.erase(player_index)
 			_squash[player_index] = 1.0
+			landed.emit(int(player_index), flung)
 			_puffs.append({"id": int(shown_pos[player_index]), "t": 0.0, "kind": "stars" if flung else "dust"})
 			# 이어서 뛸 칸이 없으면(도착) 고리를 퍼뜨린다.
 			if _queue.is_empty() or int(_queue[0]["player"]) != int(player_index):
@@ -248,13 +253,15 @@ func _process(delta: float) -> void:
 	var from_id := int(shown_pos[who])
 	var to_id := int(move["to"])
 	# 앞으로 이어진 칸이 아니면(전투에 져서 돌아가기, 워프) 한 번에 크게 날아간다.
-	var flying := game != null and game.nodes.has(from_id) and not (to_id in game.nodes[from_id]["next"])
+	var flying: bool = game != null and game.nodes.has(from_id) and not (to_id in game.nodes[from_id]["next"])
 	if flying:
 		# 이어지는 뒤로 가기는 모두 합쳐 마지막 칸까지 한 번에 간다.
 		while not _queue.is_empty() and int(_queue[0]["player"]) == who and game.nodes.has(to_id) \
 				and not (int(_queue[0]["to"]) in game.nodes[to_id]["next"]):
 			to_id = int(_queue.pop_front()["to"])
 	_hops[who] = {"from": from_id, "t": 0.0, "fling": flying}
+	if flying:
+		flung_away.emit(who)
 	shown_pos[who] = to_id
 	if game != null and game.nodes.has(from_id) and game.nodes.has(to_id):
 		var dx := int(game.nodes[to_id].get("x", 0)) - int(game.nodes[from_id].get("x", 0))
@@ -454,6 +461,14 @@ func _draw_hex(center: Vector2, _half: Vector2, cell: float, color: Color, lit: 
 		ring.set_border_width_all(5)
 		ring.set_corner_radius_all(radius + 3)
 		draw_style_box(ring, top.grow(4.0))
+
+
+## 말이 서 있는 곳(이 보드 안의 좌표). 연출 층이 여기서 알갱이를 터뜨린다.
+func piece_point(player_index: int) -> Vector2:
+	if game == null or player_index >= shown_pos.size() or not game.nodes.has(int(shown_pos[player_index])):
+		return size * 0.5
+	var layout := _layout()
+	return _center(int(shown_pos[player_index]), layout) - Vector2(0, float(layout["cell"]) * 0.5)
 
 
 ## 서 있는 입체 모형 말: 발밑 그림자와 색 고리 → 모형(뛸 때 늘어나고 착지 때 눌림) → 내 차례 표시와 남은 칸 수.

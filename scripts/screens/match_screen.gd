@@ -23,6 +23,7 @@ const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 const BigDice := preload("res://scripts/ui/big_dice.gd")
 const AimBar := preload("res://scripts/ui/aim_bar.gd")
 const Cutin := preload("res://scripts/ui/cutin.gd")
+const Fx := preload("res://scripts/ui/fx.gd")
 ## 턴 제한이 이만큼 남으면 턴 배너에 남은 턴을 보여 준다.
 const LAST_TURNS_WARNING := 5
 const VersusOverlay := preload("res://scripts/ui/versus_overlay.gd")
@@ -66,6 +67,7 @@ var _result_scroll: ScrollContainer
 var _speed_button: Button
 var _aim_bar: Control
 var _cutin: Control
+var _fx: Control
 ## 상대가 이번 판에 쓰는 주사위 스킨 번호(보여 주기용, 판마다 바뀜)
 var _rival_skin := 0
 var _roll_down_at := 0.0
@@ -123,6 +125,29 @@ func setup(main_app, params: Dictionary) -> void:
 
 func _play(sound: String) -> void:
 	app.play(sound)
+
+
+## 판 위 말의 위치를 이 화면 좌표로.
+func _piece_spot(player_index: int) -> Vector2:
+	return _board_view.global_position - global_position + _board_view.piece_point(player_index)
+
+
+func _board_center() -> Vector2:
+	return _board_view.global_position - global_position + _board_view.size * 0.5
+
+
+## 말이 칸에 내려앉았다: 져서 날아온 것이면 쿵 소리와 흔들림.
+func _on_piece_landed(player_index: int, flung: bool) -> void:
+	if not flung:
+		return
+	_play("impact")
+	_fx.burst(_piece_spot(player_index) + Vector2(0, 40), "star", 14, 0.8)
+	_fx.shake(_board_view, 12.0, 0.3)
+
+
+func _on_piece_flung(player_index: int) -> void:
+	_play("fling")
+	_fx.burst(_piece_spot(player_index), "smoke", 10, 0.8)
 
 
 ## 지금 화면에 어빌리티와 카드를 보여 줄 플레이어. 사람 차례면 그 사람, AI 차례면 첫 번째 사람.
@@ -329,6 +354,12 @@ func _build_ui() -> void:
 	add_child(_cutin)
 	_versus = VersusOverlay.new()
 	add_child(_versus)
+	# 연출 층(번쩍임·알갱이·속도선). 자동 사진에서는 끈다.
+	_fx = Fx.new()
+	_fx.quiet = app.instant
+	add_child(_fx)
+	_board_view.landed.connect(_on_piece_landed)
+	_board_view.flung_away.connect(_on_piece_flung)
 
 
 ## 플레이어 정보판 하나. _player_cards[index]에 부품을 담아 _refresh에서 고친다.
@@ -392,6 +423,72 @@ func _show_used(event: Dictionary, shout: String, title: String) -> void:
 	await _show_tile({"tile": "", "good": false, "text": "%s\n%s" % [title, event.get("text", "")], "small": true})
 
 
+## 카드 연출: 카드가 손(왼쪽 줄)에서 날아와 가운데서 커지며 번쩍이고, 쓴 사람의 말로 날아가 터진다.
+func _show_card(event: Dictionary) -> void:
+	var who := int(event["player"])
+	_say(who, "카드 %s!" % event["name"])
+	if app.instant:
+		return
+	var card := PanelContainer.new()
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var paper := _box(Color("f3e6c4"), Color("7a4a12"), 5)
+	paper.set_corner_radius_all(18)
+	paper.set_content_margin_all(10)
+	card.add_theme_stylebox_override("panel", paper)
+	var inside := VBoxContainer.new()
+	inside.add_theme_constant_override("separation", 6)
+	inside.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(inside)
+	var art := ArtView.new()
+	art.show_art("cards/" + str(event.get("id", "")))
+	art.custom_minimum_size = Vector2(260, 260)
+	art.focus_y = 0.5
+	inside.add_child(art)
+	var name_label := _make_label(30, str(event["name"]))
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_color_override("font_color", Color("3a2408"))
+	inside.add_child(name_label)
+	var note := _make_label(18, str(event.get("text", "")))
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.custom_minimum_size = Vector2(260, 0)
+	note.add_theme_color_override("font_color", Color("5a3a12"))
+	inside.add_child(note)
+	add_child(card)
+	await get_tree().process_frame
+	if not is_instance_valid(card):
+		return
+	card.size = card.get_combined_minimum_size()
+	card.pivot_offset = card.size * 0.5
+	var middle := _board_center() - card.size * 0.5
+	var start := Vector2(-card.size.x * 0.4, middle.y) if who == _viewer() else Vector2(size.x, middle.y - 200.0)
+	card.position = start
+	card.scale = Vector2(0.25, 0.25)
+	card.rotation = -0.5 if who == _viewer() else 0.5
+	_play("card")
+	var arrive := create_tween().set_parallel(true)
+	arrive.tween_property(card, "position", middle, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	arrive.tween_property(card, "scale", Vector2.ONE, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	arrive.tween_property(card, "rotation", 0.0, 0.28)
+	await arrive.finished
+	_play("sparkle")
+	_fx.flash(Color(1.0, 0.95, 0.7, 0.5), 0.3)
+	_fx.burst(_board_center(), "spark", 22, 1.1)
+	await get_tree().create_timer(0.75 if not _humans[who] else 0.5).timeout
+	if not is_instance_valid(card):
+		return
+	_play("whoosh")
+	var target := _piece_spot(who) - card.size * 0.5
+	var leave := create_tween().set_parallel(true)
+	leave.tween_property(card, "position", target, 0.25).set_ease(Tween.EASE_IN)
+	leave.tween_property(card, "scale", Vector2(0.1, 0.1), 0.25).set_ease(Tween.EASE_IN)
+	leave.tween_property(card, "modulate:a", 0.3, 0.25)
+	await leave.finished
+	if is_instance_valid(card):
+		card.queue_free()
+	_fx.burst(_piece_spot(who), "star", 16)
+
+
 func _show_tile(event: Dictionary) -> void:
 	# 결과 창이 떠 있으면 칸 알림을 띄우지 않는다(결과 창을 가리지 않게).
 	if _result_overlay != null and _result_overlay.visible:
@@ -432,6 +529,17 @@ func _show_tile(event: Dictionary) -> void:
 	panel.pivot_offset = panel.size / 2.0
 	panel.scale = Vector2(0.6, 0.6)
 	_play("good" if good else "bad")
+	# 칸 효과 알갱이: 보물은 금화, 좋은 일은 반짝이, 나쁜 일은 보라 연기
+	if event.has("player") and not bool(event.get("small", false)):
+		var spot := _piece_spot(int(event["player"]))
+		if str(event.get("tile", "")) == "treasure":
+			_play("coin")
+			_fx.burst(spot, "coin", 20)
+		elif good:
+			_fx.burst(spot, "spark", 16)
+		else:
+			_fx.burst(spot, "smoke", 14)
+			_fx.shake(_board_view, 6.0, 0.2)
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(panel, "scale", Vector2.ONE, 0.22)
@@ -938,7 +1046,14 @@ func _advance() -> void:
 		return
 	_waiting_for_player = false
 	_show_game_over()
-	_play("win" if game.winner == 0 or _is_local() else "lose")
+	var happy: bool = game.winner == 0 or _is_local()
+	_play("fanfare" if happy else "defeat")
+	if happy:
+		_fx.flash(Color(1.0, 0.95, 0.6, 0.6), 0.5)
+		_fx.shower("petal", 70)
+		move_child(_fx, get_child_count() - 1)
+	else:
+		_fx.flash(Color(0.1, 0.0, 0.2, 0.6), 0.8)
 	_refresh()
 
 
@@ -1158,10 +1273,13 @@ func _present_events() -> void:
 				# 어빌리티는 영웅 그림 컷인으로 보여 준다(누가 쓰든).
 				var caster := int(event["player"])
 				_say(caster, "%s!" % event["name"])
-				_play("good" if _humans[caster] else "bad")
+				_play("skill")
+				_fx.flash(Color(1, 1, 1, 0.7), 0.25)
+				_fx.speed_lines(_board_center(), PLAYER_TEXT_COLORS[caster].lightened(0.4), 1.1)
+				_fx.burst(_piece_spot(caster), "ember", 26, 1.2)
 				await _cutin.play(_character_named(str(event["hero"])), str(event["name"]), str(event.get("text", "")), PLAYER_TEXT_COLORS[caster])
 			"card":
-				await _show_used(event, "카드 %s!" % event["name"], "카드 · %s" % event["name"])
+				await _show_card(event)
 	if not moves.is_empty():
 		_board_view.push_moves(moves)
 		await _wait_for_board()
@@ -1196,9 +1314,13 @@ func _show_move(event: Dictionary) -> void:
 		_big_dice.skin = _dice_skin_of(who)
 		var doubled := bool(event.get("double", false))
 		await _big_dice.play(caption, event["rolls"], ("더블! %d칸!%s" if doubled else "%d칸!%s") % [int(event["total"]), bonus_text], PLAYER_TEXT_COLORS[who])
+		_fx.pop_text(_board_center() - Vector2(0, 40), "%d" % int(event["total"]), PLAYER_TEXT_COLORS[who].lightened(0.3), 150)
+		_fx.burst(_board_center() - Vector2(0, 40), "spark", 16)
 		if doubled:
 			_say(who, "더블! 게이지 +%d%%" % game.double_gauge)
-			_play("good" if _humans[who] else "bad")
+			_play("sparkle")
+			_fx.flash(Color(1.0, 0.9, 0.4, 0.45), 0.35)
+			_fx.burst(_board_center() - Vector2(0, 40), "star", 24, 1.3)
 		# 연출을 기다리는 사이에 결과 줄이 지워졌을 수 있다(다시 하기 등).
 		if is_instance_valid(row):
 			var end: Label = row.get_meta("tail")

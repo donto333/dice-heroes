@@ -451,11 +451,12 @@ func play_card(hand_index: int) -> bool:
 	if not can_play_card(hand_index):
 		return false
 	var hand: Array = players[current]["hand"]
-	var card: Dictionary = cards[hand[hand_index]]
+	var card_id := str(hand[hand_index])
+	var card: Dictionary = cards[card_id]
 	hand.remove_at(hand_index)
 	card_played = true
 	say("%s: 카드 [%s] 사용" % [players[current]["name"], card["name"]])
-	_event({"kind": "card", "player": current, "name": str(card["name"]), "text": str(card.get("text", ""))})
+	_event({"kind": "card", "player": current, "id": card_id, "name": str(card["name"]), "text": str(card.get("text", ""))})
 	_apply_effect(card["effect"], current)
 	return true
 
