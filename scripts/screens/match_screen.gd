@@ -631,7 +631,7 @@ func _exit_tree() -> void:
 
 ## 판 오른쪽 가운데의 '말' 버튼과, 누르면 펼쳐지는 한마디 목록.
 func _build_emotes(board_area: Control) -> void:
-	var toggle := Kit.round_shortcut("한마디", "start", Color("7d4fc0"))
+	var toggle := Kit.round_shortcut("한마디", "chat", Color("7d4fc0"))
 	toggle.custom_minimum_size = Vector2(76, 76)
 	board_area.add_child(toggle)
 	toggle.anchor_left = 1.0

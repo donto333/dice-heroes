@@ -33,16 +33,25 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 	add_child(center)
 	_panel = PanelContainer.new()
 	_panel.custom_minimum_size = Vector2(width, 0)
-	var frame := Kit.box(Color("1f66c8"), Color.WHITE, 5, 30, 24)
-	frame.shadow_color = Color(0, 0.05, 0.2, 0.5)
-	frame.shadow_size = 12
-	frame.shadow_offset = Vector2(0, 6)
+	var frame := Kit.box(Color("1f66c8"), Color.WHITE, 5, 32, 22)
+	frame.border_width_bottom = 9
+	frame.anti_aliasing_size = 1.2
+	frame.shadow_color = Color(0, 0.05, 0.2, 0.55)
+	frame.shadow_size = 14
+	frame.shadow_offset = Vector2(0, 7)
 	_panel.add_theme_stylebox_override("panel", frame)
+	Kit.sheen(_panel, 26, 0.08)
 	center.add_child(_panel)
 	_column = Kit.vbox(16)
 	_panel.add_child(_column)
 	if title_text != "":
-		_column.add_child(Kit.title(title_text, 38))
+		# 제목 띠: 짙은 남색 알약 위에 금색 글자
+		var ribbon := PanelContainer.new()
+		var band := Kit.box(Color("0c2f6e"), Color("ffd45a"), 3, 26, 8)
+		band.border_width_bottom = 5
+		ribbon.add_theme_stylebox_override("panel", band)
+		ribbon.add_child(Kit.title(title_text, 36))
+		_column.add_child(ribbon)
 	if body != null:
 		if body.get_combined_minimum_size().y > BODY_MAX_HEIGHT:
 			# 긴 내용: 창 안에서 끌어 내린다.

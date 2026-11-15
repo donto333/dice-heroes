@@ -3,6 +3,7 @@ extends RefCounted
 
 ## 2026-11 리뉴얼: 밝고 통통한 캐주얼(하늘색 바탕, 파란 판, 흰 글자, 노랑·주황·초록 버튼).
 const ArtView := preload("res://scripts/ui/art_view.gd")
+const Gloss := preload("res://scripts/ui/gloss.gd")
 const BG := Color("2a8be6")
 ## 바탕은 위가 밝고 아래가 짙은 하늘색으로 번진다(sky()).
 const BG_TOP := Color("58b8ff")
@@ -29,6 +30,9 @@ const CATEGORY_COLORS := {
 	"근현대": Color("2a7d4f"),
 }
 const GRADE_COLORS := {1: Color("9aa4b8"), 2: Color("6fd3ff"), 3: Color("ffcf4d")}
+## 광택 아이콘이 없을 때 대신 쓸 도트 아이콘 이름
+const ICON_FALLBACK := {"pass": "goal", "todo": "start", "help": "hidden", "attend": "treasure", "missions": "checkpoint",
+	"roulette": "fate", "deals": "luck", "swords": "battle", "chat": "start", "adventure": "goal", "friend": "pawn"}
 const GOLD_ICON := "●"
 ## 글꼴(한글 부분집합)에 마름모 기호가 없어서 웹에서 깨진다. 글자로 쓴다.
 const GEM_ICON := "보석"
@@ -90,17 +94,24 @@ static func button(text: String, color: Color = ACCENT, font_size: int = 26, hei
 
 ## 모두의 마블식 통통한 버튼: 둥근 모서리, 짙은 테두리, 두꺼운 아래 두께, 그림자, 글자 외곽선.
 static func paint(target: Button, color: Color, border: Color = Color.TRANSPARENT) -> void:
-	var edge: Color = color.darkened(0.55) if border == Color.TRANSPARENT else border
-	target.add_theme_stylebox_override("normal", _chunky(color, edge, 8))
-	target.add_theme_stylebox_override("hover", _chunky(color.lightened(0.12), edge, 8))
-	var pressed := _chunky(color.darkened(0.15), edge, 3)
-	pressed.content_margin_top += 5
-	target.add_theme_stylebox_override("pressed", pressed)
-	var off := _chunky(DISABLED, DISABLED.darkened(0.4), 5)
-	off.shadow_size = 0
-	target.add_theme_stylebox_override("disabled", off)
-	target.add_theme_constant_override("outline_size", 5)
-	target.add_theme_color_override("font_outline_color", color.darkened(0.6))
+	var edge: Color = color.darkened(0.6) if border == Color.TRANSPARENT else border
+	# 버튼 자체의 상자는 비우고(여백만 남김) 뒤에 붙인 광택 몸통(gloss.gd)이 모양을 그린다.
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var space := StyleBoxEmpty.new()
+		space.set_content_margin_all(10)
+		space.content_margin_bottom = 16
+		if state == "pressed":
+			space.content_margin_top = 15
+			space.content_margin_bottom = 11
+		target.add_theme_stylebox_override(state, space)
+	var gloss = target.get_node_or_null("Gloss")
+	if gloss == null:
+		gloss = Gloss.new()
+		target.add_child(gloss)
+		target.move_child(gloss, 0)
+	gloss.paint(color, edge)
+	target.add_theme_constant_override("outline_size", 6)
+	target.add_theme_color_override("font_outline_color", color.darkened(0.65))
 
 
 static func _chunky(fill: Color, edge: Color, bottom: int) -> StyleBoxFlat:
@@ -115,11 +126,27 @@ static func _chunky(fill: Color, edge: Color, bottom: int) -> StyleBoxFlat:
 static func panel(fill: Color = PANEL, border: Color = LINE, padding: int = 14) -> PanelContainer:
 	var result := PanelContainer.new()
 	var style := box(fill, border, 3, 22, padding)
-	style.shadow_color = Color(0, 0.05, 0.2, 0.35)
-	style.shadow_size = 6
+	style.border_width_bottom = 5
+	style.anti_aliasing_size = 1.2
+	style.shadow_color = Color(0, 0.05, 0.2, 0.4)
+	style.shadow_size = 7
 	style.shadow_offset = Vector2(0, 4)
 	result.add_theme_stylebox_override("panel", style)
+	sheen(result, 19)
 	return result
+
+
+## 판 위쪽에 옅은 밝은 면을 얹어 볼록한 유리판처럼 보이게 한다(판 바탕 위, 내용 아래에 그려진다).
+static func sheen(target: Control, corner: int = 19, strength: float = 0.1) -> void:
+	target.draw.connect(func() -> void:
+		var height := minf(target.size.y * 0.5, 64.0)
+		if target.size.x < 24.0 or height < 12.0:
+			return
+		var light := StyleBoxFlat.new()
+		light.bg_color = Color(1, 1, 1, strength)
+		light.set_corner_radius_all(corner)
+		light.anti_aliasing_size = 1.2
+		target.draw_style_box(light, Rect2(4, 4, target.size.x - 8, height)))
 
 
 ## 하늘색으로 번지는 바탕 그림(화면 전체를 덮는다).
@@ -259,13 +286,17 @@ static func reward_line(reward: Dictionary) -> String:
 	return "  ".join(parts)
 
 
-## 도트 아이콘(assets/icons/이름.png)을 정수 배로 또렷하게 키워 보여 준다.
+## 아이콘. 광택 그림 아이콘(assets/ui_icons/이름.png)이 있으면 그것을, 없으면 도트 아이콘(assets/icons)을 쓴다.
 static func icon(name: String, pixels: float = 54.0) -> TextureRect:
 	var rect := TextureRect.new()
-	var path := "res://assets/icons/%s.png" % name
-	if ResourceLoader.exists(path):
+	var glossy := "res://assets/ui_icons/%s.png" % name
+	var path := "res://assets/icons/%s.png" % str(ICON_FALLBACK.get(name, name))
+	if ResourceLoader.exists(glossy):
+		rect.texture = load(glossy)
+		rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	elif ResourceLoader.exists(path):
 		rect.texture = load(path)
-	rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	rect.custom_minimum_size = Vector2(pixels, pixels)
@@ -342,19 +373,8 @@ static func tile_button(text: String, icon_name: String, color: Color, sub: Stri
 static func round_shortcut(text: String, icon_name: String, color: Color, badge: bool = false) -> Button:
 	var result := Button.new()
 	result.custom_minimum_size = Vector2(88, 88)
-	var normal := box(color, color.darkened(0.55), 3, 44, 6)
-	normal.border_width_bottom = 7
-	normal.shadow_color = Color(0, 0, 0, 0.45)
-	normal.shadow_size = 5
-	normal.shadow_offset = Vector2(0, 3)
-	result.add_theme_stylebox_override("normal", normal)
-	var hover := normal.duplicate()
-	hover.bg_color = color.lightened(0.12)
-	result.add_theme_stylebox_override("hover", hover)
-	var pressed := normal.duplicate()
-	pressed.bg_color = color.darkened(0.15)
-	pressed.border_width_bottom = 3
-	result.add_theme_stylebox_override("pressed", pressed)
+	paint(result, color)
+	result.get_node("Gloss").radius = 44.0
 	result.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	var column := VBoxContainer.new()
 	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

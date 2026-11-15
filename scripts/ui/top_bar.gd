@@ -17,12 +17,19 @@ var _gems: Label
 
 func setup(main_app) -> void:
 	app = main_app
-	add_theme_stylebox_override("panel", Kit.box(Color("0f3d85"), Kit.LINE, 3, 26, 10))
+	var frame := Kit.box(Color("0f3d85"), Kit.LINE, 3, 26, 10)
+	frame.border_width_bottom = 5
+	frame.shadow_color = Color(0, 0.05, 0.2, 0.4)
+	frame.shadow_size = 6
+	frame.shadow_offset = Vector2(0, 3)
+	add_theme_stylebox_override("panel", frame)
+	Kit.sheen(self, 22)
 	var row := Kit.hbox(12)
 	add_child(row)
 	_avatar = Portrait.new()
 	_avatar.custom_minimum_size = Vector2(84, 84)
-	_avatar.border_width = 3.0
+	_avatar.border_width = 4.0
+	_avatar.border = Kit.GOLD
 	row.add_child(_avatar)
 	var info := Kit.vbox(4)
 	Kit.expand(info)
@@ -39,10 +46,8 @@ func setup(main_app) -> void:
 	level_row.add_child(_exp_bar)
 	var money := Kit.vbox(4)
 	row.add_child(money)
-	_gold = _chip(Kit.GOLD)
-	money.add_child(_gold)
-	_gems = _chip(Kit.GEM)
-	money.add_child(_gems)
+	_gold = _chip(money, "gold", Kit.GOLD)
+	_gems = _chip(money, "gem", Kit.GEM)
 	add_child(_clear_button(app.show_profile))
 	refresh()
 
@@ -56,11 +61,22 @@ func _clear_button(callback: Callable) -> Button:
 	return button
 
 
-func _chip(color: Color) -> Label:
-	var chip := Kit.label("", 22, color, HORIZONTAL_ALIGNMENT_RIGHT)
-	chip.custom_minimum_size = Vector2(170, 38)
-	chip.add_theme_stylebox_override("normal", Kit.box(Color(0, 0.08, 0.25, 0.6), color, 2, 19, 6))
-	return chip
+## 재화 칸: 왼쪽에 아이콘이 살짝 튀어나온 알약 모양, 오른쪽 정렬 숫자.
+func _chip(parent: Control, icon_name: String, color: Color) -> Label:
+	var capsule := PanelContainer.new()
+	capsule.custom_minimum_size = Vector2(180, 40)
+	var style := Kit.box(Color(0, 0.06, 0.22, 0.72), color.darkened(0.2), 2, 20, 4)
+	style.content_margin_left = 6
+	style.content_margin_right = 14
+	capsule.add_theme_stylebox_override("panel", style)
+	var row := Kit.hbox(4)
+	capsule.add_child(row)
+	row.add_child(Kit.icon(icon_name, 34.0))
+	var amount := Kit.label("", 23, color, HORIZONTAL_ALIGNMENT_RIGHT)
+	Kit.expand(amount)
+	row.add_child(amount)
+	parent.add_child(capsule)
+	return amount
 
 
 func refresh() -> void:
@@ -76,5 +92,5 @@ func refresh() -> void:
 	_level.text = "Lv.%d" % int(profile["level"])
 	var need := Profile.exp_to_next(profile, app.eco)
 	_exp_bar.value = float(profile["exp"]) / float(max(need, 1))
-	_gold.text = Kit.money_text("gold", int(profile["gold"]))
-	_gems.text = Kit.money_text("gems", int(profile["gems"]))
+	_gold.text = Kit.comma(int(profile["gold"]))
+	_gems.text = Kit.comma(int(profile["gems"]))
