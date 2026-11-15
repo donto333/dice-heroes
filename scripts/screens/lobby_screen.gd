@@ -273,7 +273,14 @@ func _hero_card() -> Control:
 	var big := Portrait.new()
 	big.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# 장식 액자는 테가 두꺼워서 그림을 더 안쪽에 둔다.
-	var inset := Vector2(62, 70) if has_fancy else Vector2(16, 24)
+	var inset := Vector2(16, 24)
+	if has_fancy:
+		# 장식 액자의 그림 창은 가로 14.5%~85.5%, 세로 15.5%~84.5% 자리에 있다.
+		big.anchor_left = 0.14
+		big.anchor_right = 0.86
+		big.anchor_top = 0.15
+		big.anchor_bottom = 0.85
+		inset = Vector2.ZERO
 	big.offset_left = inset.x
 	big.offset_top = inset.y
 	big.offset_right = -inset.x
@@ -289,12 +296,14 @@ func _hero_card() -> Control:
 	plate.add_theme_color_override("font_outline_color", Color("2a0f5a"))
 	plate.add_theme_stylebox_override("normal", Kit.box(Color(0.42, 0.2, 0.85, 0.9), Color.TRANSPARENT, 0, 0, 4))
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plate.anchor_left = 0.0
-	plate.anchor_right = 1.0
+	plate.anchor_left = 0.14 if has_fancy else 0.0
+	plate.anchor_right = 0.86 if has_fancy else 1.0
+	plate.anchor_top = 0.15 if has_fancy else 0.0
+	plate.anchor_bottom = 0.15 if has_fancy else 0.0
 	plate.offset_left = inset.x
 	plate.offset_right = -inset.x
 	plate.offset_top = inset.y
-	plate.offset_bottom = inset.y + 48
+	plate.offset_bottom = inset.y + 46
 	card.add_child(plate)
 	var frame_path := fancy_path if has_fancy else "res://assets/ui_frames/hero_frame.png"
 	if ResourceLoader.exists(frame_path):

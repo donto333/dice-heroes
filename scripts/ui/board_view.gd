@@ -432,7 +432,7 @@ func _draw_props(layout: Dictionary) -> void:
 			if _occupied.has(Vector2i(gx, gy)) or _occupied.has(Vector2i(gx, gy - 1)):
 				continue
 			var seed_value: int = absi((gx * 73856093) ^ (gy * 19349663) ^ 0x2545f491)
-			if seed_value % 100 >= 16:
+			if seed_value % 100 >= 7:
 				continue
 			var texture: Texture2D = _props[(seed_value / 100) % _props.size()]
 			var tall := cell * (0.95 + ((seed_value / 7) % 30) / 100.0)
@@ -729,7 +729,8 @@ func _draw() -> void:
 	var origin: Vector2 = layout["origin"]
 	if _ground != null:
 		# 그림 한 장이 칸 8개 너비를 덮도록 이어 붙인다(그림은 이어 붙여도 티가 안 나게 만들어져 있다).
-		var ground_scale := cell * 8.0 / float(_ground.get_width())
+		# 풍경 그림 한 장(거울로 이어 붙인 2×2)이 칸 18개 너비를 덮는다: 집 한 채가 칸 반쯤 크기.
+		var ground_scale := cell * 18.0 / float(_ground.get_width())
 		draw_texture_rect_region(_ground, Rect2(Vector2.ZERO, size), Rect2(-origin / ground_scale, size / ground_scale))
 	elif _terrain != null:
 		var scale_px := cell / 21.0 if not bool(layout.get("camera", false)) else TERRAIN_SCALE
