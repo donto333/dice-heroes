@@ -87,7 +87,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	_coupon_edit.max_length = 20
 	_coupon_edit.custom_minimum_size = Vector2(0, 64)
 	_coupon_edit.add_theme_font_size_override("font_size", 24)
-	_coupon_edit.add_theme_stylebox_override("normal", Kit.box(Color("0d1026"), Kit.LINE, 2, 10, 12))
+	_coupon_edit.add_theme_stylebox_override("normal", Kit.box(Color("0f3d85"), Kit.LINE, 2, 10, 12))
 	coupon_row.add_child(Kit.expand(_coupon_edit))
 	var redeem := Kit.button("받기", Color("e8890c"), 22, 64)
 	redeem.custom_minimum_size = Vector2(140, 64)
@@ -106,7 +106,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	_name_edit.max_length = 10
 	_name_edit.custom_minimum_size = Vector2(0, 64)
 	_name_edit.add_theme_font_size_override("font_size", 26)
-	_name_edit.add_theme_stylebox_override("normal", Kit.box(Color("0d1026"), Kit.LINE, 2, 10, 12))
+	_name_edit.add_theme_stylebox_override("normal", Kit.box(Color("0f3d85"), Kit.LINE, 2, 10, 12))
 	name_row.add_child(Kit.expand(_name_edit))
 	var rename := Kit.button("바꾸기", Kit.ACCENT, 22, 64)
 	rename.custom_minimum_size = Vector2(140, 64)
@@ -140,7 +140,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	var export_button := Kit.button("옮기기 코드 만들기", Kit.ACCENT, 20, 64)
 	export_button.pressed.connect(_on_export)
 	move_row.add_child(Kit.expand(export_button))
-	var import_button := Kit.button("코드로 불러오기", Color("2a7d4f"), 20, 64)
+	var import_button := Kit.button("코드로 불러오기", Color("27a35a"), 20, 64)
 	import_button.pressed.connect(_on_import)
 	move_row.add_child(Kit.expand(import_button))
 	var reset := Kit.button("데이터 초기화", Kit.BAD, 22, 64)
@@ -252,7 +252,7 @@ func _on_import() -> void:
 	body.add_child(Kit.para("다른 기기에서 만든 옮기기 코드를 붙여 넣으세요. 지금 이 기기의 데이터는 그 코드의 데이터로 바뀌어요.", 18, Color("ff9a6a")))
 	_code_edit = _code_box("", true)
 	body.add_child(_code_edit)
-	app.dialog("코드로 불러오기", body, [["불러오기", Color("2a7d4f"), _confirm_import], ["취소", Kit.PANEL_LIGHT]], 660)
+	app.dialog("코드로 불러오기", body, [["불러오기", Color("27a35a"), _confirm_import], ["취소", Kit.PANEL_LIGHT]], 660)
 
 
 func _code_box(text: String, editable: bool) -> TextEdit:
@@ -262,8 +262,8 @@ func _code_box(text: String, editable: bool) -> TextEdit:
 	box.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	box.custom_minimum_size = Vector2(0, 260)
 	box.add_theme_font_size_override("font_size", 16)
-	box.add_theme_stylebox_override("normal", Kit.box(Color("0d1026"), Kit.LINE, 2, 10, 10))
-	box.add_theme_stylebox_override("read_only", Kit.box(Color("0d1026"), Kit.LINE, 2, 10, 10))
+	box.add_theme_stylebox_override("normal", Kit.box(Color("0f3d85"), Kit.LINE, 2, 10, 10))
+	box.add_theme_stylebox_override("read_only", Kit.box(Color("0f3d85"), Kit.LINE, 2, 10, 10))
 	return box
 
 

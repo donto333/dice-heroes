@@ -20,7 +20,7 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 	for child in get_children():
 		child.queue_free()
 	var dim := ColorRect.new()
-	dim.color = Color(0.02, 0.03, 0.08, 0.78)
+	dim.color = Color(0.02, 0.1, 0.28, 0.72)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 	var center := CenterContainer.new()
@@ -28,7 +28,11 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 	add_child(center)
 	_panel = PanelContainer.new()
 	_panel.custom_minimum_size = Vector2(width, 0)
-	_panel.add_theme_stylebox_override("panel", Kit.box(Color("1a1f40"), Kit.GOLD.darkened(0.25), 3, 18, 24))
+	var frame := Kit.box(Color("1f66c8"), Color.WHITE, 5, 30, 24)
+	frame.shadow_color = Color(0, 0.05, 0.2, 0.5)
+	frame.shadow_size = 12
+	frame.shadow_offset = Vector2(0, 6)
+	_panel.add_theme_stylebox_override("panel", frame)
 	center.add_child(_panel)
 	_column = Kit.vbox(16)
 	_panel.add_child(_column)

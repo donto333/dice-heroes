@@ -41,8 +41,8 @@ func setup(main_app, _params: Dictionary) -> void:
 	_name_edit.max_length = 10
 	_name_edit.custom_minimum_size = Vector2(0, 80)
 	_name_edit.add_theme_font_size_override("font_size", 30)
-	_name_edit.add_theme_stylebox_override("normal", Kit.box(Color("0d1026"), Kit.LINE, 2, 12, 16))
-	_name_edit.add_theme_stylebox_override("focus", Kit.box(Color("0d1026"), Kit.GOLD, 2, 12, 16))
+	_name_edit.add_theme_stylebox_override("normal", Kit.box(Color("0f3d85"), Kit.LINE, 2, 12, 16))
+	_name_edit.add_theme_stylebox_override("focus", Kit.box(Color("0f3d85"), Kit.GOLD, 2, 12, 16))
 	_name_edit.text_changed.connect(_on_text_changed)
 	_name_edit.text_submitted.connect(func(_text): _on_start_pressed())
 	inside.add_child(_name_edit)

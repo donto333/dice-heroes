@@ -41,7 +41,7 @@ func _ready() -> void:
 	panel.custom_minimum_size = Vector2(660, 0)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box := StyleBoxFlat.new()
-	box.bg_color = Color("161a36")
+	box.bg_color = Color("164c9e")
 	box.border_color = GOLD.darkened(0.2)
 	box.set_border_width_all(4)
 	box.set_corner_radius_all(14)

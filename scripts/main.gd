@@ -238,7 +238,7 @@ func show_profile() -> void:
 	if not has_profile():
 		return
 	play("click")
-	dialog("내 프로필", ProfileCard.profile_body(self), [["순위표", Color("c4861c"), show_league], ["닫기", Kit.PANEL_LIGHT]], 660)
+	dialog("내 프로필", ProfileCard.profile_body(self), [["순위표", Color("f39a1c"), show_league], ["닫기", Kit.PANEL_LIGHT]], 660)
 
 
 ## 연습 리그 순위표
@@ -255,7 +255,7 @@ func message(title_text: String, text: String, button_text: String = "확인", c
 	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_theme_font_size_override("font_size", 24)
-	return dialog(title_text, body, [[button_text, Color("2f80ed"), callback]])
+	return dialog(title_text, body, [[button_text, Color("2fb457"), callback]])
 
 
 # ---------------------------------------------------------------- 대전

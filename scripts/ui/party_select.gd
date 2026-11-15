@@ -19,7 +19,7 @@ const CATEGORY_COLORS := {
 	"영웅": Color("b8352a"),
 	"위인": Color("2f6fb5"),
 	"신화": Color("6f43a6"),
-	"근현대": Color("2a7d4f"),
+	"근현대": Color("27a35a"),
 }
 const POINT_LIMIT := 6
 const GOLD := Color("ffcf4d")
@@ -66,7 +66,7 @@ func _build() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var background := ColorRect.new()
-	background.color = Color("12152b")
+	background.color = Color("2a8be6")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
@@ -116,7 +116,7 @@ func _build() -> void:
 		_save_button.pressed.connect(_on_save_mode_pressed)
 		preset_row.add_child(_save_button)
 		for index in 3:
-			var preset := _plain_button("", Color("3a4466"))
+			var preset := _plain_button("", Color("8fd0ff"))
 			preset.custom_minimum_size = Vector2(0, 64)
 			preset.add_theme_font_size_override("font_size", 16)
 			preset.clip_text = true
@@ -167,20 +167,20 @@ func _build() -> void:
 		_card_buttons[character["id"]] = button
 		var parts := _fill_card(button, 170.0, 17)
 		parts["text"].text = _card_text(character)
-		parts["portrait"].show_character(character, CATEGORY_COLORS.get(character["category"], Color("3a4466")))
+		parts["portrait"].show_character(character, CATEGORY_COLORS.get(character["category"], Color("8fd0ff")))
 		_card_parts[character["id"]] = parts
 
 	var bottom := HBoxContainer.new()
 	bottom.add_theme_constant_override("separation", 8)
 	column.add_child(bottom)
 	if str(_options.get("cancel_text", "")) != "":
-		var back_button := _plain_button(str(_options["cancel_text"]), Color("3a4466"))
+		var back_button := _plain_button(str(_options["cancel_text"]), Color("8fd0ff"))
 		back_button.pressed.connect(_on_cancel_pressed)
 		bottom.add_child(back_button)
-	var auto_button := _plain_button("자동 추천", Color("3a4466"))
+	var auto_button := _plain_button("자동 추천", Color("8fd0ff"))
 	auto_button.pressed.connect(_on_auto_pressed)
 	bottom.add_child(auto_button)
-	_start_button = _plain_button(str(_options.get("confirm_text", "결정")), Color("2f80ed"))
+	_start_button = _plain_button(str(_options.get("confirm_text", "결정")), Color("2fb457"))
 	_start_button.size_flags_stretch_ratio = 2.0
 	_start_button.pressed.connect(_on_start_pressed)
 	bottom.add_child(_start_button)
@@ -248,7 +248,7 @@ func _plain_button(text: String, color: Color) -> Button:
 	button.add_theme_stylebox_override("normal", _box(color, color.lightened(0.35), 2))
 	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12), Color.WHITE, 2))
 	button.add_theme_stylebox_override("pressed", _box(color.darkened(0.25), Color.WHITE, 2))
-	button.add_theme_stylebox_override("disabled", _box(Color("2a2f4a"), Color("2a2f4a"), 0))
+	button.add_theme_stylebox_override("disabled", _box(Color("6f86a8"), Color("6f86a8"), 0))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	return button
 
@@ -424,7 +424,7 @@ func _refresh() -> void:
 		return
 	for category in _filter_buttons:
 		var tab: Button = _filter_buttons[category]
-		var tab_color: Color = CATEGORY_COLORS.get(category, Color("3a4466"))
+		var tab_color: Color = CATEGORY_COLORS.get(category, Color("8fd0ff"))
 		var on: bool = category == _filter
 		var tab_fill: Color = tab_color if on else tab_color.darkened(0.55)
 		var tab_border: Color = Color.WHITE if on else tab_color.darkened(0.2)
@@ -444,7 +444,7 @@ func _refresh() -> void:
 			parts["text"].text = "%s\n%s %s\n%s %d" % [
 				SLOT_LABELS[slot], "★".repeat(int(character["grade"])), character["name"],
 				STAT_NAMES[stat], int(character[stat])]
-		var fill: Color = Color("2a2f4a") if character.is_empty() else CATEGORY_COLORS.get(character["category"], Color("3a4466"))
+		var fill: Color = Color("6f86a8") if character.is_empty() else CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
 		parts["portrait"].show_character(character, fill)
 		var border: Color = Color.WHITE if slot == _active_slot else fill.lightened(0.3)
 		var width := 4 if slot == _active_slot else 2
@@ -454,7 +454,7 @@ func _refresh() -> void:
 	for id in _card_buttons:
 		var button: Button = _card_buttons[id]
 		var character := _character(id)
-		var fill: Color = CATEGORY_COLORS.get(character["category"], Color("3a4466"))
+		var fill: Color = CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
 		var chosen := false
 		for slot in SLOTS:
 			if party[slot] == id:
@@ -476,7 +476,7 @@ func _refresh() -> void:
 			if not member.is_empty():
 				names.append(str(member["name"]))
 		preset_button.text = "%d번  %s" % [index + 1, " · ".join(names)] if names.size() == 3 else "%d번  비어 있음" % (index + 1)
-		var preset_fill := Color("7a5a1c") if _saving else (Color("2f5a8a") if names.size() == 3 else Color("3a4466"))
+		var preset_fill := Color("7a5a1c") if _saving else (Color("2f5a8a") if names.size() == 3 else Color("8fd0ff"))
 		for state in ["normal", "hover", "pressed"]:
 			preset_button.add_theme_stylebox_override(state, _box(preset_fill, GOLD if _saving else preset_fill.lightened(0.3), 2))
 	if _save_button != null:

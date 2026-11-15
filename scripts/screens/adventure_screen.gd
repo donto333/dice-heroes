@@ -44,7 +44,7 @@ func _chapter_card(chapter: Dictionary, adventure: Dictionary) -> Control:
 	var theme_color := Color(str(board.get("theme", {}).get("bg", "1d2246")))
 	var first_stage := str(chapter["stages"][0]["id"])
 	var open := Profile.stage_unlocked(app.profile, adventure, first_stage)
-	var card := Kit.panel(theme_color.darkened(0.35) if open else Color("14182f"), theme_color.lightened(0.3) if open else Kit.LINE, 14)
+	var card := Kit.panel(theme_color.darkened(0.35) if open else Color("13458f"), theme_color.lightened(0.3) if open else Kit.LINE, 14)
 	var column := Kit.vbox(10)
 	card.add_child(column)
 	var head := Kit.hbox(12)
@@ -111,13 +111,13 @@ func _on_stage(id: String) -> void:
 	var reward: Dictionary = stage.get("reward", {})
 	var cleared := Profile.stage_stars(app.profile, id) > 0
 	body.add_child(Kit.para("첫 클리어 보상  %s%s  ·  처음 별 3개 보석 %d" % [Kit.reward_line(reward), "  (받음)" if cleared else "", int(adventure.get("three_star_gems", 0))], 20, Kit.GOLD))
-	var buttons: Array = [["출전", Color("c4861c"), _start_stage.bind(id)]]
+	var buttons: Array = [["출전", Color("f39a1c"), _start_stage.bind(id)]]
 	# 별 3개로 깬 곳은 대전 없이 보상만 받을 수 있다(하루 횟수 제한).
 	if Profile.stage_stars(app.profile, id) >= 3:
 		var left := Profile.sweeps_left(app.profile, app.eco)
 		body.add_child(Kit.para("소탕: 별 3개로 깬 곳은 대전 없이 승리 보상을 받아요. 오늘 %d번 남았어요." % left, 18, Kit.MUTED))
 		if left > 0:
-			buttons.append(["소탕 (%d)" % left, Color("2a7d4f"), _sweep.bind(id)])
+			buttons.append(["소탕 (%d)" % left, Color("27a35a"), _sweep.bind(id)])
 	buttons.append(["닫기", Kit.PANEL_LIGHT])
 	app.dialog("", body, buttons, 660)
 

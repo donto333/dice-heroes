@@ -1,18 +1,26 @@
 extends RefCounted
 ## 화면들이 함께 쓰는 모양(색, 버튼, 글자, 상자). 모든 화면이 같은 느낌이 나도록 여기서만 정한다.
 
-const BG := Color("12152b")
-const PANEL := Color("1d2246")
-const PANEL_LIGHT := Color("2a3164")
-const LINE := Color("3a4466")
+## 2026-11 리뉴얼: 밝고 통통한 캐주얼(하늘색 바탕, 파란 판, 흰 글자, 노랑·주황·초록 버튼).
+const BG := Color("2a8be6")
+## 바탕은 위가 밝고 아래가 짙은 하늘색으로 번진다(sky()).
+const BG_TOP := Color("58b8ff")
+const BG_BOTTOM := Color("1560c0")
+const PANEL := Color("1a56b0")
+const PANEL_LIGHT := Color("4f8fe6")
+const LINE := Color("8fd0ff")
 const TEXT := Color("ffffff")
-const MUTED := Color(1, 1, 1, 0.65)
+const MUTED := Color(1, 1, 1, 0.84)
+## 줄·칸처럼 판 안에 들어가는 짙은 바탕
+const INSET := Color("13458f")
+## 가장 중요한 버튼(받기·출전·시작)
+const PRIMARY := Color("f39a1c")
 const GOLD := Color("ffcf4d")
 const GEM := Color("6fd3ff")
-const ACCENT := Color("2f80ed")
+const ACCENT := Color("2fb457")
 const GOOD := Color("4caf50")
 const BAD := Color("e05555")
-const DISABLED := Color("2a2f4a")
+const DISABLED := Color("6f86a8")
 const CATEGORY_COLORS := {
 	"영웅": Color("b8352a"),
 	"위인": Color("2f6fb5"),
@@ -41,6 +49,10 @@ static func label(text: String, font_size: int = 22, color: Color = TEXT, align:
 	result.horizontal_alignment = align
 	result.add_theme_font_size_override("font_size", font_size)
 	result.add_theme_color_override("font_color", color)
+	# 밝은 바탕에서도 또렷하게: 옅은 그림자
+	result.add_theme_color_override("font_shadow_color", Color(0, 0.08, 0.25, 0.45))
+	result.add_theme_constant_override("shadow_offset_x", 0)
+	result.add_theme_constant_override("shadow_offset_y", 2)
 	return result
 
 
@@ -91,18 +103,42 @@ static func paint(target: Button, color: Color, border: Color = Color.TRANSPAREN
 
 
 static func _chunky(fill: Color, edge: Color, bottom: int) -> StyleBoxFlat:
-	var style := box(fill, edge, 3, 18)
+	var style := box(fill, edge, 3, 24)
 	style.border_width_bottom = bottom
-	style.shadow_color = Color(0, 0, 0, 0.35)
-	style.shadow_size = 4
+	style.shadow_color = Color(0, 0.05, 0.2, 0.4)
+	style.shadow_size = 5
 	style.shadow_offset = Vector2(0, 3)
 	return style
 
 
 static func panel(fill: Color = PANEL, border: Color = LINE, padding: int = 14) -> PanelContainer:
 	var result := PanelContainer.new()
-	result.add_theme_stylebox_override("panel", box(fill, border, 2, 14, padding))
+	var style := box(fill, border, 3, 22, padding)
+	style.shadow_color = Color(0, 0.05, 0.2, 0.35)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 4)
+	result.add_theme_stylebox_override("panel", style)
 	return result
+
+
+## 하늘색으로 번지는 바탕 그림(화면 전체를 덮는다).
+static func sky() -> TextureRect:
+	var gradient := Gradient.new()
+	gradient.set_color(0, BG_TOP)
+	gradient.set_color(1, BG_BOTTOM)
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill_from = Vector2(0, 0)
+	texture.fill_to = Vector2(0, 1)
+	texture.width = 8
+	texture.height = 256
+	var rect := TextureRect.new()
+	rect.texture = texture
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_SCALE
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rect
 
 
 static func vbox(separation: int = 10) -> VBoxContainer:
@@ -134,11 +170,14 @@ static func spacer(height: float = 0.0, grow: bool = true) -> Control:
 ## 화면 전체를 덮는 배경과, 여백을 둔 세로 상자를 만들어 붙이고 세로 상자를 돌려준다.
 static func screen_frame(parent: Control, margin: int = 18, color: Color = BG) -> VBoxContainer:
 	parent.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var background := ColorRect.new()
-	background.color = color
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(background)
+	if color == BG:
+		parent.add_child(sky())
+	else:
+		var background := ColorRect.new()
+		background.color = color
+		background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(background)
 	var frame := MarginContainer.new()
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
@@ -157,7 +196,7 @@ static func bar(value: float, color: Color, height: float = 14.0) -> ProgressBar
 	result.value = clampf(value, 0.0, 1.0)
 	result.show_percentage = false
 	result.custom_minimum_size = Vector2(0, height)
-	result.add_theme_stylebox_override("background", box(Color(0, 0, 0, 0.4), Color.TRANSPARENT, 0, 7, 0))
+	result.add_theme_stylebox_override("background", box(Color(0, 0.1, 0.3, 0.55), Color.TRANSPARENT, 0, 7, 0))
 	result.add_theme_stylebox_override("fill", box(color, Color.TRANSPARENT, 0, 7, 0))
 	return result
 

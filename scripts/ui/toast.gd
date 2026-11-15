@@ -11,10 +11,10 @@ func _ready() -> void:
 	add_theme_constant_override("outline_size", 8)
 	add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.05, 0.06, 0.14, 0.92)
-	style.set_corner_radius_all(14)
+	style.bg_color = Color(0.06, 0.24, 0.52, 0.95)
+	style.set_corner_radius_all(26)
 	style.border_color = Color("ffcf4d")
-	style.set_border_width_all(2)
+	style.set_border_width_all(3)
 	style.set_content_margin_all(16)
 	add_theme_stylebox_override("normal", style)
 

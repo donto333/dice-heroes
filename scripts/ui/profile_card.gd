@@ -50,7 +50,7 @@ static func profile_body(app) -> Control:
 		["최고 연승", "%d연승" % int(stats.get("best_streak", 0))],
 		["업적", "%d / %d" % [profile.get("achievements", []).size(), achievements.size()]],
 	]:
-		var cell := Kit.panel(Color("14182f"), Kit.LINE, 10)
+		var cell := Kit.panel(Color("13458f"), Kit.LINE, 10)
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var column := Kit.vbox(2)
 		cell.add_child(column)
@@ -76,7 +76,7 @@ static func profile_body(app) -> Control:
 		body.add_child(marks)
 		for entry in history:
 			var outcome := str(entry.get("outcome", ""))
-			var color := Color("2a7d4f") if outcome == "win" else (Color("8a2f3a") if outcome == "lose" else Color("4a5070"))
+			var color := Color("27a35a") if outcome == "win" else (Color("8a2f3a") if outcome == "lose" else Color("4a5070"))
 			var chip := Kit.panel(color, color.lightened(0.3), 6)
 			chip.custom_minimum_size = Vector2(52, 48)
 			chip.add_child(Kit.label("승" if outcome == "win" else ("패" if outcome == "lose" else "무"), 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
@@ -103,7 +103,7 @@ static func league_body(app) -> Control:
 		var entry: Dictionary = rows[index]
 		var mine := bool(entry["me"])
 		var tier: Dictionary = Profile.tier_of(app.eco, int(entry["trophies"]))
-		var line := Kit.panel(Color("3a2f0c") if mine else Color("14182f"), Kit.GOLD if mine else Kit.LINE, 10)
+		var line := Kit.panel(Color("3a2f0c") if mine else Color("13458f"), Kit.GOLD if mine else Kit.LINE, 10)
 		var row := Kit.hbox(10)
 		line.add_child(row)
 		var rank := Kit.label("%d" % (index + 1), 26, Kit.GOLD if index < 3 else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
