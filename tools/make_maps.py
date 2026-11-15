@@ -291,6 +291,18 @@ def make_board(theme):
         spot["attr"] = attr
         spot.pop("hidden", None)
 
+    # 관문(강제 전투) 3개: 큰길의 28%·52%·76% 지점. 갈림길 밖 큰길이라 피할 수 없다.
+    # 무작위 수를 쓰지 않아서 다른 칸 배치는 그대로다.
+    plain = [n for n in main_path if n["type"] in ("normal", "random")]
+    for k, (spot_at, dice) in enumerate([(0.28, 2), (0.52, 3), (0.76, 3)]):
+        target = int(total * spot_at)
+        spot = min(plain, key=lambda n: abs(main_path.index(n) - target))
+        plain.remove(spot)
+        spot["type"] = "gate"
+        spot["name"] = "관문지기 " + theme["keepers"][k % len(theme["keepers"])]
+        spot["dice"] = dice
+        spot.pop("hidden", None)
+
     return {
         "_comment": theme["comment"],
         "name": theme["name"],
