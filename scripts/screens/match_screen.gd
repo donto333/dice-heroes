@@ -1597,10 +1597,3 @@ func _state_text(player: Dictionary) -> String:
 		return ""
 	return " (" + ", ".join(PackedStringArray(parts)) + ")"
 
-
-## 골의 수호자 이름(전투 창에서 보스 그림을 쓰려고 찾는다).
-func _goal_name() -> String:
-	for id in game.nodes:
-		if str(game.nodes[id].get("type", "")) == "goal":
-			return str(game.nodes[id].get("name", ""))
-	return ""
