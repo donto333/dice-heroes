@@ -89,6 +89,7 @@ func _init() -> void:
 	_test_sweep()
 	_test_double()
 	_test_gate()
+	_test_relics()
 	_test_album_and_weekday()
 	_test_guide()
 	_test_upgrade_all()
@@ -1388,3 +1389,29 @@ func _test_album_and_weekday() -> void:
 	_check(absf(Profile.event_scale(events, "2026-11-14", "match_gold_scale") - 1.3) < 0.001, "토요일 이벤트가 안 열림")
 	_check(absf(Profile.event_scale(events, "2026-11-15", "match_gold_scale") - 1.3) < 0.001, "일요일 이벤트가 안 열림")
 	_check(absf(Profile.event_scale(events, "2026-11-16", "match_gold_scale") - 1.0) < 0.001, "월요일에 주말 이벤트가 열림")
+
+
+func _test_relics() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("유물", eco)
+	_check(Profile.current_relic(profile, eco).is_empty() and not Profile.equip_relic(profile, "banner"), "없는 유물을 장착함")
+	profile["gold"] = 0
+	_check(not Profile.buy_relic(profile, eco, "banner"), "골드 없이 유물을 삼")
+	profile["gold"] = 5000
+	_check(Profile.buy_relic(profile, eco, "banner") and int(profile["gold"]) == 2000 and str(Profile.current_relic(profile, eco)["id"]) == "banner", "유물 사기가 틀림")
+	_check(not Profile.buy_relic(profile, eco, "banner"), "같은 유물을 두 번 삼")
+	Profile.equip_relic(profile, "banner")
+	_check(Profile.current_relic(profile, eco).is_empty(), "유물을 벗었는데 남아 있음")
+	# 판에서의 효과
+	var plain = _new_game(5)
+	var parties: Array = []
+	for party in PARTIES:
+		parties.append((party as Dictionary).duplicate(true))
+	parties[0]["relic"] = {"atk_bonus": 1, "turns": 5, "gauge": 15, "charm": true}
+	var boosted = _new_game(5, parties)
+	_check(boosted.effect_sum(0, "atk_bonus") == plain.effect_sum(0, "atk_bonus") + 1, "유물 공격 보너스가 안 붙음")
+	_check(int(boosted.players[0]["gauge"]["attack"]) == mini(100, int(plain.players[0]["gauge"]["attack"]) + 15), "유물 게이지가 안 참")
+	_check(bool(boosted.players[0]["charm"]) and not bool(boosted.players[1]["charm"]), "유물 부적이 틀림")
+	_check(boosted.effect_sum(1, "atk_bonus") == plain.effect_sum(1, "atk_bonus"), "상대에게 유물 효과가 붙음")
+	for item in eco["relics"]:
+		_check(not (item["effect"] as Dictionary).is_empty() and not (item["cost"] as Dictionary).is_empty(), "유물 자료가 비어 있음")

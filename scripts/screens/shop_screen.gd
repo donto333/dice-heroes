@@ -31,6 +31,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	scroll.add_child(body)
 	body.add_child(_summon_panel())
 	body.add_child(_deals_panel())
+	body.add_child(_relic_panel())
 	body.add_child(_dice_panel())
 	body.add_child(_exchange_panel())
 	body.add_child(_gem_pack_panel())
@@ -129,6 +130,49 @@ func _on_deal(index: int) -> void:
 		app.play("good")
 		app.toast("%s 조각 +%d" % [app.character(str(deals[index]["id"]))["name"], int(deals[index]["shards"])])
 		app.go("shop")
+
+
+## 유물 상점: 파티에 하나만 장착하는 시작 보너스.
+func _relic_panel() -> Control:
+	var card := Kit.panel(Color("b8651a"), Color("ffe0a8"), 14)
+	var column := Kit.vbox(8)
+	card.add_child(column)
+	var head := Kit.hbox(8)
+	column.add_child(head)
+	head.add_child(Kit.expand(Kit.label("유물 상점", 30, Kit.GOLD)))
+	head.add_child(Kit.label("하나만 장착 · 판을 시작할 때 효과", 17, Kit.MUTED))
+	var using := str(Profile.current_relic(app.profile, app.eco).get("id", ""))
+	for item in app.eco.get("relics", []):
+		var id := str(item["id"])
+		var line := Kit.panel(Kit.INSET, Kit.GOLD if id == using else Kit.LINE, 8)
+		var row := Kit.hbox(10)
+		line.add_child(row)
+		var words := Kit.vbox(0)
+		words.add_child(Kit.label(str(item["name"]), 22, Kit.GOLD if id == using else Color.WHITE))
+		words.add_child(Kit.label(str(item["text"]), 16, Kit.MUTED))
+		row.add_child(Kit.expand(words))
+		var owned := Profile.owns_relic(app.profile, id)
+		var text := "벗기" if id == using else ("장착" if owned else Kit.reward_line(item.get("cost", {})))
+		var button := Kit.button(text, Kit.PANEL_LIGHT if id == using else (Kit.ACCENT if owned else Kit.PRIMARY), 18, 52)
+		button.custom_minimum_size = Vector2(150, 52)
+		button.pressed.connect(_on_relic.bind(id))
+		row.add_child(button)
+		column.add_child(line)
+	return card
+
+
+func _on_relic(id: String) -> void:
+	if Profile.owns_relic(app.profile, id):
+		Profile.equip_relic(app.profile, id)
+		app.play("click")
+	elif Profile.buy_relic(app.profile, app.eco, id):
+		app.play("win")
+		app.toast("%s을(를) 샀어요! 바로 장착했어요." % Profile.relic(app.eco, id)["name"])
+	else:
+		app.toast("골드나 보석이 모자라요.")
+		return
+	app.save()
+	app.go("shop")
 
 
 ## 주사위 상점: 한 번 사면 계속 쓰는 꾸밈 주사위. 능력 차이는 없다.

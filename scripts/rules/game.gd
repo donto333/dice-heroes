@@ -141,6 +141,8 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 			"effects": [],
 			"cursed": false,
 			"charm": false,
+			## 장착한 유물의 효과 {atk_bonus, turns, gauge, charm}. 없으면 {}.
+			"relic": (party.get("relic", {}) as Dictionary).duplicate(),
 		})
 	current = 0
 	round_number = 1
@@ -162,6 +164,15 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	# 먼저 하는 쪽이 유리하므로 나중에 하는 쪽은 게이지를 채워 두고 시작한다.
 	if players.size() > 1 and second_player_gauge > 0:
 		_add_gauge(1, second_player_gauge)
+	# 유물: 시작 보너스
+	for index in players.size():
+		var relic: Dictionary = players[index]["relic"]
+		if int(relic.get("atk_bonus", 0)) > 0:
+			players[index]["effects"].append({"key": "atk_bonus", "amount": int(relic["atk_bonus"]), "turns": int(relic.get("turns", 1))})
+		if int(relic.get("gauge", 0)) > 0:
+			_add_gauge(index, int(relic["gauge"]))
+		if bool(relic.get("charm", false)):
+			players[index]["charm"] = true
 	say("게임 시작! 먼저 골에 들어가면 승리합니다.")
 
 

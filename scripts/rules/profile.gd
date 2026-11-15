@@ -1336,3 +1336,50 @@ static func claim_album(profile: Dictionary, eco: Dictionary, characters: Array,
 			total[key] = int(total.get(key, 0)) + int(reward[key])
 	profile["album"] = claimed
 	return total
+
+
+# ---------------------------------------------------------------- 유물(장착 아이템)
+
+static func relic(eco: Dictionary, id: String) -> Dictionary:
+	for item in eco.get("relics", []):
+		if str(item["id"]) == id:
+			return item
+	return {}
+
+
+static func owns_relic(profile: Dictionary, id: String) -> bool:
+	return (profile.get("relics", []) as Array).has(id)
+
+
+## 지금 장착한 유물. 없으면 {}.
+static func current_relic(profile: Dictionary, eco: Dictionary) -> Dictionary:
+	var id := str(profile.get("relic", ""))
+	if id == "" or not owns_relic(profile, id):
+		return {}
+	return relic(eco, id)
+
+
+## 유물을 산다. 사면 바로 장착한다.
+static func buy_relic(profile: Dictionary, eco: Dictionary, id: String) -> bool:
+	var item := relic(eco, id)
+	if item.is_empty() or owns_relic(profile, id):
+		return false
+	var cost: Dictionary = item.get("cost", {})
+	for currency in cost:
+		if not can_pay(profile, str(currency), int(cost[currency])):
+			return false
+	for currency in cost:
+		pay(profile, str(currency), int(cost[currency]))
+	var owned: Array = profile.get("relics", [])
+	owned.append(id)
+	profile["relics"] = owned
+	profile["relic"] = id
+	return true
+
+
+## 가진 유물을 장착한다. 이미 장착한 것을 고르면 벗는다.
+static func equip_relic(profile: Dictionary, id: String) -> bool:
+	if not owns_relic(profile, id):
+		return false
+	profile["relic"] = "" if str(profile.get("relic", "")) == id else id
+	return true

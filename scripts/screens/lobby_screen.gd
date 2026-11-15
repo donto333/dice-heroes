@@ -333,7 +333,7 @@ func _todo_go(window_id: int, action: Callable) -> void:
 func _notices() -> Array:
 	var list: Array = []
 	for event in Profile.active_events(app.data.get("events", {}), app.today()):
-		list.append("이벤트 [%s] %s (%s까지)" % [event["name"], event["text"], str(event["end"]).substr(5)])
+		list.append("이벤트 [%s] %s (%s까지)" % [event["name"], event["text"], str(event.get("end", "")).substr(5)] if event.has("end") else "이벤트 [%s] %s" % [event["name"], event["text"]])
 	list.append_array(app.data.get("notices", {}).get("notices", []))
 	return list
 
@@ -504,6 +504,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"유물 상점: 파티에 하나 장착하면 공격 보너스나 게이지, 부적을 들고 시작해요. 수집 앨범(영웅 화면)과 주말 골드 1.3배도 생겼어요.",
 	"관문과 골의 수호자가 더 강해졌어요: 관문지기 주사위 3·4·4개, 골의 수호자 5개.",
 	"관문이 생겼어요: 맵마다 3곳, 지나가다가도 반드시 멈춰 관문지기와 싸워요. 이기면 카드를 받고 다음부터는 그냥 지나가요.",
 	"화면을 새로 꾸몄어요: 밝은 하늘색 바탕에 통통한 버튼, 로비는 영웅을 크게 두고 모드 타일 4개와 큰 '랭크전 시작'으로 바꿨어요.",

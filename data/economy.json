@@ -793,5 +793,55 @@
         "gems": 300
       }
     ]
-  }
+  },
+  "relics": [
+    {
+      "id": "banner",
+      "name": "출정의 깃발",
+      "text": "처음 5턴 동안 공격 합계 +1",
+      "effect": {
+        "atk_bonus": 1,
+        "turns": 5
+      },
+      "cost": {
+        "gold": 3000
+      }
+    },
+    {
+      "id": "scroll",
+      "name": "지혜의 두루마리",
+      "text": "어빌리티 게이지 20%로 시작",
+      "effect": {
+        "gauge": 20
+      },
+      "cost": {
+        "gold": 3000
+      }
+    },
+    {
+      "id": "amulet",
+      "name": "수호의 부적",
+      "text": "저주·감옥·판정을 한 번 막는 부적을 들고 시작",
+      "effect": {
+        "charm": true
+      },
+      "cost": {
+        "gems": 200
+      }
+    },
+    {
+      "id": "crown",
+      "name": "영웅의 왕관",
+      "text": "처음 5턴 공격 합계 +1, 게이지 15%로 시작",
+      "effect": {
+        "atk_bonus": 1,
+        "turns": 5,
+        "gauge": 15
+      },
+      "cost": {
+        "gems": 600
+      }
+    }
+  ],
+  "relics_comment": "유물: 파티에 하나만 장착하는 시작 보너스(모두의 마블의 행운 아이템 자리). effect: atk_bonus와 turns(처음 몇 턴 동안 공격 합계 보너스), gauge(시작 게이지 %), charm(부적). 손패는 3장 제한이라 카드 추가 효과는 없다. 내 파티에만 적용되고 친구 대전에서는 쓰지 않는다."
 }
