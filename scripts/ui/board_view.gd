@@ -7,7 +7,7 @@ const TILE_GAP := 8.0
 ## 판을 뒤로 기울여 보이게: 세로 칸 간격을 이만큼 눌러 그린다.
 const TILT := 0.74
 ## 블록 칸의 두께(칸 크기에 대한 비율)
-const BLOCK_DEPTH := 0.17
+const BLOCK_DEPTH := 0.27
 ## 진 말이 거점으로 날아가는 시간(초)
 const FLING_TIME := 0.8
 const STEP_TIME := 0.17
@@ -441,9 +441,7 @@ func _draw_props(layout: Dictionary) -> void:
 				wide = cell * 1.2
 			var jitter := Vector2(((seed_value / 1000) % 21 - 10) / 70.0, ((seed_value / 30000) % 21 - 10) / 90.0)
 			var foot := origin + Vector2((gx + 0.5 + jitter.x) * cell, (gy + 0.62 + jitter.y) * row)
-			draw_set_transform(foot, 0.0, Vector2(1.0, 0.36))
-			draw_circle(Vector2.ZERO, wide * 0.42, Color(0, 0, 0, 0.26))
-			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			_cast_shadow(texture, foot, wide, tall * 0.96)
 			draw_texture_rect(texture, Rect2(foot.x - wide / 2.0, foot.y - tall * 0.96, wide, tall), false)
 
 
@@ -470,6 +468,13 @@ func _draw_decorations(layout: Dictionary) -> void:
 			draw_texture_rect_region(_deco, Rect2(spot - Vector2(side, side) / 2.0, Vector2(side, side)), Rect2(kind * 32, 0, 32, 32))
 
 
+## 서 있는 그림이 바닥에 드리우는 그림자: 같은 그림을 검게, 오른쪽으로 눕혀서 그린다(빛은 왼쪽 위).
+func _cast_shadow(texture: Texture2D, foot: Vector2, wide: float, tall: float, flip: float = 1.0) -> void:
+	draw_set_transform_matrix(Transform2D(Vector2(flip, 0.0), Vector2(-0.55, 0.3), foot))
+	draw_texture_rect(texture, Rect2(-wide / 2.0, -tall, wide, tall), false, Color(0, 0, 0, 0.3))
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+
+
 ## 육각 칸의 윗면 꼭짓점(납작한 쪽이 위아래). 가운데가 center.
 func _hex_points(center: Vector2, width: float, height: float) -> PackedVector2Array:
 	return PackedVector2Array([
@@ -488,10 +493,22 @@ func _draw_hex(center: Vector2, _half: Vector2, cell: float, color: Color, lit: 
 	var top_center := center - Vector2(0, depth * 0.5)
 	var top := _hex_points(top_center, width, height)
 	var low := _hex_points(top_center + Vector2(0, depth), width, height)
-	draw_colored_polygon(_hex_points(top_center + Vector2(0, depth + cell * 0.05), width * 1.04, height * 1.04), Color(0, 0, 0, 0.3))
-	var wall := color.darkened(0.55)
-	draw_colored_polygon(low, wall)
-	draw_colored_polygon(PackedVector2Array([top[0], top[3], low[3], low[0]]), wall)
+	# 바닥에 드리운 그림자: 빛이 왼쪽 위에서 오므로 오른쪽 아래로 길게, 두 겹으로 부드럽게.
+	var shade_center := top_center + Vector2(cell * 0.07, depth + cell * 0.1)
+	draw_colored_polygon(_hex_points(shade_center, width * 1.14, height * 1.14), Color(0, 0, 0, 0.14))
+	draw_colored_polygon(_hex_points(shade_center, width * 1.04, height * 1.04), Color(0, 0, 0, 0.24))
+	# 옆면 세 쪽: 왼쪽이 가장 밝고 오른쪽이 가장 어두워 덩어리가 느껴진다.
+	draw_colored_polygon(PackedVector2Array([top[0], top[5], low[5], low[0]]), color.darkened(0.38))
+	draw_colored_polygon(PackedVector2Array([top[5], top[4], low[4], low[5]]), color.darkened(0.52))
+	draw_colored_polygon(PackedVector2Array([top[4], top[3], low[3], low[4]]), color.darkened(0.66))
+	# 옆면 아래쪽은 더 어둡게(바닥에 가까울수록 그늘)
+	var mid_left := top[5] + Vector2(0, depth * 0.55)
+	var mid_right := top[4] + Vector2(0, depth * 0.55)
+	draw_colored_polygon(PackedVector2Array([top[0] + Vector2(0, depth * 0.55), mid_left, low[5], low[0]]), Color(0, 0, 0, 0.16))
+	draw_colored_polygon(PackedVector2Array([mid_left, mid_right, low[4], low[5]]), Color(0, 0, 0, 0.16))
+	draw_colored_polygon(PackedVector2Array([mid_right, top[3] + Vector2(0, depth * 0.55), low[3], low[4]]), Color(0, 0, 0, 0.16))
+	# 바닥에 닿는 짙은 선
+	draw_polyline(PackedVector2Array([low[0], low[5], low[4], low[3]]), Color(0, 0, 0, 0.45), 2.0, true)
 	draw_colored_polygon(top, color)
 	var painted := false
 	if hex_name != "":
@@ -505,6 +522,8 @@ func _draw_hex(center: Vector2, _half: Vector2, cell: float, color: Color, lit: 
 		var rim := top.duplicate()
 		rim.append(top[0])
 		draw_polyline(rim, color.lightened(0.4), 3.0, true)
+	# 윗면 앞쪽 모서리의 밝은 선(모서리에 빛이 맺힌 느낌)
+	draw_polyline(PackedVector2Array([top[0], top[5], top[4], top[3]]), Color(1, 1, 1, 0.5), 2.5, true)
 	if lit:
 		var pulse := 0.6 + 0.4 * sin(_anim_time * 6.0)
 		var glow := _hex_points(top_center, width * 1.08, height * 1.08)
@@ -592,7 +611,7 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 		draw_arc(Vector2.ZERO, cell * (0.44 + pulse * 0.05), 0.0, TAU, 32, Color(1, 1, 1, 0.9 - pulse * 0.5), 4.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-	var height := cell * 1.5
+	var height := cell * 1.02
 	var texture_size := texture.get_size()
 	var width := height * texture_size.x / maxf(texture_size.y, 1.0)
 	var stretch := Vector2.ONE
@@ -605,6 +624,8 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 		bob = -absf(sin(_anim_time * 4.0)) * cell * 0.07
 	var base := foot + Vector2(0, bob - lift)
 	var facing := float(_facing[player_index]) if player_index < _facing.size() else 1.0
+	if not flinging and lift < cell * 0.5:
+		_cast_shadow(texture, foot, width, height, facing)
 	if flinging:
 		# 빙글빙글 돌며 날아간다.
 		draw_set_transform(base - Vector2(0, height * 0.5), hop_t * TAU * 2.0, Vector2(facing, 1.0))
@@ -759,12 +780,10 @@ func _draw() -> void:
 			# 적의 입체 모형이 있으면 칸 위에 세운다(숨 쉬듯 살짝 늘었다 줄었다).
 			var is_boss: bool = tile.get("type", "") in ["goal", "gate"]
 			var breath := 1.0 + 0.03 * sin(_anim_time * 2.6 + float(int(id) % 5))
-			var model_tall := cell * (1.2 if is_boss else 0.98) * breath
-			var model_wide := cell * (1.2 if is_boss else 0.98) * float(enemy_model.get_width()) / float(enemy_model.get_height())
+			var model_tall := cell * (1.05 if is_boss else 0.86) * breath
+			var model_wide := cell * (1.05 if is_boss else 0.86) * float(enemy_model.get_width()) / float(enemy_model.get_height())
 			var model_foot := rect.get_center() + Vector2(0, cell * 0.06)
-			draw_set_transform(model_foot, 0.0, Vector2(1.0, 0.36))
-			draw_circle(Vector2.ZERO, model_wide * 0.4, Color(0, 0, 0, 0.3))
-			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			_cast_shadow(enemy_model, model_foot, model_wide, model_tall)
 			draw_texture_rect(enemy_model, Rect2(model_foot.x - model_wide / 2.0, model_foot.y - model_tall, model_wide, model_tall), false)
 		elif enemy_face != null:
 			# 그려 둔 적 초상화가 있으면 둥근 메달로 칸 위에 세운다.
@@ -914,10 +933,30 @@ func _draw() -> void:
 		else:
 			draw_circle(center, cell * 0.14, PLAYER_COLORS[player_index])
 	if bool(layout.get("camera", false)):
+		_draw_depth_haze()
 		_draw_minimap(layout)
 
 
 ## 오른쪽 위의 작은 전체 지도: 칸은 점, 말은 색 점, 지금 보이는 곳은 흰 네모.
+## 깊이감: 먼 쪽(위)은 옅은 안개로 흐리고, 가까운 쪽(아래)과 양옆은 살짝 어둡게 해서 판이 안쪽으로 들어가 보이게 한다.
+func _draw_depth_haze() -> void:
+	var haze := Color(0.75, 0.86, 1.0, 0.34)
+	var clear := Color(0.75, 0.86, 1.0, 0.0)
+	var top_band := size.y * 0.3
+	draw_polygon(PackedVector2Array([Vector2.ZERO, Vector2(size.x, 0), Vector2(size.x, top_band), Vector2(0, top_band)]),
+		PackedColorArray([haze, haze, clear, clear]))
+	var dark := Color(0, 0.02, 0.1, 0.3)
+	var none := Color(0, 0.02, 0.1, 0.0)
+	var low_band := size.y * 0.22
+	draw_polygon(PackedVector2Array([Vector2(0, size.y - low_band), Vector2(size.x, size.y - low_band), Vector2(size.x, size.y), Vector2(0, size.y)]),
+		PackedColorArray([none, none, dark, dark]))
+	var side_band := size.x * 0.1
+	draw_polygon(PackedVector2Array([Vector2.ZERO, Vector2(side_band, 0), Vector2(side_band, size.y), Vector2(0, size.y)]),
+		PackedColorArray([dark, none, none, dark]))
+	draw_polygon(PackedVector2Array([Vector2(size.x - side_band, 0), Vector2(size.x, 0), Vector2(size.x, size.y), Vector2(size.x - side_band, size.y)]),
+		PackedColorArray([none, dark, dark, none]))
+
+
 func _draw_minimap(layout: Dictionary) -> void:
 	var grid := _grid_size()
 	# 아주 긴 맵(직선형)은 작은 지도를 가로로 더 길게 쓴다.
