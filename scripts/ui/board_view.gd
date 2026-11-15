@@ -91,7 +91,7 @@ var _queue: Array = []
 var _timer := 0.0
 
 ## 큰 맵은 화면에 다 안 들어가므로 칸 크기를 MIN_CELL로 두고 카메라로 일부만 보여 준다.
-const MIN_CELL := 84.0
+const MIN_CELL := 104.0
 const CAMERA_SPEED := 6.0
 const MINIMAP_WIDTH := 110.0
 ## 카메라가 보고 있는 맵 위의 점(맵 좌표, 픽셀)

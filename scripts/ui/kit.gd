@@ -198,7 +198,8 @@ static func spacer(height: float = 0.0, grow: bool = true) -> Control:
 
 
 ## 화면 전체를 덮는 배경과, 여백을 둔 세로 상자를 만들어 붙이고 세로 상자를 돌려준다.
-static func screen_frame(parent: Control, margin: int = 18, color: Color = BG) -> VBoxContainer:
+## 가로 화면: 내용 기둥은 max_width 너비로 가운데에 둔다(0이면 화면 가득).
+static func screen_frame(parent: Control, margin: int = 18, color: Color = BG, max_width: float = 860.0) -> VBoxContainer:
 	parent.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if color == BG:
 		parent.add_child(sky())
@@ -214,6 +215,9 @@ static func screen_frame(parent: Control, margin: int = 18, color: Color = BG) -
 		frame.add_theme_constant_override("margin_" + side, margin)
 	parent.add_child(frame)
 	var column := vbox(12)
+	if max_width > 0.0:
+		column.custom_minimum_size = Vector2(max_width, 0)
+		column.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	frame.add_child(column)
 	return column
 

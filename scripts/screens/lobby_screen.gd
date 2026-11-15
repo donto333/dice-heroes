@@ -32,7 +32,7 @@ var _spin_info: Label
 
 func setup(main_app, params: Dictionary) -> void:
 	app = main_app
-	var column := Kit.screen_frame(self, 16)
+	var column := Kit.screen_frame(self, 12, Kit.BG, 0.0)
 	# 하늘색 바탕 위에 로비 그림을 깐다(틀 뒤로 보내기).
 	var lobby_art := Kit.backdrop(self, "ui/lobby_bg", 0.85)
 	move_child(lobby_art, 1)
@@ -43,8 +43,14 @@ func setup(main_app, params: Dictionary) -> void:
 	# 새 우편이 있으면 우편함에 넣는다.
 	if Profile.deliver_mails(app.profile, app.data.get("mails", {})) > 0:
 		app.save()
-	column.add_child(_rank_card())
-	column.add_child(_showcase())
+	# 가로 화면: 왼쪽에 대표 영웅과 바로가기, 오른쪽에 랭크 카드·모드·랭크전 시작.
+	var body := Kit.hbox(14)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(body)
+	body.add_child(Kit.expand(_showcase(), 1.05))
+	var side := Kit.vbox(10)
+	body.add_child(Kit.expand(side, 1.0))
+	side.add_child(_rank_card())
 
 	var tier: Dictionary = Profile.tier_of(app.eco, int(app.profile["trophies"]))
 	var streak := Profile.streak(app.profile)
@@ -53,7 +59,8 @@ func setup(main_app, params: Dictionary) -> void:
 		rank_note = "%d연승 중! 이기면 골드 보너스 · 트로피 %d" % [streak, int(app.profile["trophies"])]
 	# 모드 타일 네 개(모험·AI전·친구·오늘의 도전) + 맨 아래 크게 랭크전
 	var modes := Kit.hbox(10)
-	column.add_child(modes)
+	modes.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	side.add_child(modes)
 	var adventure := Kit.tile_button("모험", "goal", Color("e0532b"), "★ %d / %d" % [Profile.total_stars(app.profile), _max_stars()], 150.0, "ui/mode_adventure")
 	adventure.pressed.connect(_on_adventure)
 	modes.add_child(Kit.expand(adventure))
@@ -68,9 +75,10 @@ func setup(main_app, params: Dictionary) -> void:
 	var challenge := Kit.tile_button("도전", "ambush", Color("8a55e0") if not done else Color("6f9bd6"), "오늘 완료!" if done else "하루 한 번", 150.0, "ui/mode_challenge")
 	challenge.pressed.connect(_on_mode.bind("challenge"))
 	modes.add_child(Kit.expand(challenge))
-	var rank_button := Kit.icon_button("랭크전 시작", "swords", Color("ffb81f"), 54, 140, rank_note)
+	var rank_button := Kit.icon_button("랭크전 시작", "swords", Color("ffb81f"), 50, 124, rank_note)
 	rank_button.pressed.connect(_on_mode.bind("rank"))
-	column.add_child(rank_button)
+	Kit.shimmer(rank_button)
+	side.add_child(rank_button)
 	var nav := BottomNav.new()
 	column.add_child(nav)
 	nav.setup("lobby", app.badges())
@@ -154,7 +162,7 @@ func _showcase() -> Control:
 
 	# 왼쪽: 금테 액자 안의 대표 영웅 카드. 누르면 영웅 화면.
 	var card := Button.new()
-	card.custom_minimum_size = Vector2(322, 480)
+	card.custom_minimum_size = Vector2(290, 432)
 	card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	for state in ["normal", "hover", "pressed", "focus"]:
 		card.add_theme_stylebox_override(state, StyleBoxEmpty.new())

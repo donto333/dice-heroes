@@ -1,7 +1,7 @@
 extends SceneTree
 ## 화면 사진 찍기. CI에서 가상 화면(xvfb)으로 게임을 띄워 주요 장면을 PNG로 저장한다.
 ## 사람이 보지 않아도 화면이 깨졌는지 확인하려고 쓴다. 결과는 환경 변수 SHOT_DIR 폴더(없으면 /tmp/screenshots)에 생긴다.
-## 실행: SHOT_DIR=$PWD/screenshots godot --rendering-driver opengl3 --resolution 720x1280 --script res://tools/capture.gd
+## 실행: SHOT_DIR=$PWD/screenshots godot --rendering-driver opengl3 --resolution 1280x720 --script res://tools/capture.gd
 ## 타이틀 → 로그인 → 로비 → 출석 → 영웅 → 상점·소환 → 미션 → 설정 → 파티 → 대전 → 전투 → 결과 순서로 찍는다.
 
 const MAIN_SCENE := "res://scenes/main.tscn"

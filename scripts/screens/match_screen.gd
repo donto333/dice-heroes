@@ -170,56 +170,48 @@ func _build_ui() -> void:
 	add_child(background)
 	add_child(Kit.sky())
 
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 14)
-	add_child(margin)
-
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	margin.add_child(column)
+	# 가로 화면: 판이 화면 전체를 차지하고, 모든 정보는 판 위 모서리에 얹는다.
+	var column := Control.new()
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(column)
 
 	var status_row := HBoxContainer.new()
 	status_row.add_theme_constant_override("separation", 8)
-	column.add_child(status_row)
-	_status_label = _make_label(20)
-	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_status_label = _make_label(18)
+	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	status_row.add_child(_status_label)
-	_auto_button = Kit.button("자동 꺼짐", Color("6f9bd6"), 20, 56)
-	_auto_button.custom_minimum_size = Vector2(110, 56)
+	_status_label.add_theme_constant_override("outline_size", 6)
+	_status_label.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
+	_auto_button = Kit.button("자동 꺼짐", Color("6f9bd6"), 18, 50)
+	_auto_button.custom_minimum_size = Vector2(104, 50)
 	_auto_button.pressed.connect(_on_auto_pressed)
 	status_row.add_child(_auto_button)
-	_speed_button = Kit.button("", Color("27a35a"), 20, 56)
-	_speed_button.custom_minimum_size = Vector2(110, 56)
+	_speed_button = Kit.button("", Color("27a35a"), 18, 50)
+	_speed_button.custom_minimum_size = Vector2(104, 50)
 	_speed_button.pressed.connect(_on_speed_pressed)
 	status_row.add_child(_speed_button)
 	_apply_speed()
-	var quit_button := Kit.button("나가기", Color("e0532b"), 20, 56)
-	quit_button.custom_minimum_size = Vector2(110, 56)
+	var quit_button := Kit.button("나가기", Color("e0532b"), 18, 50)
+	quit_button.custom_minimum_size = Vector2(96, 50)
 	quit_button.pressed.connect(_on_quit_pressed)
 	status_row.add_child(quit_button)
 
 	# 모두의 마블처럼 판이 화면 대부분을 차지하고,
 	# 플레이어 정보판은 판 모서리(상대 왼쪽 위, 나 왼쪽 아래), 큰 주사위 버튼은 오른쪽 아래에 얹는다.
 	var board_area := Control.new()
-	board_area.custom_minimum_size = Vector2(0, 420)
-	board_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	board_area.size_flags_stretch_ratio = 4.0
+	board_area.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	column.add_child(board_area)
 	_board_view = BoardView.new()
 	_board_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_board_view.pad_top = 100.0
-	_board_view.pad_bottom = 110.0
+	_board_view.pad_top = 110.0
+	_board_view.pad_bottom = 140.0
 	_board_view.pad_left = 112.0
 	board_area.add_child(_board_view)
 	for index in 2:
 		var card := _player_card(index)
 		board_area.add_child(card)
 		card.anchor_left = 0.0
-		card.anchor_right = 0.56
+		card.anchor_right = 0.0
 		if index == 1:
 			card.anchor_top = 0.0
 			card.anchor_bottom = 0.0
@@ -231,7 +223,7 @@ func _build_ui() -> void:
 			card.offset_top = -92
 			card.offset_bottom = -8
 		card.offset_left = 8
-		card.offset_right = 0
+		card.offset_right = 400
 		_ignore_mouse(card)
 
 	_big_dice = BigDice.new()
@@ -263,11 +255,32 @@ func _build_ui() -> void:
 	_roll_button.offset_top = -172
 	_roll_button.offset_bottom = -12
 
+	# 위 가운데: 턴 정보 한 줄과 반투명 기록 칸. 오른쪽 위: 자동·빠르기·나가기.
+	board_area.add_child(_status_label)
+	_status_label.anchor_left = 0.0
+	_status_label.anchor_right = 1.0
+	_status_label.offset_left = 416
+	_status_label.offset_right = -336
+	_status_label.offset_top = 6
+	_status_label.offset_bottom = 54
+	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board_area.add_child(status_row)
+	status_row.anchor_left = 1.0
+	status_row.anchor_right = 1.0
+	status_row.offset_left = -328
+	status_row.offset_right = -8
+	status_row.offset_top = 8
+	status_row.offset_bottom = 58
 	var result_panel := PanelContainer.new()
-	# 기록 칸은 높이를 고정한다. 내용이 넘치면 안에서 스크롤되어 판이 줄어들지 않는다.
-	result_panel.custom_minimum_size = Vector2(0, 132)
-	result_panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.2, 0.46, 0.94), Color("8fd0ff"), 3))
-	column.add_child(result_panel)
+	# 기록 칸은 작고 반투명하게. 내용이 넘치면 안에서 스크롤된다.
+	result_panel.add_theme_stylebox_override("panel", _box(Color(0.03, 0.12, 0.32, 0.72), Color(0.56, 0.82, 1.0, 0.6), 2))
+	board_area.add_child(result_panel)
+	result_panel.anchor_left = 0.0
+	result_panel.anchor_right = 1.0
+	result_panel.offset_left = 416
+	result_panel.offset_right = -336
+	result_panel.offset_top = 56
+	result_panel.offset_bottom = 140
 	_result_scroll = ScrollContainer.new()
 	_result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	result_panel.add_child(_result_scroll)
@@ -278,9 +291,17 @@ func _build_ui() -> void:
 
 	var ability_row := HBoxContainer.new()
 	ability_row.add_theme_constant_override("separation", 8)
-	column.add_child(ability_row)
+	board_area.add_child(ability_row)
+	ability_row.anchor_left = 0.0
+	ability_row.anchor_right = 1.0
+	ability_row.anchor_top = 1.0
+	ability_row.anchor_bottom = 1.0
+	ability_row.offset_left = 416
+	ability_row.offset_right = -190
+	ability_row.offset_top = -128
+	ability_row.offset_bottom = -6
 	for slot in Game.SLOTS:
-		var button := _make_button(16, 142, SLOT_COLORS[slot])
+		var button := _make_button(15, 120, SLOT_COLORS[slot])
 		button.pressed.connect(_on_ability_pressed.bind(slot))
 		# 광택 스킬 버튼: 못 쓸 때도 자리 색이 어둡게 남고, 쓸 수 있으면 금색 테가 빛나며 빛이 훑고 지나간다.
 		Kit.paint(button, SLOT_COLORS[slot])
