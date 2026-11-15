@@ -80,6 +80,7 @@ func _draw() -> void:
 	var base := StyleBoxFlat.new()
 	base.bg_color = rim
 	base.set_corner_radius_all(int(r))
+	base.corner_detail = 16 if r > 30.0 else 8
 	base.anti_aliasing_size = 1.2
 	if not off:
 		base.shadow_color = Color(0, 0.04, 0.16, 0.38)
@@ -97,6 +98,20 @@ func _draw() -> void:
 	face.set_corner_radius_all(int(inner))
 	face.anti_aliasing_size = 1.2
 	draw_style_box(face, body)
+
+	if r >= minf(size.x, size.y) * 0.45:
+		# 동그란 버튼: 두 면으로 나누지 않고 밝은 몸통 위에 타원 광택만 얹는다.
+		face.bg_color = fill
+		face.corner_detail = 16
+		draw_style_box(face, body)
+		if shine and not off:
+			var oval := StyleBoxFlat.new()
+			oval.bg_color = Color(1, 1, 1, 0.32)
+			oval.set_corner_radius_all(int(body.size.y * 0.2))
+			oval.corner_detail = 12
+			oval.anti_aliasing_size = 1.2
+			draw_style_box(oval, Rect2(body.position.x + body.size.x * 0.2, body.position.y + body.size.y * 0.07, body.size.x * 0.6, body.size.y * 0.3))
+		return
 
 	# 3) 위쪽 밝은 면: 아래 18%만 짙은 색이 남아 볼록해 보인다.
 	var light := StyleBoxFlat.new()

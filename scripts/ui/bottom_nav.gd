@@ -46,13 +46,12 @@ func setup(active: String, badges: Dictionary) -> void:
 		column.add_theme_constant_override("separation", -8)
 		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(column)
-		var picture := Kit.icon(str(spec[2]), 50.0 if on else 44.0)
+		var picture := Kit.icon(str(spec[2]), 46.0)
 		picture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		column.add_child(picture)
-		var caption := Kit.label(str(spec[1]), 21 if on else 19, Color("5a3200") if on else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
-		if not on:
-			caption.add_theme_constant_override("outline_size", 5)
-			caption.add_theme_color_override("font_outline_color", color.darkened(0.65))
+		var caption := Kit.label(str(spec[1]), 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		caption.add_theme_constant_override("outline_size", 6)
+		caption.add_theme_color_override("font_outline_color", Color("7a4a00") if on else color.darkened(0.65))
 		caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		column.add_child(caption)
 		var dot := Panel.new()
