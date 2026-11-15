@@ -45,6 +45,13 @@ func show_character(character: Dictionary, color: Color) -> void:
 ## 키퍼·몬스터: 보드에 서 있는 것과 같은 적 그림을 크게 보여 준다. 그림이 없으면 글자.
 func show_monster(kind: int, text: String, color: Color) -> void:
 	show_text(text, color)
+	# 그려 둔 적 초상화가 있으면 그것을 쓴다. 없으면 보드의 도트 적 그림.
+	var painted := GameData.enemy_portrait(text)
+	if painted != null:
+		texture = painted
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		queue_redraw()
+		return
 	if _monster_sheet == null and ResourceLoader.exists("res://assets/terrain/monsters.png"):
 		_monster_sheet = load("res://assets/terrain/monsters.png")
 	monster = kind if _monster_sheet != null else -1

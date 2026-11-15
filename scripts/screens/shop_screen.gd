@@ -3,6 +3,7 @@ extends Control
 ## 소환 확률과 보장은 data/economy.json, 규칙은 scripts/rules/profile.gd.
 ## 진짜 돈 결제는 아직 없다. 보석은 미션·출석·레벨업·첫 승리로 모은다.
 
+const ArtView := preload("res://scripts/ui/art_view.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
@@ -70,6 +71,13 @@ func setup(main_app, _params: Dictionary) -> void:
 func _summon_panel() -> Control:
 	var summon: Dictionary = app.eco.get("summon", {})
 	var card := Kit.panel(Color("5b35c0"), Kit.GOLD, 16)
+	# 소환진 그림(assets/art/ui/summon.jpg)을 판 바탕에 깐다.
+	var circle := ArtView.new()
+	circle.show_art("ui/summon")
+	circle.drift = true
+	circle.focus_y = 0.55
+	circle.shade = Color(0.15, 0.05, 0.35, 0.45)
+	card.add_child(circle)
 	var column := Kit.vbox(12)
 	card.add_child(column)
 	column.add_child(Kit.title("영웅 소환", 44))

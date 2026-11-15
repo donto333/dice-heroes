@@ -7,6 +7,7 @@ const Profile := preload("res://scripts/rules/profile.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const MapPreview := preload("res://scripts/ui/map_preview.gd")
+const ArtView := preload("res://scripts/ui/art_view.gd")
 
 var app
 
@@ -47,6 +48,11 @@ func _chapter_card(chapter: Dictionary, adventure: Dictionary) -> Control:
 	var card := Kit.panel(theme_color.darkened(0.05) if open else Color("13458f"), theme_color.lightened(0.3) if open else Kit.LINE, 14)
 	var column := Kit.vbox(10)
 	card.add_child(column)
+	# 장 표지 그림(assets/art/chapters/<장 id>.jpg). 잠긴 장은 어둡게.
+	var cover := _cover(str(chapter["id"]), 150.0)
+	if cover != null:
+		cover.modulate = Color.WHITE if open else Color(0.35, 0.35, 0.42)
+		column.add_child(cover)
 	var head := Kit.hbox(12)
 	column.add_child(head)
 	var preview := MapPreview.new()
@@ -79,6 +85,18 @@ func _stage_button(stage: Dictionary, adventure: Dictionary) -> Button:
 	return button
 
 
+## 장 표지 그림 칸. 그림이 없으면 null.
+func _cover(chapter_id: String, height: float) -> Control:
+	var view := ArtView.new()
+	view.show_art("chapters/" + chapter_id)
+	if not view.has_art():
+		view.free()
+		return null
+	view.custom_minimum_size = Vector2(0, height)
+	view.focus_y = 0.5
+	return view
+
+
 func _goal_name(board: Dictionary) -> String:
 	for node in board.get("nodes", []):
 		if node.get("type", "") == "goal":
@@ -92,6 +110,9 @@ func _on_stage(id: String) -> void:
 	var found := Profile.find_stage(adventure, id)
 	var stage: Dictionary = found["stage"]
 	var body := Kit.vbox(12)
+	var cover := _cover(str(found.get("chapter", {}).get("id", "")), 190.0)
+	if cover != null:
+		body.add_child(cover)
 	body.add_child(Kit.label("%s  %s" % [id, stage["name"]], 30, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
 	if str(stage.get("story", "")) != "":
 		body.add_child(Kit.para(str(stage["story"]), 20, Color(1, 1, 1, 0.9), HORIZONTAL_ALIGNMENT_CENTER))

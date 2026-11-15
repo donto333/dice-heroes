@@ -4,6 +4,7 @@ extends Control
 ## 떠 있는 동안에는 아래 화면을 누를 수 없다(두 번 눌림 방지).
 
 const Kit := preload("res://scripts/ui/kit.gd")
+const GameData := preload("res://scripts/game_data.gd")
 
 const TIPS := [
 	"주사위 1개짜리 영웅은 큰 눈이, 2개짜리 영웅은 작은 눈이 잘 나와요.",
@@ -25,6 +26,8 @@ var _tip: Label
 var _time := 0.0
 var _rng := RandomNumberGenerator.new()
 var _shows := 0
+## 바탕 그림(assets/art/ui/loading_bg.jpg). 없으면 파란 바탕만.
+var _background: Texture2D = null
 
 
 func _ready() -> void:
@@ -32,6 +35,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_rng.randomize()
+	_background = GameData.art("ui/loading_bg")
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_message = Kit.label("", 34, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	_message.add_theme_constant_override("outline_size", 8)
 	_message.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -82,7 +87,24 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.32, 0.72, 0.97))
+	if _background != null:
+		# 바탕 그림을 꽉 차게, 아주 천천히 확대하며 그리고 위에 살짝 어둡게 덮는다.
+		var texture_size := _background.get_size()
+		var ratio := size.x / maxf(size.y, 1.0)
+		var source := Rect2(Vector2.ZERO, texture_size)
+		if ratio < texture_size.x / texture_size.y:
+			source.size.x = texture_size.y * ratio
+			source.position.x = (texture_size.x - source.size.x) / 2.0
+		else:
+			source.size.y = texture_size.x / ratio
+			source.position.y = (texture_size.y - source.size.y) / 2.0
+		var zoom := 1.0 + minf(_time, 3.0) * 0.015
+		var shrink := source.size / zoom
+		source = Rect2(source.position + (source.size - shrink) / 2.0, shrink)
+		draw_texture_rect_region(_background, Rect2(Vector2.ZERO, size), source)
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.03, 0.12, 0.3, 0.45))
+	else:
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.32, 0.72, 0.97))
 	# 돌아가는 점 8개: 앞선 점일수록 크고 밝다.
 	var center := Vector2(size.x * 0.5, size.y * 0.5 - 10.0)
 	var head := int(_time * 10.0) % 8
