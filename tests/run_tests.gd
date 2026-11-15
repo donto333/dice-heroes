@@ -1424,7 +1424,7 @@ func _test_relics() -> void:
 	var boosted = _new_game(5, parties)
 	_check(boosted.effect_sum(0, "atk_bonus") == plain.effect_sum(0, "atk_bonus") + 1, "유물 공격 보너스가 안 붙음")
 	_check(int(boosted.players[0]["gauge"]["attack"]) == mini(100, int(plain.players[0]["gauge"]["attack"]) + 15), "유물 게이지가 안 참")
-	_check(bool(boosted.players[0]["charm"]) and not bool(boosted.players[1]["charm"]), "유물 부적이 틀림")
+	_check(bool(boosted.players[0]["charm"]) and bool(boosted.players[1]["charm"]) == bool(plain.players[1]["charm"]), "유물 부적이 틀림")
 	_check(boosted.effect_sum(1, "atk_bonus") == plain.effect_sum(1, "atk_bonus"), "상대에게 유물 효과가 붙음")
 	for item in eco["relics"]:
 		_check(not (item["effect"] as Dictionary).is_empty() and not (item["cost"] as Dictionary).is_empty(), "유물 자료가 비어 있음")
