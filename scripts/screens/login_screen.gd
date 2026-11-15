@@ -15,6 +15,8 @@ var _warning: Label
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
 	var column := Kit.screen_frame(self, 32)
+	var art := Kit.backdrop(self, "ui/title_keyart", 0.55)
+	move_child(art, 1)
 	column.add_child(Kit.spacer(40, false))
 	column.add_child(Kit.title("주사위 영웅전", 72))
 	column.add_child(Kit.para("영웅을 모으고, 주사위를 굴려 골을 향해 달리세요.", 24, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
