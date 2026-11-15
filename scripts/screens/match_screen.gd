@@ -805,6 +805,9 @@ func _make_button(font_size: int, height: float, color: Color) -> Button:
 
 func _start_game() -> void:
 	game = Game.new()
+	# 내 파티(0번)에는 장착한 유물의 시작 보너스가 붙는다. 친구 대전은 공평하게 쓰지 않는다.
+	if _mode != "local" and not _parties.is_empty():
+		_parties[0]["relic"] = Profile.current_relic(app.profile, app.eco).get("effect", {})
 	game.setup(_data, _parties)
 	_start_distance = max(game.distance_of(0), 1)
 	for index in 2:

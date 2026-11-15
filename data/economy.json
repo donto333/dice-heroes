@@ -793,5 +793,53 @@
         "gems": 300
       }
     ]
-  }
+  },
+  "relics": [
+    {
+      "id": "banner",
+      "name": "출정의 깃발",
+      "text": "카드 1장을 더 들고 시작",
+      "effect": {
+        "cards": 1
+      },
+      "cost": {
+        "gold": 3000
+      }
+    },
+    {
+      "id": "scroll",
+      "name": "지혜의 두루마리",
+      "text": "어빌리티 게이지 20%로 시작",
+      "effect": {
+        "gauge": 20
+      },
+      "cost": {
+        "gold": 3000
+      }
+    },
+    {
+      "id": "amulet",
+      "name": "수호의 부적",
+      "text": "저주·감옥·판정을 한 번 막는 부적을 들고 시작",
+      "effect": {
+        "charm": true
+      },
+      "cost": {
+        "gems": 200
+      }
+    },
+    {
+      "id": "crown",
+      "name": "영웅의 왕관",
+      "text": "카드 1장 + 게이지 15%로 시작",
+      "effect": {
+        "cards": 1,
+        "gauge": 15
+      },
+      "cost": {
+        "gems": 600
+      }
+    }
+  ],
+  "relics_comment": "유물: 파티에 하나만 장착하는 시작 보너스(모두의 마블의 행운 아이템 자리). effect: cards(시작 카드 추가), gauge(시작 게이지 %), charm(부적). 내 파티에만 적용되고 친구 대전에서는 쓰지 않는다."
 }
