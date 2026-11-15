@@ -44,7 +44,8 @@ func setup(main_app, params: Dictionary) -> void:
 			initial = {"attack": "", "defense": "", "support": ""}
 	else:
 		options["title"] = "%s · 파티 확인" % MODE_TITLES.get(mode, "대전")
-		options["subtitle"] = "이대로 시작하거나 바꿔도 돼요. 바꾼 파티는 저장돼요."
+		var relic: Dictionary = Profile.current_relic(app.profile, app.eco)
+		options["subtitle"] = "이대로 시작하거나 바꿔도 돼요. 바꾼 파티는 저장돼요.\n유물: %s" % ("%s (%s)" % [relic["name"], relic["text"]] if not relic.is_empty() else "없음 · 상점의 유물 상점에서 장착해요")
 		options["confirm_text"] = "대전 시작"
 	# 내 영웅으로 파티를 짤 때만 저장 칸을 보여 준다(친구 대전은 48명을 다 쓰므로 제외).
 	if mode != "local":
