@@ -1306,6 +1306,10 @@ func _test_guide() -> void:
 
 
 func _test_double() -> void:
+	var synergy: Dictionary = _data["rules"]["synergy"]
+	_check(str(Game.synergy_of(synergy, ["영웅", "영웅", "영웅"]).get("name", "")) == "결속", "같은 분류 시너지가 틀림")
+	_check(str(Game.synergy_of(synergy, ["영웅", "위인", "신화"]).get("name", "")) == "조화", "다른 분류 시너지가 틀림")
+	_check(Game.synergy_of(synergy, ["영웅", "영웅", "신화"]).is_empty() and Game.synergy_of(synergy, ["영웅", "", "신화"]).is_empty(), "시너지가 없어야 하는데 있음")
 	_check(absf(Game.win_chance(1, 1, 0, 0) - 0.5) < 0.001 and absf(Game.win_chance(3, 3, 0, 0) - 0.5) < 0.001, "같은 주사위인데 승률이 반반이 아님")
 	_check(Game.win_chance(5, 1, 0, 0) > 0.95 and Game.win_chance(1, 5, 0, 0) < 0.05, "주사위 수 차이가 승률에 안 드러남")
 	_check(Game.win_chance(2, 2, 2, 0) > Game.win_chance(2, 2, 0, 0) and Game.win_chance(1, 1, 0, 6) == 0.0, "보너스가 승률에 안 드러남")
@@ -1420,7 +1424,7 @@ func _test_relics() -> void:
 	var boosted = _new_game(5, parties)
 	_check(boosted.effect_sum(0, "atk_bonus") == plain.effect_sum(0, "atk_bonus") + 1, "유물 공격 보너스가 안 붙음")
 	_check(int(boosted.players[0]["gauge"]["attack"]) == mini(100, int(plain.players[0]["gauge"]["attack"]) + 15), "유물 게이지가 안 참")
-	_check(bool(boosted.players[0]["charm"]) and not bool(boosted.players[1]["charm"]), "유물 부적이 틀림")
+	_check(bool(boosted.players[0]["charm"]) and bool(boosted.players[1]["charm"]) == bool(plain.players[1]["charm"]), "유물 부적이 틀림")
 	_check(boosted.effect_sum(1, "atk_bonus") == plain.effect_sum(1, "atk_bonus"), "상대에게 유물 효과가 붙음")
 	for item in eco["relics"]:
 		_check(not (item["effect"] as Dictionary).is_empty() and not (item["cost"] as Dictionary).is_empty(), "유물 자료가 비어 있음")

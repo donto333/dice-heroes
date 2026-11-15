@@ -3,6 +3,10 @@ extends Control
 ## 소환 포인트(★ 수) 합계가 6을 넘으면 정할 수 없다.
 ## 파티 편성(영웅 화면)과 대전 직전 모두에서 쓴다. 보여 줄 캐릭터 목록과 글자는 setup()의 options로 바꾼다.
 const KitStyle := preload("res://scripts/ui/kit.gd")
+const GameRules := preload("res://scripts/rules/game.gd")
+const GameDataLoader := preload("res://scripts/game_data.gd")
+## data/rules.json의 synergy 표(파티를 고를 때 미리 보여 준다)
+var _synergy_table: Dictionary = GameDataLoader.load_json("res://data/rules.json").get("synergy", {})
 
 signal confirmed(party: Dictionary)
 signal cancelled
@@ -488,4 +492,11 @@ func _refresh() -> void:
 	_points_label.add_theme_color_override("font_color", Color("ff6b6b") if total > POINT_LIMIT else Color.WHITE)
 	if total > POINT_LIMIT:
 		_points_label.text += "  (★가 너무 많아요)"
+	else:
+		# 시너지: 세 명이 같은 분류면 결속, 모두 다르면 조화
+		var categories: Array = []
+		for slot in SLOTS:
+			categories.append(str(_character(party[slot]).get("category", "")))
+		var bonus: Dictionary = GameRules.synergy_of(_synergy_table, categories)
+		_points_label.text += "  ·  시너지: %s" % ("%s (%s)" % [bonus.get("name", ""), bonus.get("text", "")] if not bonus.is_empty() else "없음")
 	_start_button.disabled = not can_start()
