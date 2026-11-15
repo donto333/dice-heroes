@@ -212,8 +212,10 @@ static func spacer(height: float = 0.0, grow: bool = true) -> Control:
 
 
 ## 화면 전체를 덮는 배경과, 여백을 둔 세로 상자를 만들어 붙이고 세로 상자를 돌려준다.
-## 가로 화면: 내용 기둥은 max_width 너비로 가운데에 둔다(0이면 화면 가득).
-static func screen_frame(parent: Control, margin: int = 18, color: Color = BG, max_width: float = 860.0) -> VBoxContainer:
+## 가로 화면: 왼쪽에 세로 메뉴가 들어갈 자리("Dock")를 두고 그 오른쪽에 내용 기둥을 둔다.
+## 아래 메뉴(bottom_nav.gd)는 스스로 이 자리로 옮겨 가 세로 메뉴가 된다.
+## max_width가 0보다 크면 내용 기둥을 그 너비로 가운데에 둔다.
+static func screen_frame(parent: Control, margin: int = 18, color: Color = BG, max_width: float = 0.0) -> VBoxContainer:
 	parent.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if color == BG:
 		parent.add_child(sky())
@@ -228,11 +230,15 @@ static func screen_frame(parent: Control, margin: int = 18, color: Color = BG, m
 	for side in ["left", "right", "top", "bottom"]:
 		frame.add_theme_constant_override("margin_" + side, margin)
 	parent.add_child(frame)
-	var column := vbox(12)
+	var dock := hbox(12)
+	dock.name = "Dock"
+	frame.add_child(dock)
+	var column := vbox(10)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if max_width > 0.0:
 		column.custom_minimum_size = Vector2(max_width, 0)
-		column.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	frame.add_child(column)
+		column.size_flags_horizontal = Control.SIZE_SHRINK_CENTER | Control.SIZE_EXPAND
+	dock.add_child(column)
 	return column
 
 

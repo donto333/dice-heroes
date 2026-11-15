@@ -26,14 +26,18 @@ func setup(active: String, badges: Dictionary) -> void:
 	frame.shadow_size = 6
 	frame.shadow_offset = Vector2(0, 3)
 	add_theme_stylebox_override("panel", Kit.plate(Color("17357f"), Kit.TRIM, 24.0, 10, false))
-	var row := Kit.hbox(6)
+	# 가로 화면: 왼쪽에 세로로 선다.
+	var row := Kit.vbox(6)
 	add_child(row)
+	custom_minimum_size = Vector2(116, 0)
+	size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_dock.call_deferred()
 	for spec in TABS:
 		var screen_name: String = spec[0]
 		var on := screen_name == active
 		var color := Color("ffc62b") if on else Color("2f74d6")
-		var button := Kit.button("", color, 20, 104)
-		Kit.expand(button)
+		var button := Kit.button("", color, 20, 96)
+		button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(_on_pressed.bind(screen_name))
 		row.add_child(button)
 		_buttons[screen_name] = button
@@ -68,6 +72,18 @@ func setup(active: String, badges: Dictionary) -> void:
 		dot.visible = bool(badges.get(screen_name, false))
 		button.add_child(dot)
 		_dots[screen_name] = dot
+
+
+## 화면 틀의 왼쪽 자리("Dock")로 옮겨 가서 세로 메뉴가 된다.
+func _dock() -> void:
+	var column := get_parent()
+	if column == null:
+		return
+	var dock := column.get_parent()
+	if dock != null and dock.name == "Dock":
+		column.remove_child(self)
+		dock.add_child(self)
+		dock.move_child(self, 0)
 
 
 func _on_pressed(screen_name: String) -> void:

@@ -14,7 +14,7 @@ var _warning: Label
 
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
-	var column := Kit.screen_frame(self, 32)
+	var column := Kit.screen_frame(self, 32, Kit.BG, 620.0)
 	var art := Kit.backdrop(self, "ui/title_keyart", 0.55)
 	move_child(art, 1)
 	column.add_child(Kit.spacer(40, false))
