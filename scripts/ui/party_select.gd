@@ -82,11 +82,20 @@ func _build() -> void:
 		margin.add_theme_constant_override("margin_" + side, 18)
 	add_child(margin)
 
+	# 가로 화면: 왼쪽에 내 파티 세 자리와 버튼, 오른쪽에 영웅 목록.
+	var halves := HBoxContainer.new()
+	halves.add_theme_constant_override("separation", 16)
+	margin.add_child(halves)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 12)
-	margin.add_child(column)
+	column.add_theme_constant_override("separation", 8)
+	column.custom_minimum_size = Vector2(520, 0)
+	halves.add_child(column)
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 8)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	halves.add_child(right)
 
-	var title := _label(str(_options.get("title", "파티 편성")), 46, GOLD)
+	var title := _label(str(_options.get("title", "파티 편성")), 38, GOLD)
 	title.add_theme_constant_override("outline_size", 10)
 	title.add_theme_color_override("font_outline_color", Color("5a3a00"))
 	column.add_child(title)
@@ -97,13 +106,13 @@ func _build() -> void:
 	column.add_child(slot_row)
 	for slot in SLOTS:
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0, 236)
+		button.custom_minimum_size = Vector2(0, 216)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		button.pressed.connect(_on_slot_pressed.bind(slot))
 		slot_row.add_child(button)
 		_slot_buttons[slot] = button
-		_slot_parts[slot] = _fill_card(button, 120.0, 18)
+		_slot_parts[slot] = _fill_card(button, 112.0, 16)
 
 	_points_label = _label("", 24, Color.WHITE)
 	column.add_child(_points_label)
@@ -116,14 +125,14 @@ func _build() -> void:
 		preset_row.add_theme_constant_override("separation", 6)
 		column.add_child(preset_row)
 		_save_button = _plain_button("칸에 저장", Color("7a5a1c"))
-		_save_button.custom_minimum_size = Vector2(150, 64)
+		_save_button.custom_minimum_size = Vector2(120, 56)
 		_save_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		_save_button.add_theme_font_size_override("font_size", 20)
 		_save_button.pressed.connect(_on_save_mode_pressed)
 		preset_row.add_child(_save_button)
 		for index in 3:
 			var preset := _plain_button("", Color("2f74d6"))
-			preset.custom_minimum_size = Vector2(0, 64)
+			preset.custom_minimum_size = Vector2(0, 56)
 			preset.add_theme_font_size_override("font_size", 16)
 			preset.clip_text = true
 			preset.pressed.connect(_on_preset_pressed.bind(index))
@@ -133,12 +142,15 @@ func _build() -> void:
 	# 고른 캐릭터의 어빌리티 설명
 	_info_label = _label("캐릭터를 누르면 어빌리티 설명이 여기 나옵니다.", 19, Color(1, 1, 1, 0.8))
 	_info_label.custom_minimum_size = Vector2(0, 56)
+	_info_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_info_label.add_theme_stylebox_override("normal", KitStyle.plate(Color(0.06, 0.08, 0.3, 0.72), Color("8fa6d8"), 14.0, 10, false))
 	column.add_child(_info_label)
 
 	# 분류 탭
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 6)
-	column.add_child(tabs)
+	right.add_child(tabs)
 	for category in ["", "영웅", "위인", "신화", "근현대"]:
 		var tab := Button.new()
 		tab.text = "전체" if category == "" else category
@@ -156,22 +168,22 @@ func _build() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	column.add_child(scroll)
+	right.add_child(scroll)
 	var grid := GridContainer.new()
-	grid.columns = 3
+	grid.columns = 4
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
 	scroll.add_child(grid)
 	for character in characters:
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0, 290)
+		button.custom_minimum_size = Vector2(0, 250)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		button.pressed.connect(_on_character_pressed.bind(character["id"]))
 		grid.add_child(button)
 		_card_buttons[character["id"]] = button
-		var parts := _fill_card(button, 170.0, 17)
+		var parts := _fill_card(button, 138.0, 15)
 		parts["text"].text = _card_text(character)
 		parts["portrait"].show_character(character, CATEGORY_COLORS.get(character["category"], Color("8fd0ff")))
 		_card_parts[character["id"]] = parts
@@ -245,9 +257,9 @@ func _box(fill: Color, border: Color, width: int) -> StyleBoxFlat:
 func _plain_button(text: String, color: Color) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(0, 96)
+	button.custom_minimum_size = Vector2(0, 72)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", 30)
+	button.add_theme_font_size_override("font_size", 24)
 	button.add_theme_color_override("font_color", Color.WHITE)
 	button.add_theme_color_override("font_hover_color", Color.WHITE)
 	button.add_theme_color_override("font_pressed_color", Color.WHITE)

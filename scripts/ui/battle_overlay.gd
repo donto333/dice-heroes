@@ -30,7 +30,7 @@ func _ready() -> void:
 	visible = false
 
 	var dim := ColorRect.new()
-	dim.color = Color(0.02, 0.1, 0.28, 0.72)
+	dim.color = Color(0.02, 0.02, 0.1, 0.74)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
@@ -41,34 +41,26 @@ func _ready() -> void:
 	add_child(center)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(660, 0)
+	panel.custom_minimum_size = Vector2(880, 0)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color("1f66c8")
-	box.border_color = Color.WHITE
-	box.set_border_width_all(5)
-	box.shadow_color = Color(0, 0.05, 0.2, 0.5)
-	box.shadow_size = 12
-	box.set_corner_radius_all(30)
-	box.set_content_margin_all(20)
-	panel.add_theme_stylebox_override("panel", box)
+	# 원작처럼 창 없이 판 위에서 바로 싸운다(뒤의 판은 어둡게만 한다).
+	panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	center.add_child(panel)
 
-	# 결투장 바탕 그림(assets/art/ui/battle_bg.jpg). 글자가 잘 보이게 어둡게 덮는다.
-	var arena := ArtView.new()
-	arena.show_art("ui/battle_bg")
-	arena.focus_y = 0.5
-	arena.shade = Color(0.02, 0.1, 0.3, 0.45)
-	panel.add_child(arena)
-
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 14)
+	column.add_theme_constant_override("separation", 6)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(column)
 
-	_title = _label("BATTLE", 64, GOLD)
+	_title = _label("BATTLE", 50, GOLD)
 	_title.add_theme_constant_override("outline_size", 10)
 	_title.add_theme_color_override("font_outline_color", Color("5a3a00"))
+	var battle_logo: Texture2D = GameData.logo("battle")
+	if battle_logo != null:
+		# 입체 로고가 있으면 글자는 비우고 그 자리에 그림을 얹는다.
+		_title.text = " "
+		_title.custom_minimum_size = Vector2(0, 96)
+		_title.add_child(_picture(battle_logo))
 	column.add_child(_title)
 
 	var row := HBoxContainer.new()
@@ -78,22 +70,29 @@ func _ready() -> void:
 	for side in 2:
 		var side_box := VBoxContainer.new()
 		side_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		side_box.add_theme_constant_override("separation", 6)
+		side_box.add_theme_constant_override("separation", 2)
 		side_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var role := _label("", 22, Color.WHITE)
 		var portrait_holder := CenterContainer.new()
 		portrait_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var portrait := Portrait.new()
-		portrait.custom_minimum_size = Vector2(170, 170)
+		portrait.custom_minimum_size = Vector2(150, 150)
 		portrait_holder.add_child(portrait)
 		# 입체 모형이 있으면 초상화 대신 모형이 결투장에 선다.
 		var figure := TextureRect.new()
-		figure.custom_minimum_size = Vector2(230, 230)
+		figure.custom_minimum_size = Vector2(190, 190)
 		figure.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		figure.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		figure.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		figure.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		figure.visible = false
+		# 받침대는 모형보다 먼저 넣어 모형 발밑에 깔리게 한다.
+		var pedestal := Control.new()
+		pedestal.custom_minimum_size = Vector2(190, 190)
+		pedestal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pedestal.draw.connect(_draw_pedestal.bind(pedestal))
+		pedestal.visible = false
+		portrait_holder.add_child(pedestal)
 		portrait_holder.add_child(figure)
 		# 승패가 갈리면 그림 위에 도장처럼 찍히는 글자
 		var stamp := _label("", 58, WIN_COLOR)
@@ -102,7 +101,7 @@ func _ready() -> void:
 		stamp.visible = false
 		portrait_holder.add_child(stamp)
 		var who := _label("", 30, Color.WHITE)
-		var total := _label("00", 76, Color.WHITE)
+		var total := _label("00", 60, Color.WHITE)
 		total.add_theme_constant_override("outline_size", 8)
 		total.add_theme_color_override("font_outline_color", Color.BLACK)
 		var dice_holder := CenterContainer.new()
@@ -118,20 +117,37 @@ func _ready() -> void:
 		side_box.add_child(dice_holder)
 		side_box.add_child(bonus)
 		row.add_child(side_box)
-		_sides.append({"role": role, "portrait": portrait, "who": who, "total": total, "dice": dice, "bonus": bonus, "stamp": stamp, "figure": figure})
+		_sides.append({"role": role, "portrait": portrait, "who": who, "total": total, "dice": dice, "bonus": bonus, "stamp": stamp, "figure": figure, "pedestal": pedestal})
 		if side == 0:
 			var versus := _label("VS", 48, LOSE_COLOR)
 			versus.add_theme_constant_override("outline_size", 8)
 			versus.add_theme_color_override("font_outline_color", Color.BLACK)
+			var vs_logo: Texture2D = GameData.logo("vs")
+			if vs_logo != null:
+				versus.text = " "
+				versus.custom_minimum_size = Vector2(130, 110)
+				versus.add_child(_picture(vs_logo))
 			versus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			row.add_child(versus)
 
-	_verdict = _label("", 44, Color.WHITE)
+	_verdict = _label("", 36, Color.WHITE)
 	_verdict.add_theme_constant_override("outline_size", 8)
 	_verdict.add_theme_color_override("font_outline_color", Color.BLACK)
 	column.add_child(_verdict)
 	_hint = _label("화면을 누르면 넘어갑니다", 18, Color(1, 1, 1, 0.45))
 	column.add_child(_hint)
+
+
+## 글자 칸을 꽉 채우는 로고 그림
+func _picture(texture: Texture2D) -> TextureRect:
+	var picture := TextureRect.new()
+	picture.texture = texture
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	picture.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	picture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	return picture
 
 
 func _label(text: String, font_size: int, color: Color) -> Label:
@@ -339,6 +355,13 @@ func _stamp(side: Dictionary, text: String, color: Color, tilt: float) -> void:
 	var stamp: Label = side["stamp"]
 	stamp.text = text
 	stamp.add_theme_color_override("font_color", color)
+	for old in stamp.get_children():
+		old.queue_free()
+	var stamp_logo: Texture2D = GameData.logo(text.to_lower())
+	if stamp_logo != null:
+		stamp.text = " "
+		stamp.custom_minimum_size = Vector2(210, 110)
+		stamp.add_child(_picture(stamp_logo))
 	stamp.visible = true
 	stamp.pivot_offset = stamp.size / 2.0
 	stamp.rotation = tilt
@@ -347,6 +370,25 @@ func _stamp(side: Dictionary, text: String, color: Color, tilt: float) -> void:
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(stamp, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(stamp, "modulate:a", 1.0, 0.1)
+
+
+## 모형 발밑의 돌 받침대(납작한 원기둥)와 그림자.
+func _draw_pedestal(figure: Control) -> void:
+	var stone: Texture2D = GameData.object("pedestal_green" if figure == _sides[0]["pedestal"] else "pedestal_red") if not _sides.is_empty() else null
+	if stone != null:
+		var stone_wide := figure.size.x * 1.15
+		var stone_tall := stone_wide * float(stone.get_height()) / float(stone.get_width())
+		figure.draw_texture_rect(stone, Rect2((figure.size.x - stone_wide) * 0.5, figure.size.y - stone_tall * 0.52, stone_wide, stone_tall), false)
+		return
+	var foot := Vector2(figure.size.x * 0.5, figure.size.y - 6.0)
+	var wide := figure.size.x * 0.46
+	figure.draw_set_transform(foot + Vector2(0, 16), 0.0, Vector2(1.0, 0.3))
+	figure.draw_circle(Vector2.ZERO, wide * 1.12, Color(0, 0, 0, 0.4))
+	figure.draw_circle(Vector2.ZERO, wide, Color("3c4a3a"))
+	figure.draw_set_transform(foot, 0.0, Vector2(1.0, 0.3))
+	figure.draw_circle(Vector2.ZERO, wide, Color("7d9a6a"))
+	figure.draw_arc(Vector2.ZERO, wide * 0.82, 0.0, TAU, 36, Color("c9e0a8"), 4.0)
+	figure.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 ## 이 쪽에서 움직이는 그림(모형이 있으면 모형, 없으면 초상화)
@@ -360,6 +402,7 @@ func _show_portrait(side: Dictionary, character: Dictionary, fallback_name: Stri
 	var model: Texture2D = GameData.enemy_standee(fallback_name) if character.is_empty() else GameData.standee(str(character.get("id", "")))
 	figure.texture = model
 	figure.visible = model != null
+	side["pedestal"].visible = model != null
 	figure.modulate = Color.WHITE
 	# 영웅 모형은 오른쪽을, 적 모형은 왼쪽을 본다. 서로 마주 보게 뒤집는다.
 	var on_right: bool = side == _sides[1]

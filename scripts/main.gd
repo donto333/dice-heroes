@@ -31,7 +31,12 @@ const SCREENS := {
 	"adventure": preload("res://scripts/screens/adventure_screen.gd"),
 	"pass": preload("res://scripts/screens/pass_screen.gd"),
 }
-const VERSION := "0.14.0"
+## 화면마다 다른 판 색(분위기): 상점은 보라, 영웅은 짙은 남색, 미션은 나무색, 설정은 청록, 모험은 숲색, 패스는 자주.
+const SCREEN_MOODS := {
+	"lobby": Color("3b2f9e"), "shop": Color("5a2a9a"), "heroes": Color("1f3a82"), "missions": Color("7a4a22"),
+	"settings": Color("1a6470"), "adventure": Color("2c6a3c"), "pass": Color("7a2a6a"), "help": Color("1a6470"),
+}
+const VERSION := "0.15.0"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -197,6 +202,7 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 	refresh_day()
 	if current_screen != null:
 		current_screen.queue_free()
+	Kit.panel_tint = SCREEN_MOODS.get(screen_name, Kit.PANEL)
 	var screen = SCREENS[screen_name].new()
 	current_name = screen_name
 	current_screen = screen

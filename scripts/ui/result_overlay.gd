@@ -10,6 +10,7 @@ const Kit := preload("res://scripts/ui/kit.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const Confetti := preload("res://scripts/ui/confetti.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
+const GameData := preload("res://scripts/game_data.gd")
 
 const GOLD := Color("ffcf4d")
 const WIN_COLOR := Color("7ee081")
@@ -27,6 +28,7 @@ var _mvp_name: Label
 var _mvp_note: Label
 var _chips: HFlowContainer
 ## 승리·패배 그림(assets/art/ui/victory.jpg, defeat.jpg)
+var _logo: TextureRect = null
 var _banner: Control
 
 
@@ -50,29 +52,31 @@ func _ready() -> void:
 	add_child(center)
 
 	_panel = PanelContainer.new()
-	_panel.custom_minimum_size = Vector2(620, 0)
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color("1f66c8")
-	box.border_color = Color.WHITE
-	box.set_border_width_all(5)
-	box.shadow_color = Color(0, 0.05, 0.2, 0.5)
-	box.shadow_size = 12
-	box.set_corner_radius_all(30)
-	box.set_content_margin_all(28)
-	_panel.add_theme_stylebox_override("panel", box)
+	_panel.custom_minimum_size = Vector2(1080, 0)
+	_panel.add_theme_stylebox_override("panel", Kit.plate(Color("2a2f9c"), Kit.TRIM, 28.0, 24))
 	center.add_child(_panel)
 
+	# 가로 화면: 왼쪽에 결과·MVP·보상, 오른쪽에 자세한 기록과 버튼.
+	var halves := HBoxContainer.new()
+	halves.add_theme_constant_override("separation", 24)
+	_panel.add_child(halves)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 16)
-	_panel.add_child(column)
+	column.add_theme_constant_override("separation", 10)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	halves.add_child(column)
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 12)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.alignment = BoxContainer.ALIGNMENT_END
+	halves.add_child(right)
 
 	_banner = ArtView.new()
-	_banner.custom_minimum_size = Vector2(0, 210)
+	_banner.custom_minimum_size = Vector2(0, 150)
 	_banner.focus_y = 0.45
 	_banner.fade_bottom = 0.35
 	_banner.visible = false
 	column.add_child(_banner)
-	_title = _label(84)
+	_title = _label(60)
 	_title.add_theme_constant_override("outline_size", 12)
 	_title.add_theme_color_override("font_outline_color", Color.BLACK)
 	column.add_child(_title)
@@ -90,7 +94,7 @@ func _ready() -> void:
 	_mvp_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_child(_mvp_row)
 	_mvp_face = Portrait.new()
-	_mvp_face.custom_minimum_size = Vector2(150, 150)
+	_mvp_face.custom_minimum_size = Vector2(104, 104)
 	_mvp_face.border = GOLD
 	_mvp_face.border_width = 4.0
 	_mvp_row.add_child(_mvp_face)
@@ -118,16 +122,18 @@ func _ready() -> void:
 	_details.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_details.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 	_details.add_theme_constant_override("line_spacing", 6)
-	column.add_child(_details)
+	_details.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_details.add_theme_stylebox_override("normal", Kit.plate(Color(0.05, 0.06, 0.28, 0.7), Color("8fa6d8"), 14.0, 14, false))
+	right.add_child(_details)
 
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
-	column.add_child(buttons)
-	var change := Kit.button("로비로", Color("6f9bd6"), 28, 92)
+	right.add_child(buttons)
+	var change := Kit.button("로비로", Color("6f9bd6"), 26, 76)
 	change.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	change.pressed.connect(_on_change_pressed)
 	buttons.add_child(change)
-	var again := Kit.button("다시 하기", Color("e8890c"), 30, 92)
+	var again := Kit.button("다시 하기", Color("e8890c"), 28, 76)
 	_again = again
 	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.size_flags_stretch_ratio = 1.5
@@ -146,7 +152,7 @@ func _label(font_size: int) -> Label:
 func _button(text: String, color: Color) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(0, 90)
+	button.custom_minimum_size = Vector2(0, 70)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", 28)
 	button.add_theme_color_override("font_color", Color.WHITE)
@@ -190,6 +196,24 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 		_confetti.stop()
 	_banner.show_art("ui/defeat" if outcome == "lose" else "ui/victory")
 	_banner.visible = _banner.has_art()
+	# 배너 위에 입체 로고(VICTORY·DEFEAT·DRAW)를 얹는다.
+	var logo_name := "victory" if outcome == "win" else ("defeat" if outcome == "lose" else "draw")
+	var logo_texture: Texture2D = GameData.logo(logo_name)
+	if _logo == null:
+		_logo = TextureRect.new()
+		_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_logo.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		_logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_logo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_logo.offset_top = 14
+		_logo.offset_bottom = -14
+		_banner.add_child(_logo)
+	_logo.texture = logo_texture
+	if logo_texture != null and _banner.visible:
+		_logo.pivot_offset = _logo.size * 0.5
+		_logo.scale = Vector2(0.3, 0.3)
+		_logo.create_tween().tween_property(_logo, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	match outcome:
 		"win":
 			_title.text = "승리!"

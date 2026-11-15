@@ -47,6 +47,10 @@ var _choosing_path := false
 var _status_label: Label
 var _board_view: Control
 var _result_box: VBoxContainer
+var _result_panel: PanelContainer
+var _roll_art: TextureRect = null
+var _roll_caption: Label = null
+var _log_tween: Tween
 var _ability_buttons: Dictionary = {}
 var _card_buttons: Array = []
 var _roll_button: Button
@@ -170,56 +174,48 @@ func _build_ui() -> void:
 	add_child(background)
 	add_child(Kit.sky())
 
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 14)
-	add_child(margin)
-
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	margin.add_child(column)
+	# 가로 화면: 판이 화면 전체를 차지하고, 모든 정보는 판 위 모서리에 얹는다.
+	var column := Control.new()
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(column)
 
 	var status_row := HBoxContainer.new()
 	status_row.add_theme_constant_override("separation", 8)
-	column.add_child(status_row)
-	_status_label = _make_label(20)
-	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_status_label = _make_label(18)
+	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	status_row.add_child(_status_label)
-	_auto_button = Kit.button("자동 꺼짐", Color("6f9bd6"), 20, 56)
-	_auto_button.custom_minimum_size = Vector2(110, 56)
+	_status_label.add_theme_constant_override("outline_size", 6)
+	_status_label.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
+	_auto_button = Kit.button("자동 꺼짐", Color("6f9bd6"), 18, 50)
+	_auto_button.custom_minimum_size = Vector2(104, 50)
 	_auto_button.pressed.connect(_on_auto_pressed)
 	status_row.add_child(_auto_button)
-	_speed_button = Kit.button("", Color("27a35a"), 20, 56)
-	_speed_button.custom_minimum_size = Vector2(110, 56)
+	_speed_button = Kit.button("", Color("27a35a"), 18, 50)
+	_speed_button.custom_minimum_size = Vector2(104, 50)
 	_speed_button.pressed.connect(_on_speed_pressed)
 	status_row.add_child(_speed_button)
 	_apply_speed()
-	var quit_button := Kit.button("나가기", Color("e0532b"), 20, 56)
-	quit_button.custom_minimum_size = Vector2(110, 56)
+	var quit_button := Kit.button("나가기", Color("e0532b"), 18, 50)
+	quit_button.custom_minimum_size = Vector2(96, 50)
 	quit_button.pressed.connect(_on_quit_pressed)
 	status_row.add_child(quit_button)
 
 	# 모두의 마블처럼 판이 화면 대부분을 차지하고,
 	# 플레이어 정보판은 판 모서리(상대 왼쪽 위, 나 왼쪽 아래), 큰 주사위 버튼은 오른쪽 아래에 얹는다.
 	var board_area := Control.new()
-	board_area.custom_minimum_size = Vector2(0, 420)
-	board_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	board_area.size_flags_stretch_ratio = 4.0
+	board_area.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	column.add_child(board_area)
 	_board_view = BoardView.new()
 	_board_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_board_view.pad_top = 100.0
-	_board_view.pad_bottom = 110.0
+	_board_view.pad_top = 110.0
+	_board_view.pad_bottom = 140.0
 	_board_view.pad_left = 112.0
 	board_area.add_child(_board_view)
 	for index in 2:
 		var card := _player_card(index)
 		board_area.add_child(card)
 		card.anchor_left = 0.0
-		card.anchor_right = 0.56
+		card.anchor_right = 0.0
 		if index == 1:
 			card.anchor_top = 0.0
 			card.anchor_bottom = 0.0
@@ -231,7 +227,7 @@ func _build_ui() -> void:
 			card.offset_top = -92
 			card.offset_bottom = -8
 		card.offset_left = 8
-		card.offset_right = 0
+		card.offset_right = 400
 		_ignore_mouse(card)
 
 	_big_dice = BigDice.new()
@@ -263,11 +259,34 @@ func _build_ui() -> void:
 	_roll_button.offset_top = -172
 	_roll_button.offset_bottom = -12
 
+	# 위 가운데: 턴 정보 한 줄과 반투명 기록 칸. 오른쪽 위: 자동·빠르기·나가기.
+	board_area.add_child(_status_label)
+	_status_label.anchor_left = 0.0
+	_status_label.anchor_right = 1.0
+	_status_label.offset_left = 416
+	_status_label.offset_right = -336
+	_status_label.offset_top = 6
+	_status_label.offset_bottom = 54
+	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board_area.add_child(status_row)
+	status_row.anchor_left = 1.0
+	status_row.anchor_right = 1.0
+	status_row.offset_left = -328
+	status_row.offset_right = -8
+	status_row.offset_top = 8
+	status_row.offset_bottom = 58
 	var result_panel := PanelContainer.new()
-	# 기록 칸은 높이를 고정한다. 내용이 넘치면 안에서 스크롤되어 판이 줄어들지 않는다.
-	result_panel.custom_minimum_size = Vector2(0, 132)
-	result_panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.2, 0.46, 0.94), Color("8fd0ff"), 3))
-	column.add_child(result_panel)
+	# 기록 칸은 작고 반투명하게. 내용이 넘치면 안에서 스크롤된다.
+	result_panel.add_theme_stylebox_override("panel", Kit.plate(Color(0.07, 0.1, 0.34, 0.8), Kit.TRIM, 16.0, 10, false))
+	board_area.add_child(result_panel)
+	_result_panel = result_panel
+	result_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	result_panel.anchor_left = 0.0
+	result_panel.anchor_right = 1.0
+	result_panel.offset_left = 416
+	result_panel.offset_right = -336
+	result_panel.offset_top = 56
+	result_panel.offset_bottom = 140
 	_result_scroll = ScrollContainer.new()
 	_result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	result_panel.add_child(_result_scroll)
@@ -278,9 +297,18 @@ func _build_ui() -> void:
 
 	var ability_row := HBoxContainer.new()
 	ability_row.add_theme_constant_override("separation", 8)
-	column.add_child(ability_row)
+	board_area.add_child(ability_row)
+	ability_row.anchor_left = 0.0
+	ability_row.anchor_right = 1.0
+	ability_row.anchor_top = 1.0
+	ability_row.anchor_bottom = 1.0
+	ability_row.anchor_left = 1.0
+	ability_row.offset_left = -190 - 3 * 176
+	ability_row.offset_right = -190
+	ability_row.offset_top = -112
+	ability_row.offset_bottom = -6
 	for slot in Game.SLOTS:
-		var button := _make_button(16, 142, SLOT_COLORS[slot])
+		var button := _make_button(16, 104, SLOT_COLORS[slot])
 		button.pressed.connect(_on_ability_pressed.bind(slot))
 		# 광택 스킬 버튼: 못 쓸 때도 자리 색이 어둡게 남고, 쓸 수 있으면 금색 테가 빛나며 빛이 훑고 지나간다.
 		Kit.paint(button, SLOT_COLORS[slot])
@@ -413,7 +441,7 @@ func _refresh_player_cards() -> void:
 		parts["detail"].text = "골까지 %d칸 · 카드 %d%s" % [game.distance_of(index), player["hand"].size(), ("  " + " ".join(flags)) if not flags.is_empty() else ""]
 		var current: bool = game.current == index and game.winner < 0
 		var edge: Color = PLAYER_TEXT_COLORS[index] if current else Color("8fd0ff")
-		parts["panel"].add_theme_stylebox_override("panel", _box(Color("164c9e") if current else Color("2a8be6"), edge, 3 if current else 1))
+		parts["panel"].add_theme_stylebox_override("panel", Kit.plate(Color("243a9c") if current else Color(0.1, 0.16, 0.42, 0.86), edge if current else Color("8fa6d8"), 16.0, 8, false))
 
 
 ## 칸 효과를 보드 위에 크게 띄운다. 좋은 일은 금색, 나쁜 일은 붉은색.
@@ -500,7 +528,7 @@ func _show_tile(event: Dictionary) -> void:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var color := Color("ffcf4d") if good else Color("ff6b6b")
-	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.24, 0.52, 0.95), color, 4))
+	panel.add_theme_stylebox_override("panel", Kit.plate(Color(0.12, 0.16, 0.5, 0.96), color, 20.0, 14))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -582,7 +610,7 @@ func _hint(key: String, text: String) -> bool:
 	if _hint_bubble != null and is_instance_valid(_hint_bubble):
 		_hint_bubble.queue_free()
 	var bubble := PanelContainer.new()
-	bubble.add_theme_stylebox_override("panel", _box(Color(0.06, 0.24, 0.52, 0.96), Color("ffcf4d"), 3))
+	bubble.add_theme_stylebox_override("panel", Kit.plate(Color(0.12, 0.16, 0.5, 0.97), Kit.TRIM, 20.0, 14))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	bubble.add_child(row)
@@ -760,7 +788,7 @@ func _build_emotes(board_area: Control) -> void:
 	toggle.offset_bottom = 38
 	toggle.pressed.connect(_toggle_emotes)
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.24, 0.52, 0.95), Color.WHITE, 3))
+	panel.add_theme_stylebox_override("panel", Kit.plate(Color(0.12, 0.16, 0.5, 0.96), Kit.TRIM, 18.0, 12))
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 8)
@@ -849,7 +877,45 @@ func _make_round_button() -> Button:
 	button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.6))
 	button.add_theme_constant_override("outline_size", 6)
 	button.add_theme_color_override("font_outline_color", Color(1, 1, 1, 0.85))
+	var crystal: Texture2D = GameData.object("roll_button")
+	if crystal != null:
+		# 원작처럼 판 위에 놓인 입체 굴리기 버튼. 상태 글자는 버튼 아래 작은 띠에 따로 쓴다.
+		gloss.visible = false
+		_roll_art = TextureRect.new()
+		_roll_art.texture = crystal
+		_roll_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_roll_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_roll_art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		_roll_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_roll_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_roll_art.offset_bottom = -22
+		button.add_child(_roll_art)
+		_roll_caption = _make_label(18)
+		_roll_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_roll_caption.add_theme_constant_override("outline_size", 7)
+		_roll_caption.add_theme_color_override("font_outline_color", Color("0a1a4a"))
+		_roll_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_roll_caption.anchor_left = 0.0
+		_roll_caption.anchor_right = 1.0
+		_roll_caption.anchor_top = 1.0
+		_roll_caption.anchor_bottom = 1.0
+		_roll_caption.offset_top = -30
+		_roll_caption.offset_bottom = 0
+		button.add_child(_roll_caption)
+		# 누르거나 꺼지면 수정 그림도 따라 바뀐다.
+		button.draw.connect(func() -> void:
+			var down := button.get_draw_mode() == BaseButton.DRAW_PRESSED or button.get_draw_mode() == BaseButton.DRAW_HOVER_PRESSED
+			_roll_art.modulate = Color(0.5, 0.52, 0.62) if button.disabled else Color.WHITE
+			_roll_art.offset_top = 8.0 if down else 0.0)
 	return button
+
+
+## 굴리기 버튼의 상태 글자. 입체 버튼 그림을 쓸 때는 버튼 아래 작은 띠에 한 줄로 쓴다.
+func _set_roll_text(text: String) -> void:
+	if _roll_caption != null:
+		_roll_caption.text = text.replace("\n", " ")
+	else:
+		_roll_button.text = text
 
 
 func _chunky(style: StyleBoxFlat, bottom: int) -> StyleBoxFlat:
@@ -953,6 +1019,9 @@ func _start_game() -> void:
 	for index in 2:
 		_board_view.piece_textures[index] = GameData.portrait(str(game.char_of(index, "attack").get("id", "")))
 		_board_view.piece_standees[index] = GameData.standee(str(game.char_of(index, "attack").get("id", "")))
+		_board_view.party_standees[index] = [
+			GameData.standee(str(game.char_of(index, "defense").get("id", ""))),
+			GameData.standee(str(game.char_of(index, "support").get("id", "")))]
 	game.take_events()
 	_board_view.game = game
 	_board_view.reset_pieces()
@@ -1360,6 +1429,7 @@ func _show_battle(event: Dictionary) -> void:
 	var who := int(event["player"])
 	var other := 1 - who
 	if str(event.get("target", "")) == "ambush":
+		_hide_log()
 		await _battle_overlay.play(event, {
 			"boss_name": _goal_name(),
 			"attacker_side": "습격 · 몬스터",
@@ -1398,6 +1468,7 @@ func _show_battle(event: Dictionary) -> void:
 	info["boss_name"] = _goal_name()
 	info["attacker_character"] = _character_named(str(event["attacker"]))
 	info["defender_character"] = _character_named(str(event["defender"]))
+	_hide_log()
 	await _battle_overlay.play(event, info)
 	_add_battle_result(event)
 	_ai_reacts(not bool(info["good_for_me"]))
@@ -1416,7 +1487,28 @@ func _clear_results() -> void:
 		child.queue_free()
 
 
+## 기록 칸은 새 소식이 있을 때만 또렷해지고, 잠시 뒤 흐려져 판을 가리지 않는다.
+func _flash_log() -> void:
+	if _result_panel == null:
+		return
+	if _log_tween != null and _log_tween.is_valid():
+		_log_tween.kill()
+	_result_panel.modulate.a = 1.0
+	_log_tween = _result_panel.create_tween()
+	_log_tween.tween_interval(3.2)
+	_log_tween.tween_property(_result_panel, "modulate:a", 0.0, 0.8)
+
+
+## 전투처럼 화면 가운데를 쓰는 연출 동안은 기록 칸을 바로 숨긴다.
+func _hide_log() -> void:
+	if _log_tween != null and _log_tween.is_valid():
+		_log_tween.kill()
+	if _result_panel != null:
+		_result_panel.modulate.a = 0.0
+
+
 func _trim_results() -> void:
+	_flash_log()
 	var children := _result_box.get_children().filter(func(node): return not node.is_queued_for_deletion())
 	while children.size() > MAX_RESULT_BLOCKS + 2:
 		children.pop_front().queue_free()
@@ -1722,9 +1814,9 @@ func _refresh() -> void:
 		var ability: Dictionary = game.ability_of(viewer, slot)
 		var is_ready: bool = _waiting_for_player and game.can_use_ability(slot)
 		var gauge_text := "[사용 가능]" if is_ready else "%d%%" % int(me["gauge"][slot])
-		button.text = "%s %s\n%s %s\n%s" % [
-			Game.SLOT_LABELS[slot], character["name"],
-			ability.get("name", "-"), gauge_text, ability.get("text", "")]
+		# 버튼에는 이름과 게이지만. 설명은 버튼을 길게 눌러 보는 대신 쓸 때 알림으로 나온다.
+		button.text = "%s\n%s\n%s" % [Game.SLOT_LABELS[slot], ability.get("name", "-"), gauge_text]
+		button.tooltip_text = str(ability.get("text", ""))
 		button.disabled = not is_ready
 		_ability_gauges[slot].value = clampf(float(me["gauge"][slot]) / 100.0, 0.0, 1.0)
 		var portrait = _ability_portraits[slot]
@@ -1747,16 +1839,16 @@ func _refresh() -> void:
 			button.visible = false
 
 	if game.winner >= 0:
-		_roll_button.text = "결과\n보기"
+		_set_roll_text("결과\n보기")
 		_roll_button.disabled = false
 	elif _choosing_path:
-		_roll_button.text = "길을\n고르세요"
+		_set_roll_text("길을\n고르세요")
 		_roll_button.disabled = true
 	elif _waiting_for_player:
-		_roll_button.text = "주사위\n굴리기"
+		_set_roll_text("주사위\n굴리기")
 		_roll_button.disabled = false
 	else:
-		_roll_button.text = "AI\n차례" if not _humans[game.current] else "진행\n중..."
+		_set_roll_text("AI\n차례" if not _humans[game.current] else "진행\n중...")
 		_roll_button.disabled = true
 
 	var lines: Array = game.messages.slice(max(0, game.messages.size() - LOG_LINES))

@@ -22,19 +22,18 @@ func setup(main_app) -> void:
 	frame.shadow_color = Color(0, 0.05, 0.2, 0.4)
 	frame.shadow_size = 6
 	frame.shadow_offset = Vector2(0, 3)
-	add_theme_stylebox_override("panel", frame)
-	Kit.sheen(self, 22)
+	add_theme_stylebox_override("panel", Kit.plate(Color("17357f"), Kit.TRIM, 24.0, 10, false))
 	var row := Kit.hbox(12)
 	add_child(row)
 	_avatar = Portrait.new()
-	_avatar.custom_minimum_size = Vector2(84, 84)
+	_avatar.custom_minimum_size = Vector2(58, 58)
 	_avatar.border_width = 4.0
 	_avatar.border = Kit.GOLD
 	row.add_child(_avatar)
-	var info := Kit.vbox(4)
+	var info := Kit.vbox(0)
 	Kit.expand(info)
 	row.add_child(info)
-	_name = Kit.label("", 26)
+	_name = Kit.label("", 22)
 	info.add_child(_name)
 	var level_row := Kit.hbox(8)
 	info.add_child(level_row)
@@ -44,7 +43,7 @@ func setup(main_app) -> void:
 	_exp_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	Kit.expand(_exp_bar)
 	level_row.add_child(_exp_bar)
-	var money := Kit.vbox(4)
+	var money := Kit.hbox(8)
 	row.add_child(money)
 	_gold = _chip(money, "gold", Kit.GOLD)
 	_gems = _chip(money, "gem", Kit.GEM)

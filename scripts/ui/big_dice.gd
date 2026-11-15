@@ -12,6 +12,7 @@ const PIPS := {
 	6: [Vector2(0.27, 0.25), Vector2(0.73, 0.25), Vector2(0.27, 0.5), Vector2(0.73, 0.5), Vector2(0.27, 0.75), Vector2(0.73, 0.75)],
 }
 const DiePreview := preload("res://scripts/ui/die_preview.gd")
+const GameData := preload("res://scripts/game_data.gd")
 const ROLL_TIME := 0.95
 const HOLD_TIME := 0.6
 const FADE_TIME := 0.2
@@ -42,8 +43,8 @@ func _ready() -> void:
 	_caption = _label(26)
 	_caption.anchor_top = 0.5
 	_caption.anchor_bottom = 0.5
-	_caption.offset_top = -166
-	_caption.offset_bottom = -126
+	_caption.offset_top = -250
+	_caption.offset_bottom = -210
 	add_child(_caption)
 	_total = _label(64)
 	_total.anchor_top = 0.5
@@ -139,12 +140,7 @@ func _draw() -> void:
 	if _rolls.is_empty():
 		return
 	var count := _rolls.size()
-	# 주사위에 눈이 가도록 가운데를 살짝 어둡게(위아래로 번지는 띠)
-	var dim := minf(_t * 4.0, 1.0) * 0.34
-	var band := Rect2(0, size.y * 0.5 - 190.0, size.x, 380.0)
-	draw_rect(band, Color(0, 0.02, 0.1, dim))
-	draw_rect(Rect2(band.position - Vector2(0, 26), Vector2(size.x, 26)), Color(0, 0.02, 0.1, dim * 0.5))
-	draw_rect(Rect2(Vector2(0, band.end.y), Vector2(size.x, 26)), Color(0, 0.02, 0.1, dim * 0.5))
+	# 판을 가리지 않는다. 주사위는 판 위에서 바로 구른다(바닥에 그림자만 드리운다).
 	if not _playing:
 		# 멈춘 주사위 뒤에서 도는 빛살과 퍼지는 고리
 		for index in count:
@@ -181,11 +177,36 @@ func _draw() -> void:
 		if not _playing:
 			# 멈추는 순간 통 하고 커졌다 돌아온다.
 			scale_now = 1.0 + 0.22 * maxf(1.0 - _settle / 0.2, 0.0)
-		draw_set_transform(ground + Vector2(0, DIE * 0.5), 0.0, Vector2(1.0, 0.35))
-		draw_circle(Vector2.ZERO, DIE * 0.5 * (1.0 - hop / 400.0), Color(0, 0, 0, 0.35))
+		draw_set_transform(ground + Vector2(DIE * 0.12, DIE * 0.55), 0.0, Vector2(1.0, 0.38))
+		draw_circle(Vector2.ZERO, DIE * 0.62 * (1.0 - hop / 400.0), Color(0, 0, 0, 0.22))
+		draw_circle(Vector2.ZERO, DIE * 0.48 * (1.0 - hop / 400.0), Color(0, 0, 0, 0.3))
 		draw_set_transform(ground - Vector2(0, hop), float(pose[2]), Vector2(scale_now, scale_now))
 		DiePreview.draw_die(self, DIE, clampi(int(_faces[index]), 1, 6), skin)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if not _playing and _total.text != "":
+		# 합계 글자 뒤의 금색 원판(모두의 마블의 합계 표시처럼) 둘레로 작은 빛 알이 돈다.
+		var badge := Vector2(size.x * 0.5, size.y * 0.5 - DIE * 1.35)
+		var pop := 1.0 + 0.2 * maxf(1.0 - _settle / 0.2, 0.0)
+		var medal: Texture2D = GameData.object("total_badge")
+		if medal != null:
+			var medal_size := 150.0 * pop
+			draw_set_transform(badge, _settle * 0.6, Vector2.ONE)
+			draw_texture_rect(medal, Rect2(-medal_size / 2.0, -medal_size / 2.0, medal_size, medal_size), false)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		else:
+			draw_circle(badge, 50.0 * pop, Color("7a4a00"))
+			draw_circle(badge, 45.0 * pop, Color("ffc62b"))
+			draw_circle(badge + Vector2(0, -8), 36.0 * pop, Color(1, 1, 1, 0.22))
+		for spark in 10:
+			var angle := _settle * 1.8 + TAU * spark / 10.0
+			draw_circle(badge + Vector2(cos(angle), sin(angle)) * 60.0, 4.0, Color(1, 0.97, 0.7, 0.9))
+		var sum := 0
+		for value in _rolls:
+			sum += int(value)
+		var font := get_theme_default_font()
+		var digits := int(54.0 * pop)
+		draw_string_outline(font, badge + Vector2(-60, digits * 0.36), str(sum), HORIZONTAL_ALIGNMENT_CENTER, 120, digits, 6, Color("fff3c0"))
+		draw_string(font, badge + Vector2(-60, digits * 0.36), str(sum), HORIZONTAL_ALIGNMENT_CENTER, 120, digits, Color("5a3200"))
 
 
 ## 가운데가 (0,0)인 주사위 하나. 둥근 모서리, 아래 두께, 눈.

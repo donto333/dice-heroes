@@ -6,6 +6,10 @@ const ArtView := preload("res://scripts/ui/art_view.gd")
 const Gloss := preload("res://scripts/ui/gloss.gd")
 const Ambience := preload("res://scripts/ui/ambience.gd")
 const Sweep := preload("res://scripts/ui/sweep.gd")
+const OrnateBox := preload("res://scripts/ui/ornate_box.gd")
+const Ribbon := preload("res://scripts/ui/ribbon.gd")
+## 판 테두리의 금색
+const TRIM := Color("f2c14e")
 const BG := Color("2a8be6")
 ## 바탕은 위가 밝고 아래가 짙은 하늘색으로 번진다(sky()).
 const BG_TOP := Color("58b8ff")
@@ -125,17 +129,33 @@ static func _chunky(fill: Color, edge: Color, bottom: int) -> StyleBoxFlat:
 	return style
 
 
+## 지금 화면의 판 기본색. 화면마다 분위기가 다르도록 main.gd가 화면을 바꿀 때 정한다.
+static var panel_tint := PANEL
+
+
 static func panel(fill: Color = PANEL, border: Color = LINE, padding: int = 14) -> PanelContainer:
 	var result := PanelContainer.new()
-	var style := box(fill, border, 3, 22, padding)
-	style.border_width_bottom = 5
-	style.anti_aliasing_size = 1.2
-	style.shadow_color = Color(0, 0.05, 0.2, 0.4)
-	style.shadow_size = 7
-	style.shadow_offset = Vector2(0, 4)
-	result.add_theme_stylebox_override("panel", style)
-	sheen(result, 19)
+	if fill == PANEL:
+		fill = panel_tint
+	# 기본 하늘색 테는 금색 장식 테로 바꾼다. 따로 색을 준 판은 그 색 금속 테가 된다.
+	result.add_theme_stylebox_override("panel", plate(fill, TRIM if border == LINE else border, 20.0, padding + 4))
 	return result
+
+
+## 장식 판 상자(그림자, 번지는 몸통, 금속 테, 안쪽 선, 귀퉁이 보석). 글·설명 칸, 창, 말풍선에 쓴다.
+static func plate(fill: Color = PANEL, trim: Color = TRIM, radius: float = 20.0, padding: int = 16, gems: bool = true) -> StyleBox:
+	var style := OrnateBox.new()
+	style.fill = fill
+	style.trim = trim
+	style.radius = radius
+	style.gems = gems
+	style.set_content_margin_all(padding)
+	return style
+
+
+## 제목 리본(양 끝이 갈라진 깃발 띠).
+static func ribbon(text: String, font_size: int = 34, color: Color = Color("7a2fd0")) -> Control:
+	return Ribbon.new(text, font_size, color)
 
 
 ## 판 위쪽에 옅은 밝은 면을 얹어 볼록한 유리판처럼 보이게 한다(판 바탕 위, 내용 아래에 그려진다).
@@ -198,7 +218,10 @@ static func spacer(height: float = 0.0, grow: bool = true) -> Control:
 
 
 ## 화면 전체를 덮는 배경과, 여백을 둔 세로 상자를 만들어 붙이고 세로 상자를 돌려준다.
-static func screen_frame(parent: Control, margin: int = 18, color: Color = BG) -> VBoxContainer:
+## 가로 화면: 왼쪽에 세로 메뉴가 들어갈 자리("Dock")를 두고 그 오른쪽에 내용 기둥을 둔다.
+## 아래 메뉴(bottom_nav.gd)는 스스로 이 자리로 옮겨 가 세로 메뉴가 된다.
+## max_width가 0보다 크면 내용 기둥을 그 너비로 가운데에 둔다.
+static func screen_frame(parent: Control, margin: int = 18, color: Color = BG, max_width: float = 0.0) -> VBoxContainer:
 	parent.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if color == BG:
 		parent.add_child(sky())
@@ -213,8 +236,15 @@ static func screen_frame(parent: Control, margin: int = 18, color: Color = BG) -
 	for side in ["left", "right", "top", "bottom"]:
 		frame.add_theme_constant_override("margin_" + side, margin)
 	parent.add_child(frame)
-	var column := vbox(12)
-	frame.add_child(column)
+	var dock := hbox(12)
+	dock.name = "Dock"
+	frame.add_child(dock)
+	var column := vbox(10)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if max_width > 0.0:
+		column.custom_minimum_size = Vector2(max_width, 0)
+		column.size_flags_horizontal = Control.SIZE_SHRINK_CENTER | Control.SIZE_EXPAND
+	dock.add_child(column)
 	return column
 
 
@@ -226,7 +256,8 @@ static func backdrop(parent: Control, art_name: String, strength: float = 1.0) -
 	view.show_art(art_name)
 	view.drift = true
 	view.drift_speed = 0.6
-	view.modulate.a = strength
+	# 가로 화면에서는 바탕 그림을 더 또렷하게 보여 화면마다 분위기가 달라지게 한다.
+	view.modulate.a = lerpf(strength, 1.0, 0.7)
 	view.fade_top = 0.18
 	view.fade_bottom = 0.25
 	parent.add_child(view)
