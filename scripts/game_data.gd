@@ -107,6 +107,11 @@ static func logo(name: String) -> Texture2D:
 	return _cached_texture("logo/" + name, LOGO_PATH % name)
 
 
+## 입체 주사위 그림(assets/dice/<색>_<눈>.png). 윗면에 눈이 보이는 비스듬한 주사위. 없으면 null.
+static func die_face(value: int, kind: String = "white") -> Texture2D:
+	return _cached_texture("die/%s_%d" % [kind, value], "res://assets/dice/%s_%d.png" % [kind, clampi(value, 1, 6)])
+
+
 ## 판 위 물건 그림(굴리기 버튼, 받침대, 보물상자, 깃발...). 없으면 null.
 static func object(name: String) -> Texture2D:
 	return _cached_texture("object/" + name, OBJECT_PATH % name)

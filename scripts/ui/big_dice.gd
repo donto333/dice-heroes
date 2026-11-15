@@ -181,7 +181,15 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, DIE * 0.62 * (1.0 - hop / 400.0), Color(0, 0, 0, 0.22))
 		draw_circle(Vector2.ZERO, DIE * 0.48 * (1.0 - hop / 400.0), Color(0, 0, 0, 0.3))
 		draw_set_transform(ground - Vector2(0, hop), float(pose[2]), Vector2(scale_now, scale_now))
-		DiePreview.draw_die(self, DIE, clampi(int(_faces[index]), 1, 6), skin)
+		var face_value := clampi(int(_faces[index]), 1, 6)
+		var solid: Texture2D = GameData.die_face(face_value)
+		if solid != null:
+			# 입체 주사위 그림. 산 주사위 모양(스킨)의 몸통 색을 살짝 입힌다.
+			var body_tint := Color(str(skin.get("body", "ffffff"))).lerp(Color.WHITE, 0.35)
+			var solid_size := DIE * 1.25
+			draw_texture_rect(solid, Rect2(-solid_size / 2.0, -solid_size / 2.0, solid_size, solid_size), false, body_tint)
+		else:
+			DiePreview.draw_die(self, DIE, face_value, skin)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if not _playing and _total.text != "":
 		# 합계 글자 뒤의 금색 원판(모두의 마블의 합계 표시처럼) 둘레로 작은 빛 알이 돈다.

@@ -11,6 +11,7 @@ const PIPS := {
 	5: [Vector2(0.27, 0.27), Vector2(0.73, 0.27), Vector2(0.5, 0.5), Vector2(0.27, 0.73), Vector2(0.73, 0.73)],
 	6: [Vector2(0.27, 0.25), Vector2(0.73, 0.25), Vector2(0.27, 0.5), Vector2(0.73, 0.5), Vector2(0.27, 0.75), Vector2(0.73, 0.75)],
 }
+const GameData := preload("res://scripts/game_data.gd")
 const FRAME_TIME := 0.06
 
 var values: Array = []:
@@ -57,6 +58,11 @@ func _draw() -> void:
 		if _rolling:
 			offset = Vector2(_fx_rng.randf_range(-2.0, 2.0), _fx_rng.randf_range(-3.0, 3.0))
 		var rect := Rect2(Vector2(index * (die_size + 6.0), 3.0) + offset, Vector2(die_size, die_size))
+		var solid: Texture2D = GameData.die_face(value)
+		if solid != null:
+			# 입체 주사위 그림이 있으면 그것을 쓴다.
+			draw_texture_rect(solid, rect.grow(die_size * 0.12), false, face_color.lerp(Color.WHITE, 0.6))
+			continue
 		# 입체감: 아래쪽 그림자 면을 먼저 그린다.
 		draw_rect(Rect2(rect.position + Vector2(0, 3), rect.size), Color(0, 0, 0, 0.45))
 		draw_rect(rect, face_color)
