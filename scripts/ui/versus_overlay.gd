@@ -4,7 +4,6 @@ extends Control
 
 const Portrait := preload("res://scripts/ui/portrait.gd")
 
-const SLOT_NAMES := ["ATTACK", "DEFENSE", "SUPPORT"]
 const HOLD_TIME := 1.7
 
 var _skipped := false
@@ -35,43 +34,57 @@ func play(sides: Array, map_text: String, goal_text: String, searching: bool = f
 			child.queue_free()
 		_skipped = false
 	var shade := ColorRect.new()
-	shade.color = Color(0.04, 0.2, 0.5, 0.96)
+	shade.color = Color(0.02, 0.06, 0.18, 1.0)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade)
+	# 위쪽 절반은 상대, 아래쪽 절반은 나. 대표(ATTACK) 영웅 그림을 크게 깔고 이름과 별명을 기울여 얹는다.
 	var panels: Array = []
 	for index in 2:
 		var panel := _side(sides[index], index == 1)
 		add_child(panel)
-		panel.anchor_left = 0.04 if index == 0 else 0.54
-		panel.anchor_right = 0.46 if index == 0 else 0.96
-		panel.anchor_top = 0.2
-		panel.anchor_bottom = 0.8
+		panel.anchor_left = 0.0
+		panel.anchor_right = 1.0
+		panel.anchor_top = 0.5 if index == 0 else 0.1
+		panel.anchor_bottom = 0.9 if index == 0 else 0.5
 		panels.append(panel)
+	# 가운데를 가로지르는 금색 사선 띠
+	var slash := ColorRect.new()
+	slash.color = Color("ffcf4d")
+	slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slash.anchor_left = -0.1
+	slash.anchor_right = 1.1
+	slash.anchor_top = 0.5
+	slash.anchor_bottom = 0.5
+	slash.offset_top = -7
+	slash.offset_bottom = 7
+	slash.rotation = deg_to_rad(-5.0)
+	add_child(slash)
 	var middle := VBoxContainer.new()
 	middle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	middle.alignment = BoxContainer.ALIGNMENT_CENTER
 	middle.anchor_left = 0.0
 	middle.anchor_right = 1.0
-	middle.anchor_top = 0.04
-	middle.anchor_bottom = 0.19
+	middle.anchor_top = 0.0
+	middle.anchor_bottom = 0.1
 	add_child(middle)
 	middle.add_child(_text(map_text, 34, Color("ffcf4d"), 8))
-	middle.add_child(_text(goal_text, 22, Color(1, 1, 1, 0.85), 4))
-	var versus := _text("VS", 110, Color("ffcf4d"), 16)
+	middle.add_child(_text(goal_text.replace("\n", "  ·  "), 17, Color(1, 1, 1, 0.85), 4))
+	var versus := _text("VS", 150, Color("ffcf4d"), 24)
+	versus.add_theme_color_override("font_outline_color", Color("7a1010"))
 	versus.anchor_left = 0.0
 	versus.anchor_right = 1.0
 	versus.anchor_top = 0.5
 	versus.anchor_bottom = 0.5
-	versus.offset_top = -80
-	versus.offset_bottom = 80
+	versus.offset_top = -100
+	versus.offset_bottom = 100
 	versus.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(versus)
 	var skip := _text("화면을 누르면 넘어갑니다", 20, Color(1, 1, 1, 0.6), 4)
 	skip.anchor_left = 0.0
 	skip.anchor_right = 1.0
-	skip.anchor_top = 0.86
-	skip.anchor_bottom = 0.86
+	skip.anchor_top = 0.93
+	skip.anchor_bottom = 0.93
 	add_child(skip)
 
 	modulate.a = 1.0
@@ -80,9 +93,11 @@ func play(sides: Array, map_text: String, goal_text: String, searching: bool = f
 	if not is_inside_tree():
 		return
 	# 양쪽에서 미끄러져 들어오고 VS가 커졌다 줄어든다.
-	var slide := size.x * 0.5
+	var slide := size.x
 	panels[0].position.x -= slide
 	panels[1].position.x += slide
+	slash.pivot_offset = slash.size * 0.5
+	versus.rotation = deg_to_rad(-8.0)
 	versus.pivot_offset = versus.size * 0.5
 	versus.scale = Vector2(3.0, 3.0)
 	versus.modulate.a = 0.0
@@ -128,44 +143,115 @@ func _search() -> void:
 		await get_tree().create_timer(0.35).timeout
 
 
+## 한쪽 절반: 대표 영웅의 큰 그림 위에 기울인 이름·별명, 구석에 파티 세 명과 전투력.
+## flip이 true면(위쪽, 상대) 글자를 오른쪽에 붙인다.
 func _side(side: Dictionary, flip: bool) -> Control:
 	var color: Color = side["color"]
-	var panel := PanelContainer.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r * 0.22, color.g * 0.22, color.b * 0.22, 0.95)
-	style.border_color = color
-	style.set_border_width_all(4)
-	style.set_corner_radius_all(20)
-	style.set_content_margin_all(12)
-	panel.add_theme_stylebox_override("panel", style)
-	var column := VBoxContainer.new()
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_theme_constant_override("separation", 8)
-	panel.add_child(column)
-	column.add_child(_text(str(side["name"]), 28, color, 6))
-	if side.has("power"):
-		column.add_child(_text("전투력 %d" % int(side["power"]), 20, Color("ffcf4d"), 4))
-	if str(side.get("bonus", "")) != "":
-		# 시너지·유물처럼 갖고 시작하는 것
-		column.add_child(_text(str(side["bonus"]), 16, Color("b6ffd0"), 4))
 	var members: Array = side["members"]
 	var levels: Array = side.get("levels", [])
+	var leader: Dictionary = members[0] if not members.is_empty() else {}
+	var panel := Control.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.clip_contents = true
+	var art := Portrait.new()
+	art.hd = true
+	art.border_width = 0.0
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.show_character(leader, color.darkened(0.4))
+	panel.add_child(art)
+	# 글자가 잘 보이게 쪽 색으로 살짝 덮는다.
+	var tint := ColorRect.new()
+	tint.color = Color(color.r * 0.25, color.g * 0.25, color.b * 0.3, 0.38)
+	tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(tint)
+
+	# 기울인 큰 이름과 별명
+	var words := VBoxContainer.new()
+	words.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	words.add_theme_constant_override("separation", -6)
+	words.anchor_left = 0.04
+	words.anchor_right = 0.96
+	words.anchor_top = 0.5 if not flip else 0.06
+	words.anchor_bottom = 0.5 if not flip else 0.06
+	words.offset_bottom = 200
+	words.rotation = deg_to_rad(-6.0)
+	panel.add_child(words)
+	var align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_RIGHT if flip else HORIZONTAL_ALIGNMENT_LEFT
+	var hero := _text(str(leader.get("name", "")), 92, Color.WHITE, 20)
+	hero.horizontal_alignment = align
+	hero.add_theme_color_override("font_outline_color", color.darkened(0.7))
+	words.add_child(hero)
+	var motto := _text(str(leader.get("title", "")), 32, Color("ffe27a"), 10)
+	motto.horizontal_alignment = align
+	words.add_child(motto)
+
+	# 쪽 이름과 전투력 알약
+	var tag_text := str(side["name"])
+	if side.has("power"):
+		tag_text += "  ·  전투력 %d" % int(side["power"])
+	var tag := _text(tag_text, 24, Color.WHITE, 6)
+	var pill := StyleBoxFlat.new()
+	pill.bg_color = color.darkened(0.25)
+	pill.border_color = Color.WHITE
+	pill.set_border_width_all(3)
+	pill.set_corner_radius_all(22)
+	pill.content_margin_left = 18
+	pill.content_margin_right = 18
+	pill.content_margin_top = 6
+	pill.content_margin_bottom = 6
+	tag.add_theme_stylebox_override("normal", pill)
+	tag.anchor_left = 0.0 if not flip else 1.0
+	tag.anchor_right = 0.0 if not flip else 1.0
+	tag.anchor_top = 0.0 if flip else 1.0
+	tag.anchor_bottom = 0.0 if flip else 1.0
+	tag.grow_horizontal = Control.GROW_DIRECTION_END if not flip else Control.GROW_DIRECTION_BEGIN
+	tag.grow_vertical = Control.GROW_DIRECTION_END if flip else Control.GROW_DIRECTION_BEGIN
+	tag.offset_left = 14 if not flip else -14
+	tag.offset_right = 14 if not flip else -14
+	tag.offset_top = 14 if flip else -14
+	tag.offset_bottom = 14 if flip else -14
+	panel.add_child(tag)
+
+	# 파티 세 명: 글자 반대쪽 구석에 작은 얼굴
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 8)
+	row.anchor_left = 1.0 if not flip else 0.0
+	row.anchor_right = 1.0 if not flip else 0.0
+	row.anchor_top = 1.0 if not flip else 0.0
+	row.anchor_bottom = 1.0 if not flip else 0.0
+	row.grow_horizontal = Control.GROW_DIRECTION_BEGIN if not flip else Control.GROW_DIRECTION_END
+	row.grow_vertical = Control.GROW_DIRECTION_BEGIN if not flip else Control.GROW_DIRECTION_END
+	row.offset_left = -14 if not flip else 14
+	row.offset_right = -14 if not flip else 14
+	row.offset_top = -14 if not flip else 64
+	row.offset_bottom = -14 if not flip else 64
+	panel.add_child(row)
 	for index in members.size():
 		var member: Dictionary = members[index]
+		var cell := VBoxContainer.new()
+		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cell.add_theme_constant_override("separation", 0)
 		var face := Portrait.new()
-		face.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		face.custom_minimum_size = Vector2(0, 120)
-		face.border = color
+		face.custom_minimum_size = Vector2(92, 92)
+		face.border = color.lightened(0.3)
 		face.border_width = 3.0
 		face.show_character(member, color.darkened(0.4))
-		column.add_child(face)
-		var level_text := "  Lv.%d" % int(levels[index]) if index < levels.size() else ""
-		var caption := "%s  %s%s" % [SLOT_NAMES[index], member.get("name", ""), level_text]
-		var line := _text(caption, 19, Color.WHITE, 4)
-		line.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if flip else HORIZONTAL_ALIGNMENT_LEFT
-		line.clip_text = true
-		column.add_child(line)
+		cell.add_child(face)
+		var level_text := " Lv.%d" % int(levels[index]) if index < levels.size() else ""
+		cell.add_child(_text("%s%s" % [member.get("name", ""), level_text], 15, Color.WHITE, 4))
+		row.add_child(cell)
+	if str(side.get("bonus", "")) != "":
+		var bonus := _text(str(side["bonus"]), 18, Color("b6ffd0"), 5)
+		bonus.anchor_left = 0.0
+		bonus.anchor_right = 1.0
+		bonus.anchor_top = 0.0 if not flip else 1.0
+		bonus.anchor_bottom = 0.0 if not flip else 1.0
+		bonus.grow_vertical = Control.GROW_DIRECTION_END if not flip else Control.GROW_DIRECTION_BEGIN
+		bonus.offset_top = 12 if not flip else -12
+		bonus.offset_bottom = 12 if not flip else -12
+		panel.add_child(bonus)
 	return panel
 
 

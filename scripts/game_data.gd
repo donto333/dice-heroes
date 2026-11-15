@@ -123,5 +123,23 @@ static func enemy_portrait(enemy_name: String) -> Texture2D:
 	return texture
 
 
+const PORTRAIT_HD_PATH := "res://assets/portraits_hd/%s.jpg"
+
+
+## 크게 보여 줄 때 쓰는 고해상도 초상화. 없으면 보통 초상화.
+static func portrait_hd(id: String) -> Texture2D:
+	var key := "hd/" + id
+	if _art.has(key):
+		return _art[key]
+	var path := PORTRAIT_HD_PATH % id
+	var texture: Texture2D = null
+	if id != "" and ResourceLoader.exists(path):
+		texture = load(path)
+	else:
+		texture = portrait(id)
+	_art[key] = texture
+	return texture
+
+
 static func grade_stars(grade: int) -> String:
 	return "★".repeat(grade)

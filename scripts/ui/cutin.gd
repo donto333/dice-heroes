@@ -22,27 +22,32 @@ func _ready() -> void:
 	_band = Panel.new()
 	_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_style = StyleBoxFlat.new()
-	_style.bg_color = Color(0.05, 0.22, 0.5, 0.95)
-	_style.border_width_top = 5
-	_style.border_width_bottom = 5
+	_style.bg_color = Color(0.04, 0.16, 0.42, 0.96)
+	_style.border_width_top = 8
+	_style.border_width_bottom = 8
+	_style.shadow_color = Color(0, 0, 0, 0.5)
+	_style.shadow_size = 14
 	_band.add_theme_stylebox_override("panel", _style)
-	_band.anchor_left = 0.0
-	_band.anchor_right = 1.0
+	# 화면보다 넓은 띠를 살짝 기울여 가로지르게 한다.
+	_band.anchor_left = -0.08
+	_band.anchor_right = 1.08
+	_band.rotation = deg_to_rad(-4.0)
 	_band.anchor_top = 0.34
 	_band.anchor_bottom = 0.34
 	_band.offset_bottom = 210
 	add_child(_band)
 	_face = Portrait.new()
 	_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_face.border_width = 4.0
-	_face.position = Vector2(24, -24)
-	_face.size = Vector2(230, 258)
+	_face.border_width = 5.0
+	_face.hd = true
+	_face.position = Vector2(60, -44)
+	_face.size = Vector2(260, 298)
 	_band.add_child(_face)
-	_title = _label(46, 12)
-	_title.position = Vector2(276, 40)
+	_title = _label(56, 14)
+	_title.position = Vector2(340, 34)
 	_band.add_child(_title)
 	_note = _label(22, 6)
-	_note.position = Vector2(278, 112)
+	_note.position = Vector2(342, 116)
 	_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_note.custom_minimum_size = Vector2(410, 0)
 	_note.size = Vector2(410, 80)

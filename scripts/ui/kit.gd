@@ -369,6 +369,47 @@ static func tile_button(text: String, icon_name: String, color: Color, sub: Stri
 	return result
 
 
+## 몸통 없는 아이콘 바로가기(그림 아이콘 + 아래 글자). 누르면 살짝 줄었다 튄다. badge가 true면 빨간 점.
+static func icon_shortcut(text: String, icon_name: String, badge: bool = false, pixels: float = 62.0) -> Button:
+	var result := Button.new()
+	result.custom_minimum_size = Vector2(pixels + 10.0, pixels + 28.0)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		result.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	var column := VBoxContainer.new()
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_theme_constant_override("separation", -6)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	result.add_child(column)
+	var picture := icon(icon_name, pixels)
+	picture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(picture)
+	var caption := label(text, 17, TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	caption.add_theme_constant_override("outline_size", 6)
+	caption.add_theme_color_override("font_outline_color", Color("0c2f6e"))
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(caption)
+	if badge:
+		var dot := Panel.new()
+		dot.add_theme_stylebox_override("panel", box(Color("ff3b3b"), Color.WHITE, 2, 10, 0))
+		dot.anchor_left = 1.0
+		dot.anchor_right = 1.0
+		dot.offset_left = -24
+		dot.offset_right = -4
+		dot.offset_top = 0
+		dot.offset_bottom = 20
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		result.add_child(dot)
+	result.button_down.connect(func() -> void:
+		result.pivot_offset = result.size * 0.5
+		result.create_tween().tween_property(result, "scale", Vector2(0.88, 0.88), 0.05))
+	result.button_up.connect(func() -> void:
+		var tween := result.create_tween()
+		tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(result, "scale", Vector2.ONE, 0.2))
+	return result
+
+
 ## 동그란 바로가기 버튼(아이콘 + 아래 글자). badge가 true면 오른쪽 위 빨간 점.
 static func round_shortcut(text: String, icon_name: String, color: Color, badge: bool = false) -> Button:
 	var result := Button.new()

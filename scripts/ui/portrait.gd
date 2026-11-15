@@ -7,6 +7,8 @@ extends Control
 const GameData := preload("res://scripts/game_data.gd")
 
 var texture: Texture2D = null
+## 크게 보여 주는 칸이면 true로 둔다(고해상도 그림을 쓴다). show_character() 전에 정한다.
+var hd := false
 var fill := Color("3a4466")
 var border := Color(1, 1, 1, 0.55)
 var border_width := 3.0
@@ -37,7 +39,8 @@ func show_character(character: Dictionary, color: Color) -> void:
 		texture = null
 		letter = ""
 	else:
-		texture = GameData.portrait(str(character.get("id", "")))
+		var id := str(character.get("id", ""))
+		texture = GameData.portrait_hd(id) if hd else GameData.portrait(id)
 		letter = str(character.get("name", "")).left(1)
 	queue_redraw()
 
