@@ -264,3 +264,78 @@ func message(title_text: String, text: String, button_text: String = "확인", c
 ## mode: "rank"(랭크전), "ai"(AI 연습), "local"(한 기기 2인)
 func start_mode(mode: String) -> void:
 	go("party", {"purpose": "match", "mode": mode, "player": 1})
+
+
+# ---------------------------------------------------------------- 끌어서 내리기
+# 스크롤 칸 안의 판·버튼이 터치를 먼저 받아서 손가락으로 끌어도, 마우스 휠을 굴려도 내려가지 않았다.
+# 그래서 여기서 직접 처리한다: 스크롤 칸 위 어디서든 끌거나 휠을 굴리면 그 칸이 움직인다.
+
+## 이만큼(화면 점) 넘게 움직여야 '끌기'로 본다. 그보다 작으면 그냥 누른 것.
+const DRAG_START := 14.0
+const WHEEL_STEP := 90
+
+var _drag_scroll: ScrollContainer
+var _drag_from := Vector2.ZERO
+var _drag_scroll_from := 0
+var _dragging := false
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var click := event as InputEventMouseButton
+		if click.button_index == MOUSE_BUTTON_WHEEL_UP or click.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			if click.pressed:
+				var under := _scroll_at(click.position)
+				if under != null:
+					under.scroll_vertical += WHEEL_STEP * (-1 if click.button_index == MOUSE_BUTTON_WHEEL_UP else 1)
+					get_viewport().set_input_as_handled()
+			return
+		if click.button_index != MOUSE_BUTTON_LEFT:
+			return
+		if click.pressed:
+			_drag_scroll = _scroll_at(click.position)
+			_drag_from = click.position
+			_dragging = false
+			if _drag_scroll != null:
+				_drag_scroll_from = _drag_scroll.scroll_vertical
+		else:
+			if _dragging and is_instance_valid(_drag_scroll):
+				_drag_scroll.propagate_notification(Control.NOTIFICATION_SCROLL_END)
+			_drag_scroll = null
+			_dragging = false
+	elif event is InputEventMouseMotion and _drag_scroll != null:
+		if not is_instance_valid(_drag_scroll):
+			_drag_scroll = null
+			return
+		var move := (event as InputEventMouseMotion).position - _drag_from
+		if not _dragging and absf(move.y) > DRAG_START and absf(move.y) > absf(move.x):
+			_dragging = true
+			# 끌기 시작: 누르고 있던 버튼이 손을 뗄 때 눌리지 않게 한다.
+			_drag_scroll.propagate_notification(Control.NOTIFICATION_SCROLL_BEGIN)
+		if _dragging:
+			_drag_scroll.scroll_vertical = _drag_scroll_from - int(move.y)
+			get_viewport().set_input_as_handled()
+
+
+## 그 자리에 있는, 위아래로 움직일 수 있는 스크롤 칸(가장 위에 그려진 것). 없으면 null.
+## 대화창이 떠 있으면 맨 위 대화창 안에서만 찾는다.
+func _scroll_at(point: Vector2) -> ScrollContainer:
+	var root: Node = self
+	var windows := get_tree().get_nodes_in_group("modal")
+	if not windows.is_empty():
+		root = windows[windows.size() - 1]
+	var found: ScrollContainer = null
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node is ScrollContainer:
+			var scroll := node as ScrollContainer
+			var bar := scroll.get_v_scroll_bar()
+			if scroll.is_visible_in_tree() and scroll.get_global_rect().has_point(point) and bar.max_value > bar.page + 1.0:
+				found = scroll
+		# 뒤에 붙은 것(위에 그려진 것)이 나중에 검사되도록 거꾸로 넣는다.
+		var children := node.get_children()
+		children.reverse()
+		for child in children:
+			stack.append(child)
+	return found

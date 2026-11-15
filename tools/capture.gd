@@ -132,6 +132,26 @@ func _run() -> void:
 	_app.go("missions")
 	await _wait(0.4)
 	await _shot("10_missions")
+	# 끌어서 내리기 확인: 판 위를 누른 채 위로 300만큼 끌면 스크롤이 내려가야 한다.
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = Vector2(360, 800)
+	_app._input(press)
+	var drag := InputEventMouseMotion.new()
+	drag.position = Vector2(360, 500)
+	_app._input(drag)
+	var moved := -1
+	if _app._drag_scroll != null:
+		moved = _app._drag_scroll.scroll_vertical
+	var lift := InputEventMouseButton.new()
+	lift.button_index = MOUSE_BUTTON_LEFT
+	lift.pressed = false
+	lift.position = Vector2(360, 500)
+	_app._input(lift)
+	print("SCROLLCHECK 미션 화면을 끌어 내린 값: %d" % moved)
+	await _wait(0.2)
+	await _shot("10a_missions_scrolled")
 	var mission_scroll := _find_scroll(_app.current_screen)
 	if mission_scroll != null:
 		mission_scroll.scroll_vertical = 100000
