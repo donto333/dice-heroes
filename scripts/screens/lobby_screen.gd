@@ -65,9 +65,10 @@ func setup(main_app, params: Dictionary) -> void:
 		["미션", "missions", bool(badges.get("missions", false)), _on_tab.bind("missions")],
 		["패스", "pass", Profile.pass_claimable_count(app.profile, app.eco) > 0, _on_tab.bind("pass")],
 		["설정", "settings", false, _on_tab.bind("settings")],
+		["방법", "help", false, _on_help],
 	]
 	for spec in rail_items:
-		var item := Kit.icon_shortcut(str(spec[0]), str(spec[1]), bool(spec[2]), 64.0)
+		var item := Kit.icon_shortcut(str(spec[0]), str(spec[1]), bool(spec[2]), 58.0)
 		item.pressed.connect(spec[3])
 		rail.add_child(item)
 
@@ -75,22 +76,27 @@ func setup(main_app, params: Dictionary) -> void:
 
 	var side := Kit.vbox(8)
 	body.add_child(Kit.expand(side))
-	# 작은 바로가기 줄(오른쪽 정렬)
-	var quick := Kit.hbox(4)
-	quick.alignment = BoxContainer.ALIGNMENT_END
-	side.add_child(quick)
+	side.add_child(_banner())
+	# 오늘의 보상 줄: 빛나는 구슬 네 개(받을 것이 있으면 빨간 점). 모두의 마블의 보상 구슬 줄처럼.
+	var orbs := Kit.panel(Color(0.2, 0.14, 0.52, 0.86), Color("b79cff"), 6)
+	side.add_child(orbs)
+	var orb_row := Kit.hbox(6)
+	orbs.add_child(orb_row)
+	var orb_title := Kit.label("오늘의\n보상", 20, Color("ffe37a"), HORIZONTAL_ALIGNMENT_CENTER)
+	orb_title.custom_minimum_size = Vector2(84, 0)
+	orb_title.add_theme_constant_override("outline_size", 6)
+	orb_title.add_theme_color_override("font_outline_color", Color("2a0f5a"))
+	orb_row.add_child(orb_title)
 	var shortcuts := [
-		["출석", "attend", Profile.can_check_in(app.profile, app.today()), _on_attendance_shortcut],
-		["룰렛", "roulette", Profile.can_spin_free(app.profile, app.eco), open_roulette],
-		["할 일", "todo", _todo_left() > 0, open_todo],
-		["우편", "mail", Profile.unclaimed_mail_count(app.profile) > 0, open_mailbox],
-		["방법", "help", false, _on_help],
+		["출석", "orb_gold", Profile.can_check_in(app.profile, app.today()), _on_attendance_shortcut],
+		["룰렛", "orb_purple", Profile.can_spin_free(app.profile, app.eco), open_roulette],
+		["할 일", "orb_green", _todo_left() > 0, open_todo],
+		["우편", "orb_blue", Profile.unclaimed_mail_count(app.profile) > 0, open_mailbox],
 	]
 	for spec in shortcuts:
-		var shortcut := Kit.icon_shortcut(str(spec[0]), str(spec[1]), bool(spec[2]), 50.0)
+		var shortcut := Kit.icon_shortcut(str(spec[0]), str(spec[1]), bool(spec[2]), 56.0)
 		shortcut.pressed.connect(spec[3])
-		quick.add_child(shortcut)
-	side.add_child(_banner())
+		orb_row.add_child(Kit.expand(shortcut))
 	side.add_child(_rank_card())
 
 	var tier: Dictionary = Profile.tier_of(app.eco, int(app.profile["trophies"]))
@@ -331,7 +337,7 @@ func _hero_card() -> Control:
 ## 소식 배너: 그림 위에 큰 글씨로 지금의 공지가 돌아가며 나온다. 누르면 공지 목록.
 func _banner() -> Control:
 	var band := Button.new()
-	band.custom_minimum_size = Vector2(0, 132)
+	band.custom_minimum_size = Vector2(0, 120)
 	var band_style := Kit.box(Color(0.5, 0.1, 0.12, 0.95), Color("ffcf4d"), 3, 18, 8)
 	for state in ["normal", "hover", "pressed"]:
 		band.add_theme_stylebox_override(state, band_style)
