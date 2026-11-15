@@ -841,6 +841,7 @@ func _start_game() -> void:
 	_start_distance = max(game.distance_of(0), 1)
 	for index in 2:
 		_board_view.piece_textures[index] = GameData.portrait(str(game.char_of(index, "attack").get("id", "")))
+		_board_view.piece_standees[index] = GameData.standee(str(game.char_of(index, "attack").get("id", "")))
 	game.take_events()
 	_board_view.game = game
 	_board_view.reset_pieces()
