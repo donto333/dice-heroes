@@ -90,7 +90,7 @@ func _draw() -> void:
 	if _background != null:
 		# 바탕 그림을 꽉 차게, 아주 천천히 확대하며 그리고 위에 살짝 어둡게 덮는다.
 		var texture_size := _background.get_size()
-		var ratio := size.x / max(size.y, 1.0)
+		var ratio := size.x / maxf(size.y, 1.0)
 		var source := Rect2(Vector2.ZERO, texture_size)
 		if ratio < texture_size.x / texture_size.y:
 			source.size.x = texture_size.y * ratio
