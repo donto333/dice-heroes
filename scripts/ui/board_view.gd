@@ -435,6 +435,10 @@ func _draw_props(layout: Dictionary) -> void:
 			var texture: Texture2D = _props[(seed_value / 100) % _props.size()]
 			var tall := cell * (0.95 + ((seed_value / 7) % 30) / 100.0)
 			var wide := tall * float(texture.get_width()) / float(texture.get_height())
+			if wide > cell * 1.2:
+				# 옆으로 긴 모형(성벽·다리)은 칸 너비에 맞춰 줄인다.
+				tall *= cell * 1.2 / wide
+				wide = cell * 1.2
 			var jitter := Vector2(((seed_value / 1000) % 21 - 10) / 70.0, ((seed_value / 30000) % 21 - 10) / 90.0)
 			var foot := origin + Vector2((gx + 0.5 + jitter.x) * cell, (gy + 0.62 + jitter.y) * row)
 			draw_set_transform(foot, 0.0, Vector2(1.0, 0.36))
