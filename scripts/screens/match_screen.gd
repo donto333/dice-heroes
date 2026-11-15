@@ -454,6 +454,45 @@ func _show_used(event: Dictionary, shout: String, title: String) -> void:
 	await _show_tile({"tile": "", "good": false, "text": "%s\n%s" % [title, event.get("text", "")], "small": true})
 
 
+## 스킬 알림 띠: 왼쪽에서 미끄러져 나와 영웅 얼굴·스킬 이름·한 줄 설명을 보여 주고 잠시 뒤 들어간다.
+## 판 가운데를 가리지 않고 무슨 스킬이 발동됐는지 알려 준다(모두의 마블의 스킬 알림처럼).
+func _notify(character: Dictionary, title: String, text: String, color: Color) -> void:
+	if app.instant or _board_area == null:
+		return
+	var strip := PanelContainer.new()
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.add_theme_stylebox_override("panel", Kit.plate(Color(0.08, 0.06, 0.26, 0.94), color.lightened(0.2), 18.0, 10, false))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.add_child(row)
+	var face := Portrait.new()
+	face.custom_minimum_size = Vector2(64, 64)
+	face.border = Color("ffcf4d")
+	face.border_width = 3.0
+	face.show_character(character, color.darkened(0.4))
+	row.add_child(face)
+	var words := VBoxContainer.new()
+	words.add_theme_constant_override("separation", 0)
+	words.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(words)
+	var name_label := _make_label(22, "%s의 %s" % [character.get("name", ""), title])
+	name_label.add_theme_color_override("font_color", Color("ffd45a"))
+	words.add_child(name_label)
+	var detail := _make_label(16, text)
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.custom_minimum_size = Vector2(300, 0)
+	words.add_child(detail)
+	_board_area.add_child(strip)
+	strip.size = strip.get_combined_minimum_size()
+	strip.position = Vector2(-strip.size.x - 20.0, 150.0)
+	var slide := strip.create_tween()
+	slide.tween_property(strip, "position:x", 118.0, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	slide.tween_interval(3.0)
+	slide.tween_property(strip, "position:x", -strip.size.x - 20.0, 0.25).set_ease(Tween.EASE_IN)
+	slide.tween_callback(strip.queue_free)
+
+
 ## 카드 연출: 카드가 손(왼쪽 줄)에서 날아와 가운데서 커지며 번쩍이고, 쓴 사람의 말로 날아가 터진다.
 func _show_card(event: Dictionary) -> void:
 	var who := int(event["player"])
@@ -625,13 +664,13 @@ func _hint(key: String, text: String) -> bool:
 	ok.pressed.connect(func(): bubble.queue_free())
 	row.add_child(ok)
 	add_child(bubble)
-	bubble.anchor_left = 0.0
-	bubble.anchor_right = 1.0
-	# 판을 가리지 않게 아래쪽 결과 칸 자리에 띄운다.
-	bubble.anchor_top = 0.74
-	bubble.anchor_bottom = 0.74
-	bubble.offset_left = 20
-	bubble.offset_right = -20
+	bubble.anchor_left = 0.18
+	bubble.anchor_right = 0.82
+	# 판 가운데를 가리지 않게 아래쪽에 띄운다.
+	bubble.anchor_top = 0.6
+	bubble.anchor_bottom = 0.6
+	bubble.offset_left = 0
+	bubble.offset_right = 0
 	bubble.offset_top = 0
 	_hint_bubble = bubble
 	# 그냥 두어도 잠시 뒤 사라진다.
@@ -1350,6 +1389,8 @@ func _present_events() -> void:
 				_fx.flash(Color(1, 1, 1, 0.7), 0.25)
 				_fx.speed_lines(_board_center(), PLAYER_TEXT_COLORS[caster].lightened(0.4), 1.1)
 				_fx.burst(_piece_spot(caster), "ember", 26, 1.2)
+				_board_view.wave(caster, PLAYER_TEXT_COLORS[caster].lightened(0.3))
+				_notify(_character_named(str(event["hero"])), str(event["name"]), str(event.get("text", "")), PLAYER_TEXT_COLORS[caster])
 				await _cutin.play(_character_named(str(event["hero"])), str(event["name"]), str(event.get("text", "")), PLAYER_TEXT_COLORS[caster])
 			"card":
 				await _show_card(event)

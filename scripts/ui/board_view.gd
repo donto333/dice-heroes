@@ -125,6 +125,8 @@ var _anim_time := 0.0
 var _hops: Dictionary = {}
 ## 말이 내려앉은 칸에서 퍼지는 고리: [{"id": 칸, "t": 0~1, "color": 색}]
 var _rings: Array = []
+## 스킬을 쓸 때 말 앞쪽 칸들을 따라 차례로 솟는 빛기둥. {"ids": [칸...], "t": 흐른 시간, "color": 색}
+var _waves: Array = []
 ## 지형 바탕과 꾸밈 그림(assets/terrain). 맵 테마가 바뀌면 다시 읽는다.
 var _terrain_name := ""
 var _terrain: Texture2D = null
@@ -253,6 +255,11 @@ func _process(delta: float) -> void:
 		for puff in _puffs:
 			puff["t"] = float(puff["t"]) + delta / (0.7 if str(puff["kind"]) == "stars" else 0.35)
 		_puffs = _puffs.filter(func(puff): return float(puff["t"]) < 1.0)
+		queue_redraw()
+	if not _waves.is_empty():
+		for wave_item in _waves:
+			wave_item["t"] = float(wave_item["t"]) + delta
+		_waves = _waves.filter(func(wave_item): return float(wave_item["t"]) < 0.11 * wave_item["ids"].size() + 0.7)
 		queue_redraw()
 	if not _rings.is_empty():
 		for ring in _rings:
@@ -593,6 +600,49 @@ func _draw_tile_fx(kind: String, center: Vector2, cell: float, id: int) -> void:
 				draw_circle(spot, cell * 0.035, Color(1.0, 0.85, 0.3, 0.85))
 
 
+## 스킬 연출: 이 플레이어의 말 앞쪽 칸 count개에 빛기둥이 차례로 솟는다(모두의 마블처럼 효과가 칸 위에서 일어난다).
+func wave(player_index: int, color: Color, count: int = 7) -> void:
+	if game == null or player_index >= shown_pos.size():
+		return
+	var ids: Array = []
+	var at := int(shown_pos[player_index])
+	for step in count:
+		if not game.nodes.has(at):
+			break
+		var following: Array = game.nodes[at]["next"]
+		if following.is_empty():
+			break
+		at = int(following[0])
+		ids.append(at)
+	if not ids.is_empty():
+		_waves.append({"ids": ids, "t": 0.0, "color": color})
+		queue_redraw()
+
+
+## 빛기둥 그리기: 칸마다 0.11초 늦게 솟았다가 사그라든다.
+func _draw_waves(layout: Dictionary) -> void:
+	var cell: float = layout["cell"]
+	for wave_item in _waves:
+		var ids: Array = wave_item["ids"]
+		var tint: Color = wave_item["color"]
+		for index in ids.size():
+			var local := (float(wave_item["t"]) - index * 0.11) / 0.6
+			if local <= 0.0 or local >= 1.0 or not game.nodes.has(int(ids[index])):
+				continue
+			var top := _center(int(ids[index]), layout) - Vector2(0, cell * BLOCK_DEPTH * 0.5)
+			var rise := sin(local * PI)
+			var tall := cell * 1.5 * rise
+			var half := cell * 0.34
+			var bright := Color(tint.r, tint.g, tint.b, 0.75 * rise)
+			var faint := Color(tint.r, tint.g, tint.b, 0.0)
+			draw_polygon(PackedVector2Array([top + Vector2(-half, 0), top + Vector2(half, 0), top + Vector2(half * 0.6, -tall), top + Vector2(-half * 0.6, -tall)]),
+				PackedColorArray([bright, bright, faint, faint]))
+			draw_set_transform(top, 0.0, Vector2(1.0, TILT))
+			draw_arc(Vector2.ZERO, cell * (0.3 + local * 0.3), 0.0, TAU, 28, Color(1, 1, 1, 0.9 * (1.0 - local)), 4.0)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			_draw_star(top - Vector2(0, tall * 0.8), cell * 0.12 * rise, Color(1, 1, 1, rise))
+
+
 ## 말이 서 있는 곳(이 보드 안의 좌표). 연출 층이 여기서 알갱이를 터뜨린다.
 func piece_point(player_index: int) -> Vector2:
 	if game == null or player_index >= shown_pos.size() or not game.nodes.has(int(shown_pos[player_index])):
@@ -859,6 +909,7 @@ func _draw() -> void:
 		var boss_pos := goal_center + Vector2(-cell * 1.5, -cell * 0.62)
 		draw_string_outline(font, boss_pos, boss, HORIZONTAL_ALIGNMENT_CENTER, cell * 3.0, boss_size, 6, Color.BLACK)
 		draw_string(font, boss_pos, boss, HORIZONTAL_ALIGNMENT_CENTER, cell * 3.0, boss_size, Color("ffcf4d"))
+	_draw_waves(layout)
 	# 내려앉은 칸에서 퍼지는 고리
 	for ring in _rings:
 		if not game.nodes.has(int(ring["id"])):
