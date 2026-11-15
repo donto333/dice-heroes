@@ -13,6 +13,7 @@ const Music := preload("res://scripts/ui/music.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const ProfileCard := preload("res://scripts/ui/profile_card.gd")
 const LoadingOverlay := preload("res://scripts/ui/loading_overlay.gd")
+const Opening := preload("res://scripts/ui/opening.gd")
 ## 화면마다 틀 배경음악
 const SCREEN_MUSIC := {"match": "match"}
 
@@ -217,6 +218,15 @@ func wait_loading(message: String, seconds: float = 0.7) -> void:
 	if instant:
 		return
 	await loading.show_for(message, seconds, false)
+
+
+## 오프닝 영상을 띄우고 끝날 때까지 기다린다. 자동 사진 도구(instant)에서는 건너뛴다.
+func play_opening() -> void:
+	if instant:
+		return
+	var opening := Opening.new()
+	add_child(opening)
+	await opening.finished
 
 
 func toast(message: String) -> void:

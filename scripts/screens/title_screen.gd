@@ -4,6 +4,7 @@ extends Control
 
 const Kit := preload("res://scripts/ui/kit.gd")
 const GameData := preload("res://scripts/game_data.gd")
+const ArtView := preload("res://scripts/ui/art_view.gd")
 
 const FEATURED := ["lubu", "zeus", "sejong", "athena", "yisunsin", "wukong", "zhugeliang", "nightingale", "alexander", "dangun", "tesla", "mulan"]
 
@@ -29,15 +30,26 @@ func setup(main_app, _params: Dictionary) -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
-	# 초상화 두 줄이 서로 반대로 흐른다.
+	# 키 아트가 있으면 천천히 움직이는 한 장 그림, 없으면 초상화 줄이 흐른다.
+	var keyart := ArtView.new()
+	keyart.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	keyart.show_art("ui/title_keyart")
+	keyart.drift = true
+	keyart.focus_y = 0.3
+	keyart.fade_bottom = 0.45
+	add_child(keyart)
+	var has_keyart := keyart.has_art()
+
 	_strip = Control.new()
 	_strip.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_strip.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_strip.draw.connect(_draw_strip)
+	_strip.visible = not has_keyart
 	add_child(_strip)
 
 	var shade := ColorRect.new()
+	shade.visible = not has_keyart
 	shade.color = Color(0.05, 0.25, 0.6, 0.5)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -53,7 +65,11 @@ func setup(main_app, _params: Dictionary) -> void:
 	_emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_emblem.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_emblem.draw.connect(_draw_emblem)
+	_emblem.visible = not has_keyart
 	column.add_child(_emblem)
+	if has_keyart:
+		# 그림 속 하늘과 영웅이 보이도록 제목을 아래쪽으로 내린다.
+		column.add_child(Kit.spacer(0))
 	# 제목 뒤의 어두운 띠: 그림 위에서도 글자가 또렷하게
 	var band := PanelContainer.new()
 	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -154,4 +170,6 @@ func _input(event: InputEvent) -> void:
 		if app.has_profile():
 			app.go_loading("lobby", {}, "접속 중...", 0.9, true)
 		else:
+			# 처음 온 사람에게는 오프닝을 먼저 보여 준다.
+			await app.play_opening()
 			app.go_loading("login", {}, "불러오는 중...", 0.6)

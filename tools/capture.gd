@@ -28,6 +28,16 @@ func _run() -> void:
 	await _shot("00_title_loading")
 	await _wait(1.2)
 	await _shot("01_title")
+	# 오프닝 영상 장면 두 개
+	var opening = load("res://scripts/ui/opening.gd").new()
+	_app.add_child(opening)
+	await _wait(1.6)
+	await _shot("00b_opening")
+	opening._next()
+	await _wait(1.4)
+	await _shot("00c_opening2")
+	opening.queue_free()
+	await _frames(3)
 	# 여기부터는 기다림·전환 효과 없이 바로바로 넘어가게 한다(사진 순서가 흔들리지 않게).
 	_app.instant = true
 

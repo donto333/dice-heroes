@@ -2,6 +2,7 @@ extends RefCounted
 ## 화면들이 함께 쓰는 모양(색, 버튼, 글자, 상자). 모든 화면이 같은 느낌이 나도록 여기서만 정한다.
 
 ## 2026-11 리뉴얼: 밝고 통통한 캐주얼(하늘색 바탕, 파란 판, 흰 글자, 노랑·주황·초록 버튼).
+const ArtView := preload("res://scripts/ui/art_view.gd")
 const BG := Color("2a8be6")
 ## 바탕은 위가 밝고 아래가 짙은 하늘색으로 번진다(sky()).
 const BG_TOP := Color("58b8ff")
@@ -188,6 +189,41 @@ static func screen_frame(parent: Control, margin: int = 18, color: Color = BG) -
 	return column
 
 
+## 화면 바탕에 일러스트를 깐다(하늘색 바탕 위). 그림이 없으면 아무것도 하지 않는다.
+## 화면 위아래의 글자·버튼이 잘 보이도록 위아래를 살짝 어둡게 한다.
+static func backdrop(parent: Control, art_name: String, strength: float = 1.0) -> Control:
+	var view := ArtView.new()
+	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	view.show_art(art_name)
+	view.drift = true
+	view.drift_speed = 0.6
+	view.modulate.a = strength
+	view.fade_top = 0.18
+	view.fade_bottom = 0.25
+	parent.add_child(view)
+	return view
+
+
+## 버튼 안쪽에 일러스트를 깔고, 글자가 잘 보이게 아래쪽을 어둡게 한다. 그림이 있으면 true.
+static func button_art(target: Button, art_name: String, inset: float = 6.0) -> bool:
+	var view := ArtView.new()
+	view.show_art(art_name)
+	if not view.has_art():
+		view.free()
+		return false
+	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	view.offset_left = inset
+	view.offset_top = inset
+	view.offset_right = -inset
+	view.offset_bottom = -inset - 4.0
+	view.focus_y = 0.5
+	view.fade_bottom = 0.6
+	view.shade = Color(0, 0, 0, 0.08)
+	target.add_child(view)
+	target.move_child(view, 0)
+	return true
+
+
 ## 가로로 꽉 차는 진행 막대. value는 0~1.
 static func bar(value: float, color: Color, height: float = 14.0) -> ProgressBar:
 	var result := ProgressBar.new()
@@ -270,8 +306,9 @@ static func icon_button(text: String, icon_name: String, color: Color, font_size
 
 
 ## 네모 타일 버튼: 위에 아이콘, 아래에 이름과 작은 설명. 로비의 모드 고르기에 쓴다.
-static func tile_button(text: String, icon_name: String, color: Color, sub: String = "", height: float = 150.0) -> Button:
+static func tile_button(text: String, icon_name: String, color: Color, sub: String = "", height: float = 150.0, art_name: String = "") -> Button:
 	var result := button("", color, 26, height)
+	var painted := art_name != "" and button_art(result, art_name)
 	var column := VBoxContainer.new()
 	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	column.offset_top = 8
@@ -280,9 +317,13 @@ static func tile_button(text: String, icon_name: String, color: Color, sub: Stri
 	column.add_theme_constant_override("separation", 0)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	result.add_child(column)
-	var picture := icon(icon_name, 60.0)
-	picture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	column.add_child(picture)
+	if painted:
+		# 그림이 있으면 아이콘 대신 그림이 보이도록 글자를 아래로 내린다.
+		column.alignment = BoxContainer.ALIGNMENT_END
+	else:
+		var picture := icon(icon_name, 60.0)
+		picture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		column.add_child(picture)
 	var main := label(text, 26, TEXT, HORIZONTAL_ALIGNMENT_CENTER)
 	main.add_theme_constant_override("outline_size", 7)
 	main.add_theme_color_override("font_outline_color", color.darkened(0.6))

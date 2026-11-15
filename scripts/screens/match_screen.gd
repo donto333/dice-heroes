@@ -5,6 +5,7 @@ extends Control
 ##
 ## 화면 위에서부터: 상태 줄(나가기), 보드, 결과 패널(주사위·전투), 어빌리티, 카드, 굴리기 버튼, 진행 기록.
 
+const ArtView := preload("res://scripts/ui/art_view.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const AI := preload("res://scripts/rules/ai.gd")
 const GameData := preload("res://scripts/game_data.gd")
@@ -780,6 +781,28 @@ func _make_card_button() -> Button:
 		style.shadow_offset = Vector2(0, 3)
 		button.add_theme_stylebox_override(state, style)
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	# 카드 그림(assets/art/cards/<카드 id>.jpg)과 그 아래 이름 띠. 그림이 없으면 글자만 보인다.
+	var art := ArtView.new()
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.offset_left = 4
+	art.offset_right = -4
+	art.offset_top = 15
+	art.offset_bottom = -34
+	art.focus_y = 0.5
+	button.add_child(art)
+	var name_label := Label.new()
+	name_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	name_label.offset_top = -34
+	name_label.offset_bottom = -6
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_label.clip_text = true
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", Color("3a2408"))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(name_label)
+	button.set_meta("art", art)
+	button.set_meta("name_label", name_label)
 	return button
 
 
@@ -1058,6 +1081,14 @@ func _on_card_pressed(index: int) -> void:
 	var card: Dictionary = game.cards[hand[index]]
 	_play("click")
 	var body := Kit.vbox(10)
+	var picture := ArtView.new()
+	picture.show_art("cards/" + str(hand[index]))
+	if picture.has_art():
+		picture.custom_minimum_size = Vector2(0, 260)
+		picture.focus_y = 0.5
+		body.add_child(picture)
+	else:
+		picture.free()
 	body.add_child(Kit.para(str(card["text"]), 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	var usable: bool = _waiting_for_player and game.can_play_card(index)
 	var buttons: Array = []
@@ -1574,7 +1605,11 @@ func _refresh() -> void:
 		var button: Button = _card_buttons[index]
 		if index < hand.size():
 			var card: Dictionary = game.cards[hand[index]]
-			button.text = str(card["name"])
+			var art = button.get_meta("art")
+			art.show_art("cards/" + str(hand[index]))
+			var painted: bool = art.has_art()
+			button.text = "" if painted else str(card["name"])
+			button.get_meta("name_label").text = str(card["name"]) if painted else ""
 			button.visible = true
 			# 지금 쓸 수 있는 카드는 또렷하게, 아니면 흐리게
 			button.modulate = Color.WHITE if _waiting_for_player and game.can_play_card(index) else Color(0.75, 0.75, 0.8, 0.85)

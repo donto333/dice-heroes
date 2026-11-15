@@ -2,6 +2,7 @@ extends Control
 ## 전투 화면. 전투가 일어나면 보드 위에 덮어서 양쪽 주사위를 굴리고 결과를 보여 준다.
 ## play()가 끝날 때까지 기다렸다가 다음 연출로 넘어간다. 화면을 누르면 빨리 넘긴다.
 
+const ArtView := preload("res://scripts/ui/art_view.gd")
 const DiceView := preload("res://scripts/ui/dice_view.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const BoardView := preload("res://scripts/ui/board_view.gd")
@@ -51,6 +52,13 @@ func _ready() -> void:
 	box.set_content_margin_all(20)
 	panel.add_theme_stylebox_override("panel", box)
 	center.add_child(panel)
+
+	# 결투장 바탕 그림(assets/art/ui/battle_bg.jpg). 글자가 잘 보이게 어둡게 덮는다.
+	var arena := ArtView.new()
+	arena.show_art("ui/battle_bg")
+	arena.focus_y = 0.5
+	arena.shade = Color(0.02, 0.1, 0.3, 0.45)
+	panel.add_child(arena)
 
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 14)

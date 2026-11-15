@@ -9,6 +9,7 @@ signal change_party_pressed
 const Kit := preload("res://scripts/ui/kit.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const Confetti := preload("res://scripts/ui/confetti.gd")
+const ArtView := preload("res://scripts/ui/art_view.gd")
 
 const GOLD := Color("ffcf4d")
 const WIN_COLOR := Color("7ee081")
@@ -25,6 +26,8 @@ var _mvp_face: Control
 var _mvp_name: Label
 var _mvp_note: Label
 var _chips: HFlowContainer
+## 승리·패배 그림(assets/art/ui/victory.jpg, defeat.jpg)
+var _banner: Control
 
 
 func _ready() -> void:
@@ -63,6 +66,12 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 16)
 	_panel.add_child(column)
 
+	_banner = ArtView.new()
+	_banner.custom_minimum_size = Vector2(0, 210)
+	_banner.focus_y = 0.45
+	_banner.fade_bottom = 0.35
+	_banner.visible = false
+	column.add_child(_banner)
 	_title = _label(84)
 	_title.add_theme_constant_override("outline_size", 12)
 	_title.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -179,6 +188,8 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 		_confetti.start()
 	else:
 		_confetti.stop()
+	_banner.show_art("ui/defeat" if outcome == "lose" else "ui/victory")
+	_banner.visible = _banner.has_art()
 	match outcome:
 		"win":
 			_title.text = "승리!"
