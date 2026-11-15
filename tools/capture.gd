@@ -36,7 +36,9 @@ func _run() -> void:
 	opening._next()
 	await _wait(1.4)
 	await _shot("00c_opening2")
-	opening.queue_free()
+	# 장면이 적으면 _next()로 이미 끝나 스스로 사라졌을 수 있다.
+	if is_instance_valid(opening) and not opening.is_queued_for_deletion():
+		opening.queue_free()
 	await _frames(3)
 	# 여기부터는 기다림·전환 효과 없이 바로바로 넘어가게 한다(사진 순서가 흔들리지 않게).
 	_app.instant = true
