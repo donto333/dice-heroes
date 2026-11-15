@@ -171,7 +171,10 @@ func show_hero(id: String) -> void:
 	var top := Kit.hbox(14)
 	body.add_child(top)
 	var face := Portrait.new()
-	face.custom_minimum_size = Vector2(240, 240)
+	face.custom_minimum_size = Vector2(280, 280)
+	face.hd = true
+	face.border = Kit.GRADE_COLORS.get(int(character.get("grade", 1)), Kit.LINE)
+	face.border_width = 5.0
 	face.show_character(character, Kit.CATEGORY_COLORS.get(character["category"], Kit.LINE))
 	face.locked = not owned
 	top.add_child(face)

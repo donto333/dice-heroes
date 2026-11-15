@@ -87,6 +87,7 @@ func _summon_panel() -> Control:
 	for id in BANNER:
 		var face := Portrait.new()
 		face.custom_minimum_size = Vector2(0, 230)
+		face.hd = true
 		var info: Dictionary = app.character(id)
 		face.show_character(info, Kit.GRADE_COLORS[3])
 		face.border = Kit.GOLD
@@ -409,6 +410,7 @@ func show_results(results: Array) -> void:
 		cell.custom_minimum_size = Vector2(112 if results.size() > 4 else 180, 0)
 		var face := Portrait.new()
 		face.custom_minimum_size = Vector2(0, 112 if results.size() > 4 else 180)
+		face.hd = results.size() <= 4
 		face.border = Kit.GRADE_COLORS[grade]
 		face.border_width = 4.0
 		face.show_character(character, Kit.CATEGORY_COLORS.get(character.get("category", ""), Kit.LINE))
