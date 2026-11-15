@@ -183,7 +183,7 @@
     },
     {
       "id": "stars_72",
-      "text": "모험 별 72개 모두",
+      "text": "모험 별 72개 모으기",
       "stat": "adventure_stars",
       "goal": 72,
       "reward": {

@@ -8,6 +8,7 @@ const BOARD_PATH := "res://data/board.json"
 const BOARD_PATHS := [
 	"res://data/board.json", "res://data/boards/desert.json", "res://data/boards/frost.json", "res://data/boards/river.json",
 	"res://data/boards/ruins.json", "res://data/boards/volcano.json", "res://data/boards/forest.json", "res://data/boards/sky.json",
+	"res://data/boards/castle.json",
 ]
 const CARDS_PATH := "res://data/cards.json"
 const ABILITIES_PATH := "res://data/abilities.json"

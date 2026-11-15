@@ -880,7 +880,9 @@ func _test_adventure() -> void:
 	var adventure: Dictionary = _data["adventure"]
 	var chapters: Array = adventure.get("chapters", [])
 	_check(Profile.next_stage_id(adventure, "1-1") == "1-2" and Profile.next_stage_id(adventure, "1-3") == "2-1", "다음 스테이지가 틀림")
-	_check(Profile.next_stage_id(adventure, "8-3") == "", "마지막 스테이지에 다음이 있음")
+	var last_chapter: Dictionary = chapters[chapters.size() - 1]
+	var last_stage: Dictionary = last_chapter["stages"][(last_chapter["stages"] as Array).size() - 1]
+	_check(Profile.next_stage_id(adventure, str(last_stage["id"])) == "", "마지막 스테이지에 다음이 있음")
 	_check(chapters.size() == _data["boards"].size(), "모험 장 수가 맵 수와 다름")
 	var seen := {}
 	for chapter in chapters:
