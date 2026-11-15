@@ -917,7 +917,7 @@ func _test_achievements() -> void:
 	var eco: Dictionary = _data["economy"]
 	var profile := Profile.new_profile("업적", eco)
 	var known := ["wins", "rank_wins", "battle_wins_total", "cards_total", "summons_total", "upgrades_total",
-		"owned", "max_level_heroes", "adventure_stars", "chapters_cleared", "best_trophies", "level"]
+		"owned", "max_level_heroes", "adventure_stars", "chapters_cleared", "best_trophies", "level", "gates_total"]
 	var ids := {}
 	for achievement in list:
 		_check(str(achievement["stat"]) in known, "모르는 업적 값: " + str(achievement["id"]))
