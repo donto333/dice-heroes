@@ -1388,8 +1388,12 @@ func _present_events() -> void:
 				_play("skill")
 				_fx.flash(Color(1, 1, 1, 0.7), 0.25)
 				_fx.speed_lines(_board_center(), PLAYER_TEXT_COLORS[caster].lightened(0.4), 1.1)
-				_fx.burst(_piece_spot(caster), "ember", 26, 1.2)
-				_board_view.wave(caster, PLAYER_TEXT_COLORS[caster].lightened(0.3))
+				# 영웅 분류마다 효과가 다르다: 영웅은 불꽃, 위인은 별빛, 신화는 얼음 결정, 근현대는 금빛.
+				var hero_kind := str(_character_named(str(event["hero"])).get("category", ""))
+				var spark_kind: String = {"영웅": "ember", "위인": "star", "신화": "ice", "근현대": "spark"}.get(hero_kind, "ember")
+				var wave_tint: Color = {"영웅": Color("ff8a3a"), "위인": Color("7fd0ff"), "신화": Color("c9a0ff"), "근현대": Color("8dffb0")}.get(hero_kind, Color.WHITE)
+				_fx.burst(_piece_spot(caster), spark_kind, 34, 1.3)
+				_board_view.wave(caster, wave_tint)
 				_notify(_character_named(str(event["hero"])), str(event["name"]), str(event.get("text", "")), PLAYER_TEXT_COLORS[caster])
 				await _cutin.play(_character_named(str(event["hero"])), str(event["name"]), str(event.get("text", "")), PLAYER_TEXT_COLORS[caster])
 			"card":
