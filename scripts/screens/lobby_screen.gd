@@ -95,7 +95,7 @@ func setup(main_app, params: Dictionary) -> void:
 
 	var tier: Dictionary = Profile.tier_of(app.eco, int(app.profile["trophies"]))
 	var streak := Profile.streak(app.profile)
-	var rank_note := "%s · 트로피 %d · 이기면 +30" % [tier["name"], int(app.profile["trophies"])]
+	var rank_note := "%s · 트로피 %d" % [tier["name"], int(app.profile["trophies"])]
 	if streak >= 2:
 		rank_note = "%d연승 중! 트로피 %d" % [streak, int(app.profile["trophies"])]
 	# 아래: 모드 타일 네 개(2×2)와 크게 '게임 시작'(랭크전)
