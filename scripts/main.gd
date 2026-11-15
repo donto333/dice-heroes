@@ -31,7 +31,7 @@ const SCREENS := {
 	"adventure": preload("res://scripts/screens/adventure_screen.gd"),
 	"pass": preload("res://scripts/screens/pass_screen.gd"),
 }
-const VERSION := "0.11.0"
+const VERSION := "0.12.0"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}

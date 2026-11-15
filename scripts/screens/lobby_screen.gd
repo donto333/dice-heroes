@@ -182,8 +182,8 @@ func _showcase() -> Control:
 	plate.anchor_bottom = 1.0
 	plate.offset_left = 16
 	plate.offset_right = -16
-	plate.offset_top = -84
-	plate.offset_bottom = -34
+	plate.offset_top = -108
+	plate.offset_bottom = -58
 	card.add_child(plate)
 	var frame_path := "res://assets/ui_frames/hero_frame.png"
 	if ResourceLoader.exists(frame_path):
@@ -526,6 +526,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"화면 새 단장: 둥글고 굵은 글꼴, 반짝이는 입체 버튼, 그림 아이콘, 금테 영웅 카드 로비, 영웅 이름이 크게 나오는 VS 연출, 그림으로 바뀐 보드 판과 칸 아이콘, 선명해진 영웅 그림.",
 	"그림 대개편: 타이틀·로비·화면 바탕, 모험 표지, 아이템 카드 20장, 적 69종 초상화, 티어 문장과 유물 그림이 생겼어요. 처음 실행하면 오프닝 영상이 나오고, 설정에서 다시 볼 수 있어요.",
 	"파티 시너지: 세 명이 같은 분류면 '결속', 모두 다르면 '조화'. 상점은 탭 4개로 정리했고 보석 마일리지가 생겼어요.",
 	"새 맵 '왕국의 성벽'(성벽형)이 생겼어요. 성벽의 톱니처럼 오르내리는 길이에요.",
