@@ -4,7 +4,14 @@ extends Control
 
 const Portrait := preload("res://scripts/ui/portrait.gd")
 
-const HOLD_TIME := 1.7
+const HOLD_TIME := 2.4
+## 대전 시작 때 영웅이 하는 한마디(분류마다 말투가 다르다)
+const QUOTES := {
+	"영웅": ["내 창끝을 피할 수 있겠느냐!", "물러서지 않는다. 덤벼라!", "승부는 이미 정해졌다."],
+	"위인": ["계산은 이미 끝났습니다.", "지혜가 힘을 이기는 법이지요.", "한 수 가르쳐 드리지요."],
+	"신화": ["하늘의 뜻을 거스르지 마라.", "천 년을 기다린 승부다.", "신의 주사위는 정해져 있다."],
+	"근현대": ["새 시대의 방식으로 가 보죠!", "불가능은 없습니다. 출발!", "세상은 도전하는 자의 것!"],
+}
 
 var _skipped := false
 
@@ -38,27 +45,27 @@ func play(sides: Array, map_text: String, goal_text: String, searching: bool = f
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade)
-	# 위쪽 절반은 상대, 아래쪽 절반은 나. 대표(ATTACK) 영웅 그림을 크게 깔고 이름과 별명을 기울여 얹는다.
+	# 가로 화면: 왼쪽 절반은 나, 오른쪽 절반은 상대. 대표(ATTACK) 영웅 그림을 크게 깔고 이름·별명·한마디를 기울여 얹는다.
 	var panels: Array = []
 	for index in 2:
 		var panel := _side(sides[index], index == 1)
 		add_child(panel)
-		panel.anchor_left = 0.0
-		panel.anchor_right = 1.0
-		panel.anchor_top = 0.5 if index == 0 else 0.1
-		panel.anchor_bottom = 0.9 if index == 0 else 0.5
+		panel.anchor_left = 0.0 if index == 0 else 0.5
+		panel.anchor_right = 0.5 if index == 0 else 1.0
+		panel.anchor_top = 0.0
+		panel.anchor_bottom = 1.0
 		panels.append(panel)
 	# 가운데를 가로지르는 금색 사선 띠
 	var slash := ColorRect.new()
 	slash.color = Color("ffcf4d")
 	slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slash.anchor_left = -0.1
-	slash.anchor_right = 1.1
-	slash.anchor_top = 0.5
-	slash.anchor_bottom = 0.5
-	slash.offset_top = -7
-	slash.offset_bottom = 7
-	slash.rotation = deg_to_rad(-5.0)
+	slash.anchor_left = 0.5
+	slash.anchor_right = 0.5
+	slash.anchor_top = -0.2
+	slash.anchor_bottom = 1.2
+	slash.offset_left = -8
+	slash.offset_right = 8
+	slash.rotation = deg_to_rad(7.0)
 	add_child(slash)
 	var middle := VBoxContainer.new()
 	middle.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -66,7 +73,7 @@ func play(sides: Array, map_text: String, goal_text: String, searching: bool = f
 	middle.anchor_left = 0.0
 	middle.anchor_right = 1.0
 	middle.anchor_top = 0.0
-	middle.anchor_bottom = 0.1
+	middle.anchor_bottom = 0.12
 	add_child(middle)
 	middle.add_child(_text(map_text, 34, Color("ffcf4d"), 8))
 	middle.add_child(_text(goal_text.replace("\n", "  ·  "), 17, Color(1, 1, 1, 0.85), 4))
@@ -93,7 +100,7 @@ func play(sides: Array, map_text: String, goal_text: String, searching: bool = f
 	if not is_inside_tree():
 		return
 	# 양쪽에서 미끄러져 들어오고 VS가 커졌다 줄어든다.
-	var slide := size.x
+	var slide := size.x * 0.5
 	panels[0].position.x -= slide
 	panels[1].position.x += slide
 	slash.pivot_offset = slash.size * 0.5
@@ -172,9 +179,9 @@ func _side(side: Dictionary, flip: bool) -> Control:
 	words.add_theme_constant_override("separation", -6)
 	words.anchor_left = 0.04
 	words.anchor_right = 0.96
-	words.anchor_top = 0.5 if not flip else 0.3
-	words.anchor_bottom = 0.5 if not flip else 0.3
-	words.offset_bottom = 200
+	words.anchor_top = 0.5
+	words.anchor_bottom = 0.5
+	words.offset_bottom = 230
 	words.rotation = deg_to_rad(-6.0)
 	panel.add_child(words)
 	var align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_RIGHT if flip else HORIZONTAL_ALIGNMENT_LEFT
@@ -185,6 +192,20 @@ func _side(side: Dictionary, flip: bool) -> Control:
 	var motto := _text(str(leader.get("title", "")), 32, Color("ffe27a"), 10)
 	motto.horizontal_alignment = align
 	words.add_child(motto)
+	# 영웅의 한마디(분류마다 말투가 다르다): 어두운 띠 위에 흰 글자
+	var lines: Array = QUOTES.get(str(leader.get("category", "")), QUOTES["영웅"])
+	var quote := _text(str(lines[absi(hash(str(leader.get("id", "")))) % lines.size()]), 26, Color.WHITE, 6)
+	quote.horizontal_alignment = align
+	var band := StyleBoxFlat.new()
+	band.bg_color = Color(0, 0, 0, 0.55)
+	band.content_margin_left = 16
+	band.content_margin_right = 16
+	band.content_margin_top = 6
+	band.content_margin_bottom = 8
+	band.skew = Vector2(0.25, 0.0)
+	quote.add_theme_stylebox_override("normal", band)
+	words.add_child(Control.new())
+	words.add_child(quote)
 
 	# 쪽 이름과 전투력 알약
 	var tag_text := str(side["name"])
@@ -203,30 +224,30 @@ func _side(side: Dictionary, flip: bool) -> Control:
 	tag.add_theme_stylebox_override("normal", pill)
 	tag.anchor_left = 0.0 if not flip else 1.0
 	tag.anchor_right = 0.0 if not flip else 1.0
-	tag.anchor_top = 0.0 if flip else 1.0
-	tag.anchor_bottom = 0.0 if flip else 1.0
+	tag.anchor_top = 0.0
+	tag.anchor_bottom = 0.0
 	tag.grow_horizontal = Control.GROW_DIRECTION_END if not flip else Control.GROW_DIRECTION_BEGIN
-	tag.grow_vertical = Control.GROW_DIRECTION_END if flip else Control.GROW_DIRECTION_BEGIN
+	tag.grow_vertical = Control.GROW_DIRECTION_END
 	tag.offset_left = 14 if not flip else -14
 	tag.offset_right = 14 if not flip else -14
-	tag.offset_top = 14 if flip else -14
-	tag.offset_bottom = 14 if flip else -14
+	tag.offset_top = 96
+	tag.offset_bottom = 96
 	panel.add_child(tag)
 
 	# 파티 세 명: 글자 반대쪽 구석에 작은 얼굴
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", 8)
-	row.anchor_left = 1.0 if not flip else 0.0
-	row.anchor_right = 1.0 if not flip else 0.0
-	row.anchor_top = 1.0 if not flip else 0.0
-	row.anchor_bottom = 1.0 if not flip else 0.0
-	row.grow_horizontal = Control.GROW_DIRECTION_BEGIN if not flip else Control.GROW_DIRECTION_END
-	row.grow_vertical = Control.GROW_DIRECTION_BEGIN if not flip else Control.GROW_DIRECTION_END
-	row.offset_left = -14 if not flip else 14
-	row.offset_right = -14 if not flip else 14
-	row.offset_top = -14 if not flip else 64
-	row.offset_bottom = -14 if not flip else 64
+	row.anchor_left = 0.0 if not flip else 1.0
+	row.anchor_right = 0.0 if not flip else 1.0
+	row.anchor_top = 1.0
+	row.anchor_bottom = 1.0
+	row.grow_horizontal = Control.GROW_DIRECTION_END if not flip else Control.GROW_DIRECTION_BEGIN
+	row.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	row.offset_left = 14 if not flip else -14
+	row.offset_right = 14 if not flip else -14
+	row.offset_top = -36
+	row.offset_bottom = -36
 	panel.add_child(row)
 	for index in members.size():
 		var member: Dictionary = members[index]
@@ -246,11 +267,11 @@ func _side(side: Dictionary, flip: bool) -> Control:
 		var bonus := _text(str(side["bonus"]), 18, Color("b6ffd0"), 5)
 		bonus.anchor_left = 0.0
 		bonus.anchor_right = 1.0
-		bonus.anchor_top = 0.0 if not flip else 1.0
-		bonus.anchor_bottom = 0.0 if not flip else 1.0
-		bonus.grow_vertical = Control.GROW_DIRECTION_END if not flip else Control.GROW_DIRECTION_BEGIN
-		bonus.offset_top = 12 if not flip else -12
-		bonus.offset_bottom = 12 if not flip else -12
+		bonus.anchor_top = 0.0
+		bonus.anchor_bottom = 0.0
+		bonus.grow_vertical = Control.GROW_DIRECTION_END
+		bonus.offset_top = 146
+		bonus.offset_bottom = 146
 		panel.add_child(bonus)
 	return panel
 

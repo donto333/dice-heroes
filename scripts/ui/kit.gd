@@ -129,8 +129,14 @@ static func _chunky(fill: Color, edge: Color, bottom: int) -> StyleBoxFlat:
 	return style
 
 
+## 지금 화면의 판 기본색. 화면마다 분위기가 다르도록 main.gd가 화면을 바꿀 때 정한다.
+static var panel_tint := PANEL
+
+
 static func panel(fill: Color = PANEL, border: Color = LINE, padding: int = 14) -> PanelContainer:
 	var result := PanelContainer.new()
+	if fill == PANEL:
+		fill = panel_tint
 	# 기본 하늘색 테는 금색 장식 테로 바꾼다. 따로 색을 준 판은 그 색 금속 테가 된다.
 	result.add_theme_stylebox_override("panel", plate(fill, TRIM if border == LINE else border, 20.0, padding + 4))
 	return result
@@ -250,7 +256,8 @@ static func backdrop(parent: Control, art_name: String, strength: float = 1.0) -
 	view.show_art(art_name)
 	view.drift = true
 	view.drift_speed = 0.6
-	view.modulate.a = strength
+	# 가로 화면에서는 바탕 그림을 더 또렷하게 보여 화면마다 분위기가 달라지게 한다.
+	view.modulate.a = lerpf(strength, 1.0, 0.7)
 	view.fade_top = 0.18
 	view.fade_bottom = 0.25
 	parent.add_child(view)

@@ -50,24 +50,26 @@ func _ready() -> void:
 	add_child(center)
 
 	_panel = PanelContainer.new()
-	_panel.custom_minimum_size = Vector2(820, 0)
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color("1f66c8")
-	box.border_color = Color.WHITE
-	box.set_border_width_all(5)
-	box.shadow_color = Color(0, 0.05, 0.2, 0.5)
-	box.shadow_size = 12
-	box.set_corner_radius_all(30)
-	box.set_content_margin_all(28)
-	_panel.add_theme_stylebox_override("panel", box)
+	_panel.custom_minimum_size = Vector2(1080, 0)
+	_panel.add_theme_stylebox_override("panel", Kit.plate(Color("2a2f9c"), Kit.TRIM, 28.0, 24))
 	center.add_child(_panel)
 
+	# 가로 화면: 왼쪽에 결과·MVP·보상, 오른쪽에 자세한 기록과 버튼.
+	var halves := HBoxContainer.new()
+	halves.add_theme_constant_override("separation", 24)
+	_panel.add_child(halves)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 16)
-	_panel.add_child(column)
+	column.add_theme_constant_override("separation", 10)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	halves.add_child(column)
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 12)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.alignment = BoxContainer.ALIGNMENT_END
+	halves.add_child(right)
 
 	_banner = ArtView.new()
-	_banner.custom_minimum_size = Vector2(0, 110)
+	_banner.custom_minimum_size = Vector2(0, 150)
 	_banner.focus_y = 0.45
 	_banner.fade_bottom = 0.35
 	_banner.visible = false
@@ -118,16 +120,18 @@ func _ready() -> void:
 	_details.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_details.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 	_details.add_theme_constant_override("line_spacing", 6)
-	column.add_child(_details)
+	_details.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_details.add_theme_stylebox_override("normal", Kit.plate(Color(0.05, 0.06, 0.28, 0.7), Color("8fa6d8"), 14.0, 14, false))
+	right.add_child(_details)
 
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
-	column.add_child(buttons)
-	var change := Kit.button("로비로", Color("6f9bd6"), 28, 92)
+	right.add_child(buttons)
+	var change := Kit.button("로비로", Color("6f9bd6"), 26, 76)
 	change.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	change.pressed.connect(_on_change_pressed)
 	buttons.add_child(change)
-	var again := Kit.button("다시 하기", Color("e8890c"), 30, 92)
+	var again := Kit.button("다시 하기", Color("e8890c"), 28, 76)
 	_again = again
 	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.size_flags_stretch_ratio = 1.5

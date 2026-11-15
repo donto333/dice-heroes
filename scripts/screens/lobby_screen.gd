@@ -144,7 +144,7 @@ func _rank_card() -> Control:
 	var trophies := int(profile["trophies"])
 	var tier: Dictionary = Profile.tier_of(app.eco, trophies)
 	var tier_color := Color(str(tier.get("color", "ffffff")))
-	var card := Kit.panel(Color("1f66c8"), tier_color, 10)
+	var card := Kit.panel(Color("3b2f9e"), tier_color, 10)
 	var row := Kit.hbox(14)
 	card.add_child(row)
 	# 티어 문장 그림(assets/art/ui/tier_<순서>.jpg)
