@@ -45,7 +45,7 @@
     {"id": 36, "type": "random", "x": 28, "y": 0, "next": [37], "hidden": true},
     {"id": 37, "type": "checkpoint", "x": 29, "y": 1, "next": [38]},
     {"id": 38, "type": "curse", "x": 30, "y": 1, "next": [39]},
-    {"id": 39, "type": "gate", "x": 31, "y": 1, "next": [40], "name": "관문지기 강도떼", "dice": 2},
+    {"id": 39, "type": "gate", "x": 31, "y": 1, "next": [40], "name": "관문지기 강도떼", "dice": 3},
     {"id": 40, "type": "curse", "x": 32, "y": 2, "next": [41]},
     {"id": 41, "type": "normal", "x": 33, "y": 3, "next": [42]},
     {"id": 42, "type": "attr", "x": 34, "y": 4, "next": [43], "attr": "위인"},
@@ -59,7 +59,7 @@
     {"id": 50, "type": "ambush", "x": 42, "y": 4, "next": [51], "name": "갈대숲 도적", "dice": 3},
     {"id": 51, "type": "treasure", "x": 43, "y": 4, "next": [52]},
     {"id": 52, "type": "fate", "x": 44, "y": 4, "next": [53]},
-    {"id": 53, "type": "gate", "x": 45, "y": 4, "next": [54], "name": "관문지기 물뱀", "dice": 3},
+    {"id": 53, "type": "gate", "x": 45, "y": 4, "next": [54], "name": "관문지기 물뱀", "dice": 4},
     {"id": 54, "type": "random", "x": 46, "y": 4, "next": [55]},
     {"id": 55, "type": "checkpoint", "x": 47, "y": 4, "next": [56]},
     {"id": 56, "type": "normal", "x": 48, "y": 4, "next": [57]},
@@ -90,7 +90,7 @@
     {"id": 81, "type": "random", "x": 65, "y": 1, "next": [82]},
     {"id": 82, "type": "normal", "x": 66, "y": 2, "next": [83]},
     {"id": 83, "type": "attr", "x": 67, "y": 3, "next": [84], "attr": "근현대"},
-    {"id": 84, "type": "gate", "x": 68, "y": 4, "next": [85], "name": "관문지기 늪 악어", "dice": 3},
+    {"id": 84, "type": "gate", "x": 68, "y": 4, "next": [85], "name": "관문지기 늪 악어", "dice": 4},
     {"id": 85, "type": "fork", "x": 69, "y": 4, "next": [86, 94]},
     {"id": 86, "type": "forward", "x": 70, "y": 5, "next": [87], "amount": 3, "route": "폭포 옆 (위험)"},
     {"id": 87, "type": "forward", "x": 71, "y": 5, "next": [88], "amount": 4},
@@ -122,7 +122,7 @@
     {"id": 113, "type": "luck", "x": 89, "y": 1, "next": [114]},
     {"id": 114, "type": "treasure", "x": 90, "y": 1, "next": [115]},
     {"id": 115, "type": "random", "x": 91, "y": 1, "next": [116]},
-    {"id": 116, "type": "goal", "x": 92, "y": 1, "next": [], "name": "히드라", "dice": 4}
+    {"id": 116, "type": "goal", "x": 92, "y": 1, "next": [], "name": "히드라", "dice": 5}
   ],
   "random_pool": [
     {"weight": 3, "tile": {"type": "treasure"}},

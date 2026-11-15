@@ -242,7 +242,7 @@ def make_board(theme):
     start["type"] = "start"
     goal["type"] = "goal"
     goal["name"] = theme["boss"]
-    goal["dice"] = 4
+    goal["dice"] = 5
 
     # 큰길 내용: 거점은 10칸 안팎마다, 키퍼는 7~9칸마다, 나머지는 비율대로.
     total = len(main_path)
@@ -294,7 +294,7 @@ def make_board(theme):
     # 관문(강제 전투) 3개: 큰길의 28%·52%·76% 지점. 갈림길 밖 큰길이라 피할 수 없다.
     # 무작위 수를 쓰지 않아서 다른 칸 배치는 그대로다.
     plain = [n for n in main_path if n["type"] in ("normal", "random")]
-    for k, (spot_at, dice) in enumerate([(0.28, 2), (0.52, 3), (0.76, 3)]):
+    for k, (spot_at, dice) in enumerate([(0.28, 3), (0.52, 4), (0.76, 4)]):
         target = int(total * spot_at)
         spot = min(plain, key=lambda n: abs(main_path.index(n) - target))
         plain.remove(spot)
