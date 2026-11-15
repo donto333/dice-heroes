@@ -26,7 +26,7 @@ const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 
 const CATEGORIES := ["영웅", "위인", "신화", "근현대"]
 const TILE_TYPES := [
-	"start", "normal", "fork", "random", "attr", "battle", "ambush", "treasure", "forward",
+	"start", "normal", "fork", "random", "attr", "battle", "ambush", "gate", "treasure", "forward",
 	"warp", "luck", "curse", "prison", "fate", "checkpoint", "goal",
 ]
 const PARTIES := [
@@ -88,6 +88,7 @@ func _init() -> void:
 	_test_events()
 	_test_sweep()
 	_test_double()
+	_test_gate()
 	_test_guide()
 	_test_upgrade_all()
 	_test_monster_kinds()
@@ -208,7 +209,7 @@ func _check_board(board: Dictionary, board_index: int) -> void:
 		match node.get("type", ""):
 			"attr":
 				_check(node.get("attr", "") in CATEGORIES, "속성 칸의 분류가 잘못됨: %d번" % id)
-			"battle", "ambush", "goal":
+			"battle", "ambush", "gate", "goal":
 				_check(int(node.get("dice", 0)) >= 1, "키퍼 주사위 수가 없음: %d번" % id)
 	for node in raw_nodes:
 		for next_id in node.get("next", []):
@@ -1303,3 +1304,58 @@ func _test_double() -> void:
 	_check(Game.is_double([3, 3]) and Game.is_double([6, 6, 6]), "같은 눈인데 더블이 아님")
 	_check(not Game.is_double([3]) and not Game.is_double([2, 5]) and not Game.is_double([]), "더블이 아닌데 더블임")
 	_check(int(_data["rules"].get("double_gauge", 0)) > 0 and int(_data["rules"]["double_gauge"]) <= 20, "더블 게이지가 없거나 너무 큼")
+
+
+## 관문: 지나가다가도 멈춰 싸우고, 이기면 다음부터 그냥 지나가고, 지면 관문지기가 약해진다.
+func _test_gate() -> void:
+	var stopped := 0
+	for seed_value in 20:
+		var game = _new_game(700 + seed_value)
+		game.nodes[3] = (game.nodes[3] as Dictionary).duplicate()
+		game.nodes[3]["type"] = "gate"
+		game.nodes[3]["name"] = "관문지기 산적"
+		game.nodes[3]["dice"] = 3
+		game.begin_turn()
+		_place(game, 0, [0])
+		game.players[0]["effects"].append({"key": "move_fixed", "amount": 5, "turns": 1})
+		game.roll_move()
+		var passed := false
+		var fought := false
+		for event in game.events:
+			if str(event.get("kind", "")) == "pos" and int(event.get("player", -1)) == 0 and int(event.get("to", -1)) == 4:
+				passed = true
+			if str(event.get("kind", "")) == "battle" and str(event.get("target", "")) == "keeper":
+				fought = true
+		_check(not passed and fought, "관문을 싸우지 않고 지나감")
+		if game.gates_cleared[0].has(3):
+			_check(int(game.players[0]["pos"]) == 3, "관문을 이겼는데 관문 칸에 없음")
+		else:
+			_check(int(game.players[0]["pos"]) < 3 and int(game.gate_fails[0].get(3, 0)) == 1 and game.gate_dice_for(0, 3) == 2, "관문에서 졌는데 돌아가지 않거나 약해지지 않음")
+		_check(game.gate_blocks(1, 3), "한 사람이 뚫은 관문이 상대에게도 열림")
+		stopped += 1
+	_check(stopped == 20, "관문 검사가 돌지 않음")
+	# 이미 뚫은 관문은 그냥 지나간다.
+	var game2 = _new_game(731)
+	game2.nodes[3] = (game2.nodes[3] as Dictionary).duplicate()
+	game2.nodes[3]["type"] = "gate"
+	game2.nodes[3]["name"] = "관문지기 산적"
+	game2.nodes[3]["dice"] = 3
+	game2.gates_cleared[0][3] = true
+	game2.begin_turn()
+	_place(game2, 0, [0])
+	game2.players[0]["effects"].append({"key": "move_fixed", "amount": 5, "turns": 1})
+	game2.roll_move()
+	var went_on := false
+	for event in game2.events:
+		if str(event.get("kind", "")) == "pos" and int(event.get("to", -1)) == 4:
+			went_on = true
+	_check(went_on, "뚫은 관문에서 또 멈춤")
+	game2.gate_fails[1][3] = 9
+	_check(game2.gate_dice_for(1, 3) == 1, "관문지기 주사위가 1개 밑으로 내려감")
+	# 맵마다 관문이 큰길에 3개 있다.
+	for board in _data["boards"]:
+		var gates := 0
+		for node in board["nodes"]:
+			if str(node.get("type", "")) == "gate":
+				gates += 1
+		_check(gates == 3, "%s 맵의 관문이 3개가 아님: %d개" % [board.get("name", ""), gates])

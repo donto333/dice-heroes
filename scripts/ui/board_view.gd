@@ -14,6 +14,7 @@ const TILE_COLORS := {
 	"treasure": Color("c9a227"),
 	"battle": Color("d9702b"),
 	"ambush": Color("a8323e"),
+	"gate": Color("5a1020"),
 	"forward": Color("7cb342"),
 	"warp": Color("1ba39c"),
 	"luck": Color("e6c84a"),
@@ -37,6 +38,7 @@ const TILE_LABELS := {
 	"treasure": "보물",
 	"battle": "전투",
 	"ambush": "습격",
+	"gate": "관문",
 	"forward": "전진",
 	"warp": "워프",
 	"luck": "행운",
@@ -48,7 +50,7 @@ const TILE_LABELS := {
 }
 const PLAYER_COLORS := [Color("4fc3f7"), Color("ff7043")]
 const ICON_NAMES := {
-	"start": "start", "fork": "fork", "treasure": "treasure", "battle": "battle", "ambush": "ambush",
+	"start": "start", "fork": "fork", "treasure": "treasure", "battle": "battle", "ambush": "ambush", "gate": "battle",
 	"forward": "forward", "warp": "warp", "luck": "luck", "curse": "curse",
 	"prison": "prison", "fate": "fate", "checkpoint": "checkpoint", "goal": "goal",
 }
@@ -463,11 +465,11 @@ func _draw() -> void:
 			icon_name = "hidden"
 		_draw_hex(rect.get_center(), half, cell, color, id in highlight)
 		var monster := -1
-		if not game.is_hidden(id) and tile.get("type", "") in ["battle", "ambush", "goal"]:
+		if not game.is_hidden(id) and tile.get("type", "") in ["battle", "ambush", "gate", "goal"]:
 			monster = monster_kind(str(tile.get("type", "")), str(tile.get("name", "")))
 		if monster >= 0 and _monsters != null:
 			# 키퍼·습격·골 칸에는 아이콘 대신 적이 서 있다(살짝 위로 올려 서 있는 느낌).
-			var stand := rect.size.x * (0.86 if tile.get("type", "") == "goal" else 0.7)
+			var stand := rect.size.x * (0.86 if tile.get("type", "") in ["goal", "gate"] else 0.7)
 			var stand_rect := Rect2(rect.get_center().x - stand / 2.0, rect.position.y + rect.size.y * 0.5 - stand * 0.92, stand, stand)
 			draw_texture_rect_region(_monsters, stand_rect, Rect2(monster * 32, 0, 32, 32))
 		elif _icons.has(icon_name):

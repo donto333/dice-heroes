@@ -64,6 +64,11 @@ var events: Array = []
 var pending_choice: Dictionary = {}
 ## 덫이 놓인 칸 id → 덫을 놓은 플레이어
 var traps: Dictionary = {}
+## 관문(강제 전투 칸): 플레이어마다 이미 뚫은 관문 {칸 번호: true}, 진 횟수 {칸 번호: 횟수}
+var gates_cleared: Array = [{}, {}]
+var gate_fails: Array = [{}, {}]
+## 관문에서 한 번 질 때마다 그 관문지기의 주사위가 이만큼 줄어든다(끝없이 막히지 않게).
+var gate_weaken := 1
 ## 후공 보정으로 둘째 플레이어가 받는 첫 게이지
 var second_player_gauge := 0
 ## 더블(이동 주사위 2개 이상이 모두 같은 눈)이면 차는 어빌리티 게이지(%)
@@ -104,6 +109,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	var rules: Dictionary = data.get("rules", {})
 	second_player_gauge = int(rules.get("second_player_gauge", 0))
 	double_gauge = int(rules.get("double_gauge", 0))
+	gate_weaken = int(rules.get("gate_weaken", 1))
 	gauge_base = int(rules.get("gauge_base", 10))
 	gauge_per_intellect = int(rules.get("gauge_per_intellect", 5))
 	start_gauge_per_intellect = int(rules.get("start_gauge_per_intellect", 0))
@@ -145,6 +151,8 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	pending_choice = {}
 	revealed = {}
 	traps = {}
+	gates_cleared = [{}, {}]
+	gate_fails = [{}, {}]
 	for index in players.size():
 		for i in START_HAND:
 			_draw_card(index, false)
@@ -597,11 +605,24 @@ func _walk(player_index: int, steps: int, interactive: bool) -> bool:
 			chosen = best_option(options)
 		_step(player_index, int(options[chosen]))
 		remaining -= 1
+		# 관문: 아직 뚫지 못했으면 지나갈 수 없다. 여기서 멈추고 싸운다(남은 칸은 버린다).
+		if gate_blocks(player_index, int(players[player_index]["pos"])):
+			return true
 		# 가는 길에 상대를 지나치면 싸울지 고른다. 마지막 칸이면 도착해서 싸운다.
 		if interactive and remaining > 0 and _can_fight_passing(player_index):
 			pending_choice = {"kind": "fight", "options": [0, 1], "steps": remaining}
 			return false
 	return true
+
+
+## 이 플레이어가 아직 뚫지 못한 관문인가
+func gate_blocks(player_index: int, pos: int) -> bool:
+	return str(node_of(pos).get("type", "")) == "gate" and not gates_cleared[player_index].has(pos)
+
+
+## 이 플레이어가 그 관문에서 상대할 주사위 수. 질 때마다 줄고 1개 밑으로는 안 내려간다.
+func gate_dice_for(player_index: int, pos: int) -> int:
+	return maxi(1, int(node_of(pos).get("dice", 1)) - gate_weaken * int(gate_fails[player_index].get(pos, 0)))
 
 
 func _step(player_index: int, to: int) -> void:
@@ -674,6 +695,18 @@ func _resolve_tile(depth: int) -> void:
 		"battle":
 			if _battle_keeper(int(tile["dice"]), tile["name"]):
 				_draw_card(current, true)
+		"gate":
+			if gate_blocks(current, pos):
+				var gate_dice := gate_dice_for(current, pos)
+				say("  관문! [%s]을(를) 이겨야 지나갈 수 있습니다." % tile["name"])
+				_tile_event("battle", "관문! 강제 전투", false)
+				if _battle_keeper(gate_dice, tile["name"]):
+					gates_cleared[current][pos] = true
+					say("  관문을 뚫었습니다! 이제 이 관문은 그냥 지나갑니다.")
+					_draw_card(current, true)
+				else:
+					gate_fails[current][pos] = int(gate_fails[current].get(pos, 0)) + 1
+					say("  관문지기가 지쳤습니다. 다음에는 주사위가 줄어듭니다.")
 		"ambush":
 			say("  습격! [%s]이(가) 덤벼듭니다." % tile["name"])
 			if _battle_ambush(int(tile["dice"]), tile["name"]):
