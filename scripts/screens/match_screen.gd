@@ -1188,6 +1188,7 @@ func _show_battle(event: Dictionary) -> void:
 	var other := 1 - who
 	if str(event.get("target", "")) == "ambush":
 		await _battle_overlay.play(event, {
+			"boss_name": _goal_name(),
 			"attacker_side": "습격 · 몬스터",
 			"defender_side": "방어 · %s" % game.players[who]["name"],
 			"attacker_color": Color("ff6b6b"),
@@ -1221,6 +1222,7 @@ func _show_battle(event: Dictionary) -> void:
 		# 역전의 첫걸음: 이기면 나는 앞으로, 상대는 뒤로. 지면 그대로(아무도 거점으로 가지 않는다).
 		info["winner_text"] = "%s 역전! 5칸 앞으로, 상대는 5칸 뒤로" % game.players[who]["name"]
 		info["loser_text"] = "%s 역전 실패... 그대로" % game.players[who]["name"]
+	info["boss_name"] = _goal_name()
 	info["attacker_character"] = _character_named(str(event["attacker"]))
 	info["defender_character"] = _character_named(str(event["defender"]))
 	await _battle_overlay.play(event, info)
@@ -1594,3 +1596,11 @@ func _state_text(player: Dictionary) -> String:
 	if parts.is_empty():
 		return ""
 	return " (" + ", ".join(PackedStringArray(parts)) + ")"
+
+
+## 골의 수호자 이름(전투 창에서 보스 그림을 쓰려고 찾는다).
+func _goal_name() -> String:
+	for id in game.nodes:
+		if str(game.nodes[id].get("type", "")) == "goal":
+			return str(game.nodes[id].get("name", ""))
+	return ""

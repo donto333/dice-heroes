@@ -11,6 +11,9 @@ var fill := Color("3a4466")
 var border := Color(1, 1, 1, 0.55)
 var border_width := 3.0
 var letter := ""
+## 0 이상이면 적 그림 시트(assets/terrain/monsters.png)의 그 번째 그림을 그린다.
+var monster := -1
+static var _monster_sheet: Texture2D = null
 ## 골라 둔 카드처럼 어둡게 보일 때
 var dim := false
 ## 아직 가지지 않은 영웅. 흑백에 가깝게 아주 어둡게 그린다.
@@ -27,6 +30,8 @@ func _init() -> void:
 
 ## character: data/characters.json의 캐릭터 한 명. 비어 있으면 빈 칸으로 그린다.
 func show_character(character: Dictionary, color: Color) -> void:
+	monster = -1
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	fill = color
 	if character.is_empty():
 		texture = null
@@ -37,10 +42,21 @@ func show_character(character: Dictionary, color: Color) -> void:
 	queue_redraw()
 
 
+## 키퍼·몬스터: 보드에 서 있는 것과 같은 적 그림을 크게 보여 준다. 그림이 없으면 글자.
+func show_monster(kind: int, text: String, color: Color) -> void:
+	show_text(text, color)
+	if _monster_sheet == null and ResourceLoader.exists("res://assets/terrain/monsters.png"):
+		_monster_sheet = load("res://assets/terrain/monsters.png")
+	monster = kind if _monster_sheet != null else -1
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if monster >= 0 else CanvasItem.TEXTURE_FILTER_LINEAR
+	queue_redraw()
+
+
 ## 몬스터나 키퍼처럼 캐릭터가 아닌 상대. 그림 없이 글자만 그린다.
 func show_text(text: String, color: Color) -> void:
 	fill = color
 	texture = null
+	monster = -1
 	letter = text.left(1)
 	queue_redraw()
 
@@ -53,6 +69,11 @@ func _draw() -> void:
 	if texture != null:
 		var tint := Color(0.32, 0.33, 0.4) if locked else Color.WHITE
 		draw_texture_rect_region(texture, rect, _crop(texture.get_size()), tint)
+	elif monster >= 0 and _monster_sheet != null:
+		# 도트 그림이라 흐려지지 않게 그대로 키운다.
+		draw_rect(Rect2(0, 0, size.x, size.y * 0.62), fill.lightened(0.12))
+		var side: float = min(size.x, size.y) * 0.86
+		draw_texture_rect_region(_monster_sheet, Rect2((size.x - side) / 2.0, size.y - side - size.y * 0.04, side, side), Rect2(monster * 32, 0, 32, 32))
 	elif letter != "":
 		# 위쪽이 밝은 바탕에 첫 글자
 		draw_rect(Rect2(0, 0, size.x, size.y * 0.5), fill.darkened(0.15))

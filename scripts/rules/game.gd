@@ -173,6 +173,8 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 			_add_gauge(index, int(relic["gauge"]))
 		if bool(relic.get("charm", false)):
 			players[index]["charm"] = true
+		if not relic.is_empty():
+			say("%s: 유물의 힘을 받고 시작합니다." % players[index]["name"])
 	say("게임 시작! 먼저 골에 들어가면 승리합니다.")
 
 
