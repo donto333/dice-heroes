@@ -146,6 +146,9 @@ func _side(side: Dictionary, flip: bool) -> Control:
 	column.add_child(_text(str(side["name"]), 28, color, 6))
 	if side.has("power"):
 		column.add_child(_text("전투력 %d" % int(side["power"]), 20, Color("ffcf4d"), 4))
+	if str(side.get("bonus", "")) != "":
+		# 시너지·유물처럼 갖고 시작하는 것
+		column.add_child(_text(str(side["bonus"]), 16, Color("b6ffd0"), 4))
 	var members: Array = side["members"]
 	var levels: Array = side.get("levels", [])
 	for index in members.size():

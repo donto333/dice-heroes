@@ -857,8 +857,17 @@ func _versus_side(index: int) -> Dictionary:
 	for slot_index in Game.SLOTS.size():
 		party[Game.SLOTS[slot_index]] = str(members[slot_index].get("id", ""))
 		level_table[Game.SLOTS[slot_index]] = int(levels[slot_index])
+	var bonus_parts: Array = []
+	var categories: Array = []
+	for member in members:
+		categories.append(str(member.get("category", "")))
+	var synergy: Dictionary = Game.synergy_of(_data.get("rules", {}).get("synergy", {}), categories)
+	if not synergy.is_empty():
+		bonus_parts.append("시너지 %s" % synergy.get("name", ""))
+	if not (game.players[index].get("relic", {}) as Dictionary).is_empty():
+		bonus_parts.append("유물" if index == 0 else "강화")
 	return {"name": str(game.players[index]["name"]), "color": PLAYER_TEXT_COLORS[index], "members": members, "levels": levels,
-		"power": Profile.party_power(_data["characters"], app.eco, party, level_table)}
+		"power": Profile.party_power(_data["characters"], app.eco, party, level_table), "bonus": " · ".join(PackedStringArray(bonus_parts))}
 
 
 ## 사람이 입력할 차례가 될 때까지 게임을 진행한다.
