@@ -41,7 +41,7 @@ func _ready() -> void:
 	add_child(center)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(660, 0)
+	panel.custom_minimum_size = Vector2(880, 0)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color("1f66c8")
@@ -50,7 +50,7 @@ func _ready() -> void:
 	box.shadow_color = Color(0, 0.05, 0.2, 0.5)
 	box.shadow_size = 12
 	box.set_corner_radius_all(30)
-	box.set_content_margin_all(20)
+	box.set_content_margin_all(14)
 	panel.add_theme_stylebox_override("panel", box)
 	center.add_child(panel)
 
@@ -62,11 +62,11 @@ func _ready() -> void:
 	panel.add_child(arena)
 
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 14)
+	column.add_theme_constant_override("separation", 6)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(column)
 
-	_title = _label("BATTLE", 64, GOLD)
+	_title = _label("BATTLE", 50, GOLD)
 	_title.add_theme_constant_override("outline_size", 10)
 	_title.add_theme_color_override("font_outline_color", Color("5a3a00"))
 	column.add_child(_title)
@@ -78,17 +78,17 @@ func _ready() -> void:
 	for side in 2:
 		var side_box := VBoxContainer.new()
 		side_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		side_box.add_theme_constant_override("separation", 6)
+		side_box.add_theme_constant_override("separation", 2)
 		side_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var role := _label("", 22, Color.WHITE)
 		var portrait_holder := CenterContainer.new()
 		portrait_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var portrait := Portrait.new()
-		portrait.custom_minimum_size = Vector2(170, 170)
+		portrait.custom_minimum_size = Vector2(150, 150)
 		portrait_holder.add_child(portrait)
 		# 입체 모형이 있으면 초상화 대신 모형이 결투장에 선다.
 		var figure := TextureRect.new()
-		figure.custom_minimum_size = Vector2(230, 230)
+		figure.custom_minimum_size = Vector2(190, 190)
 		figure.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		figure.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		figure.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -102,7 +102,7 @@ func _ready() -> void:
 		stamp.visible = false
 		portrait_holder.add_child(stamp)
 		var who := _label("", 30, Color.WHITE)
-		var total := _label("00", 76, Color.WHITE)
+		var total := _label("00", 60, Color.WHITE)
 		total.add_theme_constant_override("outline_size", 8)
 		total.add_theme_color_override("font_outline_color", Color.BLACK)
 		var dice_holder := CenterContainer.new()
@@ -126,7 +126,7 @@ func _ready() -> void:
 			versus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			row.add_child(versus)
 
-	_verdict = _label("", 44, Color.WHITE)
+	_verdict = _label("", 36, Color.WHITE)
 	_verdict.add_theme_constant_override("outline_size", 8)
 	_verdict.add_theme_color_override("font_outline_color", Color.BLACK)
 	column.add_child(_verdict)

@@ -50,7 +50,7 @@ func _ready() -> void:
 	add_child(center)
 
 	_panel = PanelContainer.new()
-	_panel.custom_minimum_size = Vector2(620, 0)
+	_panel.custom_minimum_size = Vector2(820, 0)
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color("1f66c8")
 	box.border_color = Color.WHITE
@@ -67,12 +67,12 @@ func _ready() -> void:
 	_panel.add_child(column)
 
 	_banner = ArtView.new()
-	_banner.custom_minimum_size = Vector2(0, 210)
+	_banner.custom_minimum_size = Vector2(0, 110)
 	_banner.focus_y = 0.45
 	_banner.fade_bottom = 0.35
 	_banner.visible = false
 	column.add_child(_banner)
-	_title = _label(84)
+	_title = _label(60)
 	_title.add_theme_constant_override("outline_size", 12)
 	_title.add_theme_color_override("font_outline_color", Color.BLACK)
 	column.add_child(_title)
@@ -90,7 +90,7 @@ func _ready() -> void:
 	_mvp_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_child(_mvp_row)
 	_mvp_face = Portrait.new()
-	_mvp_face.custom_minimum_size = Vector2(150, 150)
+	_mvp_face.custom_minimum_size = Vector2(104, 104)
 	_mvp_face.border = GOLD
 	_mvp_face.border_width = 4.0
 	_mvp_row.add_child(_mvp_face)
@@ -146,7 +146,7 @@ func _label(font_size: int) -> Label:
 func _button(text: String, color: Color) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(0, 90)
+	button.custom_minimum_size = Vector2(0, 70)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", 28)
 	button.add_theme_color_override("font_color", Color.WHITE)

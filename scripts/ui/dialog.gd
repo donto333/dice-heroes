@@ -12,7 +12,7 @@ var _panel: PanelContainer
 
 
 ## 내용이 이보다 길면 창 안에서 끌어 내릴 수 있게 한다.
-const BODY_MAX_HEIGHT := 860.0
+const BODY_MAX_HEIGHT := 400.0
 
 
 func _ready() -> void:

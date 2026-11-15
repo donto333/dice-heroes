@@ -137,6 +137,11 @@ static func enemy_standee(enemy_name: String) -> Texture2D:
 	return _cached_texture("enemy_standee/" + id, ENEMY_STANDEE_PATH % id)
 
 
+## 육각 칸 윗면 그림(assets/hex/<칸 종류>.png). 없으면 null.
+static func hex_tile(name: String) -> Texture2D:
+	return _cached_texture("hex/" + name, "res://assets/hex/%s.png" % name)
+
+
 ## 판 빈자리에 놓는 꾸밈 모형(나무, 탑, 바위...). 없으면 null.
 static func prop(name: String) -> Texture2D:
 	return _cached_texture("prop/" + name, PROP_PATH % name)

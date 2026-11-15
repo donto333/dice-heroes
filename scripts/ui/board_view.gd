@@ -91,7 +91,7 @@ var _queue: Array = []
 var _timer := 0.0
 
 ## 큰 맵은 화면에 다 안 들어가므로 칸 크기를 MIN_CELL로 두고 카메라로 일부만 보여 준다.
-const MIN_CELL := 104.0
+const MIN_CELL := 148.0
 const CAMERA_SPEED := 6.0
 const MINIMAP_WIDTH := 110.0
 ## 카메라가 보고 있는 맵 위의 점(맵 좌표, 픽셀)
@@ -430,7 +430,7 @@ func _draw_props(layout: Dictionary) -> void:
 			if _occupied.has(Vector2i(gx, gy)) or _occupied.has(Vector2i(gx, gy - 1)):
 				continue
 			var seed_value: int = absi((gx * 73856093) ^ (gy * 19349663) ^ 0x2545f491)
-			if seed_value % 100 >= 34:
+			if seed_value % 100 >= 16:
 				continue
 			var texture: Texture2D = _props[(seed_value / 100) % _props.size()]
 			var tall := cell * (0.95 + ((seed_value / 7) % 30) / 100.0)
@@ -470,46 +470,47 @@ func _draw_decorations(layout: Dictionary) -> void:
 			draw_texture_rect_region(_deco, Rect2(spot - Vector2(side, side) / 2.0, Vector2(side, side)), Rect2(kind * 32, 0, 32, 32))
 
 
-## 두께가 있는 블록 칸: 그림자 → 옆면(어두운 색) → 윗면 → 윗면의 광택과 밝은 테.
+## 육각 칸의 윗면 꼭짓점(납작한 쪽이 위아래). 가운데가 center.
+func _hex_points(center: Vector2, width: float, height: float) -> PackedVector2Array:
+	return PackedVector2Array([
+		center + Vector2(-width * 0.5, 0), center + Vector2(-width * 0.25, -height * 0.5),
+		center + Vector2(width * 0.25, -height * 0.5), center + Vector2(width * 0.5, 0),
+		center + Vector2(width * 0.25, height * 0.5), center + Vector2(-width * 0.25, height * 0.5)])
+
+
+## 원작처럼 두꺼운 육각 블록 칸: 그림자 → 옆면(어두운 색) → 윗면 → 밝은 테.
+## hex_name의 칸 그림(assets/hex/<이름>.png)이 있으면 윗면에 그 그림을 얹는다. 얹었으면 true.
 ## lit이면(갈림길에서 고를 수 있는 칸) 흰 테가 깜빡인다.
-func _draw_hex(center: Vector2, _half: Vector2, cell: float, color: Color, lit: bool) -> void:
-	var width := cell - TILE_GAP
-	var height := cell * TILT - TILE_GAP * 0.6
+func _draw_hex(center: Vector2, _half: Vector2, cell: float, color: Color, lit: bool, hex_name: String = "") -> bool:
+	var width := cell * 1.04
+	var height := cell * TILT * 0.96
 	var depth := cell * BLOCK_DEPTH
-	var top := Rect2(center.x - width / 2.0, center.y - height / 2.0 - depth * 0.5, width, height)
-	var radius := int(cell * 0.16)
-	var key := color.to_html()
-	if not _styles.has(key):
-		var wall := StyleBoxFlat.new()
-		wall.bg_color = color.darkened(0.55)
-		wall.set_corner_radius_all(radius)
-		wall.shadow_color = Color(0, 0, 0, 0.32)
-		wall.shadow_size = 4
-		wall.shadow_offset = Vector2(0, 4)
-		wall.anti_aliasing_size = 1.0
-		var face := StyleBoxFlat.new()
-		face.bg_color = color
-		face.set_corner_radius_all(radius)
-		face.border_color = color.lightened(0.38)
-		face.set_border_width_all(3)
-		face.anti_aliasing_size = 1.0
-		var gleam := StyleBoxFlat.new()
-		gleam.bg_color = Color(1, 1, 1, 0.2)
-		gleam.set_corner_radius_all(maxi(radius - 4, 2))
-		gleam.anti_aliasing_size = 1.0
-		_styles[key] = [wall, face, gleam]
-	var parts: Array = _styles[key]
-	draw_style_box(parts[0], Rect2(top.position, Vector2(width, height + depth)))
-	draw_style_box(parts[1], top)
-	draw_style_box(parts[2], Rect2(top.position + Vector2(5, 5), Vector2(width - 10, height * 0.42)))
+	var top_center := center - Vector2(0, depth * 0.5)
+	var top := _hex_points(top_center, width, height)
+	var low := _hex_points(top_center + Vector2(0, depth), width, height)
+	draw_colored_polygon(_hex_points(top_center + Vector2(0, depth + cell * 0.05), width * 1.04, height * 1.04), Color(0, 0, 0, 0.3))
+	var wall := color.darkened(0.55)
+	draw_colored_polygon(low, wall)
+	draw_colored_polygon(PackedVector2Array([top[0], top[3], low[3], low[0]]), wall)
+	draw_colored_polygon(top, color)
+	var painted := false
+	if hex_name != "":
+		var art: Texture2D = GameData.hex_tile(hex_name)
+		if art != null:
+			draw_texture_rect(art, Rect2(top_center - Vector2(width, height) * 0.5, Vector2(width, height)), false)
+			painted = true
+	if not painted:
+		# 윗면 위쪽 절반을 살짝 밝게 해서 볼록해 보이게
+		draw_colored_polygon(PackedVector2Array([top[0], top[1], top[2], top[3]]), Color(1, 1, 1, 0.14))
+		var rim := top.duplicate()
+		rim.append(top[0])
+		draw_polyline(rim, color.lightened(0.4), 3.0, true)
 	if lit:
 		var pulse := 0.6 + 0.4 * sin(_anim_time * 6.0)
-		var ring := StyleBoxFlat.new()
-		ring.draw_center = false
-		ring.border_color = Color(1, 1, 1, pulse)
-		ring.set_border_width_all(5)
-		ring.set_corner_radius_all(radius + 3)
-		draw_style_box(ring, top.grow(4.0))
+		var glow := _hex_points(top_center, width * 1.08, height * 1.08)
+		glow.append(glow[0])
+		draw_polyline(glow, Color(1, 1, 1, pulse), 6.0, true)
+	return painted
 
 
 ## 칸 종류마다 다른 살아 있는 효과(워프 소용돌이, 보물 반짝임, 저주 연기, 감옥 창살, 전투 칸 붉은 숨결).
@@ -726,7 +727,13 @@ func _draw() -> void:
 			color = HIDDEN_COLOR
 			label = ""
 			icon_name = "hidden"
-		_draw_hex(rect.get_center(), half, cell, color, id in highlight)
+		var hex_name := "hidden" if game.is_hidden(id) else str(tile.get("type", ""))
+		if tile.get("type", "") == "attr":
+			hex_name = ""
+		# 칸 그림이 있으면 그림 하나만 보여 준다(원작처럼 글자·작은 아이콘 없이).
+		if _draw_hex(rect.get_center(), half, cell, color, id in highlight, hex_name):
+			icon_name = ""
+			label = ""
 		var monster := -1
 		if not game.is_hidden(id) and tile.get("type", "") in ["battle", "ambush", "gate", "goal"]:
 			monster = monster_kind(str(tile.get("type", "")), str(tile.get("name", "")))
