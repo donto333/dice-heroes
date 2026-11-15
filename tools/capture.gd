@@ -135,6 +135,10 @@ func _run() -> void:
 		shop_scroll.scroll_vertical = 100000
 		await _wait(0.3)
 		await _shot("08b_dice_shop")
+		for part in [[700, "08c_shop_relics"], [1500, "08d_shop_dice"], [2200, "08e_shop_mileage"]]:
+			shop_scroll.scroll_vertical = int(part[0])
+			await _wait(0.3)
+			await _shot(str(part[1]))
 		shop_scroll.scroll_vertical = 0
 	_app.current_screen._on_paid(10)
 	await _wait(2.0)
