@@ -808,6 +808,9 @@ func _start_game() -> void:
 	# 내 파티(0번)에는 장착한 유물의 시작 보너스가 붙는다. 친구 대전은 공평하게 쓰지 않는다.
 	if _mode != "local" and not _parties.is_empty():
 		_parties[0]["relic"] = Profile.current_relic(app.profile, app.eco).get("effect", {})
+	# 랭크전은 트로피가 높을수록 상대가 강해진다.
+	if _mode == "rank" and _parties.size() > 1:
+		_parties[1]["relic"] = Profile.rank_boost(app.eco, int(app.profile.get("trophies", 0)))
 	game.setup(_data, _parties)
 	_start_distance = max(game.distance_of(0), 1)
 	for index in 2:
@@ -1423,7 +1426,7 @@ func _record(outcome: String) -> PackedStringArray:
 	var missions_before := Profile.claimable_mission_count(app.profile, app.eco)
 	var achievements_before := Profile.claimable_achievement_count(app.profile, app.data)
 	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids(),
-		"map": game.board_name, "turns": int(game.round_number),
+		"map": game.board_name, "turns": int(game.round_number), "gates": (game.gates_cleared[0] as Dictionary).size(),
 		"event_gold_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "match_gold_scale"),
 		"event_pass_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "pass_exp_scale")})
 	_last_reward = reward

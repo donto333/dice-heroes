@@ -917,7 +917,7 @@ func _test_achievements() -> void:
 	var eco: Dictionary = _data["economy"]
 	var profile := Profile.new_profile("업적", eco)
 	var known := ["wins", "rank_wins", "battle_wins_total", "cards_total", "summons_total", "upgrades_total",
-		"owned", "max_level_heroes", "adventure_stars", "chapters_cleared", "best_trophies", "level"]
+		"owned", "max_level_heroes", "adventure_stars", "chapters_cleared", "best_trophies", "level", "gates_total"]
 	var ids := {}
 	for achievement in list:
 		_check(str(achievement["stat"]) in known, "모르는 업적 값: " + str(achievement["id"]))
@@ -1393,6 +1393,11 @@ func _test_album_and_weekday() -> void:
 
 
 func _test_relics() -> void:
+	_check(Profile.rank_boost(_data["economy"], 0).is_empty() and int(Profile.rank_boost(_data["economy"], 600).get("gauge", 0)) == 15 and int(Profile.rank_boost(_data["economy"], 5000).get("atk_bonus", 0)) == 1, "랭크전 상대 강화 단계가 틀림")
+	var gate_profile := Profile.new_profile("관문", _data["economy"])
+	Profile.ensure_daily(gate_profile, "2026-05-01")
+	Profile.record_match(gate_profile, _data["economy"], "ai", "win", {"gates": 3})
+	_check(Profile.achievement_value(gate_profile, _data, "gates_total") == 3, "관문 돌파 기록이 안 쌓임")
 	var eco: Dictionary = _data["economy"]
 	var profile := Profile.new_profile("유물", eco)
 	_check(Profile.current_relic(profile, eco).is_empty() and not Profile.equip_relic(profile, "banner"), "없는 유물을 장착함")
