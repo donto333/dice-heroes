@@ -163,15 +163,15 @@ func _draw() -> void:
 				draw_arc(rest, DIE * (0.6 + ring_t * 1.1), 0.0, TAU, 40, Color(1, 1, 1, 1.0 - ring_t), 7.0 * (1.0 - ring_t) + 1.0)
 	else:
 		# 굴러오는 동안 뒤에 남는 잔상
-		for ghost in [3, 2, 1]:
-			var past := _t - ghost * 0.035
+		for ghost: int in [3, 2, 1]:
+			var past: float = _t - float(ghost) * 0.035
 			if past <= 0.0 or _t > 0.85:
 				continue
 			for index in count:
 				var pose := _pose(index, count, past)
 				var where: Vector2 = pose[0]
 				draw_set_transform(where - Vector2(0, float(pose[1])), float(pose[2]), Vector2.ONE)
-				draw_rect(Rect2(Vector2(-DIE, -DIE) * 0.5, Vector2(DIE, DIE)), Color(_color.r, _color.g, _color.b, 0.16 / ghost))
+				draw_rect(Rect2(Vector2(-DIE, -DIE) * 0.5, Vector2(DIE, DIE)), Color(_color.r, _color.g, _color.b, 0.16 / float(ghost)))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for index in count:
 		var pose := _pose(index, count, _t)
