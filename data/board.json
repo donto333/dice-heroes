@@ -44,7 +44,7 @@
     {"id": 35, "type": "attr", "x": 24, "y": 4, "next": [36], "attr": "위인"},
     {"id": 36, "type": "luck", "x": 24, "y": 5, "next": [37]},
     {"id": 37, "type": "forward", "x": 23, "y": 5, "next": [38], "amount": 3},
-    {"id": 38, "type": "gate", "x": 22, "y": 5, "next": [39], "name": "관문지기 들개 무리", "dice": 2},
+    {"id": 38, "type": "gate", "x": 22, "y": 5, "next": [39], "name": "관문지기 들개 무리", "dice": 3},
     {"id": 39, "type": "random", "x": 21, "y": 5, "next": [40]},
     {"id": 40, "type": "treasure", "x": 20, "y": 5, "next": [41]},
     {"id": 41, "type": "checkpoint", "x": 19, "y": 5, "next": [42]},
@@ -53,7 +53,7 @@
     {"id": 44, "type": "luck", "x": 16, "y": 5, "next": [45]},
     {"id": 45, "type": "forward", "x": 15, "y": 5, "next": [46], "amount": 4},
     {"id": 46, "type": "treasure", "x": 14, "y": 5, "next": [47]},
-    {"id": 47, "type": "gate", "x": 13, "y": 5, "next": [48], "name": "관문지기 굶주린 늑대", "dice": 3},
+    {"id": 47, "type": "gate", "x": 13, "y": 5, "next": [48], "name": "관문지기 굶주린 늑대", "dice": 4},
     {"id": 48, "type": "treasure", "x": 12, "y": 5, "next": [49]},
     {"id": 49, "type": "battle", "x": 11, "y": 5, "next": [50], "name": "들개 무리", "dice": 3},
     {"id": 50, "type": "checkpoint", "x": 10, "y": 5, "next": [51]},
@@ -87,7 +87,7 @@
     {"id": 78, "type": "attr", "x": 6, "y": 9, "next": [79], "attr": "신화"},
     {"id": 79, "type": "normal", "x": 7, "y": 9, "next": [80]},
     {"id": 80, "type": "forward", "x": 8, "y": 9, "next": [81], "amount": 4},
-    {"id": 81, "type": "gate", "x": 9, "y": 9, "next": [82], "name": "관문지기 산적", "dice": 3},
+    {"id": 81, "type": "gate", "x": 9, "y": 9, "next": [82], "name": "관문지기 산적", "dice": 4},
     {"id": 82, "type": "treasure", "x": 10, "y": 9, "next": [83]},
     {"id": 83, "type": "battle", "x": 11, "y": 9, "next": [84], "name": "굶주린 늑대", "dice": 3},
     {"id": 84, "type": "luck", "x": 12, "y": 9, "next": [85]},
@@ -122,7 +122,7 @@
     {"id": 113, "type": "treasure", "x": 19, "y": 13, "next": [114]},
     {"id": 114, "type": "random", "x": 18, "y": 13, "next": [115]},
     {"id": 115, "type": "random", "x": 17, "y": 13, "next": [116]},
-    {"id": 116, "type": "goal", "x": 16, "y": 13, "next": [], "name": "메두사", "dice": 4}
+    {"id": 116, "type": "goal", "x": 16, "y": 13, "next": [], "name": "메두사", "dice": 5}
   ],
   "random_pool": [
     {"weight": 3, "tile": {"type": "treasure"}},
