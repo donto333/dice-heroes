@@ -1239,6 +1239,9 @@ func _test_events() -> void:
 	_check(int(reward["pass_exp"]) == int(eco["pass"]["exp"]["win"]) * 3, "이벤트 패스 배율이 반영되지 않음")
 	# 실제 이벤트 파일의 모양 확인
 	for event in _data["events"].get("events", []):
+		if event.has("weekdays"):
+			_check(not (event["weekdays"] as Array).is_empty(), "요일 이벤트에 요일이 없음: " + str(event.get("id", "")))
+			continue
 		_check(str(event.get("start", "")).length() == 10 and str(event.get("end", "")) >= str(event.get("start", "")), "이벤트 날짜가 이상함: " + str(event.get("id", "")))
 
 
