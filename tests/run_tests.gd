@@ -1453,6 +1453,18 @@ func _test_minigame_and_league() -> void:
 
 
 func _test_idle() -> void:
+	var spender := Profile.new_profile("마일리지", _data["economy"])
+	spender["gems"] = 2000
+	var mile: Dictionary = _data["economy"]["mileage"]
+	_check((mile["steps"] as Array).size() == (mile["rewards"] as Array).size(), "마일리지 단계와 보상 수가 다름")
+	_check(Profile.mileage_claimable(spender, _data["economy"]).is_empty(), "쓰지 않았는데 마일리지 보상이 있음")
+	Profile.pay(spender, "gems", int(mile["steps"][1]))
+	Profile.pay(spender, "gold", 100)
+	_check(int(spender["gems_spent"]) == int(mile["steps"][1]) and Profile.mileage_claimable(spender, _data["economy"]).size() == 2, "마일리지가 쌓이지 않음")
+	var spender_gold := int(spender["gold"])
+	var mile_reward := Profile.claim_mileage(spender, _data["economy"])
+	_check(int(spender["gold"]) == spender_gold + int(mile_reward.get("gold", 0)) and int(mile_reward.get("gold", 0)) > 0, "마일리지 보상이 틀림")
+	_check(Profile.claim_mileage(spender, _data["economy"]).is_empty(), "마일리지 보상을 두 번 받음")
 	var eco: Dictionary = _data["economy"]
 	var profile := Profile.new_profile("원정", eco)
 	Profile.ensure_daily(profile, "2026-05-01")

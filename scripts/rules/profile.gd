@@ -96,6 +96,9 @@ static func pay(profile: Dictionary, currency: String, amount: int) -> bool:
 	if not can_pay(profile, currency, amount):
 		return false
 	profile[currency] = int(profile[currency]) - amount
+	if currency == "gems":
+		# 보석 마일리지: 쓴 보석을 센다.
+		profile["gems_spent"] = int(profile.get("gems_spent", 0)) + amount
 	return true
 
 
@@ -1501,3 +1504,30 @@ static func claim_idle(profile: Dictionary, eco: Dictionary, now: int) -> int:
 	if gold > 0:
 		grant(profile, {"gold": gold})
 	return gold
+
+
+# ---------------------------------------------------------------- 보석 마일리지
+
+## 받을 수 있는 마일리지 단계(0부터)의 목록
+static func mileage_claimable(profile: Dictionary, eco: Dictionary) -> Array:
+	var result: Array = []
+	var steps: Array = eco.get("mileage", {}).get("steps", [])
+	var claimed: Array = profile.get("mileage_claimed", [])
+	for index in steps.size():
+		if int(profile.get("gems_spent", 0)) >= int(steps[index]) and not claimed.has(index):
+			result.append(index)
+	return result
+
+
+## 받을 수 있는 마일리지 보상을 모두 받는다. 합친 보상을 돌려준다(없으면 {}).
+static func claim_mileage(profile: Dictionary, eco: Dictionary) -> Dictionary:
+	var total := {}
+	var claimed: Array = profile.get("mileage_claimed", [])
+	for index in mileage_claimable(profile, eco):
+		var reward: Dictionary = eco["mileage"]["rewards"][index]
+		grant(profile, reward)
+		claimed.append(index)
+		for key in reward:
+			total[key] = int(total.get(key, 0)) + int(reward[key])
+	profile["mileage_claimed"] = claimed
+	return total
