@@ -471,7 +471,7 @@ func _hint(key: String, text: String) -> bool:
 	if _hint_bubble != null and is_instance_valid(_hint_bubble):
 		_hint_bubble.queue_free()
 	var bubble := PanelContainer.new()
-	bubble.add_theme_stylebox_override("panel", _box(Color(0.1, 0.08, 0.02, 0.95), Color("ffcf4d"), 3))
+	bubble.add_theme_stylebox_override("panel", _box(Color(0.06, 0.24, 0.52, 0.96), Color("ffcf4d"), 3))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	bubble.add_child(row)
