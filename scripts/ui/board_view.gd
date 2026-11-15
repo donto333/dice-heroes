@@ -63,6 +63,7 @@ const ICON_NAMES := {
 const ATTR_ICONS := {"영웅": "attr_hero", "위인": "attr_great", "신화": "attr_myth", "근현대": "attr_modern"}
 
 const GameData := preload("res://scripts/game_data.gd")
+const Fx := preload("res://scripts/ui/fx.gd")
 ## 광택 그림 아이콘(assets/ui_icons)에서 칸 종류마다 쓸 이름. 없으면 도트 아이콘을 쓴다.
 const GLOSSY_ICONS := {
 	"start": "t_start", "fork": "t_fork", "treasure": "chest", "battle": "swords", "ambush": "t_ambush", "gate": "t_gate",
@@ -125,6 +126,8 @@ var _anim_time := 0.0
 var _hops: Dictionary = {}
 ## 말이 내려앉은 칸에서 퍼지는 고리: [{"id": 칸, "t": 0~1, "color": 색}]
 var _rings: Array = []
+## 더하기 섞기로 그리는 빛 층
+var _glow: Control
 ## 스킬을 쓸 때 말 앞쪽 칸들을 따라 차례로 솟는 빛기둥. {"ids": [칸...], "t": 흐른 시간, "color": 색}
 var _waves: Array = []
 ## 지형 바탕과 꾸밈 그림(assets/terrain). 맵 테마가 바뀌면 다시 읽는다.
@@ -179,6 +182,15 @@ func _ready() -> void:
 	# 카메라로 보는 큰 맵이 판 밖으로 삐져나오지 않게 자른다.
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# 빛나는 효과(마법진·빛기둥·소용돌이·반짝임)는 더하기 섞기 층에 그린다.
+	_glow = Control.new()
+	_glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_glow.material = Fx.additive()
+	_glow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_glow.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
+	_glow.draw.connect(_draw_glow)
+	add_child(_glow)
 	for icon_name in ["start", "fork", "treasure", "battle", "ambush", "forward", "warp", "luck", "curse", "prison",
 			"fate", "checkpoint", "goal", "hidden", "pawn", "attr_hero", "attr_great", "attr_myth", "attr_modern"]:
 		var path := "res://assets/icons/%s.png" % icon_name
@@ -237,6 +249,8 @@ func _process(delta: float) -> void:
 	_anim_time += delta
 	if active_player >= 0:
 		queue_redraw()
+		if _glow != null:
+			_glow.queue_redraw()
 	for player_index in _hops.keys():
 		var hop: Dictionary = _hops[player_index]
 		var duration: float = FLING_TIME if bool(hop.get("fling", false)) else STEP_TIME * 0.92
@@ -552,6 +566,17 @@ func _draw_hex(center: Vector2, _half: Vector2, cell: float, color: Color, lit: 
 func _draw_tile_fx(kind: String, center: Vector2, cell: float, id: int) -> void:
 	var top := center - Vector2(0, cell * BLOCK_DEPTH * 0.5)
 	var beat := _anim_time + float(id % 11) * 0.37
+	# 효과 그림이 있으면 소용돌이·반짝임·연기는 빛 층(_draw_glow)이 그린다.
+	if Fx.tex("portal_swirl_a") != null and kind in ["warp", "treasure", "luck", "curse", "fate", "checkpoint"]:
+		match kind:
+			"warp":
+				_flat_sprite("portal_swirl_a", top, cell * 1.0, Color(1, 1, 1, 0.9), beat * 1.8)
+			"fate":
+				_flat_sprite("ring_double_a", top, cell * 0.95, Color(1.0, 0.85, 0.5, 0.6 + 0.25 * sin(beat * 2.0)), -beat * 0.9)
+			"checkpoint":
+				var wave_t := fposmod(beat * 0.5, 1.0)
+				_flat_sprite("ring_shock_a", top, cell * (0.6 + wave_t * 0.6), Color(0.75, 0.94, 1.0, (1.0 - wave_t) * 0.8), 0.0)
+		return
 	match kind:
 		"warp":
 			draw_set_transform(top, 0.0, Vector2(1.0, TILT))
@@ -596,6 +621,78 @@ func _draw_tile_fx(kind: String, center: Vector2, cell: float, id: int) -> void:
 				draw_circle(spot, cell * 0.035, Color(1.0, 0.85, 0.3, 0.85))
 
 
+## 바닥에 누운 효과 그림(투명 바탕)을 판 자체에 그린다. 말·물건보다 먼저 그려져 그 아래에 깔린다.
+func _flat_sprite(name: String, center: Vector2, wide: float, tint: Color, turn: float) -> void:
+	var texture: Texture2D = Fx.tex(name)
+	if texture == null:
+		return
+	draw_set_transform_matrix(Transform2D(0.0, Vector2(1.0, TILT), 0.0, center) * Transform2D(turn, Vector2.ZERO))
+	draw_texture_rect(texture, Rect2(-wide / 2.0, -wide / 2.0, wide, wide), false, tint)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+
+
+## 그림 한 장을 가운데 맞춰 그린다(빛 층용). squash는 세로 눌림(바닥에 누운 그림).
+func _glow_sprite(name: String, center: Vector2, wide: float, tint: Color, turn: float = 0.0, squash: float = 1.0) -> void:
+	var texture: Texture2D = Fx.tex(name)
+	if texture == null:
+		return
+	var tall := wide * float(texture.get_height()) / maxf(float(texture.get_width()), 1.0)
+	_glow.draw_set_transform(center, turn, Vector2(1.0, squash))
+	_glow.draw_texture_rect(texture, Rect2(-wide / 2.0, -tall / 2.0, wide, tall), false, tint)
+	_glow.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## 빛나는 판 효과: 차례인 말 발밑의 마법진, 칸의 소용돌이·반짝임·저주 연기, 착지 충격 고리, 스킬 빛기둥.
+func _draw_glow() -> void:
+	if game == null or shown_pos.is_empty() or Fx.tex("ring_shock") == null:
+		return
+	var layout := _layout()
+	var cell: float = layout["cell"]
+	var lift := Vector2(0, cell * BLOCK_DEPTH * 0.5)
+	var view := Rect2(Vector2(-cell, -cell), size + Vector2(cell, cell) * 2.0)
+	# 칸마다의 잔잔한 효과
+	for id in game.nodes:
+		var spot := _center(int(id), layout) - lift
+		if not view.has_point(spot) or game.is_hidden(id):
+			continue
+		var beat := _anim_time + float(int(id) % 11) * 0.37
+		match str(game.nodes[id].get("type", "")):
+			"curse":
+				var drift := fposmod(beat * 0.35, 1.0)
+				_glow_sprite("dark_aura", spot - Vector2(0, cell * (0.25 + drift * 0.3)), cell * 0.9, Color(1, 1, 1, 0.75 * sin(drift * PI)))
+			"treasure", "luck", "goal":
+				for index in 3:
+					var phase := fposmod(beat * 0.7 + index * 0.33, 1.0)
+					var twinkle := spot + Vector2(cos(index * 2.3 + int(id)) * cell * 0.34, -cell * (0.15 + 0.35 * fposmod(index * 0.37 + int(id) * 0.11, 1.0)))
+					_glow_sprite("flare_cross", twinkle, cell * 0.42 * sin(phase * PI), Color(1.0, 0.95, 0.7, sin(phase * PI)), phase * 1.5)
+	# 착지 충격 고리
+	for ring in _rings:
+		if not game.nodes.has(int(ring["id"])):
+			continue
+		var ring_t := float(ring["t"])
+		var ring_color: Color = ring["color"]
+		ring_color = ring_color.lightened(0.4)
+		ring_color.a = 1.0 - ring_t
+		var grow := 1.0 - pow(1.0 - ring_t, 3.0)
+		_glow_sprite("ring_shock", _center(int(ring["id"]), layout) - lift, cell * (0.6 + grow * 1.5), ring_color, 0.0, TILT)
+		_glow_sprite("flare_star", _center(int(ring["id"]), layout) - lift, cell * 1.2 * (1.0 - ring_t), Color(1, 1, 1, 1.0 - ring_t), ring_t)
+	# 스킬 빛기둥: 앞쪽 칸에서 차례로 솟는다.
+	for wave_item in _waves:
+		var ids: Array = wave_item["ids"]
+		var tint: Color = wave_item["color"]
+		for index in ids.size():
+			var local := (float(wave_item["t"]) - index * 0.11) / 0.6
+			if local <= 0.0 or local >= 1.0 or not game.nodes.has(int(ids[index])):
+				continue
+			var top := _center(int(ids[index]), layout) - lift
+			var rise := sin(local * PI)
+			var pillar: Texture2D = Fx.tex("light_pillar")
+			var wide := cell * 1.3
+			var tall := cell * 2.6 * (0.5 + 0.5 * rise)
+			_glow.draw_texture_rect(pillar, Rect2(top.x - wide / 2.0, top.y + cell * 0.2 - tall, wide, tall), false, Color(tint.r, tint.g, tint.b, rise))
+			_glow_sprite("ring_shock", top, cell * (0.6 + local * 1.2), Color(tint.r, tint.g, tint.b, 1.0 - local), 0.0, TILT)
+
+
 ## 스킬 연출: 이 플레이어의 말 앞쪽 칸 count개에 빛기둥이 차례로 솟는다(모두의 마블처럼 효과가 칸 위에서 일어난다).
 func wave(player_index: int, color: Color, count: int = 7) -> void:
 	if game == null or player_index >= shown_pos.size():
@@ -617,6 +714,8 @@ func wave(player_index: int, color: Color, count: int = 7) -> void:
 
 ## 빛기둥 그리기: 칸마다 0.11초 늦게 솟았다가 사그라든다.
 func _draw_waves(layout: Dictionary) -> void:
+	if Fx.tex("light_pillar") != null:
+		return
 	var cell: float = layout["cell"]
 	for wave_item in _waves:
 		var ids: Array = wave_item["ids"]
@@ -655,11 +754,20 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 	var shade := 1.0 - minf(lift / (cell * 2.4), 1.0) * 0.6
 	draw_set_transform(foot, 0.0, Vector2(1.0, 0.4))
 	draw_circle(Vector2.ZERO, cell * 0.3 * shade, Color(0, 0, 0, 0.36 * shade))
-	draw_arc(Vector2.ZERO, cell * 0.36, 0.0, TAU, 32, player_color, 6.0)
-	if active:
-		var pulse := 0.5 + 0.5 * sin(_anim_time * 5.0)
-		draw_arc(Vector2.ZERO, cell * (0.44 + pulse * 0.05), 0.0, TAU, 32, Color(1, 1, 1, 0.9 - pulse * 0.5), 4.0)
+	var circle_name := "magic_circle_blue_a" if player_index == 0 else "magic_circle_gold_a"
+	var has_circle: bool = Fx.tex(circle_name) != null
+	if not has_circle:
+		draw_arc(Vector2.ZERO, cell * 0.36, 0.0, TAU, 32, player_color, 6.0)
+		if active:
+			var pulse := 0.5 + 0.5 * sin(_anim_time * 5.0)
+			draw_arc(Vector2.ZERO, cell * (0.44 + pulse * 0.05), 0.0, TAU, 32, Color(1, 1, 1, 0.9 - pulse * 0.5), 4.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if has_circle:
+		# 발밑의 마법진: 내 말은 파랑, 상대는 금색. 차례인 말은 크게 돌고 숨 쉬듯 밝아진다.
+		var breathe := 0.75 + 0.25 * sin(_anim_time * 3.0)
+		if active:
+			_flat_sprite("glow_soft_a", foot, cell * 1.5, Color(player_color.r, player_color.g, player_color.b, 0.5 * breathe), 0.0)
+		_flat_sprite(circle_name, foot, cell * (1.25 if active else 0.85), Color(1, 1, 1, breathe if active else 0.6), _anim_time * (1.1 if active else 0.4))
 
 	var height := cell * 1.02
 	var texture_size := texture.get_size()
@@ -909,7 +1017,7 @@ func _draw() -> void:
 	_draw_waves(layout)
 	# 내려앉은 칸에서 퍼지는 고리
 	for ring in _rings:
-		if not game.nodes.has(int(ring["id"])):
+		if not game.nodes.has(int(ring["id"])) or Fx.tex("ring_shock") != null:
 			continue
 		var ring_t := float(ring["t"])
 		var ring_color: Color = ring["color"]

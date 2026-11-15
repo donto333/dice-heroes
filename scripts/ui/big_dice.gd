@@ -13,6 +13,7 @@ const PIPS := {
 }
 const DiePreview := preload("res://scripts/ui/die_preview.gd")
 const GameData := preload("res://scripts/game_data.gd")
+const Fx := preload("res://scripts/ui/fx.gd")
 const ROLL_TIME := 0.95
 const HOLD_TIME := 0.6
 const FADE_TIME := 0.2
@@ -26,6 +27,8 @@ var _t := 0.0
 var _playing := false
 ## 멈춘 뒤 흐른 시간(빛살·고리용)
 var _settle := 0.0
+## 더하기 섞기로 그리는 빛 층(주사위 뒤)
+var _glow: Control
 var _face_timer := 0.0
 var _fx_rng := RandomNumberGenerator.new()
 var _caption: Label
@@ -40,6 +43,13 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	visible = false
+	_glow = Control.new()
+	_glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_glow.material = Fx.additive()
+	_glow.show_behind_parent = true
+	_glow.draw.connect(_draw_glow)
+	add_child(_glow)
 	_caption = _label(26)
 	_caption.anchor_top = 0.5
 	_caption.anchor_bottom = 0.5
@@ -110,6 +120,7 @@ func _process(delta: float) -> void:
 		# 멈춘 뒤: 빛 고리가 퍼지고 뒤에서 빛살이 돈다.
 		_settle += delta
 		queue_redraw()
+		_glow.queue_redraw()
 		return
 	_settle = 0.0
 	_t = min(1.0, _t + delta / ROLL_TIME)
@@ -141,7 +152,7 @@ func _draw() -> void:
 		return
 	var count := _rolls.size()
 	# 판을 가리지 않는다. 주사위는 판 위에서 바로 구른다(바닥에 그림자만 드리운다).
-	if not _playing:
+	if not _playing and Fx.tex("rays_burst") == null:
 		# 멈춘 주사위 뒤에서 도는 빛살과 퍼지는 고리
 		for index in count:
 			var rest: Vector2 = _pose(index, count, 1.0)[0]
@@ -157,7 +168,7 @@ func _draw() -> void:
 			var ring_t := clampf(_settle / 0.45, 0.0, 1.0)
 			if ring_t < 1.0:
 				draw_arc(rest, DIE * (0.6 + ring_t * 1.1), 0.0, TAU, 40, Color(1, 1, 1, 1.0 - ring_t), 7.0 * (1.0 - ring_t) + 1.0)
-	else:
+	if _playing:
 		# 굴러오는 동안 뒤에 남는 잔상
 		for ghost: int in [3, 2, 1]:
 			var past: float = _t - float(ghost) * 0.035
@@ -215,6 +226,32 @@ func _draw() -> void:
 		var digits := int(54.0 * pop)
 		draw_string_outline(font, badge + Vector2(-60, digits * 0.36), str(sum), HORIZONTAL_ALIGNMENT_CENTER, 120, digits, 6, Color("fff3c0"))
 		draw_string(font, badge + Vector2(-60, digits * 0.36), str(sum), HORIZONTAL_ALIGNMENT_CENTER, 120, digits, Color("5a3200"))
+
+
+## 주사위 뒤에서 빛나는 효과(더하기 섞기 층): 멈추면 빛살이 돌고 별빛이 번쩍이며 충격 고리가 퍼진다.
+func _draw_glow() -> void:
+	if _rolls.is_empty() or _playing or Fx.tex("rays_burst") == null:
+		return
+	var count := _rolls.size()
+	for index in count:
+		var rest: Vector2 = _pose(index, count, 1.0)[0]
+		var beams: Texture2D = Fx.tex("rays_burst")
+		var reach := DIE * 3.4
+		_glow.draw_set_transform(rest, _settle * 0.9, Vector2.ONE)
+		_glow.draw_texture_rect(beams, Rect2(-reach / 2.0, -reach / 2.0, reach, reach), false, Color(1.0, 0.9, 0.55, 0.9))
+		_glow.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		var flash_t := clampf(_settle / 0.5, 0.0, 1.0)
+		var flare: Texture2D = Fx.tex("flare_star")
+		if flare != null and flash_t < 1.0:
+			var flare_size := DIE * (2.0 + 2.6 * flash_t)
+			_glow.draw_texture_rect(flare, Rect2(rest - Vector2(flare_size, flare_size) * 0.5, Vector2(flare_size, flare_size)), false, Color(1, 1, 1, 1.0 - flash_t))
+		var ring: Texture2D = Fx.tex("ring_shock")
+		if ring != null and flash_t < 1.0:
+			var grow := 1.0 - pow(1.0 - flash_t, 3.0)
+			var ring_size := DIE * (1.2 + grow * 3.2)
+			_glow.draw_set_transform(rest + Vector2(0, DIE * 0.45), 0.0, Vector2(1.0, 0.42))
+			_glow.draw_texture_rect(ring, Rect2(-ring_size / 2.0, -ring_size / 2.0, ring_size, ring_size), false, Color(1, 1, 1, 1.0 - flash_t))
+			_glow.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 ## 가운데가 (0,0)인 주사위 하나. 둥근 모서리, 아래 두께, 눈.

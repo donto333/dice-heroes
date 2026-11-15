@@ -228,6 +228,26 @@ func _run() -> void:
 	await _shot("13_match_banner")
 	await _wait(1.6)
 	await _shot("14_match")
+	# 연출 확인용 사진: 효과 그림들이 실제로 어떻게 겹쳐 보이는지 한 화면에 터뜨려 찍는다.
+	var fx_layer = _app.current_screen.get("_fx")
+	if fx_layer != null:
+		fx_layer.quiet = false
+		var spots := [Vector2(180, 200), Vector2(430, 200), Vector2(680, 200), Vector2(930, 200), Vector2(1150, 200),
+			Vector2(180, 470), Vector2(430, 470), Vector2(680, 470), Vector2(930, 470), Vector2(1150, 470)]
+		var kinds := ["spark", "coin", "smoke", "star", "petal", "ember", "ice", "impact", "heal", "bolt"]
+		for index in kinds.size():
+			fx_layer.burst(spots[index], kinds[index], 16, 0.7)
+		await _wait(0.16)
+		await _shot("14x_fx_bursts")
+		await _wait(0.9)
+		fx_layer.speed_lines(Vector2(640, 360), Color(0.6, 0.85, 1.0), 1.0)
+		fx_layer.rays(true, Vector2(640, 300), Color(1.0, 0.9, 0.4, 0.16))
+		fx_layer.shower("petal", 60)
+		await _wait(0.5)
+		await _shot("14y_fx_screen")
+		fx_layer.rays(false)
+		await _wait(1.2)
+		fx_layer.quiet = true
 	var match_screen = _app.current_screen
 	match_screen._toggle_emotes()
 	match_screen._say(1, "ㅋㅋㅋ")

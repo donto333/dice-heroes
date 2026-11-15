@@ -36,7 +36,8 @@ const SCREEN_MOODS := {
 	"lobby": Color("3b2f9e"), "shop": Color("5a2a9a"), "heroes": Color("1f3a82"), "missions": Color("7a4a22"),
 	"settings": Color("1a6470"), "adventure": Color("2c6a3c"), "pass": Color("7a2a6a"), "help": Color("1a6470"),
 }
-const VERSION := "0.15.2"
+const RotateGuard := preload("res://scripts/ui/rotate_guard.gd")
+const VERSION := "0.16.0"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -74,7 +75,58 @@ func _ready() -> void:
 	add_child(loading)
 	load_profile()
 	music.enabled = bgm_on()
+	# 가로 화면 전용: 세로로 들면 돌려 달라는 안내가 화면을 덮는다.
+	add_child(RotateGuard.new())
+	_setup_display()
 	go("title")
+
+
+## 전체 화면으로 쓴다. 웹에서는 브라우저 규칙 때문에 화면을 처음 누르는 순간에만 전체 화면이 될 수 있어서,
+## 누를 때마다(전체 화면이 아니면) 전체 화면과 가로 고정을 청하는 작은 스크립트를 페이지에 심어 둔다.
+## 아이폰 사파리처럼 전체 화면을 허락하지 않는 브라우저에서는 아무 일도 일어나지 않는다.
+func _setup_display() -> void:
+	if instant:
+		return
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("""
+			(function () {
+				if (window.__dhFullHook) { return; }
+				window.__dhFullHook = true;
+				window.__dhFull = %s;
+				var ask = function () {
+					if (!window.__dhFull || document.fullscreenElement) { return; }
+					var el = document.documentElement;
+					var go = el.requestFullscreen || el.webkitRequestFullscreen;
+					if (!go) { return; }
+					try {
+						var done = go.call(el, { navigationUI: 'hide' });
+						var lock = function () {
+							if (screen.orientation && screen.orientation.lock) { screen.orientation.lock('landscape').catch(function () {}); }
+						};
+						if (done && done.then) { done.then(lock).catch(function () {}); } else { lock(); }
+					} catch (e) {}
+				};
+				document.addEventListener('pointerup', ask, true);
+				document.addEventListener('touchend', ask, true);
+				document.addEventListener('keyup', ask, true);
+			})();
+		""" % ("true" if fullscreen_on() else "false"), true)
+	elif OS.has_feature("mobile"):
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen_on() else DisplayServer.WINDOW_MODE_WINDOWED)
+
+
+## 전체 화면 설정(기본 켜짐).
+func fullscreen_on() -> bool:
+	return not has_profile() or bool(profile.get("settings", {}).get("fullscreen", true))
+
+
+func set_fullscreen(on: bool) -> void:
+	profile["settings"]["fullscreen"] = on
+	save()
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.__dhFull = %s; if (!window.__dhFull && document.fullscreenElement && document.exitFullscreen) { document.exitFullscreen(); }" % ("true" if on else "false"), true)
+	elif OS.has_feature("mobile"):
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED)
 
 
 ## 기본 글꼴(둥글고 굵은 주아체)에 없는 글자·기호는 노토 산스로 메운다.

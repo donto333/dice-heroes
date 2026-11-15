@@ -8,6 +8,7 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const BoardView := preload("res://scripts/ui/board_view.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const GameData := preload("res://scripts/game_data.gd")
+const Fx := preload("res://scripts/ui/fx.gd")
 
 const GOLD := Color("ffcf4d")
 const WIN_COLOR := Color("7ee081")
@@ -291,8 +292,37 @@ func _clash(left_face: Control, right_face: Control, attacker_won: bool) -> void
 	_restore_later(left_face, left_home, right_face, right_home)
 
 
-## 부딪친 자리에서 뾰족한 별 모양 불꽃이 터졌다 사라진다.
+## 부딪친 자리에서 충격 섬광·엇갈린 칼자국·충격 고리 그림이 겹쳐 터진다(더하기 섞기로 빛난다).
+## 효과 그림이 없으면 뾰족한 별 도형으로 대신한다.
 func _spark_at(spot: Vector2) -> void:
+	var layers := [["impact_burst", 520.0, 0.36, 0.5], ["slash_cross", 460.0, 0.32, -0.3], ["ring_shock", 560.0, 0.45, 0.0], ["flare_star", 420.0, 0.3, 0.8]]
+	var drew := false
+	for layer in layers:
+		var texture: Texture2D = Fx.tex(str(layer[0]))
+		if texture == null:
+			continue
+		drew = true
+		var sprite := TextureRect.new()
+		sprite.texture = texture
+		sprite.material = Fx.additive()
+		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var reach := float(layer[1])
+		sprite.size = Vector2(reach, reach)
+		sprite.position = spot - sprite.size * 0.5
+		sprite.pivot_offset = sprite.size * 0.5
+		sprite.scale = Vector2(0.3, 0.3)
+		add_child(sprite)
+		var seconds := float(layer[2])
+		var pop := sprite.create_tween().set_parallel(true)
+		pop.tween_property(sprite, "scale", Vector2(1.25, 1.25), seconds).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		pop.tween_property(sprite, "rotation", float(layer[3]), seconds)
+		pop.tween_property(sprite, "modulate:a", 0.0, seconds * 0.6).set_delay(seconds * 0.4)
+		pop.chain().tween_callback(sprite.queue_free)
+	if drew:
+		return
 	for index in 2:
 		var star := Polygon2D.new()
 		var points := PackedVector2Array()
