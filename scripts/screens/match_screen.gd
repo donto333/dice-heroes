@@ -145,13 +145,14 @@ func _on_piece_landed(player_index: int, flung: bool) -> void:
 	if not flung:
 		return
 	_play("impact")
-	_fx.burst(_piece_spot(player_index) + Vector2(0, 40), "star", 14, 0.8)
+	_fx.burst(_piece_spot(player_index) + Vector2(0, 40), "impact", 14, 0.9)
+	_fx.burst(_piece_spot(player_index) + Vector2(0, 50), "dust", 8, 0.9)
 	_fx.shake(_board_view, 12.0, 0.3)
 
 
 func _on_piece_flung(player_index: int) -> void:
 	_play("fling")
-	_fx.burst(_piece_spot(player_index), "smoke", 10, 0.8)
+	_fx.burst(_piece_spot(player_index), "impact", 12, 0.8)
 
 
 ## 지금 화면에 어빌리티와 카드를 보여 줄 플레이어. 사람 차례면 그 사람, AI 차례면 첫 번째 사람.
@@ -606,7 +607,10 @@ func _show_tile(event: Dictionary) -> void:
 			_play("coin")
 			_fx.burst(spot, "coin", 20)
 		elif good:
-			_fx.burst(spot, "spark", 16)
+			# 좋은 일: 전진·워프는 푸른 고리와 빛, 나머지는 금빛 반짝임
+			_fx.burst(spot, "heal" if str(event.get("tile", "")) in ["forward", "warp", "checkpoint"] else "spark", 16)
+		elif str(event.get("tile", "")) == "prison":
+			_fx.burst(spot, "bolt", 14)
 		else:
 			_fx.burst(spot, "smoke", 14)
 			_fx.shake(_board_view, 6.0, 0.2)

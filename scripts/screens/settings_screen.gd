@@ -68,6 +68,14 @@ func setup(main_app, _params: Dictionary) -> void:
 	buzz_toggle.custom_minimum_size = Vector2(150, 64)
 	buzz_toggle.pressed.connect(_on_vibrate)
 	buzz_row.add_child(buzz_toggle)
+	var full_row := Kit.hbox(10)
+	play_column.add_child(full_row)
+	full_row.add_child(Kit.expand(Kit.label("전체 화면", 26)))
+	var full_on: bool = app.fullscreen_on()
+	var full_toggle := Kit.button("켜짐" if full_on else "꺼짐", Kit.GOOD if full_on else Kit.PANEL_LIGHT, 24, 64)
+	full_toggle.custom_minimum_size = Vector2(150, 64)
+	full_toggle.pressed.connect(_on_fullscreen)
+	full_row.add_child(full_toggle)
 	var hint_row := Kit.hbox(10)
 	play_column.add_child(hint_row)
 	hint_row.add_child(Kit.expand(Kit.para("첫 판 안내 말풍선을 처음부터 다시 볼 수 있어요.", 20)))
@@ -196,6 +204,12 @@ func _on_music() -> void:
 func _on_fast() -> void:
 	app.profile["settings"]["fast"] = not bool(app.profile["settings"].get("fast", false))
 	app.save()
+	app.play("click")
+	app.go("settings")
+
+
+func _on_fullscreen() -> void:
+	app.set_fullscreen(not app.fullscreen_on())
 	app.play("click")
 	app.go("settings")
 

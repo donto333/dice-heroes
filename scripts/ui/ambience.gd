@@ -2,6 +2,8 @@ extends Control
 ## 화면 바탕 위에 떠다니는 빛 알갱이와 천천히 도는 빛줄기. 메뉴 화면이 밋밋하지 않게 살아 있는 느낌을 준다.
 ## 그림만 그리고 입력은 받지 않는다. Kit.backdrop()이 바탕 그림 위에 자동으로 붙인다.
 
+const Fx := preload("res://scripts/ui/fx.gd")
+
 ## 알갱이 개수
 var count := 26
 ## 빛줄기를 그릴지
@@ -16,6 +18,7 @@ func _init() -> void:
 	name = "Ambience"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	material = Fx.additive()
 
 
 func _ready() -> void:
@@ -63,6 +66,12 @@ func _draw() -> void:
 		var edge := clampf(minf(rise, 1.0 - rise) * 6.0, 0.0, 1.0)
 		var alpha := twinkle * edge
 		var radius := float(mote["size"])
+		var soft: Texture2D = Fx.tex("flare_cross" if bool(mote["star"]) else "glow_soft")
+		if soft != null:
+			# 그려 둔 빛 그림을 쓴다(더하기 섞기라 겹칠수록 밝아진다).
+			var reach := radius * (9.0 if bool(mote["star"]) else 6.0) * (0.7 + 0.3 * twinkle)
+			draw_texture_rect(soft, Rect2(x - reach / 2.0, y - reach / 2.0, reach, reach), false, Color(tint.r, tint.g, tint.b, alpha * 0.8))
+			continue
 		draw_circle(Vector2(x, y), radius * 2.4, Color(tint.r, tint.g, tint.b, alpha * 0.12))
 		if bool(mote["star"]):
 			var arm := radius * 2.2 * (0.7 + 0.3 * twinkle)
