@@ -453,6 +453,62 @@
           }
         }
       ]
+    },
+    {
+      "id": "c9",
+      "name": "9장 왕국의 성벽",
+      "map": 8,
+      "intro": "모험 뒤의 이야기. 성벽을 넘어 왕국의 대장군에게 도전하라.",
+      "stages": [
+        {
+          "id": "9-1",
+          "name": "성문 수비대",
+          "story": "왕국의 성문을 수비대가 굳게 지키고 있어요. 관문을 하나씩 뚫어야 해요.",
+          "boss": false,
+          "enemy": {
+            "attack": "yisunsin",
+            "defense": "anubis",
+            "support": "libai"
+          },
+          "ai_level": 5,
+          "reward": {
+            "gold": 1100,
+            "gems": 25
+          }
+        },
+        {
+          "id": "9-2",
+          "name": "성벽 위의 기사",
+          "story": "성벽 위를 달리는 기사가 앞을 막아요. 톱니 같은 길에서 뒤처지지 마세요.",
+          "boss": false,
+          "enemy": {
+            "attack": "machao",
+            "defense": "zeus",
+            "support": "tesla"
+          },
+          "ai_level": 5,
+          "reward": {
+            "gold": 1100,
+            "gems": 25
+          }
+        },
+        {
+          "id": "9-3",
+          "name": "철갑 대장군",
+          "story": "왕국 최강의 대장군이 성 꼭대기에서 기다려요. 진짜 마지막 승부예요!",
+          "boss": true,
+          "enemy": {
+            "attack": "lubu",
+            "defense": "zeus",
+            "support": "zhugeliang"
+          },
+          "ai_level": 5,
+          "reward": {
+            "gold": 1800,
+            "gems": 100
+          }
+        }
+      ]
     }
   ]
 }
