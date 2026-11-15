@@ -55,7 +55,7 @@ func setup(main_app, params: Dictionary) -> void:
 	adventure.pressed.connect(_on_adventure)
 	modes.add_child(Kit.expand(adventure))
 	var difficulty: Dictionary = Profile.ai_difficulty(app.eco, str(app.profile.get("ai_difficulty", "easy")))
-	var practice := Kit.icon_button("AI전", "fate", Color("2f80ed"), 26, 100, "최근 %s" % difficulty["name"])
+	var practice := Kit.icon_button("AI전", "fate", Color("2fb457"), 26, 100, "최근 %s" % difficulty["name"])
 	practice.pressed.connect(_choose_difficulty)
 	modes.add_child(Kit.expand(practice))
 	var friend := Kit.icon_button("친구", "pawn", Color("2a9d5c"), 26, 100, "한 기기 2인")
@@ -64,7 +64,7 @@ func setup(main_app, params: Dictionary) -> void:
 	var extra := Kit.hbox(10)
 	column.add_child(extra)
 	var done := Profile.challenge_done(app.profile)
-	var challenge := Kit.icon_button("오늘의 도전", "ambush", Color("b8323a") if not done else Color("4a5580"), 24, 76,
+	var challenge := Kit.icon_button("오늘의 도전", "ambush", Color("b8323a") if not done else Color("6f9bd6"), 24, 76,
 		"오늘 완료!" if done else "하루 한 번 · 이기면 보석 30")
 	challenge.pressed.connect(_on_mode.bind("challenge"))
 	extra.add_child(Kit.expand(challenge, 1.6))
@@ -93,7 +93,7 @@ func _rank_card() -> Control:
 	var trophies := int(profile["trophies"])
 	var tier: Dictionary = Profile.tier_of(app.eco, trophies)
 	var tier_color := Color(str(tier.get("color", "ffffff")))
-	var card := Kit.panel(Color("1a1f40"), tier_color.darkened(0.3), 14)
+	var card := Kit.panel(Color("1f66c8"), tier_color.darkened(0.3), 14)
 	var row := Kit.hbox(14)
 	card.add_child(row)
 	var badge := Kit.label(str(tier["name"]), 34, tier_color, HORIZONTAL_ALIGNMENT_CENTER)
@@ -136,9 +136,9 @@ func _showcase() -> Control:
 	var button := Button.new()
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button.custom_minimum_size = Vector2(0, 360)
-	button.add_theme_stylebox_override("normal", Kit.box(Color("0d1026"), Kit.LINE, 2, 16, 0))
-	button.add_theme_stylebox_override("hover", Kit.box(Color("0d1026"), Kit.GOLD, 2, 16, 0))
-	button.add_theme_stylebox_override("pressed", Kit.box(Color("0d1026"), Kit.GOLD, 2, 16, 0))
+	button.add_theme_stylebox_override("normal", Kit.box(Color("0f3d85"), Kit.LINE, 2, 16, 0))
+	button.add_theme_stylebox_override("hover", Kit.box(Color("0f3d85"), Kit.GOLD, 2, 16, 0))
+	button.add_theme_stylebox_override("pressed", Kit.box(Color("0f3d85"), Kit.GOLD, 2, 16, 0))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.pressed.connect(_on_tab.bind("heroes"))
 	var leader_id := str(app.profile.get("avatar", ""))
@@ -158,7 +158,7 @@ func _showcase() -> Control:
 	# 아래쪽 띠: 파티 세 명
 	# 대표 영웅의 한마디: 분류마다 말투가 다르고, 들어올 때마다 바뀐다.
 	var lines: Array = GREETINGS.get(str(leader.get("category", "")), GREETINGS["영웅"])
-	var greeting := Kit.label(str(lines[app.rng.randi_range(0, lines.size() - 1)]), 20, Color("1b1f3b"))
+	var greeting := Kit.label(str(lines[app.rng.randi_range(0, lines.size() - 1)]), 20, Color("1c5cb8"))
 	greeting.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	greeting.add_theme_stylebox_override("normal", Kit.box(Color(1, 1, 1, 0.94), Kit.GOLD, 3, 16, 10))
 	greeting.anchor_top = 1.0
@@ -218,7 +218,7 @@ func _showcase() -> Control:
 	button.add_child(mail)
 	mail.position = Vector2(12, 40)
 	mail.size = Vector2(88, 88)
-	var season := Kit.round_shortcut("패스", "goal", Color("c4861c"), Profile.pass_claimable_count(app.profile, app.eco) > 0)
+	var season := Kit.round_shortcut("패스", "goal", Color("f39a1c"), Profile.pass_claimable_count(app.profile, app.eco) > 0)
 	season.pressed.connect(_on_tab.bind("pass"))
 	button.add_child(season)
 	season.position = Vector2(12, 134)
@@ -242,7 +242,7 @@ func _showcase() -> Control:
 	var attend := Kit.round_shortcut("출석", "treasure", Color("e0a21b"), Profile.can_check_in(app.profile, app.today()))
 	attend.pressed.connect(_on_attendance_shortcut)
 	shortcuts.add_child(attend)
-	var missions := Kit.round_shortcut("미션", "checkpoint", Color("2f80ed"), bool(badges.get("missions", false)))
+	var missions := Kit.round_shortcut("미션", "checkpoint", Color("2fb457"), bool(badges.get("missions", false)))
 	missions.pressed.connect(_on_tab.bind("missions"))
 	shortcuts.add_child(missions)
 	var roulette := Kit.round_shortcut("룰렛", "fate", Color("c2413a"), Profile.can_spin_free(app.profile, app.eco))
@@ -298,7 +298,7 @@ func open_todo() -> void:
 	var rows: Array = []
 	for item in _todo_items():
 		var done := bool(item[2])
-		var line := Kit.panel(Color("14182f") if not done else Color("10131f"), Kit.LINE, 10)
+		var line := Kit.panel(Color("13458f") if not done else Color("0f3d85"), Kit.LINE, 10)
 		var row := Kit.hbox(10)
 		line.add_child(row)
 		var text := Kit.vbox(0)
@@ -373,7 +373,7 @@ func open_mailbox() -> void:
 	for index in range(mails.size() - 1, -1, -1):
 		var entry: Dictionary = mails[index]
 		var claimed := bool(entry.get("claimed", false))
-		var card := Kit.panel(Color("14182f"), Kit.LINE if claimed else Kit.GOLD, 12)
+		var card := Kit.panel(Color("13458f"), Kit.LINE if claimed else Kit.GOLD, 12)
 		var row := Kit.hbox(10)
 		card.add_child(row)
 		var info := Kit.vbox(4)
@@ -553,7 +553,7 @@ func _maybe_attendance() -> void:
 		var reward: Dictionary = table[day]
 		var done := day < today_index
 		var now := day == today_index
-		var fill: Color = Kit.PANEL_LIGHT if now else (Color("14182f") if done else Kit.PANEL)
+		var fill: Color = Kit.PANEL_LIGHT if now else (Color("13458f") if done else Kit.PANEL)
 		var border: Color = Kit.GOLD if now else Kit.LINE
 		var cell := Kit.label("%d일차\n%s%s" % [day + 1, Kit.reward_line(reward), "\n받음" if done else ""], 18,
 			Kit.GOLD if now else (Kit.MUTED if done else Color.WHITE), HORIZONTAL_ALIGNMENT_CENTER)
@@ -566,7 +566,7 @@ func _maybe_attendance() -> void:
 	var center := CenterContainer.new()
 	center.add_child(grid)
 	body.add_child(center)
-	app.dialog("출석 보상", body, [["받기", Color("c4861c"), _claim_attendance]])
+	app.dialog("출석 보상", body, [["받기", Color("f39a1c"), _claim_attendance]])
 
 
 func _claim_attendance() -> void:
@@ -595,7 +595,7 @@ func _choose_difficulty() -> void:
 	var body := Kit.vbox(12)
 	body.add_child(Kit.para("어려울수록 상대 영웅 레벨이 높고 조합을 잘 짜요. 보상도 많아져요.", 20, Kit.MUTED))
 	var buttons: Array = []
-	var colors := [Color("2f8f4e"), Color("c4861c"), Color("b8323a")]
+	var colors := [Color("2f8f4e"), Color("f39a1c"), Color("b8323a")]
 	var list: Array = app.eco.get("ai_difficulty", [])
 	for index in list.size():
 		var entry: Dictionary = list[index]

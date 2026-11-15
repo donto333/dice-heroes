@@ -73,7 +73,7 @@ func _summon_panel() -> Control:
 	one.disabled = not Profile.can_pay(app.profile, "gems", int(summon.get("cost_one", 100)))
 	one.pressed.connect(_on_paid.bind(1))
 	buttons.add_child(Kit.expand(one))
-	var ten := Kit.button("10회\n%s" % Kit.money_text("gems", int(summon.get("cost_ten", 900))), Color("c4861c"), 22, 100)
+	var ten := Kit.button("10회\n%s" % Kit.money_text("gems", int(summon.get("cost_ten", 900))), Color("f39a1c"), 22, 100)
 	ten.disabled = not Profile.can_pay(app.profile, "gems", int(summon.get("cost_ten", 900)))
 	ten.pressed.connect(_on_paid.bind(10))
 	buttons.add_child(Kit.expand(ten))
@@ -197,7 +197,7 @@ func _gem_pack_panel() -> Control:
 	grid.add_theme_constant_override("v_separation", 8)
 	column.add_child(grid)
 	for pack in table.get("packs", []):
-		var cell := Kit.panel(Color("14182f"), Kit.LINE, 10)
+		var cell := Kit.panel(Color("13458f"), Kit.LINE, 10)
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var text := Kit.vbox(2)
 		cell.add_child(text)
@@ -210,7 +210,7 @@ func _gem_pack_panel() -> Control:
 		grid.add_child(cell)
 	# 묶음 상품(스타터·성장·패스 프리미엄) 설계도 함께 보여 준다.
 	for bundle in table.get("bundles", []):
-		var line := Kit.panel(Color("14182f"), Kit.LINE, 10)
+		var line := Kit.panel(Color("13458f"), Kit.LINE, 10)
 		var row := Kit.hbox(10)
 		line.add_child(row)
 		var words := Kit.vbox(2)

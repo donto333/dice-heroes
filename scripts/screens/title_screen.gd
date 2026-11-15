@@ -130,7 +130,7 @@ func _draw_emblem() -> void:
 		body.shadow_size = 10
 		_emblem.draw_style_box(body, Rect2(-60, -60, 120, 120))
 		for pip in PIPS[faces[index][0]]:
-			_emblem.draw_circle(Vector2(-60, -64) + pip * 120.0, 11.0, Color("1b1f3b"))
+			_emblem.draw_circle(Vector2(-60, -64) + pip * 120.0, 11.0, Color("1c5cb8"))
 	_emblem.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 

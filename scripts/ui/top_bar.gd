@@ -17,7 +17,7 @@ var _gems: Label
 
 func setup(main_app) -> void:
 	app = main_app
-	add_theme_stylebox_override("panel", Kit.box(Color("0d1026"), Kit.LINE, 2, 16, 10))
+	add_theme_stylebox_override("panel", Kit.box(Color("0f3d85"), Kit.LINE, 3, 26, 10))
 	var row := Kit.hbox(12)
 	add_child(row)
 	_avatar = Portrait.new()
@@ -59,7 +59,7 @@ func _clear_button(callback: Callable) -> Button:
 func _chip(color: Color) -> Label:
 	var chip := Kit.label("", 22, color, HORIZONTAL_ALIGNMENT_RIGHT)
 	chip.custom_minimum_size = Vector2(170, 38)
-	chip.add_theme_stylebox_override("normal", Kit.box(Color(0, 0, 0, 0.35), color.darkened(0.4), 2, 19, 6))
+	chip.add_theme_stylebox_override("normal", Kit.box(Color(0, 0.08, 0.25, 0.6), color, 2, 19, 6))
 	return chip
 
 

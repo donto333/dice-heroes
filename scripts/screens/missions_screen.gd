@@ -52,14 +52,14 @@ func _attendance_panel() -> Control:
 	for day in table.size():
 		var done := day < today_index or (day == today_index and not can)
 		var now := day == today_index and can
-		var fill: Color = Kit.PANEL_LIGHT if now else (Color("14182f") if done else Color("232955"))
+		var fill: Color = Kit.PANEL_LIGHT if now else (Color("13458f") if done else Color("232955"))
 		var cell := Kit.label("%d일\n%s%s" % [day + 1, Kit.reward_line(table[day]).replace("  ", "\n"), "\n✓" if done else ""], 15,
 			Kit.GOLD if now else (Kit.MUTED if done else Color.WHITE), HORIZONTAL_ALIGNMENT_CENTER)
 		cell.custom_minimum_size = Vector2(0, 110)
 		cell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		cell.add_theme_stylebox_override("normal", Kit.box(fill, Kit.GOLD if now else Kit.LINE, 3 if now else 1, 10, 4))
 		row.add_child(Kit.expand(cell))
-	var claim := Kit.button("오늘 출석 보상 받기" if can else "오늘 출석 완료 · 내일 또 오세요", Color("c4861c"), 24, 76)
+	var claim := Kit.button("오늘 출석 보상 받기" if can else "오늘 출석 완료 · 내일 또 오세요", Color("f39a1c"), 24, 76)
 	claim.disabled = not can
 	claim.pressed.connect(_on_check_in)
 	column.add_child(claim)
@@ -80,7 +80,7 @@ func _missions_panel() -> Control:
 	var all_row := Kit.hbox(10)
 	column.add_child(all_row)
 	all_row.add_child(Kit.expand(Kit.para("모든 미션 완료 보너스  %s" % Kit.reward_line(all_reward), 22, Kit.GOLD)))
-	var button := Kit.button("받음" if all_claimed else "받기", Color("c4861c"), 22, 64)
+	var button := Kit.button("받음" if all_claimed else "받기", Color("f39a1c"), 22, 64)
 	button.custom_minimum_size = Vector2(130, 64)
 	button.disabled = all_claimed or not all_done
 	button.pressed.connect(_on_all_clear)
@@ -136,7 +136,7 @@ func _guide_panel() -> Control:
 	line.add_child(Kit.expand(bar))
 	line.add_child(Kit.label("%d/%d" % [min(value, goal), goal], 16, Kit.MUTED))
 	info.add_child(Kit.label("보상 %s" % Kit.reward_line(step["reward"]), 16, Kit.GOLD))
-	var button := Kit.button("받기" if done else "진행 중", Color("c4861c") if done else Kit.PANEL_LIGHT, 20, 60)
+	var button := Kit.button("받기" if done else "진행 중", Color("f39a1c") if done else Kit.PANEL_LIGHT, 20, 60)
 	button.custom_minimum_size = Vector2(120, 60)
 	button.disabled = not done
 	button.pressed.connect(_on_guide)
@@ -155,7 +155,7 @@ func _on_guide() -> void:
 
 
 func _achievement_row(achievement: Dictionary) -> Control:
-	var box := Kit.panel(Color("14182f"), Kit.LINE, 10)
+	var box := Kit.panel(Color("13458f"), Kit.LINE, 10)
 	var row := Kit.hbox(10)
 	box.add_child(row)
 	var info := Kit.vbox(4)
@@ -172,7 +172,7 @@ func _achievement_row(achievement: Dictionary) -> Control:
 	line.add_child(Kit.expand(bar))
 	line.add_child(Kit.label("%d/%d" % [min(value, goal), goal], 16, Kit.MUTED))
 	info.add_child(Kit.label("보상 %s" % Kit.reward_line(achievement["reward"]), 16, Kit.GOLD))
-	var button := Kit.button("받음" if claimed else ("받기" if done else "진행 중"), Color("c4861c") if done and not claimed else Kit.PANEL_LIGHT, 20, 60)
+	var button := Kit.button("받음" if claimed else ("받기" if done else "진행 중"), Color("f39a1c") if done and not claimed else Kit.PANEL_LIGHT, 20, 60)
 	button.custom_minimum_size = Vector2(120, 60)
 	button.disabled = claimed or not done
 	button.pressed.connect(_on_achievement.bind(str(achievement["id"])))
@@ -191,7 +191,7 @@ func _on_achievement(id: String) -> void:
 
 
 func _mission_row(mission: Dictionary) -> Control:
-	var box := Kit.panel(Color("14182f"), Kit.LINE, 12)
+	var box := Kit.panel(Color("13458f"), Kit.LINE, 12)
 	var row := Kit.hbox(10)
 	box.add_child(row)
 	var info := Kit.vbox(6)

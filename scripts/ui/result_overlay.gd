@@ -49,7 +49,7 @@ func _ready() -> void:
 	_panel = PanelContainer.new()
 	_panel.custom_minimum_size = Vector2(620, 0)
 	var box := StyleBoxFlat.new()
-	box.bg_color = Color("161a36")
+	box.bg_color = Color("164c9e")
 	box.border_color = GOLD.darkened(0.2)
 	box.set_border_width_all(4)
 	box.set_corner_radius_all(16)
@@ -112,7 +112,7 @@ func _ready() -> void:
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
 	column.add_child(buttons)
-	var change := Kit.button("로비로", Color("4a5580"), 28, 92)
+	var change := Kit.button("로비로", Color("6f9bd6"), 28, 92)
 	change.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	change.pressed.connect(_on_change_pressed)
 	buttons.add_child(change)
@@ -160,7 +160,7 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 	var mvp: Dictionary = extras.get("mvp", {})
 	_mvp_row.visible = not mvp.is_empty()
 	if not mvp.is_empty():
-		_mvp_face.show_character(mvp, Color("3a4466"))
+		_mvp_face.show_character(mvp, Color("8fd0ff"))
 		_mvp_name.text = str(mvp.get("name", ""))
 		_mvp_note.text = str(extras.get("mvp_note", ""))
 	for child in _chips.get_children():

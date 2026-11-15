@@ -36,7 +36,7 @@ func setup(main_app, params: Dictionary) -> void:
 		var info: Dictionary = app.character(id)
 		face.show_character(info, Kit.CATEGORY_COLORS.get(info.get("category", ""), Kit.LINE))
 		party_row.add_child(face)
-	var edit := Kit.button("파티 편성", Color("c4861c"), 28, 110)
+	var edit := Kit.button("파티 편성", Color("f39a1c"), 28, 110)
 	edit.pressed.connect(_on_edit_party)
 	party_row.add_child(Kit.expand(edit))
 
@@ -44,7 +44,7 @@ func setup(main_app, params: Dictionary) -> void:
 	column.add_child(header)
 	_count_label = Kit.label("", 26, Kit.GOLD)
 	header.add_child(Kit.expand(_count_label))
-	var all_up := Kit.button("일괄 강화", Color("2a7d4f"), 20, 56)
+	var all_up := Kit.button("일괄 강화", Color("27a35a"), 20, 56)
 	all_up.custom_minimum_size = Vector2(150, 56)
 	all_up.disabled = not bool(app.badges().get("heroes", false))
 	all_up.pressed.connect(_upgrade_all)
@@ -116,9 +116,9 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	button.custom_minimum_size = Vector2(0, 220)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var edge: Color = Kit.GRADE_COLORS[grade] if owned else Kit.LINE
-	button.add_theme_stylebox_override("normal", Kit.box(Color("0d1026"), edge, 3, 12, 0))
-	button.add_theme_stylebox_override("hover", Kit.box(Color("0d1026"), Color.WHITE, 3, 12, 0))
-	button.add_theme_stylebox_override("pressed", Kit.box(Color("0d1026"), Color.WHITE, 3, 12, 0))
+	button.add_theme_stylebox_override("normal", Kit.box(Color("0f3d85"), edge, 3, 12, 0))
+	button.add_theme_stylebox_override("hover", Kit.box(Color("0f3d85"), Color.WHITE, 3, 12, 0))
+	button.add_theme_stylebox_override("pressed", Kit.box(Color("0f3d85"), Color.WHITE, 3, 12, 0))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.pressed.connect(_on_hero.bind(id))
 	var column := Kit.vbox(2)
@@ -187,7 +187,7 @@ func show_hero(id: String) -> void:
 		stat_row.add_child(Kit.expand(bar))
 		stat_row.add_child(Kit.label(str(value), 20))
 		info.add_child(stat_row)
-	var ability_box := Kit.panel(Color("14182f"), Kit.LINE, 12)
+	var ability_box := Kit.panel(Color("13458f"), Kit.LINE, 12)
 	var ability_text := Kit.label("어빌리티 [%s]%s\n%s" % [ability.get("name", "-"), "  (★★★ 전용)" if str(character.get("ability", "")).begins_with("unique_") else "", ability.get("text", "")], 21)
 	ability_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ability_box.add_child(ability_text)
@@ -213,19 +213,19 @@ func show_hero(id: String) -> void:
 			if shards > 0:
 				var price := shards * int(app.eco["upgrade"].get("shard_sell_gold", 0))
 				body.add_child(Kit.para("남는 조각 %d개를 %s에 팔 수 있어요." % [shards, Kit.money_text("gold", price)], 20))
-				buttons.append(["조각 팔기", Color("2a7d4f"), _sell_shards.bind(id)])
+				buttons.append(["조각 팔기", Color("27a35a"), _sell_shards.bind(id)])
 		else:
 			var need := int(cost["shards"])
 			body.add_child(Kit.para("조각 %d / %d  ·  강화 비용 %s" % [shards, need, Kit.money_text("gold", int(cost["gold"]))], 20))
 			body.add_child(Kit.bar(float(shards) / float(max(need, 1)), Kit.GEM, 16))
 			body.add_child(Kit.para("조각은 같은 영웅을 또 소환하면 얻어요.", 18, Kit.MUTED))
 			var can := Profile.can_upgrade(app.profile, app.eco, id)
-			buttons.append(["강화하기" if can else "강화 불가", Color("c4861c") if can else Kit.DISABLED, _upgrade.bind(id) if can else Callable()])
+			buttons.append(["강화하기" if can else "강화 불가", Color("f39a1c") if can else Kit.DISABLED, _upgrade.bind(id) if can else Callable()])
 		if str(app.profile.get("avatar", "")) != id:
 			buttons.append(["대표로", Kit.ACCENT, _set_avatar.bind(id)])
 	else:
 		body.add_child(Kit.para("아직 없는 영웅이에요. 상점에서 소환하면 얻을 수 있어요.", 20, Kit.MUTED))
-		buttons.append(["상점으로", Color("c4861c"), func(): app.go("shop")])
+		buttons.append(["상점으로", Color("f39a1c"), func(): app.go("shop")])
 	buttons.append(["닫기", Kit.PANEL_LIGHT])
 	app.dialog("", body, buttons, 660)
 

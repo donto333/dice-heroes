@@ -18,16 +18,17 @@ var _dots: Dictionary = {}
 
 
 func setup(active: String, badges: Dictionary) -> void:
-	add_theme_stylebox_override("panel", Kit.box(Color("0d1026"), Kit.LINE, 2, 16, 6))
+	add_theme_stylebox_override("panel", Kit.box(Color("0f3d85"), Kit.LINE, 3, 26, 8))
 	var row := Kit.hbox(6)
 	add_child(row)
 	for spec in TABS:
 		var screen_name: String = spec[0]
 		var on := screen_name == active
-		var button := Kit.button(spec[1], Kit.PANEL_LIGHT if on else Color("161a36"), 24, 78)
+		var button := Kit.button(spec[1], Color("ffc62b") if on else Color("2f74d6"), 24, 78)
 		if on:
-			Kit.paint(button, Kit.PANEL_LIGHT, Kit.GOLD)
-			button.add_theme_color_override("font_color", Kit.GOLD)
+			for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+				button.add_theme_color_override(state, Color("5a3200"))
+			button.add_theme_constant_override("outline_size", 0)
 		Kit.expand(button)
 		button.pressed.connect(_on_pressed.bind(screen_name))
 		row.add_child(button)

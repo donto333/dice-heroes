@@ -30,10 +30,10 @@ const AI_DELAY := 1.0
 const LOG_LINES := 4
 const MAX_RESULT_BLOCKS := 3
 
-const SLOT_COLORS := {"attack": Color("b8352a"), "defense": Color("6f43a6"), "support": Color("2a7d4f")}
+const SLOT_COLORS := {"attack": Color("b8352a"), "defense": Color("6f43a6"), "support": Color("27a35a")}
 const CARD_COLOR := Color("a6781a")
-const ROLL_COLOR := Color("2f80ed")
-const DISABLED_COLOR := Color("2a2f4a")
+const ROLL_COLOR := Color("2fb457")
+const DISABLED_COLOR := Color("6f86a8")
 const PLAYER_TEXT_COLORS := [Color("4fc3f7"), Color("ff8a65")]
 
 var game
@@ -139,7 +139,7 @@ func _is_local() -> bool:
 
 func _build_ui() -> void:
 	var background := ColorRect.new()
-	background.color = Color("1b1f3b")
+	background.color = Color("1c5cb8")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
@@ -161,16 +161,16 @@ func _build_ui() -> void:
 	_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_row.add_child(_status_label)
-	_auto_button = Kit.button("자동 꺼짐", Color("4a5580"), 20, 56)
+	_auto_button = Kit.button("자동 꺼짐", Color("6f9bd6"), 20, 56)
 	_auto_button.custom_minimum_size = Vector2(110, 56)
 	_auto_button.pressed.connect(_on_auto_pressed)
 	status_row.add_child(_auto_button)
-	_speed_button = Kit.button("", Color("2a7d4f"), 20, 56)
+	_speed_button = Kit.button("", Color("27a35a"), 20, 56)
 	_speed_button.custom_minimum_size = Vector2(110, 56)
 	_speed_button.pressed.connect(_on_speed_pressed)
 	status_row.add_child(_speed_button)
 	_apply_speed()
-	var quit_button := Kit.button("나가기", Color("3a4466"), 20, 56)
+	var quit_button := Kit.button("나가기", Color("8fd0ff"), 20, 56)
 	quit_button.custom_minimum_size = Vector2(110, 56)
 	quit_button.pressed.connect(_on_quit_pressed)
 	status_row.add_child(quit_button)
@@ -239,7 +239,7 @@ func _build_ui() -> void:
 	var result_panel := PanelContainer.new()
 	# 기록 칸은 높이를 고정한다. 내용이 넘치면 안에서 스크롤되어 판이 줄어들지 않는다.
 	result_panel.custom_minimum_size = Vector2(0, 168)
-	result_panel.add_theme_stylebox_override("panel", _box(Color("12152b"), Color("3a4466"), 2))
+	result_panel.add_theme_stylebox_override("panel", _box(Color("2a8be6"), Color("8fd0ff"), 2))
 	column.add_child(result_panel)
 	_result_scroll = ScrollContainer.new()
 	_result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -374,8 +374,8 @@ func _refresh_player_cards() -> void:
 			flags.append("부적")
 		parts["detail"].text = "골까지 %d칸 · 카드 %d%s" % [game.distance_of(index), player["hand"].size(), ("  " + " ".join(flags)) if not flags.is_empty() else ""]
 		var current: bool = game.current == index and game.winner < 0
-		var edge: Color = PLAYER_TEXT_COLORS[index] if current else Color("3a4466")
-		parts["panel"].add_theme_stylebox_override("panel", _box(Color("161a36") if current else Color("12152b"), edge, 3 if current else 1))
+		var edge: Color = PLAYER_TEXT_COLORS[index] if current else Color("8fd0ff")
+		parts["panel"].add_theme_stylebox_override("panel", _box(Color("164c9e") if current else Color("2a8be6"), edge, 3 if current else 1))
 
 
 ## 칸 효과를 보드 위에 크게 띄운다. 좋은 일은 금색, 나쁜 일은 붉은색.
@@ -480,7 +480,7 @@ func _hint(key: String, text: String) -> bool:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.custom_minimum_size = Vector2(420, 0)
 	row.add_child(label)
-	var ok := Kit.button("알겠어요", Color("c4861c"), 20, 60)
+	var ok := Kit.button("알겠어요", Color("f39a1c"), 20, 60)
 	ok.custom_minimum_size = Vector2(130, 60)
 	ok.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	ok.pressed.connect(func(): bubble.queue_free())
@@ -566,7 +566,7 @@ func _on_auto_pressed() -> void:
 	_auto = not _auto
 	_play("click")
 	_auto_button.text = "자동 켜짐" if _auto else "자동 꺼짐"
-	Kit.paint(_auto_button, Color("c4861c") if _auto else Color("4a5580"))
+	Kit.paint(_auto_button, Color("f39a1c") if _auto else Color("6f9bd6"))
 	# 내 차례에서 기다리던 중에 켰으면 이번 턴부터 바로 대신 둔다.
 	if _auto and _waiting_for_player and not _choosing_path:
 		_waiting_for_player = false
@@ -610,7 +610,7 @@ func _fast() -> bool:
 func _apply_speed() -> void:
 	Engine.time_scale = 2.0 if _fast() else 1.0
 	_speed_button.text = "빠르기 ×2" if _fast() else "빠르기 ×1"
-	Kit.paint(_speed_button, Color("c4861c") if _fast() else Color("2a7d4f"))
+	Kit.paint(_speed_button, Color("f39a1c") if _fast() else Color("27a35a"))
 
 
 func _on_speed_pressed() -> void:
@@ -684,7 +684,7 @@ func _say(index: int, text: String) -> void:
 		return
 	var bubble := _make_label(26, text)
 	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bubble.add_theme_color_override("font_color", Color("1b1f3b"))
+	bubble.add_theme_color_override("font_color", Color("1c5cb8"))
 	var style := _box(Color.WHITE, PLAYER_TEXT_COLORS[index], 4)
 	style.set_corner_radius_all(18)
 	style.set_content_margin_all(12)
@@ -825,7 +825,7 @@ func _start_game() -> void:
 	_rival_skin = _fx_rng.randi_range(0, 99)
 	_auto = false
 	_auto_button.text = "자동 꺼짐"
-	Kit.paint(_auto_button, Color("4a5580"))
+	Kit.paint(_auto_button, Color("6f9bd6"))
 	_auto_button.visible = not _is_local()
 	_clear_results()
 	_add_result_text("%s 파티: %s" % [game.players[1]["name"], _party_names(1)], PLAYER_TEXT_COLORS[1])
@@ -1047,7 +1047,7 @@ func _on_card_pressed(index: int) -> void:
 	var usable: bool = _waiting_for_player and game.can_play_card(index)
 	var buttons: Array = []
 	if usable:
-		buttons.append(["사용", Color("c4861c"), _use_card.bind(index)])
+		buttons.append(["사용", Color("f39a1c"), _use_card.bind(index)])
 	else:
 		if not game.card_condition_met(card):
 			# 조건이 붙은 카드(역전의 첫걸음): 지금 얼마나 뒤처져 있는지 알려 준다.
