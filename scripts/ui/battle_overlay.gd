@@ -198,6 +198,7 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 	await _roll_side(right, defense_rolls, defense_total, defense_bonus)
 
 	var won: bool = battle["won"]
+	await _clash(left["portrait"], right["portrait"], won)
 	var winner_side: Dictionary = left if won else right
 	var loser_side: Dictionary = right if won else left
 	winner_side["total"].add_theme_color_override("font_color", WIN_COLOR)
@@ -222,6 +223,56 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 	fade.tween_property(self, "modulate", Color(1, 1, 1, 0), 0.15)
 	await fade.finished
 	visible = false
+
+
+## 충돌 연출: 두 초상화가 가운데로 돌진해 부딪치고 화면이 번쩍인다. 진 쪽은 뒤로 밀려 기울어진다.
+func _clash(left_face: Control, right_face: Control, attacker_won: bool) -> void:
+	if _skip:
+		return
+	var left_home := left_face.position
+	var right_home := right_face.position
+	var dash := create_tween().set_parallel(true)
+	dash.tween_property(left_face, "position:x", left_home.x + 90.0, 0.12).set_ease(Tween.EASE_IN)
+	dash.tween_property(right_face, "position:x", right_home.x - 90.0, 0.12).set_ease(Tween.EASE_IN)
+	await dash.finished
+	_play_sound("impact")
+	var white := ColorRect.new()
+	white.color = Color(1, 1, 1, 0.85)
+	white.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	white.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(white)
+	var fade := white.create_tween()
+	fade.tween_property(white, "color:a", 0.0, 0.3)
+	fade.tween_callback(white.queue_free)
+	# 창 전체가 덜컹
+	var home := position
+	var rattle := create_tween()
+	for index in 5:
+		rattle.tween_property(self, "position", home + Vector2(18.0 if index % 2 == 0 else -18.0, 8.0 if index % 3 == 0 else -6.0) * (1.0 - index / 5.0), 0.04)
+	rattle.tween_property(self, "position", home, 0.04)
+	var loser: Control = right_face if attacker_won else left_face
+	var push := 70.0 if attacker_won else -70.0
+	loser.pivot_offset = loser.size * 0.5
+	var back := create_tween().set_parallel(true)
+	back.tween_property(left_face, "position:x", left_home.x + (0.0 if attacker_won else push), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	back.tween_property(right_face, "position:x", right_home.x + (push if attacker_won else 0.0), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	back.tween_property(loser, "rotation", 0.22 if attacker_won else -0.22, 0.2)
+	await back.finished
+	# 다음 전투를 위해 제자리로
+	await get_tree().create_timer(0.05).timeout
+	_restore_later(left_face, left_home, right_face, right_home)
+
+
+## 전투 창이 닫힌 뒤 초상화를 제자리·바른 각도로 돌려놓는다.
+func _restore_later(left_face: Control, left_home: Vector2, right_face: Control, right_home: Vector2) -> void:
+	while visible and is_inside_tree():
+		await get_tree().process_frame
+	if not is_inside_tree():
+		return
+	left_face.position = left_home
+	right_face.position = right_home
+	left_face.rotation = 0.0
+	right_face.rotation = 0.0
 
 
 func _blank(count: int) -> Array:

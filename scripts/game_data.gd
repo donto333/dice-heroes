@@ -123,6 +123,22 @@ static func enemy_portrait(enemy_name: String) -> Texture2D:
 	return texture
 
 
+const STANDEE_PATH := "res://assets/standees/%s.png"
+
+
+## 판 위에 세우는 입체 모형 그림(바탕 투명). 없으면 null.
+static func standee(id: String) -> Texture2D:
+	var key := "standee/" + id
+	if _art.has(key):
+		return _art[key]
+	var path := STANDEE_PATH % id
+	var texture: Texture2D = null
+	if id != "" and ResourceLoader.exists(path):
+		texture = load(path)
+	_art[key] = texture
+	return texture
+
+
 const PORTRAIT_HD_PATH := "res://assets/portraits_hd/%s.jpg"
 
 

@@ -28,6 +28,17 @@ func _ready() -> void:
 	_sounds["good"] = _tone([[784.0, 0.06], [1046.5, 0.12]], "square")
 	_sounds["bad"] = _tone([[220.0, 0.08], [164.8, 0.16]], "triangle")
 	_sounds["reveal"] = _sweep(300.0, 900.0, 0.18)
+	# 연출용 소리
+	_sounds["whoosh"] = _noise_sweep(0.22, 0.2, 1.0)
+	_sounds["impact"] = _impact()
+	_sounds["sparkle"] = _tone([[1568.0, 0.04], [2093.0, 0.04], [2637.0, 0.05], [3136.0, 0.09]], "sine")
+	_sounds["card"] = _noise_sweep(0.12, 1.0, 0.3)
+	_sounds["skill"] = _sweep(200.0, 1400.0, 0.32)
+	_sounds["fanfare"] = _tone([[523.3, 0.1], [523.3, 0.1], [523.3, 0.1], [659.3, 0.14], [784.0, 0.14], [659.3, 0.1], [784.0, 0.1], [1046.5, 0.4]], "square")
+	_sounds["defeat"] = _tone([[392.0, 0.16], [370.0, 0.16], [349.2, 0.16], [261.6, 0.5]], "triangle")
+	_sounds["fling"] = _sweep(900.0, 180.0, 0.4)
+	_sounds["land"] = _tone([[160.0, 0.05], [110.0, 0.07]], "triangle")
+	_sounds["coin"] = _tone([[1318.5, 0.05], [1760.0, 0.1]], "sine")
 
 
 func play(sound_name: String) -> void:
@@ -98,6 +109,33 @@ func _sweep(from_hz: float, to_hz: float, seconds: float) -> AudioStreamWAV:
 		var ratio := float(i) / length
 		phase += lerp(from_hz, to_hz, ratio) / RATE
 		samples.append(_wave("square", phase) * (1.0 - ratio) * 0.6)
+	return _to_stream(samples)
+
+
+## 바람 소리: 잡음의 세기가 변하며 지나간다. start·end는 처음과 끝의 밝기(0 어두움 ~ 1 밝음).
+func _noise_sweep(seconds: float, start: float, end: float) -> AudioStreamWAV:
+	var samples := PackedFloat32Array()
+	var length := int(seconds * RATE)
+	var last := 0.0
+	for i in length:
+		var ratio := float(i) / length
+		var bright: float = lerp(start, end, ratio)
+		# 간단한 저역 통과: 밝을수록 잡음이 그대로, 어두울수록 뭉개진다.
+		last = lerp(last, _noise.randf_range(-1.0, 1.0), 0.08 + 0.6 * bright)
+		samples.append(last * sin(ratio * PI) * 0.9)
+	return _to_stream(samples)
+
+
+## 충돌: 짧고 센 잡음 뒤에 낮은 울림.
+func _impact() -> AudioStreamWAV:
+	var samples := PackedFloat32Array()
+	var length := int(0.32 * RATE)
+	for i in length:
+		var t := float(i) / RATE
+		var envelope := pow(1.0 - float(i) / length, 3.0)
+		var crack := _noise.randf_range(-1.0, 1.0) * (1.0 if i < 700 else 0.25)
+		var boom := sin(TAU * (90.0 - 120.0 * t) * t) * 1.2
+		samples.append(clampf((crack + boom) * envelope, -1.0, 1.0))
 	return _to_stream(samples)
 
 
