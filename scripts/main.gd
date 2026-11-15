@@ -207,7 +207,7 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 		screen.modulate.a = 0.0
 		screen.pivot_offset = get_viewport_rect().size * 0.5
 		screen.scale = Vector2(1.035, 1.035)
-		var enter := screen.create_tween().set_parallel(true)
+		var enter: Tween = screen.create_tween().set_parallel(true)
 		enter.tween_property(screen, "modulate:a", 1.0, 0.18)
 		enter.tween_property(screen, "scale", Vector2.ONE, 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	music.play_track(SCREEN_MUSIC.get(screen_name, "lobby"))
