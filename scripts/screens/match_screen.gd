@@ -396,7 +396,7 @@ func _show_tile(event: Dictionary) -> void:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var color := Color("ffcf4d") if good else Color("ff6b6b")
-	panel.add_theme_stylebox_override("panel", _box(Color(0.04, 0.05, 0.12, 0.92), color, 4))
+	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.24, 0.52, 0.95), color, 4))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -643,7 +643,7 @@ func _build_emotes(board_area: Control) -> void:
 	toggle.offset_bottom = 38
 	toggle.pressed.connect(_toggle_emotes)
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _box(Color(0.05, 0.06, 0.14, 0.92), Color("7d4fc0"), 3))
+	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.24, 0.52, 0.95), Color.WHITE, 3))
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 8)

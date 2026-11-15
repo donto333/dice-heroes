@@ -224,6 +224,27 @@ func _run() -> void:
 	await _wait(0.4)
 	await _shot("14b_card")
 	_close_dialogs()
+	# 관문 칸 확인: 내 말을 첫 관문 바로 앞에 잠깐 세워 사진을 찍고 되돌린다.
+	var gate_game = match_screen.game
+	var gate_id := -1
+	for id in gate_game.nodes:
+		if str(gate_game.nodes[id].get("type", "")) == "gate":
+			if gate_id < 0 or int(gate_game.dist_to_goal.get(id, 0)) > int(gate_game.dist_to_goal.get(gate_id, 0)):
+				gate_id = int(id)
+	if gate_id >= 0:
+		var before_pos := int(gate_game.players[0]["pos"])
+		for id in gate_game.nodes:
+			if (gate_game.nodes[id].get("next", []) as Array).has(gate_id):
+				gate_game.players[0]["pos"] = int(id)
+				break
+		match_screen._board_view.reset_pieces()
+		match_screen._board_view.focus_on(0)
+		await _wait(0.6)
+		await _shot("14f_gate")
+		gate_game.players[0]["pos"] = before_pos
+		match_screen._board_view.reset_pieces()
+		match_screen._board_view.focus_on(0)
+		await _wait(0.3)
 	match_screen._cutin.play(_app.character("lubu"), "천하무쌍", "2턴간 공격 주사위 +2개", Color("4fc3f7"))
 	await _wait(0.6)
 	await _shot("14e_cutin")
