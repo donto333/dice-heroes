@@ -4,6 +4,7 @@ extends Control
 
 const DiceView := preload("res://scripts/ui/dice_view.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
+const BoardView := preload("res://scripts/ui/board_view.gd")
 const Game := preload("res://scripts/rules/game.gd")
 
 const GOLD := Color("ffcf4d")
@@ -136,7 +137,12 @@ func _gui_input(event: InputEvent) -> void:
 ## {"attacker_side": "공격 · 나", "defender_side": "방어 · 키퍼", "attacker_color": Color, "defender_color": Color,
 ##  "winner_text": "나 승리!", "loser_text": "나 패배...",
 ##  "attacker_character": {캐릭터}, "defender_character": {캐릭터}}  (몬스터·키퍼는 빈 사전)
+## 골의 수호자 이름(보스 그림을 쓴다). info["boss_name"]으로 받는다.
+var _boss_name := ""
+
+
 func play(battle: Dictionary, info: Dictionary) -> void:
+	_boss_name = str(info.get("boss_name", ""))
 	_skip = false
 	var attack_rolls: Array = battle["attack_rolls"]
 	var defense_rolls: Array = battle["defense_rolls"]
@@ -254,7 +260,8 @@ func _show_portrait(side: Dictionary, character: Dictionary, fallback_name: Stri
 	portrait.dim = false
 	portrait.border = color
 	if character.is_empty():
-		portrait.show_text(fallback_name, Color("5a2a2a"))
+		var kind: int = BoardView.MONSTER_BOSS if fallback_name == _boss_name else BoardView.monster_kind("battle", fallback_name)
+		portrait.show_monster(kind, fallback_name, Color("7a3a3a"))
 	else:
 		portrait.show_character(character, color.darkened(0.3))
 
