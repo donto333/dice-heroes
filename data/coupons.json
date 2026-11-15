@@ -19,6 +19,13 @@
       "reward": {
         "gems": 480
       }
+    },
+    "CASTLE9": {
+      "text": "아홉 번째 맵 기념",
+      "reward": {
+        "gems": 200,
+        "gold": 900
+      }
     }
   }
 }
