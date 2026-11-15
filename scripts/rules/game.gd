@@ -164,6 +164,18 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	# 먼저 하는 쪽이 유리하므로 나중에 하는 쪽은 게이지를 채워 두고 시작한다.
 	if players.size() > 1 and second_player_gauge > 0:
 		_add_gauge(1, second_player_gauge)
+	# 시너지: 파티 구성 보너스(양쪽 모두)
+	for index in players.size():
+		var categories: Array = []
+		for slot in SLOTS:
+			categories.append(str(char_of(index, slot).get("category", "")))
+		var bonus: Dictionary = synergy_of(rules.get("synergy", {}), categories)
+		if int(bonus.get("gauge", 0)) > 0:
+			_add_gauge(index, int(bonus["gauge"]))
+		if bool(bonus.get("charm", false)):
+			players[index]["charm"] = true
+		if not bonus.is_empty():
+			say("%s: 시너지 [%s] %s" % [players[index]["name"], bonus.get("name", ""), bonus.get("text", "")])
 	# 유물: 시작 보너스
 	for index in players.size():
 		var relic: Dictionary = players[index]["relic"]
@@ -449,6 +461,17 @@ func play_card(hand_index: int) -> bool:
 ## 길이 다 정해지면 도착한 칸의 효과와 전투까지 처리한다.
 ## aim: 주사위 컨트롤로 노리는 쪽. ""(그냥 굴림), "low"(낮게), "high"(높게).
 ## 노리면 dice_control.chance% 확률로 성공해 그쪽 눈이 잘 나온다. 실패하면 보통 굴림과 같다.
+## 세 영웅의 분류로 시너지를 정한다. table은 data/rules.json의 synergy. 없으면 {}.
+static func synergy_of(table: Dictionary, categories: Array) -> Dictionary:
+	if categories.size() != 3 or categories.has(""):
+		return {}
+	if categories[0] == categories[1] and categories[1] == categories[2]:
+		return table.get("same", {})
+	if categories[0] != categories[1] and categories[1] != categories[2] and categories[0] != categories[2]:
+		return table.get("different", {})
+	return {}
+
+
 ## 더블인가: 주사위가 2개 이상이고 눈이 모두 같다.
 static func is_double(rolls: Array) -> bool:
 	if rolls.size() < 2:

@@ -1306,6 +1306,10 @@ func _test_guide() -> void:
 
 
 func _test_double() -> void:
+	var synergy: Dictionary = _data["rules"]["synergy"]
+	_check(str(Game.synergy_of(synergy, ["영웅", "영웅", "영웅"]).get("name", "")) == "결속", "같은 분류 시너지가 틀림")
+	_check(str(Game.synergy_of(synergy, ["영웅", "위인", "신화"]).get("name", "")) == "조화", "다른 분류 시너지가 틀림")
+	_check(Game.synergy_of(synergy, ["영웅", "영웅", "신화"]).is_empty() and Game.synergy_of(synergy, ["영웅", "", "신화"]).is_empty(), "시너지가 없어야 하는데 있음")
 	_check(absf(Game.win_chance(1, 1, 0, 0) - 0.5) < 0.001 and absf(Game.win_chance(3, 3, 0, 0) - 0.5) < 0.001, "같은 주사위인데 승률이 반반이 아님")
 	_check(Game.win_chance(5, 1, 0, 0) > 0.95 and Game.win_chance(1, 5, 0, 0) < 0.05, "주사위 수 차이가 승률에 안 드러남")
 	_check(Game.win_chance(2, 2, 2, 0) > Game.win_chance(2, 2, 0, 0) and Game.win_chance(1, 1, 0, 6) == 0.0, "보너스가 승률에 안 드러남")
