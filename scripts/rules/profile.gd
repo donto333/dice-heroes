@@ -1215,7 +1215,20 @@ static func event_scale(events: Dictionary, today: String, effect: String) -> fl
 
 ## 오늘 남은 소탕 횟수
 static func sweeps_left(profile: Dictionary, eco: Dictionary) -> int:
-	return max(0, int(eco.get("sweep", {}).get("per_day", 0)) - int(profile.get("daily", {}).get("sweeps", 0)))
+	return max(0, int(eco.get("sweep", {}).get("per_day", 0)) + int(profile.get("daily", {}).get("sweeps_bought", 0)) - int(profile.get("daily", {}).get("sweeps", 0)))
+
+
+## 오늘 보석으로 더 살 수 있는 소탕 횟수
+static func sweep_buys_left(profile: Dictionary, eco: Dictionary) -> int:
+	return max(0, int(eco.get("sweep", {}).get("extra_per_day", 0)) - int(profile.get("daily", {}).get("sweeps_bought", 0)))
+
+
+## 보석으로 소탕 1번을 더 산다.
+static func buy_sweep(profile: Dictionary, eco: Dictionary) -> bool:
+	if sweep_buys_left(profile, eco) <= 0 or not pay(profile, "gems", int(eco["sweep"].get("extra_cost_gems", 0))):
+		return false
+	profile["daily"]["sweeps_bought"] = int(profile["daily"].get("sweeps_bought", 0)) + 1
+	return true
 
 
 ## 별 3개로 깬 스테이지이고 오늘 횟수가 남았으면 소탕할 수 있다.
@@ -1452,3 +1465,39 @@ static func rank_boost(eco: Dictionary, trophies: int) -> Dictionary:
 			best_at = int(tier["trophies"])
 			best = tier["relic"]
 	return best
+
+
+# ---------------------------------------------------------------- 원정 보상(접속하지 않은 동안 쌓이는 골드)
+
+## 지금까지 쌓인 원정 골드. now는 지금 시각(초, 유닉스 시간). 처음이면 0.
+static func idle_gold(profile: Dictionary, eco: Dictionary, now: int) -> int:
+	var table: Dictionary = eco.get("idle", {})
+	if not profile.has("idle_at"):
+		return 0
+	var seconds: int = clampi(now - int(profile["idle_at"]), 0, int(table.get("max_hours", 0)) * 3600)
+	var tier_index := 0
+	var tiers: Array = eco.get("tiers", [])
+	for index in tiers.size():
+		if int(profile.get("trophies", 0)) >= int(tiers[index].get("min", 0)):
+			tier_index = index
+	var per_hour := int(table.get("gold_per_hour", 0)) + tier_index * int(table.get("gold_per_tier", 0))
+	return int(float(per_hour) * float(seconds) / 3600.0)
+
+
+## 받을 만큼 쌓였나(min_minutes분이 지났나)
+static func idle_ready(profile: Dictionary, eco: Dictionary, now: int) -> bool:
+	return profile.has("idle_at") and now - int(profile["idle_at"]) >= int(eco.get("idle", {}).get("min_minutes", 0)) * 60
+
+
+## 원정 보상을 받는다. 받은 골드를 돌려준다. 처음 부르면 시계만 맞추고 0.
+static func claim_idle(profile: Dictionary, eco: Dictionary, now: int) -> int:
+	if not profile.has("idle_at"):
+		profile["idle_at"] = now
+		return 0
+	if not idle_ready(profile, eco, now):
+		return 0
+	var gold := idle_gold(profile, eco, now)
+	profile["idle_at"] = now
+	if gold > 0:
+		grant(profile, {"gold": gold})
+	return gold

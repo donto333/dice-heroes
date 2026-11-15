@@ -777,8 +777,10 @@
     "level": 6
   },
   "sweep": {
-    "_comment": "모험 소탕: 별 3개로 깬 스테이지는 대전 없이 승리 보상(rewards.adventure.win)을 받는다. 하루 per_day번.",
-    "per_day": 5
+    "_comment": "모험 소탕: 별 3개로 깬 스테이지는 대전 없이 승리 보상(rewards.adventure.win)을 받는다. 하루 per_day번. 다 쓰면 보석 extra_cost_gems개로 한 번씩, 하루 extra_per_day번까지 더 살 수 있다.",
+    "per_day": 5,
+    "extra_cost_gems": 20,
+    "extra_per_day": 5
   },
   "album": {
     "_comment": "수집 앨범: 분류(영웅·위인·신화·근현대)마다 가진 영웅 수가 steps에 닿으면 같은 순서의 rewards를 한 번씩 받는다.",
@@ -918,5 +920,12 @@
         }
       }
     ]
+  },
+  "idle": {
+    "_comment": "원정 보상: 접속하지 않은 동안에도 골드가 쌓인다. 한 시간에 gold_per_hour + 티어 순서 × gold_per_tier, 최대 max_hours시간. min_minutes분은 지나야 받을 수 있다.",
+    "gold_per_hour": 40,
+    "gold_per_tier": 15,
+    "max_hours": 8,
+    "min_minutes": 30
   }
 }

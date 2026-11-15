@@ -89,6 +89,7 @@ func _init() -> void:
 	_test_sweep()
 	_test_double()
 	_test_gate()
+	_test_idle()
 	_test_minigame_and_league()
 	_test_relics()
 	_test_album_and_weekday()
@@ -1447,3 +1448,25 @@ func _test_minigame_and_league() -> void:
 	_check(int(profile["gems"]) == gems + int(eco["league_weekly"]["tiers"][0]["reward"]["gems"]), "주간 리그 보상이 틀림")
 	_check(Profile.settle_league(profile, eco, "2026-11-17").is_empty(), "한 주에 리그 보상을 두 번 줌")
 	_check(not Profile.league_tier(eco, 13).is_empty(), "꼴찌가 받을 주간 보상이 없음")
+
+
+func _test_idle() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("원정", eco)
+	Profile.ensure_daily(profile, "2026-05-01")
+	var table: Dictionary = eco["idle"]
+	_check(Profile.claim_idle(profile, eco, 1000) == 0 and int(profile["idle_at"]) == 1000, "원정 시계를 처음에 맞추지 않음")
+	_check(Profile.claim_idle(profile, eco, 1000 + 60) == 0 and int(profile["idle_at"]) == 1000, "너무 일찍 원정 보상을 줌")
+	var gold := int(profile["gold"])
+	var got := Profile.claim_idle(profile, eco, 1000 + 2 * 3600)
+	_check(got == 2 * int(table["gold_per_hour"]) and int(profile["gold"]) == gold + got, "2시간 원정 보상이 틀림")
+	var capped := Profile.claim_idle(profile, eco, 1000 + 2 * 3600 + 100 * 3600)
+	_check(capped == int(table["max_hours"]) * int(table["gold_per_hour"]), "원정 보상이 최대 시간을 넘김")
+	# 소탕 추가 구매
+	profile["adventure"]["1-1"] = 3
+	for i in int(eco["sweep"]["per_day"]):
+		Profile.sweep(profile, eco, "1-1")
+	_check(Profile.sweeps_left(profile, eco) == 0, "소탕 횟수가 남음")
+	profile["gems"] = int(eco["sweep"]["extra_cost_gems"])
+	_check(Profile.buy_sweep(profile, eco) and Profile.sweeps_left(profile, eco) == 1 and int(profile["gems"]) == 0, "소탕 추가 구매가 틀림")
+	_check(not Profile.buy_sweep(profile, eco), "보석 없이 소탕을 삼")

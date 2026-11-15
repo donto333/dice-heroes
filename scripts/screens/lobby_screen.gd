@@ -73,6 +73,7 @@ func setup(main_app, params: Dictionary) -> void:
 	nav.tab_pressed.connect(_on_tab)
 
 	_maybe_league_reward()
+	_maybe_idle_reward()
 	if bool(params.get("welcome", false)):
 		# 처음 온 사람은 새 소식을 따로 띄우지 않는다.
 		app.profile["seen_version"] = app.VERSION
@@ -507,6 +508,8 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"원정 보상: 접속하지 않은 동안에도 골드가 쌓여요(최대 8시간). 홀짝 게임, 주간 리그 보상과 훈장, 관문 업적도 생겼어요.",
+	"랭크전은 트로피 500부터 상대가 조금씩 강해져요. 전투 창에는 적 그림이 나와요.",
 	"유물 상점: 파티에 하나 장착하면 공격 보너스나 게이지, 부적을 들고 시작해요. 수집 앨범(영웅 화면)과 주말 골드 1.3배도 생겼어요.",
 	"관문과 골의 수호자가 더 강해졌어요: 관문지기 주사위 3·4·4개, 골의 수호자 5개.",
 	"관문이 생겼어요: 맵마다 3곳, 지나가다가도 반드시 멈춰 관문지기와 싸워요. 이기면 카드를 받고 다음부터는 그냥 지나가요.",
@@ -533,6 +536,16 @@ const NEWS := [
 	"AI 연습전은 난이도와 맵을 고를 수 있고, 대전 빠르기 ×2와 한마디 말풍선을 쓸 수 있어요.",
 	"내 정보를 누르면 프로필, 랭크 카드를 누르면 순위표가 나와요.",
 ]
+
+
+## 접속하지 않은 동안 쌓인 원정 골드를 준다.
+func _maybe_idle_reward() -> void:
+	var now := int(Time.get_unix_time_from_system())
+	var hours := float(now - int(app.profile.get("idle_at", now))) / 3600.0
+	var gold := Profile.claim_idle(app.profile, app.eco, now)
+	app.save()
+	if gold > 0:
+		app.toast("원정 보상: %.1f시간 동안 골드 %d을 모았어요!" % [minf(hours, float(app.eco["idle"]["max_hours"])), gold])
 
 
 ## 주가 바뀌었으면 지난주 연습 리그 보상을 준다.

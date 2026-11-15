@@ -118,8 +118,18 @@ func _on_stage(id: String) -> void:
 		body.add_child(Kit.para("소탕: 별 3개로 깬 곳은 대전 없이 승리 보상을 받아요. 오늘 %d번 남았어요." % left, 18, Kit.MUTED))
 		if left > 0:
 			buttons.append(["소탕 (%d)" % left, Color("27a35a"), _sweep.bind(id)])
+		elif Profile.sweep_buys_left(app.profile, app.eco) > 0:
+			buttons.append(["소탕 +1 (보석 %d)" % int(app.eco["sweep"]["extra_cost_gems"]), Color("8a55e0"), _buy_sweep.bind(id)])
 	buttons.append(["닫기", Kit.PANEL_LIGHT])
 	app.dialog("", body, buttons, 660)
+
+
+## 보석으로 소탕 횟수를 하나 사고 바로 소탕한다.
+func _buy_sweep(id: String) -> void:
+	if not Profile.buy_sweep(app.profile, app.eco):
+		app.toast("보석이 모자라요.")
+		return
+	_sweep(id)
 
 
 func _sweep(id: String) -> void:
