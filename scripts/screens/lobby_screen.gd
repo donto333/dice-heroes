@@ -46,33 +46,26 @@ func setup(main_app, params: Dictionary) -> void:
 	var rank_note := "%s · 트로피 %d · 이기면 +30" % [tier["name"], int(app.profile["trophies"])]
 	if streak >= 2:
 		rank_note = "%d연승 중! 이기면 골드 보너스 · 트로피 %d" % [streak, int(app.profile["trophies"])]
-	var rank_button := Kit.icon_button("랭크전", "battle", Color("e8890c"), 44, 124, rank_note)
-	rank_button.pressed.connect(_on_mode.bind("rank"))
-	column.add_child(rank_button)
+	# 모드 타일 네 개(모험·AI전·친구·오늘의 도전) + 맨 아래 크게 랭크전
 	var modes := Kit.hbox(10)
 	column.add_child(modes)
-	var adventure := Kit.icon_button("모험", "goal", Color("c2413a"), 26, 100, "★ %d / %d" % [Profile.total_stars(app.profile), _max_stars()])
+	var adventure := Kit.tile_button("모험", "goal", Color("e0532b"), "★ %d / %d" % [Profile.total_stars(app.profile), _max_stars()])
 	adventure.pressed.connect(_on_adventure)
 	modes.add_child(Kit.expand(adventure))
 	var difficulty: Dictionary = Profile.ai_difficulty(app.eco, str(app.profile.get("ai_difficulty", "easy")))
-	var practice := Kit.icon_button("AI전", "fate", Color("2fb457"), 26, 100, "최근 %s" % difficulty["name"])
+	var practice := Kit.tile_button("AI전", "fate", Color("2fb457"), "최근 %s" % difficulty["name"])
 	practice.pressed.connect(_choose_difficulty)
 	modes.add_child(Kit.expand(practice))
-	var friend := Kit.icon_button("친구", "pawn", Color("2a9d5c"), 26, 100, "한 기기 2인")
+	var friend := Kit.tile_button("친구", "pawn", Color("19a8c9"), "한 기기 2인")
 	friend.pressed.connect(_on_mode.bind("local"))
 	modes.add_child(Kit.expand(friend))
-	var extra := Kit.hbox(10)
-	column.add_child(extra)
 	var done := Profile.challenge_done(app.profile)
-	var challenge := Kit.icon_button("오늘의 도전", "ambush", Color("b8323a") if not done else Color("6f9bd6"), 24, 76,
-		"오늘 완료!" if done else "하루 한 번 · 이기면 보석 30")
+	var challenge := Kit.tile_button("도전", "ambush", Color("8a55e0") if not done else Color("6f9bd6"), "오늘 완료!" if done else "하루 한 번")
 	challenge.pressed.connect(_on_mode.bind("challenge"))
-	extra.add_child(Kit.expand(challenge, 1.6))
-	var help := Kit.icon_button("게임 방법", "hidden", Color("7d4fc0"), 22, 76)
-	help.pressed.connect(_on_help)
-	extra.add_child(Kit.expand(help))
-
-	column.add_child(Kit.label("온라인 대전은 준비 중이에요", 16, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	modes.add_child(Kit.expand(challenge))
+	var rank_button := Kit.icon_button("랭크전 시작", "battle", Color("ff9a1a"), 46, 136, rank_note)
+	rank_button.pressed.connect(_on_mode.bind("rank"))
+	column.add_child(rank_button)
 	var nav := BottomNav.new()
 	column.add_child(nav)
 	nav.setup("lobby", app.badges())
@@ -93,11 +86,11 @@ func _rank_card() -> Control:
 	var trophies := int(profile["trophies"])
 	var tier: Dictionary = Profile.tier_of(app.eco, trophies)
 	var tier_color := Color(str(tier.get("color", "ffffff")))
-	var card := Kit.panel(Color("1f66c8"), tier_color.darkened(0.3), 14)
+	var card := Kit.panel(Color("1f66c8"), tier_color, 10)
 	var row := Kit.hbox(14)
 	card.add_child(row)
 	var badge := Kit.label(str(tier["name"]), 34, tier_color, HORIZONTAL_ALIGNMENT_CENTER)
-	badge.custom_minimum_size = Vector2(170, 0)
+	badge.custom_minimum_size = Vector2(150, 0)
 	badge.add_theme_constant_override("outline_size", 6)
 	badge.add_theme_color_override("font_outline_color", Color.BLACK)
 	row.add_child(badge)
@@ -105,7 +98,8 @@ func _rank_card() -> Control:
 	row.add_child(Kit.expand(info))
 	var to_next := Profile.trophies_to_next(app.eco, trophies)
 	var next_text := "최고 티어!" if to_next == 0 else "다음 티어까지 %d" % to_next
-	info.add_child(Kit.label("트로피 %d  ·  %s" % [trophies, next_text], 22))
+	var stats: Dictionary = profile["stats"]
+	info.add_child(Kit.label("트로피 %d · %s · 리그 %d위" % [trophies, next_text, Profile.league_rank(profile, app.eco)], 20))
 	var tiers: Array = app.eco.get("tiers", [])
 	var index := Profile.tier_index(app.eco, trophies)
 	var progress := 1.0
@@ -113,9 +107,9 @@ func _rank_card() -> Control:
 		var low := int(tiers[index]["min"])
 		var high := int(tiers[index + 1]["min"])
 		progress = float(trophies - low) / float(max(high - low, 1))
-	info.add_child(Kit.bar(progress, tier_color, 16))
-	var stats: Dictionary = profile["stats"]
-	info.add_child(Kit.label("전투력 %d  ·  %d승 %d패  ·  리그 %d위  ·  눌러서 순위표" % [Profile.my_power(profile, app.data["characters"], app.eco), int(stats["wins"]), int(stats["losses"]), Profile.league_rank(profile, app.eco)], 18, Kit.MUTED))
+	info.add_child(Kit.bar(progress, tier_color, 14))
+	var side := Kit.label("전투력 %d\n%d승 %d패" % [Profile.my_power(profile, app.data["characters"], app.eco), int(stats["wins"]), int(stats["losses"])], 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+	row.add_child(side)
 	# 카드를 누르면 순위표
 	var open := Button.new()
 	for state in ["normal", "hover", "pressed", "focus"]:
@@ -135,10 +129,11 @@ func _showcase() -> Control:
 	var party: Dictionary = app.profile["party"]
 	var button := Button.new()
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button.custom_minimum_size = Vector2(0, 360)
-	button.add_theme_stylebox_override("normal", Kit.box(Color("0f3d85"), Kit.LINE, 2, 16, 0))
-	button.add_theme_stylebox_override("hover", Kit.box(Color("0f3d85"), Kit.GOLD, 2, 16, 0))
-	button.add_theme_stylebox_override("pressed", Kit.box(Color("0f3d85"), Kit.GOLD, 2, 16, 0))
+	button.custom_minimum_size = Vector2(0, 420)
+	button.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+	button.add_theme_stylebox_override("normal", Kit.box(Color("0f3d85"), Color.WHITE, 4, 26, 0))
+	button.add_theme_stylebox_override("hover", Kit.box(Color("0f3d85"), Kit.GOLD, 4, 26, 0))
+	button.add_theme_stylebox_override("pressed", Kit.box(Color("0f3d85"), Kit.GOLD, 4, 26, 0))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.pressed.connect(_on_tab.bind("heroes"))
 	var leader_id := str(app.profile.get("avatar", ""))
@@ -169,7 +164,7 @@ func _showcase() -> Control:
 	button.add_child(greeting)
 	var strip := PanelContainer.new()
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	strip.add_theme_stylebox_override("panel", Kit.box(Color(0.02, 0.03, 0.09, 0.82), Color.TRANSPARENT, 0, 0, 10))
+	strip.add_theme_stylebox_override("panel", Kit.box(Color(0.04, 0.2, 0.5, 0.88), Color.TRANSPARENT, 0, 0, 10))
 	strip.anchor_left = 0.0
 	strip.anchor_right = 1.0
 	strip.anchor_top = 1.0
@@ -194,7 +189,7 @@ func _showcase() -> Control:
 		cell.add_child(text)
 	# 그림 위쪽의 공지 줄: 소식이 몇 초마다 바뀐다. 누르면 전체 공지를 본다.
 	var band := Button.new()
-	band.add_theme_stylebox_override("normal", Kit.box(Color(0.02, 0.03, 0.09, 0.72), Color.TRANSPARENT, 0, 0, 0))
+	band.add_theme_stylebox_override("normal", Kit.box(Color(0.04, 0.2, 0.5, 0.82), Color.TRANSPARENT, 0, 0, 0))
 	band.add_theme_stylebox_override("hover", Kit.box(Color(0.06, 0.08, 0.18, 0.8), Color.TRANSPARENT, 0, 0, 0))
 	band.add_theme_stylebox_override("pressed", Kit.box(Color(0.06, 0.08, 0.18, 0.8), Color.TRANSPARENT, 0, 0, 0))
 	band.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
@@ -229,6 +224,11 @@ func _showcase() -> Control:
 	button.add_child(todo)
 	todo.position = Vector2(12, 228)
 	todo.size = Vector2(88, 88)
+	var guide := Kit.round_shortcut("방법", "hidden", Color("19a8c9"))
+	guide.pressed.connect(_on_help)
+	button.add_child(guide)
+	guide.position = Vector2(12, 322)
+	guide.size = Vector2(88, 88)
 	# 모두의 마블식 오른쪽 바로가기: 출석 · 미션 · 특가
 	var badges: Dictionary = app.badges()
 	var shortcuts := VBoxContainer.new()

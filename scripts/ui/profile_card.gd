@@ -103,7 +103,7 @@ static func league_body(app) -> Control:
 		var entry: Dictionary = rows[index]
 		var mine := bool(entry["me"])
 		var tier: Dictionary = Profile.tier_of(app.eco, int(entry["trophies"]))
-		var line := Kit.panel(Color("3a2f0c") if mine else Color("13458f"), Kit.GOLD if mine else Kit.LINE, 10)
+		var line := Kit.panel(Color("c98a12") if mine else Color("13458f"), Kit.GOLD if mine else Kit.LINE, 10)
 		var row := Kit.hbox(10)
 		line.add_child(row)
 		var rank := Kit.label("%d" % (index + 1), 26, Kit.GOLD if index < 3 else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
