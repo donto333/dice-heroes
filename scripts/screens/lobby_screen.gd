@@ -2,6 +2,7 @@ extends Control
 ## 로비(홈). 위: 프로필 띠 / 랭크 카드 / 대표 영웅과 파티 / 대전 버튼 / 아래 메뉴.
 ## 들어올 때 오늘 출석 보상을 아직 안 받았으면 출석 창을 띄운다.
 
+const ArtView := preload("res://scripts/ui/art_view.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const DiePreview := preload("res://scripts/ui/die_preview.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
@@ -96,8 +97,18 @@ func _rank_card() -> Control:
 	var card := Kit.panel(Color("1f66c8"), tier_color, 10)
 	var row := Kit.hbox(14)
 	card.add_child(row)
+	# 티어 문장 그림(assets/art/ui/tier_<순서>.jpg)
+	var emblem := ArtView.new()
+	emblem.show_art("ui/tier_%d" % Profile.tier_index(app.eco, trophies))
+	var has_emblem: bool = emblem.has_art()
+	if has_emblem:
+		emblem.custom_minimum_size = Vector2(84, 84)
+		emblem.focus_y = 0.5
+		row.add_child(emblem)
+	else:
+		emblem.free()
 	var badge := Kit.label(str(tier["name"]), 34, tier_color, HORIZONTAL_ALIGNMENT_CENTER)
-	badge.custom_minimum_size = Vector2(150, 0)
+	badge.custom_minimum_size = Vector2(120 if has_emblem else 150, 0)
 	badge.add_theme_constant_override("outline_size", 6)
 	badge.add_theme_color_override("font_outline_color", Color.BLACK)
 	row.add_child(badge)

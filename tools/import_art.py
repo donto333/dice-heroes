@@ -17,6 +17,7 @@ TARGETS = {
     "chapters": (ROOT / "assets" / "art" / "chapters", 768),
     "cards": (ROOT / "assets" / "art" / "cards", 320),
     "enemies": (ROOT / "assets" / "enemies", 256),
+    "relics": (ROOT / "assets" / "art" / "relics", 256),
 }
 
 
@@ -25,7 +26,7 @@ def target_width(image: Image.Image, fixed):
         return fixed
     w, h = image.size
     if h > w * 1.1:
-        return 720  # 세로 그림(타이틀·로딩·로비·소환)
+        return 720  # 세로 그림(타이틀·로딩·로비·소환·화면 바탕)
     if w > h * 1.1:
         return 768  # 가로 그림(전투 바탕·랭크전)
     return 512

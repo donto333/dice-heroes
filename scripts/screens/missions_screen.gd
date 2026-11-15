@@ -18,6 +18,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
 	_tab = str(_params.get("tab", "today"))
 	var column := Kit.screen_frame(self, 16)
+	move_child(Kit.backdrop(self, "ui/bg_missions", 0.5), 1)
 	var top := TopBar.new()
 	column.add_child(top)
 	top.setup(app)
