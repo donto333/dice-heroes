@@ -23,7 +23,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var background := ColorRect.new()
-	background.color = Color("0a0c1c")
+	background.color = Color("0f3d85")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# 배경이 터치를 가로채면 화면을 눌러도 넘어가지 않는다. 터치는 이 화면(self)이 받는다.
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -38,7 +38,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	add_child(_strip)
 
 	var shade := ColorRect.new()
-	shade.color = Color(0.03, 0.04, 0.1, 0.62)
+	shade.color = Color(0.05, 0.25, 0.6, 0.5)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade)
@@ -57,7 +57,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	# 제목 뒤의 어두운 띠: 그림 위에서도 글자가 또렷하게
 	var band := PanelContainer.new()
 	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var band_style := Kit.box(Color(0.02, 0.03, 0.09, 0.78), Kit.GOLD, 0, 0, 18)
+	var band_style := Kit.box(Color(0.06, 0.3, 0.7, 0.9), Kit.GOLD, 0, 0, 18)
 	band_style.border_width_top = 4
 	band_style.border_width_bottom = 4
 	band.add_theme_stylebox_override("panel", band_style)

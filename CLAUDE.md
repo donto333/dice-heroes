@@ -20,6 +20,7 @@
 - `scripts/rules/game.gd`: 판 규칙. `scripts/rules/profile.gd`: 게임 밖 성장(재화·소환·강화·보상·랭크·미션·출석). 수치는 `data/economy.json`.
 - 게임 밖 콘텐츠: 모험(`data/adventure.json`), 업적(`data/achievements.json`), 오늘의 특가·행운의 룰렛·AI 난이도(`data/economy.json`), 연습 리그 순위표·프로필 창(`scripts/ui/profile_card.gd`).
 - 대전 화면 배치(모두의 마블·원작 영상의 구성만 참고): 판이 화면 대부분, 정보판은 판 모서리, 아이템 카드는 판 왼쪽 세로 줄, 오른쪽 아래 동그란 주사위 버튼, 오른쪽 가운데 한마디 버튼.
+- 화면 모양(2026-11 리뉴얼, 밝고 통통한 캐주얼): 하늘색 바탕(`Kit.sky()`), 파란 판에 흰 글자, 주황=가장 중요한 버튼(`Kit.PRIMARY`), 초록=가기·확인(`Kit.ACCENT`), 연파랑=닫기 같은 보조(`Kit.PANEL_LIGHT`), 빨강=나가기. 색과 모양은 `scripts/ui/kit.gd`에서만 정하고 화면에 어두운 남색을 새로 박지 않는다. 로비는 위 띠 → 랭크 카드 → 대표 영웅(양옆 동그란 바로가기) → 모드 타일 4개(`Kit.tile_button`) → 큰 '랭크전 시작' → 아래 메뉴.
 - 연출 부품(`scripts/ui/`): `big_dice.gd`(굴러가는 주사위), `versus_overlay.gd`(시작 VS), `turn_banner.gd`(내 차례! START!), `battle_overlay.gd`(공격→방어 굴림, WIN·LOSE), `result_overlay.gd`+`confetti.gd`, `roulette_wheel.gd`.
 - 글꼴은 한글 부분집합이라 없는 기호가 있다(예: ◆). 새 기호를 쓰면 tests의 글꼴 검사(`_test_font_coverage`)가 잡는다.
 - 기다림 화면: `scripts/ui/loading_overlay.gd`. 큰 전환(게임 진입, 접속, 대전 준비, 소환)은 `app.go_loading()`·`app.wait_loading()`을 쓰고, 나머지 `app.go()`는 짧게 스르륵 나타난다. 자동 사진 도구는 `app.instant = true`로 모두 건너뛴다.

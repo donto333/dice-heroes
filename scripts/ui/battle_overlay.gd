@@ -27,7 +27,7 @@ func _ready() -> void:
 	visible = false
 
 	var dim := ColorRect.new()
-	dim.color = Color(0.02, 0.03, 0.08, 0.78)
+	dim.color = Color(0.02, 0.1, 0.28, 0.72)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
@@ -41,10 +41,12 @@ func _ready() -> void:
 	panel.custom_minimum_size = Vector2(660, 0)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box := StyleBoxFlat.new()
-	box.bg_color = Color("164c9e")
-	box.border_color = GOLD.darkened(0.2)
-	box.set_border_width_all(4)
-	box.set_corner_radius_all(14)
+	box.bg_color = Color("1f66c8")
+	box.border_color = Color.WHITE
+	box.set_border_width_all(5)
+	box.shadow_color = Color(0, 0.05, 0.2, 0.5)
+	box.shadow_size = 12
+	box.set_corner_radius_all(30)
 	box.set_content_margin_all(20)
 	panel.add_theme_stylebox_override("panel", box)
 	center.add_child(panel)

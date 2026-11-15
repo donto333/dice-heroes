@@ -35,7 +35,7 @@ func play(sides: Array, map_text: String, goal_text: String, searching: bool = f
 			child.queue_free()
 		_skipped = false
 	var shade := ColorRect.new()
-	shade.color = Color(0.03, 0.04, 0.1, 0.94)
+	shade.color = Color(0.04, 0.2, 0.5, 0.96)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade)
@@ -108,7 +108,7 @@ func play(sides: Array, map_text: String, goal_text: String, searching: bool = f
 ## 상대를 찾는 연출: 점이 하나씩 늘어나는 글자. 누르면 넘어간다.
 func _search() -> void:
 	var shade := ColorRect.new()
-	shade.color = Color(0.03, 0.04, 0.1, 0.94)
+	shade.color = Color(0.04, 0.2, 0.5, 0.96)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade)
