@@ -3,6 +3,7 @@ extends Control
 ## 소환 확률과 보장은 data/economy.json, 규칙은 scripts/rules/profile.gd.
 ## 진짜 돈 결제는 아직 없다. 보석은 미션·출석·레벨업·첫 승리로 모은다.
 
+const SummonFx := preload("res://scripts/ui/summon_fx.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
@@ -387,8 +388,17 @@ func _on_paid(count: int) -> void:
 func _summon(count: int) -> void:
 	var results := Profile.summon(app.profile, app.data["characters"], app.eco, count, app.rng)
 	app.save()
-	# 결과를 바로 보여 주지 않고 잠깐 뜸을 들인다.
-	await app.wait_loading("소환 중...", 0.9)
+	# 결과를 바로 보여 주지 않고 소환 연출(마법진과 빛기둥)을 먼저 보여 준다.
+	var best_grade := 1
+	for entry in results:
+		best_grade = maxi(best_grade, int(entry["grade"]))
+	if app.instant:
+		await app.wait_loading("소환 중...", 0.9)
+	else:
+		var ritual := SummonFx.new()
+		app.add_child(ritual)
+		app.play("skill")
+		await ritual.play(best_grade)
 	app.play("reveal")
 	app.go("shop", {"tab": _tab})
 	app.current_screen.show_results(results)
@@ -428,9 +438,13 @@ func show_results(results: Array) -> void:
 	body.add_child(center)
 	var title_text: String = "★★★ 등장!" if best >= 3 else "소환 결과"
 	var window: Control = app.dialog(title_text, body, [["확인", Kit.ACCENT]], 680)
+	# 카드가 하나씩 통 튀어나온다.
 	var tween := window.create_tween()
 	for cell in cards:
-		tween.tween_property(cell, "modulate:a", 1.0, 0.12)
+		cell.pivot_offset = cell.custom_minimum_size * 0.5
+		cell.scale = Vector2(0.4, 0.4)
+		tween.tween_property(cell, "modulate:a", 1.0, 0.08)
+		tween.parallel().tween_property(cell, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if best >= 3:
 		app.play("win")
 
