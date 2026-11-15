@@ -412,6 +412,8 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 	add_progress(profile, eco, "card", int(stats.get("cards", 0)))
 	_add_stat(profile, "battle_wins_total", int(stats.get("battle_wins", 0)))
 	_add_stat(profile, "cards_total", int(stats.get("cards", 0)))
+	add_progress(profile, eco, "gate", int(stats.get("gates", 0)))
+	_add_stat(profile, "gates_total", int(stats.get("gates", 0)))
 	_record_heroes(profile, stats.get("party", []), outcome == "win")
 	if mode != "local":
 		reward["pass_exp"] = int(round(int(eco.get("pass", {}).get("exp", {}).get(outcome, 0)) * float(stats.get("event_pass_scale", 1.0))))
@@ -1439,3 +1441,14 @@ static func settle_league(profile: Dictionary, eco: Dictionary, today: String) -
 	if medal:
 		profile["medals"] = int(profile.get("medals", 0)) + 1
 	return {"rank": rank, "reward": tier["reward"], "medal": medal}
+
+
+## 랭크전 상대가 갖고 시작하는 효과(유물과 같은 형식). 트로피가 낮으면 {}.
+static func rank_boost(eco: Dictionary, trophies: int) -> Dictionary:
+	var best := {}
+	var best_at := -1
+	for tier in eco.get("rank_boost", {}).get("tiers", []):
+		if trophies >= int(tier["trophies"]) and int(tier["trophies"]) > best_at:
+			best_at = int(tier["trophies"])
+			best = tier["relic"]
+	return best

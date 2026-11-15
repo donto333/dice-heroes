@@ -252,6 +252,24 @@
       "reward": {
         "gems": 200
       }
+    },
+    {
+      "id": "gate_5",
+      "text": "관문 5번 돌파",
+      "stat": "gates_total",
+      "goal": 5,
+      "reward": {
+        "gems": 50
+      }
+    },
+    {
+      "id": "gate_30",
+      "text": "관문 30번 돌파",
+      "stat": "gates_total",
+      "goal": 30,
+      "reward": {
+        "gems": 150
+      }
     }
   ]
 }

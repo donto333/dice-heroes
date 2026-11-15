@@ -294,6 +294,15 @@
       "reward": {
         "gems": 30
       }
+    },
+    {
+      "id": "gate_2",
+      "text": "관문 2번 돌파하기",
+      "event": "gate",
+      "goal": 2,
+      "reward": {
+        "gold": 200
+      }
     }
   ],
   "missions_per_day": 6,
@@ -881,6 +890,31 @@
         "max_rank": 99,
         "reward": {
           "gems": 50
+        }
+      }
+    ]
+  },
+  "rank_boost": {
+    "_comment": "랭크전 상대 강화: 내 트로피가 trophies 이상이면 상대가 relic 효과(유물과 같은 형식)를 갖고 시작한다. 가장 높은 줄 하나만 쓴다.",
+    "tiers": [
+      {
+        "trophies": 500,
+        "relic": {
+          "gauge": 15
+        }
+      },
+      {
+        "trophies": 900,
+        "relic": {
+          "gauge": 25
+        }
+      },
+      {
+        "trophies": 1400,
+        "relic": {
+          "gauge": 25,
+          "atk_bonus": 1,
+          "turns": 5
         }
       }
     ]
