@@ -927,5 +927,32 @@
     "gold_per_tier": 15,
     "max_hours": 8,
     "min_minutes": 30
+  },
+  "mileage": {
+    "_comment": "보석 마일리지: 보석을 쓴 만큼 쌓이고(profile.gems_spent), steps에 닿을 때마다 같은 순서의 rewards를 한 번씩 받는다. 결제가 생기면 쓴 만큼 돌려주는 장치가 된다.",
+    "steps": [
+      500,
+      1500,
+      3000,
+      6000,
+      10000
+    ],
+    "rewards": [
+      {
+        "gold": 1000
+      },
+      {
+        "gold": 3000
+      },
+      {
+        "gems": 150
+      },
+      {
+        "gold": 8000
+      },
+      {
+        "gems": 500
+      }
+    ]
   }
 }

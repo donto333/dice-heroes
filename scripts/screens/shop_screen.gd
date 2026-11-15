@@ -34,6 +34,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	body.add_child(_relic_panel())
 	body.add_child(_dice_panel())
 	body.add_child(_exchange_panel())
+	body.add_child(_mileage_panel())
 	body.add_child(_gem_pack_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
@@ -130,6 +131,43 @@ func _on_deal(index: int) -> void:
 		app.play("good")
 		app.toast("%s 조각 +%d" % [app.character(str(deals[index]["id"]))["name"], int(deals[index]["shards"])])
 		app.go("shop")
+
+
+## 보석 마일리지: 보석을 쓴 만큼 쌓여 단계 보상을 준다.
+func _mileage_panel() -> Control:
+	var card := Kit.panel(Color("1a7fd0"), Kit.GEM, 14)
+	var column := Kit.vbox(8)
+	card.add_child(column)
+	var steps: Array = app.eco["mileage"]["steps"]
+	var rewards: Array = app.eco["mileage"]["rewards"]
+	var spent := int(app.profile.get("gems_spent", 0))
+	var claimed: Array = app.profile.get("mileage_claimed", [])
+	var head := Kit.hbox(8)
+	column.add_child(head)
+	head.add_child(Kit.expand(Kit.label("보석 마일리지", 30, Kit.GOLD)))
+	head.add_child(Kit.label("쓴 보석 %d" % spent, 18, Color.WHITE))
+	column.add_child(Kit.bar(float(mini(spent, int(steps[steps.size() - 1]))) / float(int(steps[steps.size() - 1])), Kit.GEM, 12))
+	var marks := Kit.hbox(6)
+	column.add_child(marks)
+	for index in steps.size():
+		var got := claimed.has(index)
+		marks.add_child(Kit.expand(Kit.label("%d\n%s%s" % [int(steps[index]), Kit.reward_line(rewards[index]), "\n(받음)" if got else ""], 14, Kit.MUTED if got else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)))
+	var ready: Array = Profile.mileage_claimable(app.profile, app.eco)
+	var button := Kit.button("보상 %d개 받기" % ready.size() if not ready.is_empty() else "보석을 쓰면 쌓여요", Kit.PRIMARY if not ready.is_empty() else Kit.PANEL_LIGHT, 20, 56)
+	button.disabled = ready.is_empty()
+	button.pressed.connect(_on_mileage)
+	column.add_child(button)
+	return card
+
+
+func _on_mileage() -> void:
+	var reward := Profile.claim_mileage(app.profile, app.eco)
+	if reward.is_empty():
+		return
+	app.save()
+	app.play("win")
+	app.go("shop")
+	app.toast("마일리지 보상: %s" % Kit.reward_line(reward))
 
 
 ## 유물 상점: 파티에 하나만 장착하는 시작 보너스.
