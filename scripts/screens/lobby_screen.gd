@@ -65,9 +65,10 @@ func setup(main_app, params: Dictionary) -> void:
 		["미션", "missions", bool(badges.get("missions", false)), _on_tab.bind("missions")],
 		["패스", "pass", Profile.pass_claimable_count(app.profile, app.eco) > 0, _on_tab.bind("pass")],
 		["설정", "settings", false, _on_tab.bind("settings")],
+		["방법", "help", false, _on_help],
 	]
 	for spec in rail_items:
-		var item := Kit.icon_shortcut(str(spec[0]), str(spec[1]), bool(spec[2]), 64.0)
+		var item := Kit.icon_shortcut(str(spec[0]), str(spec[1]), bool(spec[2]), 58.0)
 		item.pressed.connect(spec[3])
 		rail.add_child(item)
 
@@ -75,22 +76,27 @@ func setup(main_app, params: Dictionary) -> void:
 
 	var side := Kit.vbox(8)
 	body.add_child(Kit.expand(side))
-	# 작은 바로가기 줄(오른쪽 정렬)
-	var quick := Kit.hbox(4)
-	quick.alignment = BoxContainer.ALIGNMENT_END
-	side.add_child(quick)
+	side.add_child(_banner())
+	# 오늘의 보상 줄: 빛나는 구슬 네 개(받을 것이 있으면 빨간 점). 모두의 마블의 보상 구슬 줄처럼.
+	var orbs := Kit.panel(Color(0.2, 0.14, 0.52, 0.86), Color("b79cff"), 6)
+	side.add_child(orbs)
+	var orb_row := Kit.hbox(6)
+	orbs.add_child(orb_row)
+	var orb_title := Kit.label("오늘의\n보상", 20, Color("ffe37a"), HORIZONTAL_ALIGNMENT_CENTER)
+	orb_title.custom_minimum_size = Vector2(84, 0)
+	orb_title.add_theme_constant_override("outline_size", 6)
+	orb_title.add_theme_color_override("font_outline_color", Color("2a0f5a"))
+	orb_row.add_child(orb_title)
 	var shortcuts := [
-		["출석", "attend", Profile.can_check_in(app.profile, app.today()), _on_attendance_shortcut],
-		["룰렛", "roulette", Profile.can_spin_free(app.profile, app.eco), open_roulette],
-		["할 일", "todo", _todo_left() > 0, open_todo],
-		["우편", "mail", Profile.unclaimed_mail_count(app.profile) > 0, open_mailbox],
-		["방법", "help", false, _on_help],
+		["출석", "orb_gold", Profile.can_check_in(app.profile, app.today()), _on_attendance_shortcut],
+		["룰렛", "orb_purple", Profile.can_spin_free(app.profile, app.eco), open_roulette],
+		["할 일", "orb_green", _todo_left() > 0, open_todo],
+		["우편", "orb_blue", Profile.unclaimed_mail_count(app.profile) > 0, open_mailbox],
 	]
 	for spec in shortcuts:
-		var shortcut := Kit.icon_shortcut(str(spec[0]), str(spec[1]), bool(spec[2]), 50.0)
+		var shortcut := Kit.icon_shortcut(str(spec[0]), str(spec[1]), bool(spec[2]), 56.0)
 		shortcut.pressed.connect(spec[3])
-		quick.add_child(shortcut)
-	side.add_child(_banner())
+		orb_row.add_child(Kit.expand(shortcut))
 	side.add_child(_rank_card())
 
 	var tier: Dictionary = Profile.tier_of(app.eco, int(app.profile["trophies"]))
@@ -331,7 +337,7 @@ func _hero_card() -> Control:
 ## 소식 배너: 그림 위에 큰 글씨로 지금의 공지가 돌아가며 나온다. 누르면 공지 목록.
 func _banner() -> Control:
 	var band := Button.new()
-	band.custom_minimum_size = Vector2(0, 132)
+	band.custom_minimum_size = Vector2(0, 120)
 	var band_style := Kit.box(Color(0.5, 0.1, 0.12, 0.95), Color("ffcf4d"), 3, 18, 8)
 	for state in ["normal", "hover", "pressed"]:
 		band.add_theme_stylebox_override(state, band_style)
@@ -617,6 +623,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"더 살아난 판: 성문·왕좌·감옥·수정 구슬 같은 입체 물건이 칸 위에 서고, 스킬을 쓰면 앞쪽 칸에 빛기둥이 차례로 솟아요. 전투는 주사위를 하나씩 던지며 점수가 올라가고, 로비에는 오늘의 보상 구슬 줄이 생겼어요.",
 	"가로 화면 대개편: 게임이 가로 화면으로 바뀌었어요. 로비는 큰 영웅 카드와 장식 액자, 맵은 손으로 그린 풍경 위의 두꺼운 육각 칸, 영웅 세 명이 함께 걷고, 주사위와 전투가 판 위에서 바로 벌어져요. 글 상자는 금테 장식 판으로, 화면마다 분위기 색이 달라졌어요.",
 	"살아난 맵: 적 69종이 꼬마 입체 모형으로 칸 위에 서 있고, 맵마다 탑·야자수·이글루·화산 같은 꾸밈 모형이 놓였어요. 전투 창에서는 모형끼리 부딪치며 불꽃이 튀어요.",
 	"입체 판과 연출: 판이 비스듬히 누운 입체 블록으로 바뀌고, 영웅 44명이 꼬마 입체 모형으로 판 위를 걸어요. 져서 돌아갈 때는 휙 날아가고, 칸마다 소용돌이·반짝임·창살 같은 효과가 살아 움직여요. 주사위는 빛살과 함께 멈추고, 스킬 버튼은 쓸 수 있을 때 금빛으로 빛나요.",

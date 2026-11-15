@@ -333,20 +333,38 @@ func _blank(count: int) -> Array:
 	return values
 
 
-## 한쪽 주사위를 굴리고 합계를 0부터 세어 올린다.
+## 한쪽 주사위를 하나씩 던진다. 하나가 멈출 때마다 점수가 그만큼 올라가며 통 튄다(원작의 박자).
 func _roll_side(side: Dictionary, rolls: Array, total: int, bonus: int) -> void:
-	_play_sound("dice")
-	await side["dice"].roll_to(rolls, 0.25 if _skip else ROLL_TIME * 0.75)
-	var steps := 4 if _skip else 10
-	for step in steps + 1:
-		side["total"].text = "%02d" % int(round(total * step / float(steps)))
-		await get_tree().create_timer(0.03).timeout
+	var shown: Array = _blank(rolls.size())
+	var running := 0
+	for index in rolls.size():
+		_play_sound("dice")
+		# 아직 안 던진 주사위는 그대로 두고 이번 것만 굴린다.
+		var spin_time := 0.1 if _skip else 0.26
+		var elapsed := 0.0
+		while elapsed < spin_time and is_inside_tree():
+			shown[index] = 1 + (randi() % 6)
+			side["dice"].values = shown.duplicate()
+			await get_tree().create_timer(0.05).timeout
+			elapsed += 0.05
+		shown[index] = int(rolls[index])
+		side["dice"].values = shown.duplicate()
+		running += int(rolls[index])
+		side["total"].text = "%02d" % running
+		side["total"].pivot_offset = side["total"].size / 2.0
+		var tick := create_tween()
+		tick.tween_property(side["total"], "scale", Vector2(1.22, 1.22), 0.05)
+		tick.tween_property(side["total"], "scale", Vector2.ONE, 0.09)
+		_play_sound("land")
+		if not _skip:
+			await get_tree().create_timer(0.12).timeout
 	if bonus != 0:
 		side["bonus"].text = "보너스 %+d" % bonus
+		side["total"].text = "%02d" % total
 	side["total"].pivot_offset = side["total"].size / 2.0
 	var bump := create_tween()
-	bump.tween_property(side["total"], "scale", Vector2(1.25, 1.25), 0.08)
-	bump.tween_property(side["total"], "scale", Vector2.ONE, 0.12)
+	bump.tween_property(side["total"], "scale", Vector2(1.35, 1.35), 0.08)
+	bump.tween_property(side["total"], "scale", Vector2.ONE, 0.14)
 	await bump.finished
 
 

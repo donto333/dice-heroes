@@ -86,7 +86,7 @@ func _summon_panel() -> Control:
 	column.add_child(faces)
 	for id in BANNER:
 		var face := Portrait.new()
-		face.custom_minimum_size = Vector2(0, 230)
+		face.custom_minimum_size = Vector2(0, 170)
 		face.hd = true
 		var info: Dictionary = app.character(id)
 		face.show_character(info, Kit.GRADE_COLORS[3])
@@ -264,7 +264,7 @@ func _dice_panel() -> Control:
 	head.add_child(Kit.expand(Kit.label("주사위 상점", 30, Kit.GOLD)))
 	head.add_child(Kit.label("모양만 달라요 · 한 번 사면 계속 써요", 17, Kit.MUTED))
 	var grid := GridContainer.new()
-	grid.columns = 4
+	grid.columns = 6
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 10)
 	column.add_child(grid)
@@ -315,7 +315,7 @@ func _gem_pack_panel() -> Control:
 	head.add_child(Kit.label("준비 중", 20, Color("ff9a6a")))
 	column.add_child(Kit.para("정식 버전에서 열릴 상품이에요. 지금은 살 수 없고, 보석은 출석·미션·업적·패스·우편으로 모을 수 있어요.", 18, Kit.MUTED))
 	var grid := GridContainer.new()
-	grid.columns = 2
+	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
 	column.add_child(grid)
