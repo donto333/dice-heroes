@@ -3,6 +3,7 @@ extends Control
 ## 들어올 때 오늘 출석 보상을 아직 안 받았으면 출석 창을 띄운다.
 
 const Kit := preload("res://scripts/ui/kit.gd")
+const DiePreview := preload("res://scripts/ui/die_preview.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
@@ -71,6 +72,7 @@ func setup(main_app, params: Dictionary) -> void:
 	nav.setup("lobby", app.badges())
 	nav.tab_pressed.connect(_on_tab)
 
+	_maybe_league_reward()
 	if bool(params.get("welcome", false)):
 		# 처음 온 사람은 새 소식을 따로 띄우지 않는다.
 		app.profile["seen_version"] = app.VERSION
@@ -270,6 +272,7 @@ func _todo_items() -> Array:
 		["출석 체크", "하루 한 번 출석 보상", not Profile.can_check_in(profile, app.today()), _on_attendance_shortcut],
 		["무료 소환", "오늘 %d번 남음" % Profile.free_summons_left(profile, app.eco), Profile.free_summons_left(profile, app.eco) <= 0, _on_tab.bind("shop")],
 		["행운의 룰렛", "하루 한 번 무료", not Profile.can_spin_free(profile, app.eco), open_roulette],
+		["홀짝 게임", "오늘 %d번 남음" % Profile.odd_even_left(profile, app.eco), Profile.odd_even_left(profile, app.eco) <= 0, open_odd_even],
 		["오늘의 도전", "이기면 보석", Profile.challenge_done(profile), _on_mode.bind("challenge")],
 		["일일 미션", "%d / %d 달성" % [missions_done, missions.size()], missions_done >= missions.size() and Profile.claimable_mission_count(profile, app.eco) == 0, _on_tab.bind("missions")],
 		["우편함", "안 받은 우편 %d통" % Profile.unclaimed_mail_count(profile), Profile.unclaimed_mail_count(profile) == 0, open_mailbox],
@@ -530,6 +533,61 @@ const NEWS := [
 	"AI 연습전은 난이도와 맵을 고를 수 있고, 대전 빠르기 ×2와 한마디 말풍선을 쓸 수 있어요.",
 	"내 정보를 누르면 프로필, 랭크 카드를 누르면 순위표가 나와요.",
 ]
+
+
+## 주가 바뀌었으면 지난주 연습 리그 보상을 준다.
+func _maybe_league_reward() -> void:
+	var result := Profile.settle_league(app.profile, app.eco, app.today())
+	app.save()
+	if result.is_empty():
+		return
+	var text := "지난주 연습 리그 %d위!\n보상: %s" % [int(result["rank"]), Kit.reward_line(result["reward"])]
+	if bool(result["medal"]):
+		text += "\n훈장도 1개 받았어요. (프로필에서 볼 수 있어요)"
+	app.message("주간 리그 결과", text)
+
+
+# ---------------------------------------------------------------- 홀짝 게임
+
+var _odd_even_text: Label
+var _odd_even_die: Control
+
+func open_odd_even() -> void:
+	app.play("click")
+	var body := Kit.vbox(12)
+	body.add_child(Kit.para("주사위 한 개를 굴려요. 홀일까요, 짝일까요?\n맞히면 %s, 틀려도 %s" % [Kit.reward_line(app.eco["odd_even"]["win"]), Kit.reward_line(app.eco["odd_even"]["lose"])], 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	_odd_even_die = DiePreview.new()
+	_odd_even_die.skin = Profile.current_dice_skin(app.profile, app.eco)
+	_odd_even_die.face = 6
+	_odd_even_die.custom_minimum_size = Vector2(120, 120)
+	_odd_even_die.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	body.add_child(_odd_even_die)
+	_odd_even_text = Kit.label("오늘 %d번 남았어요." % Profile.odd_even_left(app.profile, app.eco), 24, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	body.add_child(_odd_even_text)
+	var row := Kit.hbox(12)
+	body.add_child(row)
+	var odd := Kit.button("홀 (1·3·5)", Color("e0532b"), 28, 92)
+	odd.pressed.connect(_on_odd_even.bind("odd"))
+	row.add_child(Kit.expand(odd))
+	var even := Kit.button("짝 (2·4·6)", Color("19a8c9"), 28, 92)
+	even.pressed.connect(_on_odd_even.bind("even"))
+	row.add_child(Kit.expand(even))
+	app.dialog("홀짝 게임", body, [["닫기", Kit.PANEL_LIGHT, _close_roulette]], 620)
+
+
+func _on_odd_even(guess: String) -> void:
+	var result := Profile.play_odd_even(app.profile, app.eco, guess, app.rng)
+	if result.is_empty():
+		app.toast("오늘은 다 했어요. 내일 또 와요!")
+		return
+	app.save()
+	app.play("win" if bool(result["won"]) else "dice")
+	if is_instance_valid(_odd_even_die):
+		_odd_even_die.face = int(result["roll"])
+		_odd_even_die.queue_redraw()
+	if is_instance_valid(_odd_even_text):
+		_odd_even_text.text = "%d! %s  %s  (남은 횟수 %d)" % [int(result["roll"]), "맞혔어요!" if bool(result["won"]) else "아쉬워요.",
+			Kit.reward_line(result["reward"]), Profile.odd_even_left(app.profile, app.eco)]
 
 
 func _maybe_news() -> void:

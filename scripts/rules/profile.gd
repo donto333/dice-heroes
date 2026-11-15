@@ -1383,3 +1383,59 @@ static func equip_relic(profile: Dictionary, id: String) -> bool:
 		return false
 	profile["relic"] = "" if str(profile.get("relic", "")) == id else id
 	return true
+
+
+# ---------------------------------------------------------------- 홀짝 미니게임
+
+static func odd_even_left(profile: Dictionary, eco: Dictionary) -> int:
+	return max(0, int(eco.get("odd_even", {}).get("per_day", 0)) - int(profile.get("daily", {}).get("odd_even", 0)))
+
+
+## 홀짝을 건다. guess는 "odd"(홀) 또는 "even"(짝). 못 하면 {}.
+## 하면 {"roll": 나온 눈, "won": 맞혔나, "reward": 받은 것}
+static func play_odd_even(profile: Dictionary, eco: Dictionary, guess: String, rng: RandomNumberGenerator) -> Dictionary:
+	if odd_even_left(profile, eco) <= 0 or not guess in ["odd", "even"]:
+		return {}
+	profile["daily"]["odd_even"] = int(profile["daily"].get("odd_even", 0)) + 1
+	var roll := rng.randi_range(1, 6)
+	var won := (roll % 2 == 1) == (guess == "odd")
+	var reward: Dictionary = eco["odd_even"]["win" if won else "lose"]
+	grant(profile, reward)
+	return {"roll": roll, "won": won, "reward": reward}
+
+
+# ---------------------------------------------------------------- 주간 리그 보상
+
+## 그 날짜가 속한 주의 번호(월요일에 바뀐다)
+static func week_of(today: String) -> int:
+	var days := int(Time.get_unix_time_from_datetime_string(today)) / 86400
+	return (days + 3) / 7
+
+
+## 그 순위가 받는 주간 보상 줄 {max_rank, reward, medal}
+static func league_tier(eco: Dictionary, rank: int) -> Dictionary:
+	for tier in eco.get("league_weekly", {}).get("tiers", []):
+		if rank <= int(tier["max_rank"]):
+			return tier
+	return {}
+
+
+## 주가 바뀌었으면 지난주 순위로 보상을 준다. 줬으면 {"rank", "reward", "medal"}, 아니면 {}.
+## 처음 부르면 이번 주만 적어 둔다.
+static func settle_league(profile: Dictionary, eco: Dictionary, today: String) -> Dictionary:
+	var week := week_of(today)
+	if not profile.has("league_week"):
+		profile["league_week"] = week
+		return {}
+	if int(profile["league_week"]) == week:
+		return {}
+	profile["league_week"] = week
+	var rank := league_rank(profile, eco)
+	var tier := league_tier(eco, rank)
+	if tier.is_empty():
+		return {}
+	grant(profile, tier["reward"])
+	var medal := bool(tier.get("medal", false))
+	if medal:
+		profile["medals"] = int(profile.get("medals", 0)) + 1
+	return {"rank": rank, "reward": tier["reward"], "medal": medal}

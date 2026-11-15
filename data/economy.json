@@ -843,5 +843,46 @@
       }
     }
   ],
-  "relics_comment": "유물: 파티에 하나만 장착하는 시작 보너스(모두의 마블의 행운 아이템 자리). effect: atk_bonus와 turns(처음 몇 턴 동안 공격 합계 보너스), gauge(시작 게이지 %), charm(부적). 손패는 3장 제한이라 카드 추가 효과는 없다. 내 파티에만 적용되고 친구 대전에서는 쓰지 않는다."
+  "relics_comment": "유물: 파티에 하나만 장착하는 시작 보너스(모두의 마블의 행운 아이템 자리). effect: atk_bonus와 turns(처음 몇 턴 동안 공격 합계 보너스), gauge(시작 게이지 %), charm(부적). 손패는 3장 제한이라 카드 추가 효과는 없다. 내 파티에만 적용되고 친구 대전에서는 쓰지 않는다.",
+  "odd_even": {
+    "_comment": "홀짝 미니게임: 주사위 한 개의 홀짝을 맞힌다. 하루 per_day번. 맞히면 win, 틀리면 lose.",
+    "per_day": 3,
+    "win": {
+      "gold": 300
+    },
+    "lose": {
+      "gold": 50
+    }
+  },
+  "league_weekly": {
+    "_comment": "주간 리그 보상: 주(월요일 시작)가 바뀌면 그때의 연습 리그 순위로 보상을 준다. max_rank 이하 순위 중 첫 줄을 쓴다. medal이 true면 훈장 1개.",
+    "tiers": [
+      {
+        "max_rank": 1,
+        "reward": {
+          "gems": 300
+        },
+        "medal": true
+      },
+      {
+        "max_rank": 3,
+        "reward": {
+          "gems": 200
+        },
+        "medal": true
+      },
+      {
+        "max_rank": 6,
+        "reward": {
+          "gems": 100
+        }
+      },
+      {
+        "max_rank": 99,
+        "reward": {
+          "gems": 50
+        }
+      }
+    ]
+  }
 }

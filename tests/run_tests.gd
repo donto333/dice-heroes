@@ -89,6 +89,7 @@ func _init() -> void:
 	_test_sweep()
 	_test_double()
 	_test_gate()
+	_test_minigame_and_league()
 	_test_relics()
 	_test_album_and_weekday()
 	_test_guide()
@@ -1415,3 +1416,29 @@ func _test_relics() -> void:
 	_check(boosted.effect_sum(1, "atk_bonus") == plain.effect_sum(1, "atk_bonus"), "상대에게 유물 효과가 붙음")
 	for item in eco["relics"]:
 		_check(not (item["effect"] as Dictionary).is_empty() and not (item["cost"] as Dictionary).is_empty(), "유물 자료가 비어 있음")
+
+
+func _test_minigame_and_league() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("홀짝", eco)
+	Profile.ensure_daily(profile, "2026-05-01")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var per_day := int(eco["odd_even"]["per_day"])
+	_check(Profile.play_odd_even(profile, eco, "셋", rng).is_empty(), "홀짝이 아닌 것을 받음")
+	for i in per_day:
+		var gold := int(profile["gold"])
+		var result := Profile.play_odd_even(profile, eco, "odd", rng)
+		_check(not result.is_empty() and bool(result["won"]) == (int(result["roll"]) % 2 == 1), "홀짝 판정이 틀림")
+		_check(int(profile["gold"]) == gold + int(eco["odd_even"]["win" if bool(result["won"]) else "lose"]["gold"]), "홀짝 보상이 틀림")
+	_check(Profile.play_odd_even(profile, eco, "odd", rng).is_empty() and Profile.odd_even_left(profile, eco) == 0, "하루 횟수를 넘겨 홀짝을 함")
+	# 주간 리그: 2026-11-15(일)와 11-16(월)은 다른 주, 11-16과 11-22(일)는 같은 주
+	_check(Profile.week_of("2026-11-15") + 1 == Profile.week_of("2026-11-16") and Profile.week_of("2026-11-16") == Profile.week_of("2026-11-22"), "주 계산이 틀림")
+	_check(Profile.settle_league(profile, eco, "2026-11-15").is_empty() and Profile.settle_league(profile, eco, "2026-11-15").is_empty(), "같은 주에 리그 보상을 줌")
+	profile["trophies"] = 99999
+	var gems := int(profile["gems"])
+	var settled := Profile.settle_league(profile, eco, "2026-11-16")
+	_check(int(settled.get("rank", 0)) == 1 and bool(settled["medal"]) and int(profile.get("medals", 0)) == 1, "1위인데 훈장을 못 받음")
+	_check(int(profile["gems"]) == gems + int(eco["league_weekly"]["tiers"][0]["reward"]["gems"]), "주간 리그 보상이 틀림")
+	_check(Profile.settle_league(profile, eco, "2026-11-17").is_empty(), "한 주에 리그 보상을 두 번 줌")
+	_check(not Profile.league_tier(eco, 13).is_empty(), "꼴찌가 받을 주간 보상이 없음")
