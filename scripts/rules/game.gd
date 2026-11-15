@@ -141,7 +141,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 			"effects": [],
 			"cursed": false,
 			"charm": false,
-			## 장착한 유물의 효과 {cards, gauge, charm}. 없으면 {}.
+			## 장착한 유물의 효과 {atk_bonus, turns, gauge, charm}. 없으면 {}.
 			"relic": (party.get("relic", {}) as Dictionary).duplicate(),
 		})
 	current = 0
@@ -167,8 +167,8 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	# 유물: 시작 보너스
 	for index in players.size():
 		var relic: Dictionary = players[index]["relic"]
-		for i in int(relic.get("cards", 0)):
-			_draw_card(index, false)
+		if int(relic.get("atk_bonus", 0)) > 0:
+			players[index]["effects"].append({"key": "atk_bonus", "amount": int(relic["atk_bonus"]), "turns": int(relic.get("turns", 1))})
 		if int(relic.get("gauge", 0)) > 0:
 			_add_gauge(index, int(relic["gauge"]))
 		if bool(relic.get("charm", false)):

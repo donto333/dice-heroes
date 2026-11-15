@@ -1407,11 +1407,11 @@ func _test_relics() -> void:
 	var parties: Array = []
 	for party in PARTIES:
 		parties.append((party as Dictionary).duplicate(true))
-	parties[0]["relic"] = {"cards": 1, "gauge": 15, "charm": true}
+	parties[0]["relic"] = {"atk_bonus": 1, "turns": 5, "gauge": 15, "charm": true}
 	var boosted = _new_game(5, parties)
-	_check(boosted.players[0]["hand"].size() == plain.players[0]["hand"].size() + 1, "유물 카드가 안 들어옴")
+	_check(boosted.effect_sum(0, "atk_bonus") == plain.effect_sum(0, "atk_bonus") + 1, "유물 공격 보너스가 안 붙음")
 	_check(int(boosted.players[0]["gauge"]["attack"]) == mini(100, int(plain.players[0]["gauge"]["attack"]) + 15), "유물 게이지가 안 참")
 	_check(bool(boosted.players[0]["charm"]) and not bool(boosted.players[1]["charm"]), "유물 부적이 틀림")
-	_check(boosted.players[1]["hand"].size() == plain.players[1]["hand"].size(), "상대에게 유물 효과가 붙음")
+	_check(boosted.effect_sum(1, "atk_bonus") == plain.effect_sum(1, "atk_bonus"), "상대에게 유물 효과가 붙음")
 	for item in eco["relics"]:
 		_check(not (item["effect"] as Dictionary).is_empty() and not (item["cost"] as Dictionary).is_empty(), "유물 자료가 비어 있음")
