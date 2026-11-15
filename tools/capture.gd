@@ -86,6 +86,13 @@ func _run() -> void:
 	await _wait(0.4)
 	await _shot("05i_todo")
 	_close_dialogs()
+	await _wait(0.2)
+	_app.current_screen.open_odd_even()
+	await _wait(0.3)
+	_app.current_screen._on_odd_even("odd")
+	await _wait(0.3)
+	await _shot("05j_odd_even")
+	_close_dialogs()
 	_app.profile["pass"]["exp"] = 260
 	_app.go("pass")
 	await _wait(0.4)

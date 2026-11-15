@@ -68,6 +68,8 @@ static func profile_body(app) -> Control:
 		small.show_character(app.character(favorite), Kit.LINE)
 		row.add_child(small)
 		row.add_child(Kit.expand(Kit.para("가장 많이 함께한 영웅\n%s  ·  %d판 %d승" % [app.character(favorite).get("name", ""), int(record["played"]), int(record["wins"])], 22, Color.WHITE)))
+	if int(profile.get("medals", 0)) > 0:
+		body.add_child(Kit.label("주간 리그 훈장 %d개" % int(profile["medals"]), 22, Kit.GOLD))
 	# 최근 전적(가장 최근이 왼쪽)
 	var history: Array = profile.get("history", [])
 	if not history.is_empty():
@@ -91,8 +93,11 @@ static func profile_body(app) -> Control:
 static func league_body(app) -> Control:
 	var body := Kit.vbox(8)
 	body.add_child(Kit.para("온라인 대전이 열리기 전까지는 AI 상대들과 겨루는 연습 리그예요. 랭크전에서 트로피를 모아 순위를 올려 보세요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var my_tier: Dictionary = Profile.league_tier(app.eco, Profile.league_rank(app.profile, app.eco))
+	if not my_tier.is_empty():
+		body.add_child(Kit.label("매주 월요일 순위 보상 · 지금 순위면 %s%s" % [Kit.reward_line(my_tier["reward"]), " + 훈장" if bool(my_tier.get("medal", false)) else ""], 18, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 620)
+	scroll.custom_minimum_size = Vector2(0, 580)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	body.add_child(scroll)
 	var list := Kit.vbox(6)
