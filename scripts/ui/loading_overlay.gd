@@ -82,7 +82,7 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.03, 0.04, 0.1, 0.9))
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.32, 0.72, 0.97))
 	# 돌아가는 점 8개: 앞선 점일수록 크고 밝다.
 	var center := Vector2(size.x * 0.5, size.y * 0.5 - 10.0)
 	var head := int(_time * 10.0) % 8

@@ -2,6 +2,7 @@ extends Control
 ## 파티 고르기. 캐릭터 카드를 눌러 ATTACK / DEFENSE / SUPPORT 자리에 앉힌다.
 ## 소환 포인트(★ 수) 합계가 6을 넘으면 정할 수 없다.
 ## 파티 편성(영웅 화면)과 대전 직전 모두에서 쓴다. 보여 줄 캐릭터 목록과 글자는 setup()의 options로 바꾼다.
+const KitStyle := preload("res://scripts/ui/kit.gd")
 
 signal confirmed(party: Dictionary)
 signal cancelled
@@ -116,7 +117,7 @@ func _build() -> void:
 		_save_button.pressed.connect(_on_save_mode_pressed)
 		preset_row.add_child(_save_button)
 		for index in 3:
-			var preset := _plain_button("", Color("8fd0ff"))
+			var preset := _plain_button("", Color("2f74d6"))
 			preset.custom_minimum_size = Vector2(0, 64)
 			preset.add_theme_font_size_override("font_size", 16)
 			preset.clip_text = true
@@ -174,10 +175,10 @@ func _build() -> void:
 	bottom.add_theme_constant_override("separation", 8)
 	column.add_child(bottom)
 	if str(_options.get("cancel_text", "")) != "":
-		var back_button := _plain_button(str(_options["cancel_text"]), Color("8fd0ff"))
+		var back_button := _plain_button(str(_options["cancel_text"]), Color("2f74d6"))
 		back_button.pressed.connect(_on_cancel_pressed)
 		bottom.add_child(back_button)
-	var auto_button := _plain_button("자동 추천", Color("8fd0ff"))
+	var auto_button := _plain_button("자동 추천", Color("2f74d6"))
 	auto_button.pressed.connect(_on_auto_pressed)
 	bottom.add_child(auto_button)
 	_start_button = _plain_button(str(_options.get("confirm_text", "결정")), Color("2fb457"))
@@ -244,11 +245,11 @@ func _plain_button(text: String, color: Color) -> Button:
 	button.add_theme_font_size_override("font_size", 30)
 	button.add_theme_color_override("font_color", Color.WHITE)
 	button.add_theme_color_override("font_hover_color", Color.WHITE)
-	button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.35))
-	button.add_theme_stylebox_override("normal", _box(color, color.lightened(0.35), 2))
-	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12), Color.WHITE, 2))
-	button.add_theme_stylebox_override("pressed", _box(color.darkened(0.25), Color.WHITE, 2))
-	button.add_theme_stylebox_override("disabled", _box(Color("6f86a8"), Color("6f86a8"), 0))
+	button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	button.add_theme_color_override("font_focus_color", Color.WHITE)
+	button.add_theme_color_override("font_disabled_color", Color("e3ebf7"))
+	# 다른 화면과 같은 통통한 버튼 모양
+	KitStyle.paint(button, color)
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	return button
 
@@ -476,7 +477,7 @@ func _refresh() -> void:
 			if not member.is_empty():
 				names.append(str(member["name"]))
 		preset_button.text = "%d번  %s" % [index + 1, " · ".join(names)] if names.size() == 3 else "%d번  비어 있음" % (index + 1)
-		var preset_fill := Color("7a5a1c") if _saving else (Color("2f5a8a") if names.size() == 3 else Color("8fd0ff"))
+		var preset_fill := Color("f39a1c") if _saving else (Color("19a8c9") if names.size() == 3 else Color("2f74d6"))
 		for state in ["normal", "hover", "pressed"]:
 			preset_button.add_theme_stylebox_override(state, _box(preset_fill, GOLD if _saving else preset_fill.lightened(0.3), 2))
 	if _save_button != null:

@@ -78,7 +78,8 @@ func _level_row(number: int, entry: Dictionary, level: int) -> Control:
 	# 프리미엄 보상: 보여 주기만 한다.
 	var premium := Kit.button("잠김  %s" % Kit.reward_line(entry.get("premium", {})), Color("5a4a1c"), 21, 66)
 	premium.disabled = true
-	premium.add_theme_color_override("font_disabled_color", Color(1.0, 0.85, 0.45, 0.8))
+	premium.add_theme_color_override("font_disabled_color", Color("fff1c2"))
+	premium.add_theme_constant_override("outline_size", 0)
 	premium.add_theme_stylebox_override("disabled", Kit.box(Color("8f7b3c"), Color("d9b85a"), 2, 16, 8))
 	row.add_child(Kit.expand(premium))
 	return row

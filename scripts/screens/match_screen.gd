@@ -170,7 +170,7 @@ func _build_ui() -> void:
 	_speed_button.pressed.connect(_on_speed_pressed)
 	status_row.add_child(_speed_button)
 	_apply_speed()
-	var quit_button := Kit.button("나가기", Color("8fd0ff"), 20, 56)
+	var quit_button := Kit.button("나가기", Color("e0532b"), 20, 56)
 	quit_button.custom_minimum_size = Vector2(110, 56)
 	quit_button.pressed.connect(_on_quit_pressed)
 	status_row.add_child(quit_button)
