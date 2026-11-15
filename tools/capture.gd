@@ -130,16 +130,12 @@ func _run() -> void:
 	_app.go("shop")
 	await _wait(0.4)
 	await _shot("08_shop")
-	var shop_scroll := _find_scroll(_app.current_screen)
-	if shop_scroll != null:
-		shop_scroll.scroll_vertical = 100000
-		await _wait(0.3)
-		await _shot("08b_dice_shop")
-		for part in [[700, "08c_shop_relics"], [1500, "08d_shop_dice"], [2200, "08e_shop_mileage"]]:
-			shop_scroll.scroll_vertical = int(part[0])
-			await _wait(0.3)
-			await _shot(str(part[1]))
-		shop_scroll.scroll_vertical = 0
+	for part in [["grow", "08c_shop_grow"], ["look", "08b_dice_shop"], ["gems", "08e_shop_gems"]]:
+		_app.go("shop", {"tab": str(part[0])})
+		await _wait(0.4)
+		await _shot(str(part[1]))
+	_app.go("shop")
+	await _wait(0.4)
 	_app.current_screen._on_paid(10)
 	await _wait(2.0)
 	await _shot("09_summon")

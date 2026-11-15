@@ -15,12 +15,30 @@ const BANNER := ["zeus", "lubu", "sejong", "nightingale"]
 var app
 
 
+## 상점 탭: 소환(소환·특가) / 성장(유물·골드 교환) / 꾸미기(주사위) / 보석(마일리지·보석 상점)
+const TABS := [["summon", "소환"], ["grow", "성장"], ["look", "꾸미기"], ["gems", "보석"]]
+var _tab := "summon"
+
+
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
+	_tab = str(_params.get("tab", "summon"))
 	var column := Kit.screen_frame(self, 16)
 	var top := TopBar.new()
 	column.add_child(top)
 	top.setup(app)
+
+	var tabs := Kit.hbox(8)
+	column.add_child(tabs)
+	for spec in TABS:
+		var on: bool = str(spec[0]) == _tab
+		var tab_button := Kit.button(str(spec[1]), Color("ffc62b") if on else Color("2f74d6"), 24, 64)
+		if on:
+			for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+				tab_button.add_theme_color_override(state, Color("5a3200"))
+			tab_button.add_theme_constant_override("outline_size", 0)
+		tab_button.pressed.connect(_on_shop_tab.bind(str(spec[0])))
+		tabs.add_child(Kit.expand(tab_button))
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -29,13 +47,18 @@ func setup(main_app, _params: Dictionary) -> void:
 	var body := Kit.vbox(14)
 	Kit.expand(body)
 	scroll.add_child(body)
-	body.add_child(_summon_panel())
-	body.add_child(_deals_panel())
-	body.add_child(_relic_panel())
-	body.add_child(_dice_panel())
-	body.add_child(_exchange_panel())
-	body.add_child(_mileage_panel())
-	body.add_child(_gem_pack_panel())
+	match _tab:
+		"grow":
+			body.add_child(_relic_panel())
+			body.add_child(_exchange_panel())
+		"look":
+			body.add_child(_dice_panel())
+		"gems":
+			body.add_child(_mileage_panel())
+			body.add_child(_gem_pack_panel())
+		_:
+			body.add_child(_summon_panel())
+			body.add_child(_deals_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
 	var nav := BottomNav.new()
@@ -130,7 +153,7 @@ func _on_deal(index: int) -> void:
 		app.save()
 		app.play("good")
 		app.toast("%s 조각 +%d" % [app.character(str(deals[index]["id"]))["name"], int(deals[index]["shards"])])
-		app.go("shop")
+		app.go("shop", {"tab": _tab})
 
 
 ## 보석 마일리지: 보석을 쓴 만큼 쌓여 단계 보상을 준다.
@@ -166,7 +189,7 @@ func _on_mileage() -> void:
 		return
 	app.save()
 	app.play("win")
-	app.go("shop")
+	app.go("shop", {"tab": _tab})
 	app.toast("마일리지 보상: %s" % Kit.reward_line(reward))
 
 
@@ -210,7 +233,7 @@ func _on_relic(id: String) -> void:
 		app.toast("골드나 보석이 모자라요.")
 		return
 	app.save()
-	app.go("shop")
+	app.go("shop", {"tab": _tab})
 
 
 ## 주사위 상점: 한 번 사면 계속 쓰는 꾸밈 주사위. 능력 차이는 없다.
@@ -259,7 +282,7 @@ func _on_dice_skin(id: String) -> void:
 		app.toast("골드나 보석이 모자라요.")
 		return
 	app.save()
-	app.go("shop")
+	app.go("shop", {"tab": _tab})
 
 
 ## 보석 상품: 정식 버전에서 팔 구성을 미리 보여 준다. 아직 결제가 없어서 살 수 없다.
@@ -349,7 +372,7 @@ func _summon(count: int) -> void:
 	# 결과를 바로 보여 주지 않고 잠깐 뜸을 들인다.
 	await app.wait_loading("소환 중...", 0.9)
 	app.play("reveal")
-	app.go("shop")
+	app.go("shop", {"tab": _tab})
 	app.current_screen.show_results(results)
 
 
@@ -398,7 +421,14 @@ func _on_exchange(index: int) -> void:
 		app.save()
 		app.play("good")
 		app.toast("골드로 바꿨어요.")
-		app.go("shop")
+		app.go("shop", {"tab": _tab})
+
+
+func _on_shop_tab(id: String) -> void:
+	if id == _tab:
+		return
+	app.play("click")
+	app.go("shop", {"tab": id})
 
 
 func _on_tab(screen_name: String) -> void:
