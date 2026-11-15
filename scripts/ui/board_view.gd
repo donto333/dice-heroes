@@ -56,7 +56,18 @@ const ICON_NAMES := {
 }
 const ATTR_ICONS := {"영웅": "attr_hero", "위인": "attr_great", "신화": "attr_myth", "근현대": "attr_modern"}
 
+const GameData := preload("res://scripts/game_data.gd")
+## 광택 그림 아이콘(assets/ui_icons)에서 칸 종류마다 쓸 이름. 없으면 도트 아이콘을 쓴다.
+const GLOSSY_ICONS := {
+	"start": "t_start", "fork": "t_fork", "treasure": "chest", "battle": "swords", "ambush": "t_ambush", "gate": "t_gate",
+	"forward": "t_forward", "warp": "t_warp", "luck": "t_luck", "curse": "t_curse",
+	"prison": "t_prison", "fate": "t_fate", "checkpoint": "flag", "goal": "crown", "hidden": "help",
+	"attr_hero": "attr_hero", "attr_great": "attr_great", "attr_myth": "attr_myth", "attr_modern": "attr_modern",
+}
+
 var _icons: Dictionary = {}
+## 그린 바탕(assets/art/boards/<지형>.jpg). 있으면 도트 지형·꾸밈 대신 이것을 깐다.
+var _ground: Texture2D = null
 var _styles: Dictionary = {}
 
 signal stepped
@@ -130,7 +141,10 @@ func _ready() -> void:
 	for icon_name in ["start", "fork", "treasure", "battle", "ambush", "forward", "warp", "luck", "curse", "prison",
 			"fate", "checkpoint", "goal", "hidden", "pawn", "attr_hero", "attr_great", "attr_myth", "attr_modern"]:
 		var path := "res://assets/icons/%s.png" % icon_name
-		if ResourceLoader.exists(path):
+		var glossy := "res://assets/ui_icons/%s.png" % str(GLOSSY_ICONS.get(icon_name, ""))
+		if ResourceLoader.exists(glossy):
+			_icons[icon_name] = load(glossy)
+		elif ResourceLoader.exists(path):
 			_icons[icon_name] = load(path)
 
 
@@ -336,6 +350,9 @@ func _load_terrain(name: String) -> void:
 	_terrain_name = name
 	_terrain = null
 	_deco = null
+	_ground = GameData.art("boards/" + name) if name != "" else null
+	# 그린 바탕과 그림 아이콘은 부드럽게, 도트 그림은 또렷하게 키운다.
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR if _ground != null else CanvasItem.TEXTURE_FILTER_NEAREST
 	if name == "":
 		return
 	var ground := "res://assets/terrain/%s.png" % name
@@ -404,6 +421,24 @@ func _draw_hex(center: Vector2, half: Vector2, cell: float, color: Color, lit: b
 	draw_polyline(outline, Color.WHITE if lit else color.darkened(0.6), 5.0 if lit else 2.5)
 
 
+## 둥근 메달: 짙은 테 → 색 테 → 동그랗게 자른 그림.
+func _draw_medal(face: Texture2D, center: Vector2, radius: float, rim: Color) -> void:
+	draw_circle(center + Vector2(0, radius * 0.16), radius + 4.0, Color(0, 0, 0, 0.35))
+	draw_circle(center, radius + 5.0, rim.darkened(0.55))
+	draw_circle(center, radius + 3.0, rim)
+	var size_px := face.get_size()
+	var side: float = min(size_px.x, size_px.y) * 0.8
+	var src := Rect2((size_px.x - side) / 2.0, size_px.y * 0.04, side, side)
+	var points := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	for corner in 28:
+		var a := TAU * corner / 28.0
+		var unit := Vector2(cos(a), sin(a))
+		points.append(center + unit * radius)
+		uvs.append((src.position + (unit * 0.5 + Vector2(0.5, 0.5)) * src.size) / size_px)
+	draw_colored_polygon(points, Color.WHITE, uvs, face)
+
+
 func top_center(points: PackedVector2Array) -> Vector2:
 	var sum := Vector2.ZERO
 	for point in points:
@@ -431,7 +466,11 @@ func _draw() -> void:
 	if theme.has("bg"):
 		draw_rect(Rect2(Vector2.ZERO, size), Color(str(theme["bg"])))
 	var origin: Vector2 = layout["origin"]
-	if _terrain != null:
+	if _ground != null:
+		# 그림 한 장이 칸 8개 너비를 덮도록 이어 붙인다(그림은 이어 붙여도 티가 안 나게 만들어져 있다).
+		var ground_scale := cell * 8.0 / float(_ground.get_width())
+		draw_texture_rect_region(_ground, Rect2(Vector2.ZERO, size), Rect2(-origin / ground_scale, size / ground_scale))
+	elif _terrain != null:
 		var scale_px := cell / 21.0 if not bool(layout.get("camera", false)) else TERRAIN_SCALE
 		draw_texture_rect_region(_terrain, Rect2(Vector2.ZERO, size), Rect2(-origin / scale_px, size / scale_px))
 		_draw_decorations(layout)
@@ -483,7 +522,14 @@ func _draw() -> void:
 			if passed:
 				monster = -1
 				label = "통과"
-		if monster >= 0 and _monsters != null:
+		var enemy_face: Texture2D = GameData.enemy_portrait(str(tile.get("name", ""))) if monster >= 0 else null
+		if enemy_face != null:
+			# 그려 둔 적 초상화가 있으면 둥근 메달로 칸 위에 세운다.
+			var big: bool = tile.get("type", "") in ["goal", "gate"]
+			var medal_radius := cell * (0.36 if big else 0.3)
+			var medal_center := rect.get_center() - Vector2(0, cell * (0.3 if big else 0.22))
+			_draw_medal(enemy_face, medal_center, medal_radius, Color("ffcf4d") if tile.get("type", "") == "goal" else Color("c2272f"))
+		elif monster >= 0 and _monsters != null:
 			# 키퍼·습격·골 칸에는 아이콘 대신 적이 서 있다(살짝 위로 올려 서 있는 느낌).
 			var stand := rect.size.x * (0.86 if tile.get("type", "") in ["goal", "gate"] else 0.7)
 			var stand_rect := Rect2(rect.get_center().x - stand / 2.0, rect.position.y + rect.size.y * 0.5 - stand * 0.92, stand, stand)
