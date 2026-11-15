@@ -128,6 +128,18 @@ var _terrain_name := ""
 var _terrain: Texture2D = null
 var _deco: Texture2D = null
 var _occupied: Dictionary = {}
+## 이 맵의 빈자리에 놓을 꾸밈 모형들
+var _props: Array = []
+const PROP_NAMES := {
+	"grass": ["plain_haystack", "plain_tent", "plain_signpost", "plain_flowers", "castle_tower", "castle_wall", "castle_banner", "castle_catapult", "forest_tree"],
+	"desert": ["desert_palm", "desert_pyramid", "desert_cactus", "desert_obelisk"],
+	"forest": ["forest_tree", "forest_pines", "forest_mushrooms", "forest_stump"],
+	"snow": ["snow_pine", "snow_igloo", "snow_crystal", "snow_snowman"],
+	"river": ["river_bridge", "river_reeds", "river_boat", "river_windmill"],
+	"ruins": ["ruins_pillar", "ruins_statue", "ruins_arch", "ruins_chest"],
+	"sky": ["sky_cloud", "sky_island", "sky_balloon", "sky_temple"],
+	"volcano": ["volcano_cone", "volcano_rock", "volcano_skull", "volcano_torch"],
+}
 ## 칸 위에 서 있는 적 그림 시트(assets/terrain/monsters.png, tools/make_terrain.py). 32px 그림이 가로로 붙어 있다.
 var _monsters: Texture2D = null
 ## 시트의 그림 순서와, 이름에 이 낱말이 들어가면 그 그림을 쓴다. 맞는 게 없으면 짐승.
@@ -396,6 +408,39 @@ func _load_terrain(name: String) -> void:
 	_occupied = {}
 	for id in game.nodes:
 		_occupied[Vector2i(int(game.nodes[id].get("x", 0)), int(game.nodes[id].get("y", 0)))] = true
+	_props = []
+	for prop_name in PROP_NAMES.get(name, []):
+		var prop_texture: Texture2D = GameData.prop(str(prop_name))
+		if prop_texture != null:
+			_props.append(prop_texture)
+
+
+## 칸이 없는 빈자리에 나무·탑·바위 같은 입체 꾸밈 모형을 세운다. 자리와 종류는 좌표로 정해져 늘 같다.
+## 바로 위에 칸이 있는 자리는 비워 둔다(칸을 가리지 않게).
+func _draw_props(layout: Dictionary) -> void:
+	if _props.is_empty():
+		return
+	var cell: float = layout["cell"]
+	var origin: Vector2 = layout["origin"]
+	var row := cell * TILT
+	var first := Vector2i(floori(-origin.x / cell) - 1, floori(-origin.y / row) - 1)
+	var last := Vector2i(floori((size.x - origin.x) / cell) + 1, floori((size.y - origin.y) / row) + 2)
+	for gy in range(first.y, last.y + 1):
+		for gx in range(first.x, last.x + 1):
+			if _occupied.has(Vector2i(gx, gy)) or _occupied.has(Vector2i(gx, gy - 1)):
+				continue
+			var seed_value: int = absi((gx * 73856093) ^ (gy * 19349663) ^ 0x2545f491)
+			if seed_value % 100 >= 34:
+				continue
+			var texture: Texture2D = _props[(seed_value / 100) % _props.size()]
+			var tall := cell * (0.95 + ((seed_value / 7) % 30) / 100.0)
+			var wide := tall * float(texture.get_width()) / float(texture.get_height())
+			var jitter := Vector2(((seed_value / 1000) % 21 - 10) / 70.0, ((seed_value / 30000) % 21 - 10) / 90.0)
+			var foot := origin + Vector2((gx + 0.5 + jitter.x) * cell, (gy + 0.62 + jitter.y) * row)
+			draw_set_transform(foot, 0.0, Vector2(1.0, 0.36))
+			draw_circle(Vector2.ZERO, wide * 0.42, Color(0, 0, 0, 0.26))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			draw_texture_rect(texture, Rect2(foot.x - wide / 2.0, foot.y - tall * 0.96, wide, tall), false)
 
 
 ## 칸이 없는 빈 자리에 나무·집·바위 같은 꾸밈 그림을 흩어 놓는다. 자리와 종류는 좌표로 정해져 늘 같다.
@@ -654,6 +699,7 @@ func _draw() -> void:
 				if game.nodes.has(next_id):
 					draw_line(_center(id, layout), _center(next_id, layout), road_color, road_width)
 
+	_draw_props(layout)
 	var view := Rect2(Vector2(-cell, -cell), size + Vector2(cell, cell) * 2.0)
 	if _draw_order_for != game.get_instance_id() or _draw_order.size() != game.nodes.size():
 		_draw_order = game.nodes.keys()
@@ -697,7 +743,19 @@ func _draw() -> void:
 				monster = -1
 				label = "통과"
 		var enemy_face: Texture2D = GameData.enemy_portrait(str(tile.get("name", ""))) if monster >= 0 else null
-		if enemy_face != null:
+		var enemy_model: Texture2D = GameData.enemy_standee(str(tile.get("name", ""))) if monster >= 0 else null
+		if enemy_model != null:
+			# 적의 입체 모형이 있으면 칸 위에 세운다(숨 쉬듯 살짝 늘었다 줄었다).
+			var is_boss: bool = tile.get("type", "") in ["goal", "gate"]
+			var breath := 1.0 + 0.03 * sin(_anim_time * 2.6 + float(int(id) % 5))
+			var model_tall := cell * (1.2 if is_boss else 0.98) * breath
+			var model_wide := cell * (1.2 if is_boss else 0.98) * float(enemy_model.get_width()) / float(enemy_model.get_height())
+			var model_foot := rect.get_center() + Vector2(0, cell * 0.06)
+			draw_set_transform(model_foot, 0.0, Vector2(1.0, 0.36))
+			draw_circle(Vector2.ZERO, model_wide * 0.4, Color(0, 0, 0, 0.3))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			draw_texture_rect(enemy_model, Rect2(model_foot.x - model_wide / 2.0, model_foot.y - model_tall, model_wide, model_tall), false)
+		elif enemy_face != null:
 			# 그려 둔 적 초상화가 있으면 둥근 메달로 칸 위에 세운다.
 			var big: bool = tile.get("type", "") in ["goal", "gate"]
 			var medal_radius := cell * (0.36 if big else 0.3)

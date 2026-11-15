@@ -7,6 +7,7 @@ const DiceView := preload("res://scripts/ui/dice_view.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const BoardView := preload("res://scripts/ui/board_view.gd")
 const Game := preload("res://scripts/rules/game.gd")
+const GameData := preload("res://scripts/game_data.gd")
 
 const GOLD := Color("ffcf4d")
 const WIN_COLOR := Color("7ee081")
@@ -85,6 +86,15 @@ func _ready() -> void:
 		var portrait := Portrait.new()
 		portrait.custom_minimum_size = Vector2(170, 170)
 		portrait_holder.add_child(portrait)
+		# 입체 모형이 있으면 초상화 대신 모형이 결투장에 선다.
+		var figure := TextureRect.new()
+		figure.custom_minimum_size = Vector2(230, 230)
+		figure.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		figure.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		figure.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		figure.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		figure.visible = false
+		portrait_holder.add_child(figure)
 		# 승패가 갈리면 그림 위에 도장처럼 찍히는 글자
 		var stamp := _label("", 58, WIN_COLOR)
 		stamp.add_theme_constant_override("outline_size", 14)
@@ -108,7 +118,7 @@ func _ready() -> void:
 		side_box.add_child(dice_holder)
 		side_box.add_child(bonus)
 		row.add_child(side_box)
-		_sides.append({"role": role, "portrait": portrait, "who": who, "total": total, "dice": dice, "bonus": bonus, "stamp": stamp})
+		_sides.append({"role": role, "portrait": portrait, "who": who, "total": total, "dice": dice, "bonus": bonus, "stamp": stamp, "figure": figure})
 		if side == 0:
 			var versus := _label("VS", 48, LOSE_COLOR)
 			versus.add_theme_constant_override("outline_size", 8)
@@ -198,12 +208,13 @@ func play(battle: Dictionary, info: Dictionary) -> void:
 	await _roll_side(right, defense_rolls, defense_total, defense_bonus)
 
 	var won: bool = battle["won"]
-	await _clash(left["portrait"], right["portrait"], won)
+	await _clash(_actor(left), _actor(right), won)
 	var winner_side: Dictionary = left if won else right
 	var loser_side: Dictionary = right if won else left
 	winner_side["total"].add_theme_color_override("font_color", WIN_COLOR)
 	loser_side["portrait"].dim = true
 	loser_side["portrait"].queue_redraw()
+	loser_side["figure"].modulate = Color(0.45, 0.45, 0.55)
 	winner_side["portrait"].border = WIN_COLOR
 	winner_side["portrait"].queue_redraw()
 	loser_side["total"].add_theme_color_override("font_color", LOSE_COLOR)
@@ -244,6 +255,7 @@ func _clash(left_face: Control, right_face: Control, attacker_won: bool) -> void
 	var fade := white.create_tween()
 	fade.tween_property(white, "color:a", 0.0, 0.3)
 	fade.tween_callback(white.queue_free)
+	_spark_at((left_face.global_position + left_face.size * 0.5 + right_face.global_position + right_face.size * 0.5) * 0.5 - global_position)
 	# 창 전체가 덜컹
 	var home := position
 	var rattle := create_tween()
@@ -261,6 +273,29 @@ func _clash(left_face: Control, right_face: Control, attacker_won: bool) -> void
 	# 다음 전투를 위해 제자리로
 	await get_tree().create_timer(0.05).timeout
 	_restore_later(left_face, left_home, right_face, right_home)
+
+
+## 부딪친 자리에서 뾰족한 별 모양 불꽃이 터졌다 사라진다.
+func _spark_at(spot: Vector2) -> void:
+	for index in 2:
+		var star := Polygon2D.new()
+		var points := PackedVector2Array()
+		var spikes := 8
+		var reach := 120.0 if index == 0 else 80.0
+		for corner in spikes * 2:
+			var angle := TAU * corner / float(spikes * 2)
+			points.append(Vector2(cos(angle), sin(angle)) * (reach if corner % 2 == 0 else reach * 0.36))
+		star.polygon = points
+		star.color = Color("ff9a2a") if index == 0 else Color("fff6c0")
+		star.position = spot
+		star.scale = Vector2(0.2, 0.2)
+		star.rotation = index * 0.4
+		add_child(star)
+		var burst := star.create_tween().set_parallel(true)
+		burst.tween_property(star, "scale", Vector2(1.5, 1.5), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		burst.tween_property(star, "rotation", star.rotation + 0.9, 0.3)
+		burst.tween_property(star, "modulate:a", 0.0, 0.3).set_delay(0.12)
+		burst.chain().tween_callback(star.queue_free)
 
 
 ## 전투 창이 닫힌 뒤 초상화를 제자리·바른 각도로 돌려놓는다.
@@ -314,8 +349,22 @@ func _stamp(side: Dictionary, text: String, color: Color, tilt: float) -> void:
 	tween.tween_property(stamp, "modulate:a", 1.0, 0.1)
 
 
+## 이 쪽에서 움직이는 그림(모형이 있으면 모형, 없으면 초상화)
+func _actor(side: Dictionary) -> Control:
+	return side["figure"] if side["figure"].visible else side["portrait"]
+
+
 func _show_portrait(side: Dictionary, character: Dictionary, fallback_name: String, color: Color) -> void:
 	var portrait = side["portrait"]
+	var figure: TextureRect = side["figure"]
+	var model: Texture2D = GameData.enemy_standee(fallback_name) if character.is_empty() else GameData.standee(str(character.get("id", "")))
+	figure.texture = model
+	figure.visible = model != null
+	figure.modulate = Color.WHITE
+	# 영웅 모형은 오른쪽을, 적 모형은 왼쪽을 본다. 서로 마주 보게 뒤집는다.
+	var on_right: bool = side == _sides[1]
+	figure.flip_h = on_right != character.is_empty()
+	portrait.visible = model == null
 	portrait.dim = false
 	portrait.border = color
 	if character.is_empty():

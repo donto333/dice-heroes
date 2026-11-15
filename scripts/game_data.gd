@@ -123,6 +123,35 @@ static func enemy_portrait(enemy_name: String) -> Texture2D:
 	return texture
 
 
+const ENEMY_STANDEE_PATH := "res://assets/enemy_standees/%s.png"
+const PROP_PATH := "res://assets/props/%s.png"
+
+
+## 판 위에 세우는 적의 입체 모형(바탕 투명). 없으면 null.
+static func enemy_standee(enemy_name: String) -> Texture2D:
+	if _enemy_ids.is_empty():
+		_enemy_ids = load_json(ENEMIES_PATH).get("enemies", {})
+	var id := str(_enemy_ids.get(enemy_name.replace("관문지기 ", "").strip_edges(), ""))
+	if id == "":
+		return null
+	return _cached_texture("enemy_standee/" + id, ENEMY_STANDEE_PATH % id)
+
+
+## 판 빈자리에 놓는 꾸밈 모형(나무, 탑, 바위...). 없으면 null.
+static func prop(name: String) -> Texture2D:
+	return _cached_texture("prop/" + name, PROP_PATH % name)
+
+
+static func _cached_texture(key: String, path: String) -> Texture2D:
+	if _art.has(key):
+		return _art[key]
+	var texture: Texture2D = null
+	if ResourceLoader.exists(path):
+		texture = load(path)
+	_art[key] = texture
+	return texture
+
+
 const STANDEE_PATH := "res://assets/standees/%s.png"
 
 
