@@ -205,6 +205,19 @@ static func standee(id: String) -> Texture2D:
 	return texture
 
 
+## 움직이는 모형: 3D 모델(트리포)을 블렌더로 찍은 12칸짜리 가로 그림. 종류는 idle(가만히)·walk(걷기)·slash(베기).
+## 있는 종류만 담은 사전을 돌려준다(없으면 빈 사전 → 멈춘 그림 모형을 쓴다).
+static func standee_anims(id: String) -> Dictionary:
+	var result := {}
+	if id == "":
+		return result
+	for kind in ["idle", "walk", "slash"]:
+		var sheet := _cached_texture("standee_anim/%s_%s" % [id, kind], "res://assets/standees_anim/%s_%s.png" % [id, kind])
+		if sheet != null:
+			result[kind] = sheet
+	return result
+
+
 const PORTRAIT_HD_PATH := "res://assets/portraits_hd/%s.jpg"
 
 

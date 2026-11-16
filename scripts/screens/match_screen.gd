@@ -1113,6 +1113,7 @@ func _start_game() -> void:
 	for index in 2:
 		_board_view.piece_textures[index] = GameData.portrait(str(game.char_of(index, "attack").get("id", "")))
 		_board_view.piece_standees[index] = GameData.standee(str(game.char_of(index, "attack").get("id", "")))
+		_board_view.piece_anims[index] = GameData.standee_anims(str(game.char_of(index, "attack").get("id", "")))
 		_board_view.party_standees[index] = [
 			GameData.standee(str(game.char_of(index, "defense").get("id", ""))),
 			GameData.standee(str(game.char_of(index, "support").get("id", "")))]

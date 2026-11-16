@@ -110,6 +110,12 @@ var piece_textures: Array = [null, null]
 var piece_standees: Array = [null, null]
 ## 말 뒤를 따라다니는 파티원(방어·지원) 모형들. 플레이어마다 [그림, 그림].
 var party_standees: Array = [[], []]
+## 선봉의 움직이는 모형(GameData.standee_anims). 있으면 서 있을 때 숨 쉬고, 이동할 때 걷는다.
+var piece_anims: Array = [{}, {}]
+## 움직이는 모형 한 장의 칸 수, 그림에서 캐릭터 키가 차지하는 비율, 발이 놓인 높이(위에서부터)
+const ANIM_FRAMES := 12
+const ANIM_BODY := 0.625
+const ANIM_FOOT := 0.8125
 ## 말이 보는 방향(1 오른쪽, -1 왼쪽). 움직인 쪽을 본다.
 var _facing: Array = [1.0, 1.0]
 ## 착지 직후 눌렸다 펴지는 정도(말마다 0~1, 시간이 지나면 0으로)
@@ -807,8 +813,19 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 		draw_set_transform(base - Vector2(0, height * 0.5), hop_t * TAU * 2.0, Vector2(facing, 1.0))
 		draw_texture_rect(texture, Rect2(-width / 2.0, -height / 2.0, width, height), false)
 	else:
-		draw_set_transform(base, 0.0, Vector2(stretch.x * facing, stretch.y))
-		draw_texture_rect(texture, Rect2(-width / 2.0, -height, width, height), false)
+		var anims: Dictionary = piece_anims[player_index] if player_index < piece_anims.size() else {}
+		var sheet: Texture2D = anims.get("walk" if hop_t >= 0.0 else "idle", anims.get("idle"))
+		if sheet != null:
+			# 움직이는 모형: 이동 중에는 걷는 그림을 빠르게, 서 있을 때는 숨 쉬는 그림을 천천히 넘긴다. 통통 튀는 늘림은 쓰지 않는다.
+			var speed := 16.0 if hop_t >= 0.0 else 6.0
+			var frame := int(_anim_time * speed + player_index * 5) % ANIM_FRAMES
+			var frame_size := float(sheet.get_height())
+			var box := height * 1.08 / ANIM_BODY
+			draw_set_transform(base, 0.0, Vector2(facing, 1.0))
+			draw_texture_rect_region(sheet, Rect2(-box / 2.0, -box * ANIM_FOOT, box, box), Rect2(frame * frame_size, 0, frame_size, frame_size))
+		else:
+			draw_set_transform(base, 0.0, Vector2(stretch.x * facing, stretch.y))
+			draw_texture_rect(texture, Rect2(-width / 2.0, -height, width, height), false)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	var head := base - Vector2(0, height * stretch.y)
