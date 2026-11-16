@@ -90,6 +90,7 @@ func _init() -> void:
 	_test_double()
 	_test_gate()
 	_test_voice_lines()
+	_test_point_limits()
 	_test_audio_tables()
 	_test_idle()
 	_test_minigame_and_league()
@@ -716,7 +717,7 @@ func _test_profile_basics() -> void:
 	_check(not eco.is_empty(), "economy.json을 읽지 못함")
 	var profile := Profile.new_profile("테스터", eco)
 	var chars: Array = _data["characters"]
-	_check(Profile.party_ok(profile, chars, profile["party"], Game.POINT_LIMIT), "시작 파티가 규칙에 맞지 않음")
+	_check(Profile.party_ok(profile, chars, profile["party"], Game.point_limit_at(_data["rules"], 1)), "시작 파티가 규칙에 맞지 않음")
 	for id in profile["owned"]:
 		_check(_char_exists(id), "시작 영웅이 캐릭터 목록에 없음: " + str(id))
 	_check(profile["owned"].size() >= 9, "시작 영웅이 너무 적음")
@@ -1494,6 +1495,22 @@ func _test_idle() -> void:
 
 
 ## 음성 대사표: 영웅 48명 모두 8가지 상황 대사가 있고, 소리 파일 이름이 대사표와 맞는다.
+## 소환 포인트 한도는 플레이어 레벨에 따라 5·6·7·8로 늘고, 한도를 넘는 예전 파티는 맞춰진다.
+func _test_point_limits() -> void:
+	var rules: Dictionary = _data["rules"]
+	for pair in [[1, 5], [4, 5], [5, 6], [9, 6], [10, 7], [19, 7], [20, 8], [50, 8]]:
+		_check(Game.point_limit_at(rules, pair[0]) == pair[1], "레벨 %d의 소환 포인트 한도가 %d가 아님" % pair)
+	_check(int(Game.next_point_step(rules, 1).get("level", 0)) == 5, "다음 한도 단계가 레벨 5가 아님")
+	_check(Game.next_point_step(rules, 20).is_empty(), "레벨 20 뒤에도 한도 단계가 있음")
+	var eco: Dictionary = GameData.load_json("res://data/economy.json")
+	var profile := Profile.new_profile("시험", eco)
+	profile["party"] = {"attack": "lubu", "defense": "athena", "support": "choichiwon"}
+	_check(Profile.fit_party(profile, _data["characters"], 5), "한도를 넘는 파티를 맞추지 않음")
+	_check(Profile.party_ok(profile, _data["characters"], profile["party"], 5), "맞춘 파티가 한도 5를 넘음")
+	_check(str(profile["party"]["attack"]) == "lubu", "공격 자리부터 바꿈")
+	_check(not Profile.fit_party(profile, _data["characters"], 5), "한도 안의 파티를 또 바꿈")
+
+
 func _test_voice_lines() -> void:
 	var table: Dictionary = GameData.load_json("res://data/voice_lines.json")
 	var kinds: Array = table.get("kinds", [])

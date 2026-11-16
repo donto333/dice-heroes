@@ -5,6 +5,7 @@ extends Control
 
 const GameData := preload("res://scripts/game_data.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
+const Game := preload("res://scripts/rules/game.gd")
 const SaveStore := preload("res://scripts/save_store.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
 const Voice := preload("res://scripts/ui/voice.gd")
@@ -167,6 +168,9 @@ func import_profile(text: String) -> bool:
 
 func load_profile() -> void:
 	profile = SaveStore.load_profile()
+	# 소환 포인트 한도가 레벨별로 바뀌면서 한도를 넘게 된 예전 파티는 ★이 낮은 영웅으로 맞춘다.
+	if has_profile() and Profile.fit_party(profile, data["characters"], point_limit()):
+		save()
 	if not profile.is_empty():
 		Profile.repair(profile, eco)
 		Profile.ensure_daily(profile, today())
@@ -267,6 +271,11 @@ func apply_volumes() -> void:
 
 func _gain_db(percent: int) -> float:
 	return -60.0 if percent <= 0 else linear_to_db(float(percent) / 100.0)
+
+
+## 내 플레이어 레벨에서 쓸 수 있는 소환 포인트 한도(data/rules.json의 point_limits).
+func point_limit() -> int:
+	return Game.point_limit_at(data["rules"], int(profile.get("level", 1)) if has_profile() else 1)
 
 
 func voice_on() -> bool:

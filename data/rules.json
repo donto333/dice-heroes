@@ -102,5 +102,24 @@
       "charm": true
     }
   },
-  "goal_min_dice": 3
+  "goal_min_dice": 3,
+  "point_limits": [
+    {
+      "level": 1,
+      "limit": 5
+    },
+    {
+      "level": 5,
+      "limit": 6
+    },
+    {
+      "level": 10,
+      "limit": 7
+    },
+    {
+      "level": 20,
+      "limit": 8
+    }
+  ],
+  "local_point_limit": 6
 }

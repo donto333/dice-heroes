@@ -18,6 +18,16 @@ var _map_window: Control
 var _pending: Dictionary = {}
 
 
+## 이 화면에서 쓰는 소환 포인트 한도(내 레벨 기준, 친구 대전은 고정값)
+var _limit := Game.POINT_LIMIT
+
+
+## 한도가 다음에 늘어나는 레벨 안내. 더 없으면 빈 글.
+func _next_limit_text() -> String:
+	var step: Dictionary = Game.next_point_step(app.data["rules"], int(app.profile.get("level", 1)))
+	return "" if step.is_empty() else " (플레이어 레벨 %d에 %d로 늘어요)" % [int(step["level"]), int(step["limit"])]
+
+
 func setup(main_app, params: Dictionary) -> void:
 	app = main_app
 	_params = params
@@ -29,16 +39,19 @@ func setup(main_app, params: Dictionary) -> void:
 	add_child(select)
 	var characters: Array = app.owned_characters()
 	var initial: Dictionary = app.profile["party"]
-	var options := {"cancel_text": "뒤로", "levels": app.owned_levels()}
+	_limit = app.point_limit()
+	if mode == "local":
+		_limit = int(app.data["rules"].get("local_point_limit", _limit))
+	var options := {"cancel_text": "뒤로", "levels": app.owned_levels(), "point_limit": _limit}
 	if purpose == "edit":
 		options["title"] = "파티 편성"
-		options["subtitle"] = "가진 영웅 %d명 중에서 골라요. 소환 포인트(★ 합계)는 %d까지." % [characters.size(), Game.POINT_LIMIT]
+		options["subtitle"] = "가진 영웅 %d명 중에서 골라요. 소환 포인트(★ 합계)는 %d까지.%s" % [characters.size(), _limit, _next_limit_text()]
 		options["confirm_text"] = "저장"
 	elif mode == "local":
 		characters = app.data["characters"]
 		options["levels"] = {}
 		options["title"] = "친구 대전 · 플레이어 %d" % player
-		options["subtitle"] = "플레이어 %d가 파티를 고르세요. 친구 대전은 48명 모두 쓸 수 있어요." % player
+		options["subtitle"] = "플레이어 %d가 파티를 고르세요. 친구 대전은 48명 모두 쓸 수 있고 소환 포인트는 %d까지예요." % [player, _limit]
 		options["confirm_text"] = "다음" if player == 1 else "대전 시작"
 		if player == 2:
 			initial = {"attack": "", "defense": "", "support": ""}
@@ -57,7 +70,7 @@ func setup(main_app, params: Dictionary) -> void:
 
 
 func _on_preset_saved(index: int, party: Dictionary) -> void:
-	if Profile.save_preset(app.profile, app.data["characters"], index, party, Game.POINT_LIMIT):
+	if Profile.save_preset(app.profile, app.data["characters"], index, party, _limit):
 		app.save()
 		app.play("good")
 
@@ -67,7 +80,7 @@ func _on_confirmed(party: Dictionary) -> void:
 	var mode := str(_params.get("mode", ""))
 	app.play("good")
 	if purpose == "edit":
-		if Profile.party_ok(app.profile, app.data["characters"], party, Game.POINT_LIMIT):
+		if Profile.party_ok(app.profile, app.data["characters"], party, _limit):
 			app.profile["party"] = party.duplicate()
 			app.save()
 			app.toast("파티를 저장했어요.")
@@ -83,8 +96,8 @@ func _on_confirmed(party: Dictionary) -> void:
 		second["name"] = "플레이어 2"
 		_pick_map({"mode": "local", "parties": [first, second], "humans": [true, true]})
 		return
-	if not Profile.party_ok(app.profile, app.data["characters"], party, Game.POINT_LIMIT):
-		app.toast("가진 영웅으로만 파티를 짤 수 있어요.")
+	if not Profile.party_ok(app.profile, app.data["characters"], party, _limit):
+		app.toast("가진 영웅으로, 소환 포인트 %d 안에서 파티를 짜 주세요." % _limit)
 		return
 	app.profile["party"] = party.duplicate()
 	app.save()
@@ -105,14 +118,14 @@ func _on_confirmed(party: Dictionary) -> void:
 		# 상대 파티와 맵은 날짜로 정해져 하루 동안 같다.
 		var day_rng := RandomNumberGenerator.new()
 		day_rng.seed = Profile.challenge_seed(app.profile)
-		var challenger: Dictionary = AI.pick_party(app.data["characters"], Game.POINT_LIMIT, day_rng)
+		var challenger: Dictionary = AI.pick_party(app.data["characters"], _limit, day_rng)
 		challenger["name"] = "오늘의 도전자"
 		var challenge_level := Profile.challenge_level(app.profile, app.eco)
 		challenger["levels"] = {"attack": challenge_level, "defense": challenge_level, "support": challenge_level}
 		app.go_loading("match", {"mode": "challenge", "parties": [mine, challenger], "humans": [true, false],
 			"map": day_rng.randi_range(0, app.data["boards"].size() - 1)}, "대전 준비 중...", 1.0, true)
 		return
-	var theirs: Dictionary = AI.pick_party(app.data["characters"], Game.POINT_LIMIT, app.rng)
+	var theirs: Dictionary = AI.pick_party(app.data["characters"], _limit, app.rng)
 	theirs["name"] = "AI"
 	var ai_level := 1
 	if mode == "rank":
@@ -128,7 +141,7 @@ func _on_confirmed(party: Dictionary) -> void:
 		scale = float(difficulty["reward_scale"])
 		if not bool(difficulty["smart"]):
 			# 쉬움: 조합을 따지지 않은 아무 파티
-			theirs = AI.pick_party(app.data["characters"], Game.POINT_LIMIT, app.rng, 1)
+			theirs = AI.pick_party(app.data["characters"], _limit, app.rng, 1)
 		theirs["name"] = "AI(%s)" % difficulty["name"]
 	theirs["levels"] = {"attack": ai_level, "defense": ai_level, "support": ai_level}
 	var start := {"mode": mode, "parties": [mine, theirs], "humans": [true, false], "reward_scale": scale}

@@ -1,6 +1,6 @@
 extends Control
 ## 파티 고르기. 캐릭터 카드를 눌러 ATTACK / DEFENSE / SUPPORT 자리에 앉힌다.
-## 소환 포인트(★ 수) 합계가 6을 넘으면 정할 수 없다.
+## 소환 포인트(★ 수) 합계가 한도(플레이어 레벨에 따라 5~8)를 넘으면 정할 수 없다.
 ## 파티 편성(영웅 화면)과 대전 직전 모두에서 쓴다. 보여 줄 캐릭터 목록과 글자는 setup()의 options로 바꾼다.
 const KitStyle := preload("res://scripts/ui/kit.gd")
 const GameRules := preload("res://scripts/rules/game.gd")
@@ -26,7 +26,8 @@ const CATEGORY_COLORS := {
 	"신화": Color("6f43a6"),
 	"근현대": Color("27a35a"),
 }
-const POINT_LIMIT := 6
+## 소환 포인트 한도. options["point_limit"]로 받는다(플레이어 레벨에 따라 5~8).
+var point_limit := 6
 const GOLD := Color("ffcf4d")
 
 var characters: Array = []
@@ -58,6 +59,7 @@ func setup(character_list: Array, ability_table: Dictionary, initial: Dictionary
 	characters = character_list
 	abilities = ability_table
 	_options = options
+	point_limit = int(options.get("point_limit", point_limit))
 	for slot in SLOTS:
 		party[slot] = initial.get(slot, "")
 	_build()
@@ -303,7 +305,7 @@ func can_start() -> bool:
 	for slot in SLOTS:
 		if party[slot] == "":
 			return false
-	return points() <= POINT_LIMIT
+	return points() <= point_limit
 
 
 func _on_slot_pressed(slot: String) -> void:
@@ -356,7 +358,7 @@ func _on_auto_pressed() -> void:
 			for s in pools["support"]:
 				if a["id"] == d["id"] or a["id"] == s["id"] or d["id"] == s["id"]:
 					continue
-				if int(a["grade"]) + int(d["grade"]) + int(s["grade"]) > POINT_LIMIT:
+				if int(a["grade"]) + int(d["grade"]) + int(s["grade"]) > point_limit:
 					continue
 				var score := int(a["attack"]) * 3 + int(a["move"]) * 2 + int(d["defense"]) * 3 + int(s["intellect"]) * 2
 				if score > best_score:
@@ -501,9 +503,9 @@ func _refresh() -> void:
 		_save_button.text = "칸 고르기..." if _saving else "칸에 저장"
 
 	var total := points()
-	_points_label.text = "소환 포인트 %d / %d" % [total, POINT_LIMIT]
-	_points_label.add_theme_color_override("font_color", Color("ff6b6b") if total > POINT_LIMIT else Color.WHITE)
-	if total > POINT_LIMIT:
+	_points_label.text = "소환 포인트 %d / %d" % [total, point_limit]
+	_points_label.add_theme_color_override("font_color", Color("ff6b6b") if total > point_limit else Color.WHITE)
+	if total > point_limit:
 		_points_label.text += "  (★가 너무 많아요)"
 	else:
 		# 시너지: 세 명이 같은 분류면 결속, 모두 다르면 조화
