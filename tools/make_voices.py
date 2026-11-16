@@ -10,7 +10,7 @@ key = os.environ.get("ELEVENLABS_API_KEY", "")
 if not key:
     sys.exit("ELEVENLABS_API_KEY가 없습니다.")
 only = set(filter(None, os.environ.get("ONLY", "").split(",")))
-styles = set(filter(None, os.environ.get("STYLES", "a,b").split(",")))
+styles = set(filter(None, os.environ.get("STYLES", "b").split(",")))
 table = json.load(open(os.environ.get("VOICE_TABLE", "data/voice_lines.json"), encoding="utf-8"))
 lock = threading.Lock()
 count = {"made": 0, "failed": 0, "cost": 0}
