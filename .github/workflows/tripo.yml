@@ -15,7 +15,14 @@ jobs:
   tripo:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    # 영웅이 많아 여섯 서버가 나눠서 찍는다.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
     env:
+      SHARDS: 6
+      SHARD: ${{ matrix.shard }}
       TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
       TRIPO_KEY: ${{ secrets.TRIPO_KEY }}
       TRIPO: ${{ secrets.TRIPO }}
@@ -46,11 +53,11 @@ jobs:
           /tmp/blender/blender --version | head -1
       - name: 블렌더로 찍기
         if: always()
-        run: /tmp/blender/blender -b -P tools/tripo_render.py -- out/tripo 512 2>&1 | grep -E "RENDER|Error|error" | head -300
+        run: /tmp/blender/blender -b -P tools/tripo_render.py -- out/tripo 384 2>&1 | grep -E "RENDER|Error|error" | head -300
       - name: 결과물 올리기
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tripo-out
+          name: tripo-out-${{ matrix.shard }}
           path: out/tripo
           retention-days: 14

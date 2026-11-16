@@ -233,6 +233,10 @@ def main() -> None:
 	if len(sys.argv) > 1 and sys.argv[1] == "balance":
 		return
 	jobs = json.loads((ROOT / "tripo" / "jobs.json").read_text())["jobs"]
+	# 여러 서버가 나눠 일할 때(SHARDS)는 자기 몫(SHARD)만 맡는다.
+	shards = int(os.environ.get("SHARDS", "1") or 1)
+	shard = int(os.environ.get("SHARD", "0") or 0)
+	jobs = [job for index, job in enumerate(jobs) if index % shards == shard]
 	failed = 0
 	for job in jobs:
 		try:
