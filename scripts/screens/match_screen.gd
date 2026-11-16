@@ -288,7 +288,7 @@ func _build_ui() -> void:
 		banner.anchor_top = 0.0
 		banner.anchor_bottom = 0.0
 		banner.offset_left = 416
-		banner.offset_right = -336
+		banner.offset_right = -352
 		banner.offset_top = 4
 		banner.offset_bottom = 54
 		var capsule := _patch("map_capsule", Vector4(34, 0, 34, 0), 30.0 / 50.0)
@@ -298,7 +298,7 @@ func _build_ui() -> void:
 		capsule.anchor_top = 0.0
 		capsule.anchor_bottom = 0.0
 		capsule.offset_left = 416 + 70
-		capsule.offset_right = -336 - 70
+		capsule.offset_right = -352 - 70
 		capsule.offset_top = 54
 		capsule.offset_bottom = 84
 		_map_label = _make_label(15)
@@ -319,7 +319,7 @@ func _build_ui() -> void:
 	_status_label.anchor_left = 0.0
 	_status_label.anchor_right = 1.0
 	_status_label.offset_left = 416 + (60 if banner != null else 0)
-	_status_label.offset_right = -336 - (60 if banner != null else 0)
+	_status_label.offset_right = -352 - (60 if banner != null else 0)
 	_status_label.offset_top = 6
 	_status_label.offset_bottom = 54 if banner == null else 50
 	_status_label.clip_text = banner != null
@@ -327,7 +327,7 @@ func _build_ui() -> void:
 	board_area.add_child(status_row)
 	status_row.anchor_left = 1.0
 	status_row.anchor_right = 1.0
-	status_row.offset_left = -328
+	status_row.offset_left = -344
 	status_row.offset_right = -8
 	status_row.offset_top = 8
 	status_row.offset_bottom = 58
@@ -349,7 +349,7 @@ func _build_ui() -> void:
 	result_panel.anchor_left = 0.0
 	result_panel.anchor_right = 1.0
 	result_panel.offset_left = 416
-	result_panel.offset_right = -336
+	result_panel.offset_right = -352
 	result_panel.offset_top = 56 if _map_label == null else 88
 	result_panel.offset_bottom = 140 if _map_label == null else 168
 	_result_scroll = ScrollContainer.new()
