@@ -1,7 +1,7 @@
 name: Build
 
 # 올릴 때마다 Godot로 웹 버전을 빌드한다.
-# main 브랜치에서는 GitHub Pages로도 배포해 브라우저에서 바로 해 볼 수 있게 한다.
+# main 브랜치에서는 GitHub Pages와 Cloudflare Pages(비밀값이 있을 때)로 배포해 브라우저에서 바로 해 볼 수 있게 한다.
 
 on:
   push:
@@ -125,3 +125,40 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  deploy-cloudflare:
+    # Cloudflare Pages에도 같은 웹 버전을 올린다(주소: https://dice-heroes.pages.dev).
+    # 저장소 비밀값 CLOUDFLARE_API_TOKEN·CLOUDFLARE_ACCOUNT_ID가 없으면 아무것도 하지 않고 넘어간다.
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_PROJECT: dice-heroes
+    steps:
+      - name: 비밀값 확인
+        id: check
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Cloudflare 비밀값이 없어 건너뜁니다."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 빌드 결과 받기
+        if: steps.check.outputs.ready == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+
+      - name: Cloudflare Pages 프로젝트 만들기(처음 한 번)
+        if: steps.check.outputs.ready == 'true'
+        run: npx --yes wrangler@4 pages project create "$CF_PROJECT" --production-branch=main || echo "이미 있음"
+
+      - name: Cloudflare Pages에 올리기
+        if: steps.check.outputs.ready == 'true'
+        run: npx --yes wrangler@4 pages deploy build/web --project-name="$CF_PROJECT" --branch=main --commit-dirty=true

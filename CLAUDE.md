@@ -37,6 +37,7 @@
 - 영웅 음성: `scripts/ui/voice.gd`(`app.say(영웅 id, 상황)`, 설정의 '영웅 음성'). 파일은 `assets/audio/voice/<id>_<상황>.ogg`, 상황은 select(도감 클릭)·idle(로비 대표 영웅 누름)·move·attack·defend·skill·win·lose. 대사와 목소리 배정은 `tools/make_voice_lines.py` → `data/voice_lines.json`. 만들 때는 `claude/gen-audio` 브랜치의 `tools/audio_job.txt`에 돌릴 도구 이름(make_voices.py / make_sfx.py / list_voices.py)을 적어 올리면 `make-sfx.yml`이 ElevenLabs로 만들어 산출물 audio로 남긴다. 계정의 복제 목소리는 쓰지 않고 기본 제공 목소리만 쓴다.
 - 글꼴은 한글 부분집합이라 없는 기호가 있다(예: ◆). 새 기호를 쓰면 tests의 글꼴 검사(`_test_font_coverage`)가 잡는다.
 - 기다림 화면: `scripts/ui/loading_overlay.gd`. 큰 전환(게임 진입, 접속, 대전 준비, 소환)은 `app.go_loading()`·`app.wait_loading()`을 쓰고, 나머지 `app.go()`는 짧게 스르륵 나타난다. 자동 사진 도구는 `app.instant = true`로 모두 건너뛴다.
+- 배포 주소(2026-11-16): main에 합쳐지면 GitHub Pages(https://donto333.github.io/dice-heroes/)와 Cloudflare Pages(https://dice-heroes.pages.dev, `build.yml`의 deploy-cloudflare)에 함께 올라간다. Cloudflare는 저장소 비밀값 `CLOUDFLARE_API_TOKEN`(Cloudflare Pages 편집 권한)·`CLOUDFLARE_ACCOUNT_ID`가 있어야 돌고, 없으면 건너뛴다.
 - 저장은 `scripts/save_store.gd`(기기 안 user://). 온라인 서버(Nakama)는 아직 없음.
 - 보드 바탕 지형·꾸밈 그림은 `tools/make_terrain.py`로 만든다(assets/terrain, 직접 그린 도트). 키퍼·습격·골 칸 위에 서 있는 적 그림(monsters.png, 7종)도 같은 도구로 만들고, 이름의 낱말로 종류를 고른다(`board_view.gd`의 MONSTER_KINDS). 칸은 두께 있는 육각형으로 그린다(scripts/ui/board_view.gd).
 - 화면 확인은 CI의 `tools/capture.gd` 자동 사진(로그에 base64로 남음).
