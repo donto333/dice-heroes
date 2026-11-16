@@ -37,6 +37,11 @@ var start_id := 0
 var dist_to_goal: Dictionary = {}
 ## 숨겨진 칸 중 이미 밟혀서 드러난 칸 id
 var revealed: Dictionary = {}
+## 갈림길 안쪽 칸(두 갈래 길). 누군가 지나가기 전까지 안개에 가려 칸 종류·적이 보이지 않는다(화면 표시용).
+var fog: Dictionary = {}
+## 안개가 걷힌 칸(누군가 밟고 지나간 칸)
+var fog_open: Dictionary = {}
+var branch_fog := true
 var cards: Dictionary = {}
 var abilities: Dictionary = {}
 var characters: Dictionary = {}
@@ -112,6 +117,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	second_player_gauge = int(rules.get("second_player_gauge", 0))
 	double_gauge = int(rules.get("double_gauge", 0))
 	gate_weaken = int(rules.get("gate_weaken", 1))
+	branch_fog = bool(rules.get("branch_fog", true))
 	goal_min_dice = int(rules.get("goal_min_dice", 3))
 	gauge_base = int(rules.get("gauge_base", 10))
 	gauge_per_intellect = int(rules.get("gauge_per_intellect", 5))
@@ -155,6 +161,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	events = []
 	pending_choice = {}
 	revealed = {}
+	_setup_fog()
 	traps = {}
 	gates_cleared = [{}, {}]
 	gate_fails = [{}, {}]
@@ -263,6 +270,40 @@ func node_of(id: int) -> Dictionary:
 
 func distance_of(player_index: int) -> int:
 	return int(dist_to_goal.get(int(players[player_index]["pos"]), 999))
+
+
+## 갈림길에서 갈라진 두 길의 칸을 안개 칸으로 정한다: 갈림길(다음 칸이 2개 이상)의 각 갈래를 따라가다
+## 여러 길이 다시 모이는 칸(들어오는 길이 2개 이상) 바로 앞까지.
+func _setup_fog() -> void:
+	fog = {}
+	fog_open = {}
+	if not branch_fog:
+		return
+	var incoming := {}
+	for id in nodes:
+		for next_id in nodes[id].get("next", []):
+			incoming[int(next_id)] = int(incoming.get(int(next_id), 0)) + 1
+	for id in nodes:
+		var options: Array = nodes[id].get("next", [])
+		if options.size() < 2:
+			continue
+		for option in options:
+			var walk := int(option)
+			var guard := 0
+			while nodes.has(walk) and int(incoming.get(walk, 0)) < 2 and guard < 200:
+				if str(nodes[walk].get("type", "")) in ["goal", "gate", "start"]:
+					break
+				fog[walk] = true
+				var after: Array = nodes[walk].get("next", [])
+				if after.size() != 1:
+					break
+				walk = int(after[0])
+				guard += 1
+
+
+## 안개에 가려진 칸인가(아직 아무도 지나가지 않은 갈림길 안쪽 칸)
+func is_fogged(id: int) -> bool:
+	return fog.has(id) and not fog_open.has(id)
 
 
 func is_hidden(id: int) -> bool:
@@ -669,6 +710,9 @@ func _step(player_index: int, to: int) -> void:
 	var player: Dictionary = players[player_index]
 	player["trail"].append(to)
 	player["pos"] = to
+	# 밟고 지나간 갈림길 칸은 안개가 걷힌다.
+	if fog.has(to):
+		fog_open[to] = true
 	_event({"kind": "pos", "player": player_index, "to": to})
 
 
