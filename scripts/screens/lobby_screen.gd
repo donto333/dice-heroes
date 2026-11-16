@@ -68,7 +68,7 @@ func setup(main_app, params: Dictionary) -> void:
 ## 로비 그림 부품(assets/ui_lobby/이름.png). 없으면 null.
 func _lobby_tex(name: String) -> Texture2D:
 	for ext in [".png", ".jpg"]:
-		var path := LOBBY_ART + name + ext
+		var path: String = LOBBY_ART + name + str(ext)
 		if ResourceLoader.exists(path):
 			return load(path)
 	return null
