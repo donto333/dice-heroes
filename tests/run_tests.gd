@@ -1511,6 +1511,11 @@ func _test_audio_tables() -> void:
 	var extra: Dictionary = GameData.load_json("res://data/voice_extra.json").get("heroes", {})
 	for kind in ["start", "turn", "battle", "double", "gate", "catchup", "last_turn"]:
 		_check(str(extra.get("announcer", {}).get("lines", {}).get(kind, "")) != "", "안내 음성 대사가 없음: " + kind)
+	var announcers: Array = GameData.load_json("res://data/voice_extra.json").get("announcers", [])
+	_check(not announcers.is_empty(), "안내 음성 목록이 비어 있음")
+	for entry in announcers:
+		for kind in ["start", "turn", "battle", "double", "gate", "catchup", "last_turn"]:
+			_check(ResourceLoader.exists("res://assets/audio/voice/announcer_%s_%s.ogg" % [str(entry.get("id", "")), kind]), "안내 음성 파일이 없음: %s %s" % [str(entry.get("id", "")), kind])
 	for enemy in ["enemy_gate", "enemy_boss", "enemy_keeper", "enemy_monster"]:
 		for kind in ["appear", "win", "lose"]:
 			_check(str(extra.get(enemy, {}).get("lines", {}).get(kind, "")) != "", "적 음성 대사가 없음: %s %s" % [enemy, kind])

@@ -47,6 +47,20 @@ func setup(main_app, _params: Dictionary) -> void:
 	voice_toggle.custom_minimum_size = Vector2(150, 64)
 	voice_toggle.pressed.connect(_on_voice)
 	voice_row.add_child(voice_toggle)
+	# 안내 음성 고르기: 누를 때마다 다음 목소리로 바뀌고 바로 들려준다.
+	var announcer_panel := Kit.panel()
+	body.add_child(announcer_panel)
+	var announcer_row := Kit.hbox(10)
+	announcer_panel.add_child(announcer_row)
+	announcer_row.add_child(Kit.expand(Kit.label("안내 음성", 26)))
+	var announcer_label := "없음"
+	for entry in app.announcers():
+		if str(entry.get("id", "")) == app.announcer_id():
+			announcer_label = str(entry.get("label", ""))
+	var announcer_button := Kit.button(announcer_label, Kit.ACCENT, 22, 64)
+	announcer_button.custom_minimum_size = Vector2(310, 64)
+	announcer_button.pressed.connect(_on_announcer)
+	announcer_row.add_child(announcer_button)
 	var music_panel := Kit.panel()
 	body.add_child(music_panel)
 	var music_row := Kit.hbox(10)
@@ -284,6 +298,20 @@ func _on_volume(kind: String, step: int) -> void:
 		app.say(str(app.profile.get("party", {}).get("attack", "")), "select")
 	elif kind == "sfx":
 		app.play("good")
+
+
+func _on_announcer() -> void:
+	var list: Array = app.announcers()
+	if list.is_empty():
+		return
+	var index := 0
+	for i in list.size():
+		if str(list[i].get("id", "")) == app.announcer_id():
+			index = i
+	app.profile["settings"]["announcer"] = str(list[(index + 1) % list.size()].get("id", ""))
+	app.save()
+	app.go("settings")
+	app.say("announcer", "start")
 
 
 func _on_voice() -> void:
