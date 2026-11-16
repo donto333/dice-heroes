@@ -1,19 +1,136 @@
 {
 	"설명": "트리포(Tripo)로 만들 3D 모델 주문서. GitHub Actions(tripo.yml)가 읽는다. model_task·rig_task에 이미 만든 작업 번호를 적어 두면 다시 만들지 않는다(크레딧 절약).",
-	"시험": 5,
+	"시험": 6,
 	"jobs": [
 		{
-			"name": "lubu",
-			"image": "assets/standees/lubu.png",
+			"name": "athena",
+			"image": "assets/standees/athena.png",
 			"rig": true,
 			"animations": [
 				"preset:idle",
 				"preset:walk",
 				"preset:slash"
 			],
-			"model_task": "3df8eb52-d621-48a3-927b-490265e8ef35",
-			"rig_task": "7d3a22f7-a7de-48ce-b4c2-2aef5f169014",
-			"anim_task": "ee94f502-7106-4010-9761-44e6cc98403a"
+			"model_task": "",
+			"rig_task": "",
+			"anim_task": ""
+		},
+		{
+			"name": "machao",
+			"image": "assets/standees/machao.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "",
+			"rig_task": "",
+			"anim_task": ""
+		},
+		{
+			"name": "zhouyu",
+			"image": "assets/standees/zhouyu.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "",
+			"rig_task": "",
+			"anim_task": ""
+		},
+		{
+			"name": "choichiwon",
+			"image": "assets/standees/choichiwon.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "",
+			"rig_task": "",
+			"anim_task": ""
+		},
+		{
+			"name": "ganning",
+			"image": "assets/standees/ganning.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "",
+			"rig_task": "",
+			"anim_task": ""
+		},
+		{
+			"name": "choiyoung",
+			"image": "assets/standees/choiyoung.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "",
+			"rig_task": "",
+			"anim_task": ""
+		},
+		{
+			"name": "dokkaebi",
+			"image": "assets/standees/dokkaebi.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "",
+			"rig_task": "",
+			"anim_task": ""
+		},
+		{
+			"name": "haetae",
+			"image": "assets/standees/haetae.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "",
+			"rig_task": "",
+			"anim_task": ""
+		},
+		{
+			"name": "libai",
+			"image": "assets/standees/libai.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "",
+			"rig_task": "",
+			"anim_task": ""
+		},
+		{
+			"name": "mulan",
+			"image": "assets/standees/mulan.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "",
+			"rig_task": "",
+			"anim_task": ""
 		}
 	]
 }
