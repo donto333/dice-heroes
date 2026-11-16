@@ -39,8 +39,8 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 	# 그림 창틀: 위·아래 가운데 장식이 달린 화려한 틀. 테가 두꺼워 여백을 넉넉히 둔다.
 	frame.grand = true
 	if Kit.UiSkin.has("win_navy"):
-		frame.set_content_margin_all(34)
-		frame.content_margin_top = 44
+		frame.set_content_margin_all(30)
+		frame.content_margin_top = 40
 	_panel.add_theme_stylebox_override("panel", frame)
 	center.add_child(_panel)
 	_column = Kit.vbox(16)
@@ -68,11 +68,15 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 			var callback: Callable = spec[2] if spec.size() > 2 else Callable()
 			button.pressed.connect(_on_button.bind(callback))
 			row.add_child(button)
-	_panel.pivot_offset = Vector2(width * 0.5, 120)
-	_panel.scale = Vector2(0.85, 0.85)
+	# 창이 화면보다 크면(위·아래 장식 포함) 통째로 줄여서 버튼이 화면 밖으로 나가지 않게 한다.
+	var need: Vector2 = _panel.get_combined_minimum_size()
+	var room: Vector2 = get_viewport_rect().size - Vector2(40, 96)
+	var fit := minf(1.0, minf(room.x / maxf(need.x, 1.0), room.y / maxf(need.y, 1.0)))
+	_panel.pivot_offset = need * 0.5
+	_panel.scale = Vector2(0.85, 0.85) * fit
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_panel, "scale", Vector2.ONE, 0.22)
+	tween.tween_property(_panel, "scale", Vector2.ONE * fit, 0.22)
 
 
 func _on_button(callback: Callable) -> void:
