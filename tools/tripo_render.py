@@ -16,6 +16,13 @@ ARGS = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 SOURCE = Path(ARGS[0]) if ARGS else Path("out/tripo")
 CELL = int(ARGS[1]) if len(ARGS) > 1 else 256
 FRAMES = 12
+VIEWS = {}
+try:
+	import json
+	for job in json.loads((Path(__file__).resolve().parent.parent / "tripo" / "jobs.json").read_text())["jobs"]:
+		VIEWS[job["name"]] = job.get("view", 90.0)
+except Exception as error:
+	print("RENDER 주문서를 못 읽음", error)
 ELEVATION = math.radians(16.0)
 ## 카메라를 돌리는 각도. 90도가 정면이고, 55도는 오른쪽을 보는 비스듬한 앞모습.
 FACING = 55.0
@@ -87,6 +94,121 @@ def make_camera(low: Vector, high: Vector):
 	return pivot
 
 
+def cloud(skinned_only: bool) -> list:
+	"""지금 장면의 모델 점들을 (가운데·바닥 기준, 키를 1로 맞춰) 돌려준다. 약 1500개만 고른다."""
+	points = []
+	depsgraph = bpy.context.evaluated_depsgraph_get()
+	for obj in bpy.context.scene.objects:
+		if obj.type != "MESH" or obj.hide_render:
+			continue
+		if skinned_only and not any(modifier.type == "ARMATURE" for modifier in obj.modifiers):
+			continue
+		evaluated = obj.evaluated_get(depsgraph)
+		mesh = evaluated.to_mesh()
+		step = max(1, len(mesh.vertices) // 1500)
+		for index in range(0, len(mesh.vertices), step):
+			points.append(evaluated.matrix_world @ mesh.vertices[index].co)
+		evaluated.to_mesh_clear()
+	if not points:
+		return []
+	low_z = min(point.z for point in points)
+	high_z = max(point.z for point in points)
+	mid_x = (min(point.x for point in points) + max(point.x for point in points)) * 0.5
+	mid_y = (min(point.y for point in points) + max(point.y for point in points)) * 0.5
+	scale = 1.0 / max(high_z - low_z, 1e-6)
+	return [Vector(((point.x - mid_x) * scale, (point.y - mid_y) * scale, (point.z - low_z) * scale)) for point in points]
+
+
+def front_angle(rigs: list, original: list) -> float:
+	"""정면에서 찍으려면 카메라를 몇 도 돌려야 하는지 돌려준다.
+	뼈대를 넣으면 모델이 저마다 다른 쪽으로 돌아가 있다. 원래 모델(앞이 90도 쪽으로 정해져 있음)의 점들과
+	뼈대 모델의 기본 자세 점들을 3도씩 돌려 가며 겹쳐 보고, 가장 잘 겹치는 각도만큼 돌아갔다고 본다."""
+	from mathutils import kdtree
+	if not original:
+		return math.radians(90.0)
+	for rig in rigs:
+		rig.data.pose_position = "REST"
+	bpy.context.view_layer.update()
+	posed = cloud(True)
+	for rig in rigs:
+		rig.data.pose_position = "POSE"
+	bpy.context.view_layer.update()
+	if not posed:
+		return math.radians(90.0)
+	tree = kdtree.KDTree(len(original))
+	for index, point in enumerate(original):
+		tree.insert(point, index)
+	tree.balance()
+	sample = posed[::3]
+	best = (1e9, 0.0)
+	for degrees in range(0, 360, 3):
+		turn = math.radians(degrees)
+		cos_t, sin_t = math.cos(turn), math.sin(turn)
+		total = 0.0
+		for point in sample:
+			# 뼈대 모델의 점을 -각도만큼 되돌려 원래 모델에 겹쳐 본다.
+			back = Vector((point.x * cos_t + point.y * sin_t, -point.x * sin_t + point.y * cos_t, point.z))
+			total += tree.find(back)[2]
+		if total < best[0]:
+			best = (total, turn)
+	print("RENDER 앞 방향: 원래 모델보다", round(math.degrees(best[1])), "도 돌아가 있음 (어긋남 %.4f)" % (best[0] / len(sample)))
+	return math.radians(90.0) + best[1]
+
+
+def _boxed(pixels, mask, side: int = 48):
+	"""그림에서 캐릭터가 차지한 상자만 잘라 side×side로 줄인다(가장 가까운 점 고르기)."""
+	import numpy as np
+	rows = np.where(mask.any(axis=1))[0]
+	cols = np.where(mask.any(axis=0))[0]
+	if len(rows) == 0:
+		return None, None
+	pick_rows = np.linspace(rows[0], rows[-1], side).astype(int)
+	pick_cols = np.linspace(cols[0], cols[-1], side).astype(int)
+	return pixels[pick_rows][:, pick_cols, :3], mask[pick_rows][:, pick_cols]
+
+
+def best_view(pivot, folder: Path) -> float:
+	"""모델을 10도씩 돌려 가며 작게 찍어 보고, 주문할 때 넣은 그림(input.png)과 가장 닮은 각도를 돌려준다.
+	트리포 모델은 앞이 어느 쪽인지 저마다 달라서, 원래 그림과 같은 방향에서 찍으려면 이렇게 찾아야 한다."""
+	import numpy as np
+	source = folder / "input.png"
+	if not source.exists():
+		return math.radians(55.0)
+	image = bpy.data.images.load(str(source))
+	width, height = image.size
+	wanted = np.array(image.pixels[:], dtype=np.float32).reshape(height, width, 4)
+	bpy.data.images.remove(image)
+	target, target_mask = _boxed(wanted, wanted[:, :, :3].min(axis=2) < 0.9)
+	if target is None:
+		return math.radians(55.0)
+	scene = bpy.context.scene
+	saved = (scene.render.resolution_x, scene.render.resolution_y, scene.cycles.samples)
+	scene.render.resolution_x = 96
+	scene.render.resolution_y = 96
+	scene.cycles.samples = 6
+	best = (1e9, 55.0)
+	for degrees in range(0, 360, 10):
+		pivot.rotation_euler = (0, 0, math.radians(degrees))
+		path = folder / "render" / "probe.png"
+		shoot(path)
+		shot = bpy.data.images.load(str(path))
+		pixels = np.array(shot.pixels[:], dtype=np.float32).reshape(96, 96, 4)
+		bpy.data.images.remove(shot)
+		view, view_mask = _boxed(pixels, pixels[:, :, 3] > 0.3)
+		if view is None:
+			continue
+		both = target_mask & view_mask
+		outline = 1.0 - both.sum() / max((target_mask | view_mask).sum(), 1)
+		color = float(np.abs(view[both] - target[both]).mean()) if both.any() else 1.0
+		score = outline + color * 2.0
+		if score < best[0]:
+			best = (score, float(degrees))
+	(folder / "render" / "probe.png").unlink(missing_ok=True)
+	scene.render.resolution_x, scene.render.resolution_y, scene.cycles.samples = saved
+	print("RENDER 원래 그림과 가장 닮은 각도:", best[1], "(점수 %.3f)" % best[0])
+	return math.radians(best[1])
+
+
 def calibrate(camera, folder: Path) -> None:
 	"""한 장을 찍어 보고, 실제로 그려진 모습이 칸 가운데에 키 62.5%로 오도록 카메라를 옮기고 맞춘다.
 	(뼈대가 든 모델은 블렌더가 알려 주는 크기가 실제와 달라서, 찍힌 그림으로 직접 잰다.)"""
@@ -138,12 +260,18 @@ def render_folder(folder: Path) -> None:
 	out = folder / "render"
 	out.mkdir(exist_ok=True)
 	model = folder / "model.glb"
+	original = []
+	view_angle = math.radians(55.0)
 	if model.exists():
 		reset()
 		bpy.ops.import_scene.gltf(filepath=str(model))
+		original = cloud(False)
 		low, high = bounds()
 		print("RENDER", folder.name, "모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
+		# 찍는 방향: 주문서(tripo/jobs.json)의 view 각도. 90도가 트리포가 정한 정면이고, 영웅마다 원래 그림처럼
+		# 비스듬한 앞모습이 되도록 눈으로 보고 정해 둔다(자세가 비대칭인 모델은 정면이 꽤 틀어져 있다).
+		view_angle = math.radians(float(VIEWS.get(folder.name, 90.0)))
 		shots = []
 		for step in range(8):
 			pivot.rotation_euler = (0, 0, math.radians(step * 45))
@@ -168,7 +296,7 @@ def render_folder(folder: Path) -> None:
 		print("RENDER", folder.name, "동작 모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
 		# 정면에서 35도 돌린 방향으로 놓고, 가만히 선 자세로 카메라를 맞춘다. 한 번은 대충, 한 번은 정확히.
-		pivot.rotation_euler = (0, 0, math.radians(FACING))
+		pivot.rotation_euler = (0, 0, view_angle + front_angle(rigs, original) - math.radians(90.0))
 		scene.camera.data.ortho_scale *= 1.5
 		calibrate(scene.camera, out)
 		calibrate(scene.camera, out)
