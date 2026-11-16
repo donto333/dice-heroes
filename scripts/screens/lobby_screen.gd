@@ -338,10 +338,8 @@ func _add_top_bar() -> void:
 	bar.add_child(who)
 	var medal := _bold(str(int(profile["level"])), 24, Color.WHITE, Color("12264d"), 6, HORIZONTAL_ALIGNMENT_CENTER)
 	medal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# 메달은 그림 왼쪽 0~17.7% 자리에 있다.
-	_anchor(medal, 0.0, 0.0, 0.177, 1.0)
-	medal.offset_top = -2
-	medal.offset_bottom = -2
+	# 메달 안쪽 둥근 판은 그림의 가로 3.7%~19.6%, 세로 9.2%~83.3% 자리에 있다(그림에서 잰 값).
+	_anchor(medal, 0.037, 0.092, 0.196, 0.833)
 	who.add_child(medal)
 	var names := Kit.vbox(-2)
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
