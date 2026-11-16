@@ -497,3 +497,9 @@ static func round_shortcut(text: String, icon_name: String, color: Color, badge:
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		result.add_child(dot)
 	return result
+
+
+## other 안의 점(point)을 home 안의 좌표로 바꾼다. 화면이 돌아가 있어도 맞게 나온다
+## (global_position끼리 빼면 돌린 화면에서 방향이 틀어진다).
+static func spot_in(home: CanvasItem, other: CanvasItem, point: Vector2) -> Vector2:
+	return home.get_global_transform().affine_inverse() * (other.get_global_transform() * point)
