@@ -13,6 +13,7 @@ var gems := true
 var gem_color := Color("7fe3ff")
 var shadow := true
 var _rim := StyleBoxFlat.new()
+const Skin := preload("res://scripts/ui/skin.gd")
 
 
 ## 둥근 사각형의 테두리 점들(시계 방향). inset만큼 안쪽으로 들어간다.
@@ -45,6 +46,8 @@ func _draw(item: RID, rect: Rect2) -> void:
 	if rect.size.x < 10.0 or rect.size.y < 10.0:
 		return
 	var r := minf(radius, minf(rect.size.x, rect.size.y) * 0.5)
+	if _draw_skin(item, rect, r):
+		return
 	# 1) 그림자와 짙은 바깥 테
 	_rim.bg_color = Color(fill.r * 0.2, fill.g * 0.2, fill.b * 0.28, minf(fill.a + 0.2, 1.0))
 	_rim.set_corner_radius_all(int(r))
@@ -89,3 +92,39 @@ func _gem(item: RID, center: Vector2, size: float, color: Color) -> void:
 	RenderingServer.canvas_item_add_polygon(item, PackedVector2Array([
 		center + Vector2(0, -size), center + Vector2(size, 0), center + Vector2(0, size), center + Vector2(-size, 0)]),
 		PackedColorArray([color]))
+
+
+## 그림 틀(assets/ui_kit)로 그린다. 그림이 없으면 false(예전 도형 그리기로).
+## 큰 판은 장식 창틀(win_), 작은 칸은 얇은 카드 테(card_)를 쓴다. 금색 테가 아니면 은색 틀에 테 색을 입힌다.
+func _draw_skin(item: RID, rect: Rect2, r: float) -> bool:
+	var small := minf(rect.size.x, rect.size.y)
+	var golden := trim.s > 0.35 and trim.h > 0.07 and trim.h < 0.19
+	var big := gems and small >= 150.0 and rect.size.x >= 260.0
+	var name := ("win_navy" if golden else "win_violet") if big else ("card_navy" if golden else "card_violet")
+	if not Skin.has(name) or Skin.meta(name).is_empty():
+		return false
+	var scale := clampf(small / 420.0, 0.42, 0.8) if big else clampf(small / 150.0, 0.3, 0.62)
+	var edge := Skin.border(name) * scale
+	# 1) 그림자
+	if shadow:
+		_rim.bg_color = Color(0, 0, 0, 0.0)
+		_rim.draw_center = false
+		_rim.set_corner_radius_all(int(r))
+		_rim.shadow_color = Color(0, 0.02, 0.12, 0.4 * fill.a)
+		_rim.shadow_size = 9
+		_rim.shadow_offset = Vector2(0, 5)
+		_rim.draw(item, rect.grow(-2.0))
+	# 2) 몸통: 위는 밝고 아래는 짙게 + 위쪽 광택
+	var corner := maxf(r, edge * 1.6)
+	var body := outline(rect, corner, edge * 0.5)
+	RenderingServer.canvas_item_add_polygon(item, body, shade(body, rect, fill.lightened(0.14), fill.darkened(0.3)))
+	var gloss_rect := Rect2(rect.position, Vector2(rect.size.x, minf(rect.size.y * 0.45, 70.0)))
+	var gloss := outline(gloss_rect, corner, edge * 0.5 + 2.0)
+	RenderingServer.canvas_item_add_polygon(item, gloss, shade(gloss, gloss_rect, Color(1, 1, 1, 0.13 * fill.a), Color(1, 1, 1, 0.0)))
+	# 3) 그림 틀
+	var tint := Color(1, 1, 1, minf(fill.a + 0.35, 1.0))
+	if not golden:
+		var metal := trim.lightened(0.25)
+		tint = Color(metal.r, metal.g, metal.b, tint.a)
+	Skin.draw_frame(item, name, rect, scale, 0.46 if big else 0.0, tint)
+	return true
