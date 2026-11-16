@@ -62,6 +62,7 @@ func _init() -> void:
 	_test_battle_odds()
 	_test_move_dice()
 	_test_fork_choice()
+	_test_branch_fog()
 	_test_checkpoints()
 	_test_cards()
 	_test_pass_by_fight()
@@ -418,6 +419,21 @@ func _test_fork_choice() -> void:
 	game2.roll_move()
 	_check(not game2.awaiting_choice(), "갈림길에 딱 멈췄는데 고르기가 생김")
 	_check(int(game2.players[0]["pos"]) == 13, "갈림길에 멈추지 않음")
+
+
+## 갈림길 안쪽 칸은 안개 칸이고, 밟고 지나가면 걷힌다. 갈림길·모이는 칸은 안개가 아니다.
+func _test_branch_fog() -> void:
+	var game = _new_game(11)
+	_check(game.fog.has(14) and game.fog.has(19) and game.fog.has(20), "갈림길 두 갈래 칸이 안개 칸이 아님")
+	_check(not game.fog.has(13), "갈림길 칸 자체가 안개 칸임")
+	_check(game.is_fogged(20), "아무도 안 지나간 갈래 칸이 안개에 가려지지 않음")
+	game.begin_turn()
+	_place(game, 0, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+	game.players[0]["effects"].append({"key": "move_fixed", "amount": 3, "turns": 1})
+	game.roll_move()
+	game.choose_path(1)
+	_check(not game.is_fogged(20) and not game.is_fogged(21), "밟고 지나간 칸의 안개가 걷히지 않음")
+	_check(game.is_fogged(14), "가지 않은 갈래의 안개가 걷힘")
 
 
 ## 지면 지나온 길을 따라 직전 거점으로 돌아가는지 확인한다.

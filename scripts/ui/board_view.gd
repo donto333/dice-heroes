@@ -132,6 +132,11 @@ var active_player := -1
 var _anim_time := 0.0
 ## 가만히 있을 때 다시 그리는 간격(초)과 쌓인 시간
 const IDLE_FRAME_TIME := 1.0 / 30.0
+## 갈림길 안개 칸의 바닥색
+const FOG_COLOR := Color("8f9bb3")
+## 말이 실제로 밟은(화면에서 내려앉은) 갈림길 칸. 여기에 들어와야 안개가 걷힌다.
+var _fog_shown: Dictionary = {}
+var _fog_for := 0
 ## 저사양 모드에서는 1초에 15번
 const IDLE_FRAME_TIME_LOW := 1.0 / 15.0
 var _idle_redraw := 0.0
@@ -516,6 +521,30 @@ func _draw_decorations(layout: Dictionary) -> void:
 
 
 ## 서 있는 그림이 바닥에 드리우는 그림자: 같은 그림을 검게, 오른쪽으로 눕혀서 그린다(빛은 왼쪽 위).
+## 화면에서 안개로 가릴 칸인가: 갈림길 안쪽 칸이고 아직 말이 밟지 않았다.
+func _view_fogged(id: int) -> bool:
+	return game != null and game.fog.has(id) and not _fog_shown.has(id)
+
+
+## 안개 칸 위의 뿌연 안개: 부드러운 흰 빛 한 겹과 천천히 흐르는 연기 두 덩이
+func _draw_fog(center: Vector2, cell: float, id: int) -> void:
+	var top := center - Vector2(0, cell * BLOCK_DEPTH * 0.5)
+	var soft: Texture2D = Fx.tex("glow_soft_a")
+	if soft != null:
+		draw_texture_rect(soft, Rect2(top - Vector2(cell * 0.9, cell * 0.62), Vector2(cell * 1.8, cell * 1.24)), false, Color(0.9, 0.93, 0.98, 0.9))
+	else:
+		draw_circle(top, cell * 0.55, Color(0.9, 0.93, 0.98, 0.7))
+	var smoke: Texture2D = Fx.tex("smoke_puff")
+	for index in 2:
+		var drift := sin(_anim_time * 0.45 + float(id) * 0.7 + index * 2.1) * cell * 0.12
+		var wide := cell * (0.95 + 0.25 * index)
+		var spot := top + Vector2(drift + (index - 0.5) * cell * 0.38, -cell * (0.12 + 0.14 * index))
+		if smoke != null:
+			draw_texture_rect(smoke, Rect2(spot - Vector2(wide / 2.0, wide * 0.42), Vector2(wide, wide * 0.84)), false, Color(1, 1, 1, 0.78))
+		else:
+			draw_circle(spot, wide * 0.35, Color(1, 1, 1, 0.5))
+
+
 func _cast_shadow(texture: Texture2D, foot: Vector2, wide: float, tall: float, flip: float = 1.0) -> void:
 	if GameData.low_gfx:
 		return
@@ -676,7 +705,7 @@ func _draw_glow() -> void:
 	# 칸마다의 잔잔한 효과
 	for id in game.nodes:
 		var spot := _center(int(id), layout) - lift
-		if not view.has_point(spot) or game.is_hidden(id):
+		if not view.has_point(spot) or game.is_hidden(id) or _view_fogged(int(id)):
 			continue
 		var beat := _anim_time + float(int(id) % 11) * 0.37
 		match str(game.nodes[id].get("type", "")):
@@ -919,6 +948,12 @@ func _draw() -> void:
 		_glow.queue_redraw()
 	if game == null or game.nodes.is_empty():
 		return
+	# 새 판이면 안개 기록을 비우고, 말이 지금 서 있는(내려앉는) 칸의 안개를 걷는다.
+	if _fog_for != game.get_instance_id():
+		_fog_for = game.get_instance_id()
+		_fog_shown = {}
+	for spot in shown_pos:
+		_fog_shown[int(spot)] = true
 	var font := get_theme_default_font()
 	var layout := _layout()
 	var cell: float = layout["cell"]
@@ -975,12 +1010,19 @@ func _draw() -> void:
 		var hex_name := "hidden" if game.is_hidden(id) else str(tile.get("type", ""))
 		if tile.get("type", "") == "attr":
 			hex_name = str(ATTR_ICONS.get(tile.get("attr", ""), ""))
+		# 갈림길 안쪽 칸은 말이 밟기 전까지 안개: 칸 그림·글자·아이콘 없이 회색 칸
+		var fogged := _view_fogged(int(id))
+		if fogged:
+			color = FOG_COLOR
+			label = ""
+			icon_name = ""
+			hex_name = ""
 		# 칸 그림이 있으면 그림 하나만 보여 준다(원작처럼 글자·작은 아이콘 없이).
 		if _draw_hex(rect.get_center(), half, cell, color, id in highlight, hex_name):
 			icon_name = ""
 			label = ""
 		var monster := -1
-		if not game.is_hidden(id) and tile.get("type", "") in ["battle", "ambush", "gate", "goal"]:
+		if not game.is_hidden(id) and not fogged and tile.get("type", "") in ["battle", "ambush", "gate", "goal"]:
 			monster = monster_kind(str(tile.get("type", "")), str(tile.get("name", "")))
 		if tile.get("type", "") == "gate" and not game.is_hidden(id):
 			# 관문: 돌기둥 두 개와 가로대. 내가(0번) 이미 뚫었으면 초록 가로대에 '통과', 적은 사라진다.
@@ -1027,7 +1069,9 @@ func _draw() -> void:
 			var icon_rect := Rect2(rect.position + Vector2((rect.size.x - icon_size) / 2.0, rect.size.y * -0.06 + bob),
 				Vector2(icon_size, icon_size))
 			draw_texture_rect(_icons[icon_name], icon_rect, false)
-		if not game.is_hidden(id):
+		if fogged:
+			_draw_fog(rect.get_center(), cell, int(id))
+		elif not game.is_hidden(id):
 			# 보물상자·거점 깃발·워프 문은 칸 위에 입체 물건으로 서 있다.
 			var topper_name: String = TOPPERS.get(str(tile.get("type", "")), "")
 			# 적 모형이 서 있는 칸에는 물건을 세우지 않는다(겹치지 않게).

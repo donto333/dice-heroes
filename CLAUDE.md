@@ -60,6 +60,7 @@
 - 전투: 이동해 온 쪽이 공격. 양쪽이 주사위를 굴려 합이 큰 쪽이 이김. 지면 직전 거점으로
 - 주사위 컨트롤: 굴리기 버튼을 꾹 눌러 낮게·높게를 노리면 35% 확률로 그쪽 눈 비율을 쓴다(`game.roll_move(aim)`, data/rules.json의 dice_control, 화면은 `scripts/ui/aim_bar.gd`). AI는 늘 높게 노린다
 - 관문(gate 칸, 강제 전투): 맵마다 큰길 28%·52%·76% 지점에 3개(tools/make_maps.py). 지나가다가도 멈춰 관문지기와 싸운다. 관문지기 주사위는 3·4·4개, 골의 수호자는 5개. 이기면 카드 1장, 그 플레이어는 그 관문을 다시 싸우지 않는다(`game.gates_cleared`). 지면 직전 거점으로 가고 관문지기 주사위가 1개 줄어든다(data/rules.json의 gate_weaken). 골의 수호자도 질 때마다 1개씩 줄되 goal_min_dice(3개)까지
+- 갈림길 안개(2026-11-16): 갈림길(다음 칸 2개 이상)에서 갈라진 두 길의 칸(다시 모이는 칸 앞까지)은 안개 칸(`game.fog`, `_setup_fog`)이다. 화면(`board_view.gd`의 `_view_fogged`·`_draw_fog`)은 말이 밟기 전까지 칸 그림·글자·바닥 효과·적·물건을 숨기고 회색 칸 위에 안개를 그린다. 규칙(칸 효과·전투)은 그대로이고 data/rules.json의 branch_fog로 끈다.
 - 시너지: 파티 세 명이 같은 분류면 결속(시작 게이지 +15%), 모두 다른 분류면 조화(부적). data/rules.json의 synergy, `Game.synergy_of`
 - 더블: 이동 주사위 2개 이상이 모두 같은 눈이면 어빌리티 게이지 +12%(data/rules.json의 double_gauge)
 - 따라잡기: 상대보다 10칸 이상 뒤처진 쪽은 이동 주사위에서 큰 눈이 더 잘 나온다(data/rules.json의 catchup_gap·catchup_move_weights). 전투 주사위는 그대로
