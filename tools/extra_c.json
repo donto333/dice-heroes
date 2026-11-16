@@ -1,0 +1,8 @@
+{"announcer_d": {"voice": "RlynaiseqcfHE3bZpqe4", "name": "D · Andy(라디오 진행자)", "tag": "라디오 진행자처럼 경쾌하고 또렷하게 외치며"},
+ "announcer_e": {"voice": "ykrB0QErM0FyPTtrQZFt", "name": "E · Hiscovery(웅장한 해설)", "tag": "웅장하고 묵직하게 선언하듯"},
+ "announcer_f": {"voice": "cCwaxHZZF7rVaQK2aOys", "name": "F · Mark(자신 있고 힘찬)", "tag": "격투 게임 아나운서처럼 짧고 강하게 외치며"},
+ "enemy_gate_d": {"voice": "LrQhxz410fuKCcLPDGHz", "name": "D · 관우", "tags": {"appear": "엄하고 굵게 호령하며", "win": "호통치며", "lose": "분하지만 인정하며"}},
+ "enemy_gate_e": {"voice": "bHnQ6ikU0Hwws51HQXJb", "name": "E · 패왕 무신2", "tags": {"appear": "굵은 목소리로 위협하며 외친다", "win": "호통치며", "lose": "분해서 신음하며"}},
+ "enemy_gate_f": {"voice": "UmYoqGlufKxhJ6NCx5Mv", "name": "F · Jang Ho(허스키한 노장)", "tags": {"appear": "거칠고 낮게 가로막으며", "win": "차갑게 내쫓으며", "lose": "숨을 몰아쉬며"}},
+ "lines": {"announcer": {"start": "게임 시작!", "turn": "내 차례!", "enemy_turn": "상대 차례!", "battle": "전투!", "double": "더블!", "gate": "관문 전투!", "goal": "골인!", "catchup": "따라잡기 찬스!", "last_turn": "마지막 턴!", "win": "승리!", "lose": "패배..."},
+  "enemy_gate": {"appear": "멈춰라! 이 관문은 아무도 못 지나간다!", "win": "썩 물러가라! 다시는 오지 마라!", "lose": "크윽... 좋다, 지나가거라."}}}

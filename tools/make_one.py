@@ -1,12 +1,17 @@
-"""안내·적 음성 B안: tools/extra_b.json을 v3 + 연기 지시로 만든다(out/b/<id>_<상황>.mp3)."""
+"""안내 음성·관문지기 새 후보(D·E·F): tools/extra_c.json을 v3 + 연기 지시로 만든다."""
 import json, os, time, urllib.request
 key = os.environ["ELEVENLABS_API_KEY"]
-table = json.load(open("tools/extra_b.json", encoding="utf-8"))
+table = json.load(open("tools/extra_c.json", encoding="utf-8"))
 os.makedirs("out/b", exist_ok=True)
 made = 0
 for who, spec in table.items():
-    for kind, text in spec["lines"].items():
+    if who == "lines":
+        continue
+    base = who.rsplit("_", 1)[0]
+    for kind, text in table["lines"][base].items():
         tag = spec.get("tags", {}).get(kind, spec.get("tag", ""))
+        if base == "announcer" and kind == "lose":
+            tag = "아쉬워하며 힘이 빠져서"
         body = json.dumps({"text": "[%s] %s" % (tag, text), "model_id": "eleven_v3", "voice_settings": {"stability": 0.5}}).encode()
         for attempt in range(4):
             try:
