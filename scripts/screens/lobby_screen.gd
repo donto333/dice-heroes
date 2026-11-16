@@ -555,10 +555,10 @@ func _adventure_tile() -> Button:
 func _chevron(parent: Control, color: Color, outline: Color) -> void:
 	var mark := _bold(">", 22, color, outline, 4, HORIZONTAL_ALIGNMENT_RIGHT)
 	_anchor(mark, 1.0, 1.0, 1.0, 1.0)
-	mark.offset_left = -30
-	mark.offset_right = -12
-	mark.offset_top = -34
-	mark.offset_bottom = -8
+	mark.offset_left = -38
+	mark.offset_right = -20
+	mark.offset_top = -40
+	mark.offset_bottom = -14
 	parent.add_child(mark)
 
 
