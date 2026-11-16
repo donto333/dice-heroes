@@ -32,8 +32,10 @@ def reset() -> None:
 	bpy.ops.wm.read_factory_settings(use_empty=True)
 	scene = bpy.context.scene
 	scene.render.engine = "CYCLES"
-	scene.cycles.samples = 24
-	scene.cycles.use_denoising = False
+	scene.cycles.samples = 32
+	# 잡티를 지워 또렷하게. 픽셀 필터를 좁혀 흐려지지 않게 한다.
+	scene.cycles.use_denoising = True
+	scene.cycles.filter_width = 1.0
 	scene.cycles.device = "CPU"
 	scene.render.film_transparent = True
 	scene.render.resolution_x = CELL
@@ -45,10 +47,10 @@ def reset() -> None:
 	world = bpy.data.worlds.new("World")
 	world.use_nodes = True
 	world.node_tree.nodes["Background"].inputs[0].default_value = (1, 1, 1, 1)
-	world.node_tree.nodes["Background"].inputs[1].default_value = 1.15
+	world.node_tree.nodes["Background"].inputs[1].default_value = 0.7
 	scene.world = world
 	sun = bpy.data.lights.new("Sun", "SUN")
-	sun.energy = 2.4
+	sun.energy = 3.2
 	sun.angle = math.radians(12)
 	lamp = bpy.data.objects.new("Sun", sun)
 	lamp.rotation_euler = (math.radians(50), 0, math.radians(35))
@@ -238,15 +240,20 @@ def shoot(path: Path) -> None:
 
 
 def join(paths: list, target: Path) -> None:
-	"""찍은 그림들을 가로로 이어 붙인다(블렌더 안의 그림 기능만 쓴다)."""
+	"""찍은 그림들을 6칸씩 줄지어 붙인다(블렌더 안의 그림 기능만 쓴다). 가로로만 이으면 휴대폰이 못 읽을 만큼 넓어진다."""
 	import numpy as np
-	sheet = np.zeros((CELL, CELL * len(paths), 4), dtype=np.float32)
+	columns = 6
+	rows = (len(paths) + columns - 1) // columns
+	sheet = np.zeros((CELL * rows, CELL * columns, 4), dtype=np.float32)
 	for index, path in enumerate(paths):
 		image = bpy.data.images.load(str(path))
 		pixels = np.array(image.pixels[:], dtype=np.float32).reshape(CELL, CELL, 4)
-		sheet[:, index * CELL:(index + 1) * CELL, :] = pixels
+		# 블렌더 그림은 아래 줄부터 센다. 첫 줄이 위에 오게 뒤집어 놓는다.
+		bottom = (rows - 1 - index // columns) * CELL
+		left = (index % columns) * CELL
+		sheet[bottom:bottom + CELL, left:left + CELL, :] = pixels
 		bpy.data.images.remove(image)
-	out = bpy.data.images.new("sheet", CELL * len(paths), CELL, alpha=True)
+	out = bpy.data.images.new("sheet", CELL * columns, CELL * rows, alpha=True)
 	out.pixels = sheet.ravel()
 	out.filepath_raw = str(target)
 	out.file_format = "PNG"
