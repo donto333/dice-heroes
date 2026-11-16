@@ -181,16 +181,18 @@ func _draw_skin(off: bool, down: bool, over: bool, r: float) -> bool:
 	var family := "btn"
 	if r >= minf(size.x, size.y) * 0.45 and aspect < 1.35:
 		family = "round"
-	elif aspect < 1.75:
+	elif aspect < 2.7:
+		# 짧은 버튼은 양 끝 장식이 글자를 가리므로 장식 없는 네모 그림을 쓴다.
 		family = "sq"
 	var texture: Texture2D = UiSkin.tex("%s_%s" % [family, tone])
 	if texture == null and family == "round":
 		texture = UiSkin.tex("round_blue")
 	if texture == null and family == "sq":
 		texture = UiSkin.tex("sq_blue")
+	if texture == null and family == "btn":
+		texture = UiSkin.tex("btn_blue")
 	if texture == null:
-		texture = UiSkin.tex("btn_%s" % tone)
-	if texture == null:
+		# 맞는 모양의 그림이 없으면 예전 도형 버튼으로 그린다(긴 버튼 그림을 억지로 구기지 않는다).
 		return false
 	# 가장 중요한 큰 금색 버튼(게임 시작 등)은 날개 장식이 달린 특별한 그림을 쓴다.
 	var fancy := family == "btn" and tone == "gold" and size.y >= 92.0 and aspect >= 2.2 and UiSkin.has("btn_start")

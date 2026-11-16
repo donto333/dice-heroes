@@ -22,6 +22,10 @@ func _init(text: String = "", font_size: int = 34, band: Color = Color("7a2fd0")
 	_label.add_theme_color_override("font_outline_color", band.darkened(0.7))
 	_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_label.offset_bottom = -6
+	if UiSkin.has("ribbon_violet"):
+		# 그림 리본은 위에 장식이 얹혀 띠가 조금 아래에 있다.
+		_label.offset_top = 12
+		_label.offset_bottom = 2
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_label)
 	custom_minimum_size = Vector2(0, font_size + 30.0)
@@ -38,7 +42,7 @@ func _draw() -> void:
 	var tone: String = {"gold": "gold", "red": "gold", "blue": "blue", "teal": "blue", "green": "blue"}.get(UiSkin.tone(color), "violet")
 	var art: Texture2D = UiSkin.tex("ribbon_" + tone)
 	if art != null:
-		UiSkin.draw_bar(get_canvas_item(), art, Rect2(0, -8, size.x, size.y + 12), 0.9, Color.WHITE, 0.34)
+		UiSkin.draw_bar(get_canvas_item(), art, Rect2(0, -8, size.x, size.y + 12), 0.9, Color.WHITE, 0.4)
 		return
 	var tail := minf(34.0, size.x * 0.08)
 	var band_height := size.y - 8.0

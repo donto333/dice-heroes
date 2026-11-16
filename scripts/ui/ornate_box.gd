@@ -12,6 +12,8 @@ var trim_width := 4.0
 var gems := true
 var gem_color := Color("7fe3ff")
 var shadow := true
+## 화려한 창틀(위·아래 가운데 장식)을 쓸지. 가운데 뜨는 창(dialog)만 켠다. 나머지 판은 얇은 금테 카드 틀.
+var grand := false
 var _rim := StyleBoxFlat.new()
 const UiSkin := preload("res://scripts/ui/skin.gd")
 
@@ -99,11 +101,11 @@ func _gem(item: RID, center: Vector2, size: float, color: Color) -> void:
 func _draw_skin(item: RID, rect: Rect2, r: float) -> bool:
 	var small := minf(rect.size.x, rect.size.y)
 	var golden := trim.s > 0.35 and trim.h > 0.07 and trim.h < 0.19
-	var big := gems and small >= 150.0 and rect.size.x >= 260.0
+	var big := grand and small >= 150.0 and rect.size.x >= 260.0
 	var name := ("win_navy" if golden else "win_violet") if big else ("card_navy" if golden else "card_violet")
 	if not UiSkin.has(name) or UiSkin.meta(name).is_empty():
 		return false
-	var scale := clampf(small / 420.0, 0.42, 0.8) if big else clampf(small / 150.0, 0.3, 0.62)
+	var scale := clampf(small / 420.0, 0.42, 0.8) if big else clampf(small / 170.0, 0.3, 0.8)
 	var edge := UiSkin.border(name) * scale
 	# 1) 그림자
 	if shadow:
