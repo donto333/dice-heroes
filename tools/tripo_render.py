@@ -262,7 +262,9 @@ def render_folder(folder: Path) -> None:
 		low, high = bounds()
 		print("RENDER", folder.name, "모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
-		view_angle = best_view(pivot, folder)
+		# 트리포는 넣어 준 그림을 '정면(90도)에서 본 모습'으로 삼아 모델을 만든다. 그래서 90도에서 찍으면 원래 그림과 같은 방향이 된다.
+		# (그림과 견줘 각도를 찾는 best_view는 10~40도씩 틀리는 일이 있어 쓰지 않는다.)
+		view_angle = math.radians(90.0)
 		shots = []
 		for step in range(8):
 			pivot.rotation_euler = (0, 0, math.radians(step * 45))
