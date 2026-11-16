@@ -5,6 +5,7 @@ extends Control
 
 const GameData := preload("res://scripts/game_data.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
+const Game := preload("res://scripts/rules/game.gd")
 const SaveStore := preload("res://scripts/save_store.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
 const Voice := preload("res://scripts/ui/voice.gd")
