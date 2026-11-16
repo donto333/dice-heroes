@@ -116,6 +116,19 @@ def run_job(job: dict, key: str) -> None:
 	folder.mkdir(parents=True, exist_ok=True)
 	tasks = {"model_task": job.get("model_task", ""), "rig_task": job.get("rig_task", ""), "anim_task": job.get("anim_task", "")}
 	print("== 주문:", name)
+	if job.get("local"):
+		# 트리포 웹에서 만들어 저장소에 넣어 둔 모델(뼈대·동작 포함): 그대로 찍을 자리에 복사한다.
+		import shutil
+		prepare_image(ROOT / job["image"], folder / "input.png")
+		shutil.copy(ROOT / job["local"], folder / "anim0.glb")
+		print("  저장소의 모델을 씀:", job["local"])
+		return
+	if job.get("files"):
+		# 트리포 웹에서 만든 모델: 내려받기 주소를 주문서에 적어 주면 그대로 받는다(API 크레딧을 쓰지 않는다).
+		prepare_image(ROOT / job["image"], folder / "input.png")
+		for target, url in job["files"].items():
+			download(url, folder / target)
+		return
 	# 주문한 그림은 늘 함께 둔다(블렌더가 찍을 방향을 정할 때 이 그림과 견준다).
 	prepared = folder / "input.png"
 	prepare_image(ROOT / job["image"], prepared)
