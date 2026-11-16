@@ -1,7 +1,7 @@
 extends StyleBox
 ## 그림으로 그리는 긴 막대 상자(진행 막대의 채움, 알약 칸 등). 양 끝은 그대로, 가운데만 늘린다.
 
-const Skin := preload("res://scripts/ui/skin.gd")
+const UiSkin := preload("res://scripts/ui/skin.gd")
 
 var art := ""
 var tint := Color.WHITE
@@ -12,7 +12,7 @@ var grow := 0.0
 
 
 func _draw(item: RID, rect: Rect2) -> void:
-	var texture: Texture2D = Skin.tex(art)
+	var texture: Texture2D = UiSkin.tex(art)
 	if texture == null or rect.size.x < 2.0 or rect.size.y < 2.0:
 		return
-	Skin.draw_bar(item, texture, rect.grow(grow), cap, tint)
+	UiSkin.draw_bar(item, texture, rect.grow(grow), cap, tint)

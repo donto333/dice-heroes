@@ -3,7 +3,7 @@ extends Control
 ## 단색 알약 상자 대신 써서 화면이 덜 밋밋해 보이게 한다.
 
 const OrnateBox := preload("res://scripts/ui/ornate_box.gd")
-const Skin := preload("res://scripts/ui/skin.gd")
+const UiSkin := preload("res://scripts/ui/skin.gd")
 
 var color := Color("7a2fd0")
 var _label: Label
@@ -35,10 +35,10 @@ func set_text(text: String) -> void:
 func _draw() -> void:
 	if size.x < 60.0:
 		return
-	var tone: String = {"gold": "gold", "red": "gold", "blue": "blue", "teal": "blue", "green": "blue"}.get(Skin.tone(color), "violet")
-	var art: Texture2D = Skin.tex("ribbon_" + tone)
+	var tone: String = {"gold": "gold", "red": "gold", "blue": "blue", "teal": "blue", "green": "blue"}.get(UiSkin.tone(color), "violet")
+	var art: Texture2D = UiSkin.tex("ribbon_" + tone)
 	if art != null:
-		Skin.draw_bar(get_canvas_item(), art, Rect2(0, -8, size.x, size.y + 12), 0.9, Color.WHITE, 0.34)
+		UiSkin.draw_bar(get_canvas_item(), art, Rect2(0, -8, size.x, size.y + 12), 0.9, Color.WHITE, 0.34)
 		return
 	var tail := minf(34.0, size.x * 0.08)
 	var band_height := size.y - 8.0

@@ -24,6 +24,10 @@ ICONS = ROOT / "assets" / "ui_icons"
 SIZES = {"btn": ("h", 150), "sq": ("h", 170), "round": ("h", 170), "win": ("w", 640), "card": ("h", 150),
 	"ribbon": ("h", 130), "ic": ("h", 176), "slot": ("h", 170)}
 OTHER = ("h", 150)
+## ic_ 그림 이름 → 게임 아이콘 이름(assets/ui_icons). 없는 이름은 그대로 쓴다.
+ICON_NAMES = {"rank": "league", "friends": "friend", "event": "gift", "attendance": "attend", "trophy_point": "crown"}
+## 작게 쓰는 재화 아이콘은 예전 단순한 그림이 더 잘 보여서 바꾸지 않는다.
+ICON_SKIP = {"gold", "gem", "star"}
 
 
 def cut_full(path: Path) -> Image.Image:
@@ -102,8 +106,9 @@ def main():
 			continue
 		image = cut_full(path)
 		if kind == "ic":
-			fit(image, SIZES["ic"]).save(ICONS / (name[3:] + ".png"), optimize=True)
-			count += 1
+			if name[3:] not in ICON_SKIP:
+				fit(image, SIZES["ic"]).save(ICONS / (ICON_NAMES.get(name[3:], name[3:]) + ".png"), optimize=True)
+				count += 1
 			continue
 		image = fit(image, SIZES.get(kind, OTHER))
 		entry = {"w": image.size[0], "h": image.size[1]}

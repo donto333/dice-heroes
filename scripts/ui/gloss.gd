@@ -4,7 +4,7 @@ extends Control
 ## 누르면 몸통이 아래로 내려가고, 꺼지면 회색이 된다. 색은 Kit.paint()가 정한다.
 
 const DISABLED := Color("7d8fa9")
-const Skin := preload("res://scripts/ui/skin.gd")
+const UiSkin := preload("res://scripts/ui/skin.gd")
 
 var color := Color("2fb457")
 var edge := Color("0e4a22")
@@ -176,26 +176,26 @@ func _draw() -> void:
 ## 그림 버튼(assets/ui_kit)으로 그린다. 그림이 없으면 false(예전 도형 그리기로).
 ## 길쭉하면 btn_색, 정사각형에 가까우면 sq_색, 동그란 버튼이면 round_색 그림을 쓴다.
 func _draw_skin(off: bool, down: bool, over: bool, r: float) -> bool:
-	var tone := "gray" if (off and not keep_color) else Skin.tone(color)
+	var tone := "gray" if (off and not keep_color) else UiSkin.tone(color)
 	var aspect := size.x / maxf(size.y, 1.0)
 	var family := "btn"
 	if r >= minf(size.x, size.y) * 0.45 and aspect < 1.35:
 		family = "round"
 	elif aspect < 1.75:
 		family = "sq"
-	var texture: Texture2D = Skin.tex("%s_%s" % [family, tone])
+	var texture: Texture2D = UiSkin.tex("%s_%s" % [family, tone])
 	if texture == null and family == "round":
-		texture = Skin.tex("round_blue")
+		texture = UiSkin.tex("round_blue")
 	if texture == null and family == "sq":
-		texture = Skin.tex("sq_blue")
+		texture = UiSkin.tex("sq_blue")
 	if texture == null:
-		texture = Skin.tex("btn_%s" % tone)
+		texture = UiSkin.tex("btn_%s" % tone)
 	if texture == null:
 		return false
 	# 가장 중요한 큰 금색 버튼(게임 시작 등)은 날개 장식이 달린 특별한 그림을 쓴다.
-	var fancy := family == "btn" and tone == "gold" and size.y >= 92.0 and aspect >= 2.2 and Skin.has("btn_start")
+	var fancy := family == "btn" and tone == "gold" and size.y >= 92.0 and aspect >= 2.2 and UiSkin.has("btn_start")
 	if fancy:
-		texture = Skin.tex("btn_start")
+		texture = UiSkin.tex("btn_start")
 	var tint := Color.WHITE
 	if off and keep_color:
 		tint = Color(0.55, 0.55, 0.6)
@@ -209,14 +209,14 @@ func _draw_skin(off: bool, down: bool, over: bool, r: float) -> bool:
 	var dest := Rect2(-2.0, -2.0 + sink, size.x + 4.0, size.y + 4.0)
 	var item := get_canvas_item()
 	if family == "btn":
-		Skin.draw_bar(item, texture, dest.grow(3.0) if fancy else dest, 0.82, tint, 0.2 if fancy else 0.0)
+		UiSkin.draw_bar(item, texture, dest.grow(3.0) if fancy else dest, 0.82, tint, 0.2 if fancy else 0.0)
 	else:
 		# 네모·동그라미: 귀퉁이는 그대로 두고 가운데만 늘린다(가로세로 비율이 달라도 테가 찌그러지지 않게).
 		var width := float(texture.get_width())
 		var height := float(texture.get_height())
 		var cut := minf(width, height) * 0.36
 		var ratio := minf(dest.size.x / width, dest.size.y / height)
-		Skin.draw_grid(item, texture, dest, [0.0, cut, width - cut, width], [false, true, false],
+		UiSkin.draw_grid(item, texture, dest, [0.0, cut, width - cut, width], [false, true, false],
 			[0.0, cut, height - cut, height], [false, true, false], ratio, tint)
 	if alert and not off:
 		var pulse := 0.5 + 0.5 * sin(_time * 5.0)

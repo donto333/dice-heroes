@@ -13,7 +13,7 @@ var gems := true
 var gem_color := Color("7fe3ff")
 var shadow := true
 var _rim := StyleBoxFlat.new()
-const Skin := preload("res://scripts/ui/skin.gd")
+const UiSkin := preload("res://scripts/ui/skin.gd")
 
 
 ## 둥근 사각형의 테두리 점들(시계 방향). inset만큼 안쪽으로 들어간다.
@@ -101,10 +101,10 @@ func _draw_skin(item: RID, rect: Rect2, r: float) -> bool:
 	var golden := trim.s > 0.35 and trim.h > 0.07 and trim.h < 0.19
 	var big := gems and small >= 150.0 and rect.size.x >= 260.0
 	var name := ("win_navy" if golden else "win_violet") if big else ("card_navy" if golden else "card_violet")
-	if not Skin.has(name) or Skin.meta(name).is_empty():
+	if not UiSkin.has(name) or UiSkin.meta(name).is_empty():
 		return false
 	var scale := clampf(small / 420.0, 0.42, 0.8) if big else clampf(small / 150.0, 0.3, 0.62)
-	var edge := Skin.border(name) * scale
+	var edge := UiSkin.border(name) * scale
 	# 1) 그림자
 	if shadow:
 		_rim.bg_color = Color(0, 0, 0, 0.0)
@@ -126,5 +126,5 @@ func _draw_skin(item: RID, rect: Rect2, r: float) -> bool:
 	if not golden:
 		var metal := trim.lightened(0.25)
 		tint = Color(metal.r, metal.g, metal.b, tint.a)
-	Skin.draw_frame(item, name, rect, scale, 0.46 if big else 0.0, tint)
+	UiSkin.draw_frame(item, name, rect, scale, 0.46 if big else 0.0, tint)
 	return true
