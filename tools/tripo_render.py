@@ -87,6 +87,29 @@ def make_camera(low: Vector, high: Vector):
 	return pivot
 
 
+def calibrate(camera, folder: Path) -> None:
+	"""한 장을 찍어 보고, 실제로 그려진 모습이 칸 가운데에 키 62.5%로 오도록 카메라를 옮기고 맞춘다.
+	(뼈대가 든 모델은 블렌더가 알려 주는 크기가 실제와 달라서, 찍힌 그림으로 직접 잰다.)"""
+	import numpy as np
+	path = folder / "calibrate.png"
+	shoot(path)
+	image = bpy.data.images.load(str(path))
+	alpha = np.array(image.pixels[:], dtype=np.float32).reshape(CELL, CELL, 4)[:, :, 3] > 0.2
+	bpy.data.images.remove(image)
+	path.unlink()
+	rows = np.where(alpha.any(axis=1))[0]
+	cols = np.where(alpha.any(axis=0))[0]
+	if len(rows) == 0:
+		return
+	unit = camera.data.ortho_scale / CELL
+	# 블렌더 그림의 줄은 아래에서 위로 센다.
+	shift_x = ((cols[0] + cols[-1]) * 0.5 - CELL * 0.5) * unit
+	shift_y = ((rows[0] + rows[-1]) * 0.5 - CELL * 0.5) * unit
+	camera.location = camera.location + camera.matrix_basis.to_3x3() @ Vector((shift_x, shift_y, 0.0))
+	camera.data.ortho_scale = (rows[-1] - rows[0] + 1) * unit / 0.625
+	print("RENDER 맞춤: 키", round((rows[-1] - rows[0] + 1) * unit, 3), "옮김", round(shift_x, 3), round(shift_y, 3))
+
+
 def shoot(path: Path) -> None:
 	bpy.context.scene.render.filepath = str(path)
 	bpy.ops.render.render(write_still=True)
@@ -144,6 +167,11 @@ def render_folder(folder: Path) -> None:
 		low, high = bounds()
 		print("RENDER", folder.name, "동작 모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
+		# 정면에서 35도 돌린 방향으로 놓고, 가만히 선 자세로 카메라를 맞춘다. 한 번은 대충, 한 번은 정확히.
+		pivot.rotation_euler = (0, 0, math.radians(FACING))
+		scene.camera.data.ortho_scale *= 1.5
+		calibrate(scene.camera, out)
+		calibrate(scene.camera, out)
 		for action in actions:
 			for rig in rigs:
 				if rig.animation_data is None:
@@ -155,7 +183,6 @@ def render_folder(folder: Path) -> None:
 			label = "".join(ch if ch.isalnum() else "_" for ch in action.name.lower())[:24]
 			kind = action.name.split("_")[0].lower()
 			# 정면에서 35도 돌린 비스듬한 앞모습 한 방향만 찍는다(반대 방향은 게임이 뒤집어 그린다).
-			pivot.rotation_euler = (0, 0, math.radians(FACING))
 			shots = []
 			for index in range(FRAMES):
 				scene.frame_set(int(round(start + (end - start) * index / FRAMES)))
