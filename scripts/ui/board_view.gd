@@ -112,6 +112,8 @@ var piece_standees: Array = [null, null]
 var party_standees: Array = [[], []]
 ## 선봉의 움직이는 모형(GameData.standee_anims). 있으면 서 있을 때 숨 쉬고, 이동할 때 걷는다.
 var piece_anims: Array = [{}, {}]
+## 함께 다니는 파티원 두 명의 움직이는 모형(없으면 빈 사전)
+var party_anims: Array = [[], []]
 ## 움직이는 모형 한 장의 칸 수, 그림에서 캐릭터 키가 차지하는 비율, 발이 놓인 높이(위에서부터)
 const ANIM_FRAMES := 12
 const ANIM_BODY := 0.625
@@ -806,7 +808,18 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 				delay = -sin(clampf(hop_t - 0.18 * (follow_index + 1), 0.0, 1.0) * PI) * cell * HOP_HEIGHT * 0.8 + lift
 			var spot := base + Vector2(side * cell * 0.3 - facing * cell * 0.1, -cell * 0.13 + delay)
 			draw_set_transform(spot, 0.0, Vector2(facing, 1.0))
-			draw_texture_rect(follower, Rect2(-small_width / 2.0, -small_height, small_width, small_height), false, Color(0.9, 0.9, 0.95))
+			var follow_anims: Dictionary = {}
+			if player_index < party_anims.size() and follow_index < party_anims[player_index].size():
+				follow_anims = party_anims[player_index][follow_index]
+			var follow_sheet: Texture2D = follow_anims.get("walk" if hop_t >= 0.0 else "idle", follow_anims.get("idle"))
+			if follow_sheet != null:
+				var follow_frame := int(_anim_time * (16.0 if hop_t >= 0.0 else 6.0) + follow_index * 4 + 2) % ANIM_FRAMES
+				var follow_size := float(follow_sheet.get_height())
+				var follow_box := small_height * 1.08 / ANIM_BODY
+				draw_texture_rect_region(follow_sheet, Rect2(-follow_box / 2.0, -follow_box * ANIM_FOOT, follow_box, follow_box),
+					Rect2(follow_frame * follow_size, 0, follow_size, follow_size), Color(0.9, 0.9, 0.95))
+			else:
+				draw_texture_rect(follower, Rect2(-small_width / 2.0, -small_height, small_width, small_height), false, Color(0.9, 0.9, 0.95))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if flinging:
 		# 빙글빙글 돌며 날아간다.
