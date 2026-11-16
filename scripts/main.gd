@@ -39,7 +39,7 @@ const SCREEN_MOODS := {
 	"settings": Color("1a6470"), "adventure": Color("2c6a3c"), "pass": Color("7a2a6a"), "help": Color("1a6470"),
 }
 const RotateGuard := preload("res://scripts/ui/rotate_guard.gd")
-const VERSION := "0.20.2"
+const VERSION := "0.20.3"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -63,6 +63,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# 화면은 1초에 60번까지만 그린다. 144Hz 같은 빠른 모니터에서 쓸데없이 2배 넘게 그려 느려지는 것을 막는다.
 	Engine.max_fps = 60
+	set_process(true)
 	_setup_font()
 	rng.randomize()
 	data = GameData.load_all()
@@ -169,17 +170,62 @@ func load_profile() -> void:
 	if not profile.is_empty():
 		Profile.repair(profile, eco)
 		Profile.ensure_daily(profile, today())
+	apply_gfx()
 
 
 func create_profile(nickname: String) -> void:
 	profile = Profile.new_profile(Profile.clean_nickname(nickname), eco)
 	Profile.ensure_daily(profile, today())
 	save()
+	apply_gfx()
 
 
 func reset_profile() -> void:
 	SaveStore.erase()
 	profile = {}
+
+
+# ---------------------------------------------------------------- 저사양 모드
+
+func low_gfx_on() -> bool:
+	return has_profile() and bool(profile.get("settings", {}).get("low_gfx", false))
+
+
+func set_low_gfx(on: bool) -> void:
+	if not has_profile():
+		return
+	profile["settings"]["low_gfx"] = on
+	save()
+	apply_gfx()
+
+
+## 설정을 실제로 적용한다: 저사양이면 1초 30번까지만 그리고, 그림 부품들이 GameData.low_gfx를 보고 무거운 효과를 끈다.
+func apply_gfx() -> void:
+	GameData.low_gfx = low_gfx_on()
+	Engine.max_fps = 30 if GameData.low_gfx else 60
+
+
+var _perf_time := 0.0
+var _perf_frames := 0
+
+
+## 대전 중에 5초 동안 평균 1초 32번도 못 그리면(그래픽카드가 약한 기기) 저사양 모드를 저절로 켠다.
+## 사용자가 설정에서 직접 켜거나 끈 적이 있으면(settings에 low_gfx가 있으면) 건드리지 않는다.
+func _process(delta: float) -> void:
+	if instant or GameData.low_gfx or current_name != "match" or not has_profile() or profile.get("settings", {}).has("low_gfx"):
+		_perf_time = 0.0
+		_perf_frames = 0
+		return
+	_perf_time += delta
+	_perf_frames += 1
+	if _perf_time < 5.0:
+		return
+	var fps := float(_perf_frames) / _perf_time
+	_perf_time = 0.0
+	_perf_frames = 0
+	if fps < 32.0:
+		set_low_gfx(true)
+		toast("화면이 버벅여서 저사양 모드를 켰어요. 설정에서 끌 수 있어요.")
 
 
 func save() -> void:

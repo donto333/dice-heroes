@@ -38,6 +38,7 @@
 - 글꼴은 한글 부분집합이라 없는 기호가 있다(예: ◆). 새 기호를 쓰면 tests의 글꼴 검사(`_test_font_coverage`)가 잡는다.
 - 기다림 화면: `scripts/ui/loading_overlay.gd`. 큰 전환(게임 진입, 접속, 대전 준비, 소환)은 `app.go_loading()`·`app.wait_loading()`을 쓰고, 나머지 `app.go()`는 짧게 스르륵 나타난다. 자동 사진 도구는 `app.instant = true`로 모두 건너뛴다.
 - 배포 주소(2026-11-16): main에 합쳐지면 GitHub Pages(https://donto333.github.io/dice-heroes/)와 Cloudflare Pages(https://dice-heroes.pages.dev, `build.yml`의 deploy-cloudflare)에 함께 올라간다. Cloudflare는 저장소 비밀값 `CLOUDFLARE_API_TOKEN`(Cloudflare Pages 편집 권한)·`CLOUDFLARE_ACCOUNT_ID`가 있어야 돌고, 없으면 건너뛴다.
+- 성능(2026-11-16): 화면은 1초 60번까지(`Engine.max_fps`), 대전 판은 말이 가만히 있으면 1초 30번만 다시 그린다(`board_view.gd`의 IDLE_FRAME_TIME). 저사양 모드(`GameData.low_gfx`, 설정의 '저사양 모드', `app.set_low_gfx`/`apply_gfx`)는 30fps 제한·판 15번·그림자(`_cast_shadow`)·꾸밈 모형(`_draw_props`)·빛 층(`_draw_glow`)·칸 그림자·떠다니는 빛(ambience)·버튼 훑는 빛(sweep)을 끈다. 대전 중 5초 평균이 1초 32번 미만이면 저절로 켜진다(사용자가 설정에서 직접 고른 적이 있으면 안 건드림).
 - 저장은 `scripts/save_store.gd`(기기 안 user://). 온라인 서버(Nakama)는 아직 없음.
 - 보드 바탕 지형·꾸밈 그림은 `tools/make_terrain.py`로 만든다(assets/terrain, 직접 그린 도트). 키퍼·습격·골 칸 위에 서 있는 적 그림(monsters.png, 7종)도 같은 도구로 만들고, 이름의 낱말로 종류를 고른다(`board_view.gd`의 MONSTER_KINDS). 칸은 두께 있는 육각형으로 그린다(scripts/ui/board_view.gd).
 - 화면 확인은 CI의 `tools/capture.gd` 자동 사진(로그에 base64로 남음).
