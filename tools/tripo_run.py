@@ -116,9 +116,10 @@ def run_job(job: dict, key: str) -> None:
 	folder.mkdir(parents=True, exist_ok=True)
 	tasks = {"model_task": job.get("model_task", ""), "rig_task": job.get("rig_task", ""), "anim_task": job.get("anim_task", "")}
 	print("== 주문:", name)
+	# 주문한 그림은 늘 함께 둔다(블렌더가 찍을 방향을 정할 때 이 그림과 견준다).
+	prepared = folder / "input.png"
+	prepare_image(ROOT / job["image"], prepared)
 	if not tasks["model_task"]:
-		prepared = folder / "input.png"
-		prepare_image(ROOT / job["image"], prepared)
 		with open(prepared, "rb") as handle:
 			if V2:
 				uploaded = call("POST", "/upload/sts", key, files={"file": ("input.png", handle, "image/png")})
