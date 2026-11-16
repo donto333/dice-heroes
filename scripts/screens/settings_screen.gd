@@ -103,6 +103,17 @@ func setup(main_app, _params: Dictionary) -> void:
 	full_toggle.custom_minimum_size = Vector2(150, 64)
 	full_toggle.pressed.connect(_on_fullscreen)
 	full_row.add_child(full_toggle)
+	var low_row := Kit.hbox(10)
+	play_column.add_child(low_row)
+	var low_text := Kit.vbox(0)
+	low_row.add_child(Kit.expand(low_text))
+	low_text.add_child(Kit.label("저사양 모드", 26))
+	low_text.add_child(Kit.para("그래픽카드가 약한 PC·휴대폰에서 그림자·꾸밈 모형·빛 효과를 줄여 가볍게 해요.", 18))
+	var low_on: bool = app.low_gfx_on()
+	var low_toggle := Kit.button("켜짐" if low_on else "꺼짐", Kit.GOOD if low_on else Kit.PANEL_LIGHT, 24, 64)
+	low_toggle.custom_minimum_size = Vector2(150, 64)
+	low_toggle.pressed.connect(_on_low_gfx)
+	low_row.add_child(low_toggle)
 	var hint_row := Kit.hbox(10)
 	play_column.add_child(hint_row)
 	hint_row.add_child(Kit.expand(Kit.para("첫 판 안내 말풍선을 처음부터 다시 볼 수 있어요.", 20)))
@@ -231,6 +242,12 @@ func _on_music() -> void:
 func _on_fast() -> void:
 	app.profile["settings"]["fast"] = not bool(app.profile["settings"].get("fast", false))
 	app.save()
+	app.play("click")
+	app.go("settings")
+
+
+func _on_low_gfx() -> void:
+	app.set_low_gfx(not app.low_gfx_on())
 	app.play("click")
 	app.go("settings")
 

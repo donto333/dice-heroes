@@ -1,4 +1,6 @@
 extends Control
+
+const GameData := preload("res://scripts/game_data.gd")
 ## 큰 버튼 위를 몇 초마다 비스듬히 훑고 지나가는 흰 빛. "눌러 보세요" 하는 느낌을 준다.
 ## 버튼 안쪽에 붙고 입력은 받지 않는다. Kit.shimmer()가 붙인다.
 
@@ -23,6 +25,8 @@ func _init() -> void:
 
 
 func _process(delta: float) -> void:
+	if GameData.low_gfx:
+		return
 	_time += delta
 	var phase := fposmod(_time + offset, period)
 	if phase <= travel + 0.05:

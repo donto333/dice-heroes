@@ -68,6 +68,9 @@ static func load_all() -> Dictionary:
 
 const PORTRAIT_PATH := "res://assets/portraits/%s.jpg"
 
+## 저사양 모드(그래픽카드가 약한 기기): 그림자·꾸밈 모형·빛 효과·떠다니는 빛을 끄고 덜 자주 그린다.
+## main.gd의 apply_gfx()가 설정에 맞춰 바꾼다.
+static var low_gfx := false
 static var _portraits: Dictionary = {}
 
 

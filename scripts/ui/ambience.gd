@@ -3,6 +3,7 @@ extends Control
 ## 그림만 그리고 입력은 받지 않는다. Kit.backdrop()이 바탕 그림 위에 자동으로 붙인다.
 
 const Fx := preload("res://scripts/ui/fx.gd")
+const GameData := preload("res://scripts/game_data.gd")
 
 ## 알갱이 개수
 var count := 26
@@ -38,6 +39,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# 저사양 모드에서는 떠다니는 빛을 끈다.
+	visible = not GameData.low_gfx
+	if not visible:
+		return
 	_time += delta
 	queue_redraw()
 

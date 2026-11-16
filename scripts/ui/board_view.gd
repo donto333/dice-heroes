@@ -132,6 +132,8 @@ var active_player := -1
 var _anim_time := 0.0
 ## 가만히 있을 때 다시 그리는 간격(초)과 쌓인 시간
 const IDLE_FRAME_TIME := 1.0 / 30.0
+## 저사양 모드에서는 1초에 15번
+const IDLE_FRAME_TIME_LOW := 1.0 / 15.0
 var _idle_redraw := 0.0
 ## 통통 튀는 이동: 말마다 {"from": 칸 id, "t": 0~1}. 없으면 멈춰 있는 것.
 var _hops: Dictionary = {}
@@ -263,7 +265,7 @@ func _process(delta: float) -> void:
 		# 판 전체(칸 약 120개)를 매 화면마다 다시 그리면 무거워서 게임이 느려졌다(특히 144Hz 모니터).
 		# 말이 뛰거나 카메라가 움직일 때는 아래에서 매 화면 다시 그리므로 부드러움은 그대로다.
 		_idle_redraw += delta
-		if _idle_redraw >= IDLE_FRAME_TIME:
+		if _idle_redraw >= (IDLE_FRAME_TIME_LOW if GameData.low_gfx else IDLE_FRAME_TIME):
 			_idle_redraw = 0.0
 			queue_redraw()
 	for player_index in _hops.keys():
@@ -462,7 +464,8 @@ func _load_terrain(name: String) -> void:
 ## 칸이 없는 빈자리에 나무·탑·바위 같은 입체 꾸밈 모형을 세운다. 자리와 종류는 좌표로 정해져 늘 같다.
 ## 바로 위에 칸이 있는 자리는 비워 둔다(칸을 가리지 않게).
 func _draw_props(layout: Dictionary) -> void:
-	if _props.is_empty():
+	# 저사양 모드에서는 빈 자리의 꾸밈 모형(나무·집·바위)을 그리지 않는다.
+	if _props.is_empty() or GameData.low_gfx:
 		return
 	var cell: float = layout["cell"]
 	var origin: Vector2 = layout["origin"]
@@ -514,6 +517,8 @@ func _draw_decorations(layout: Dictionary) -> void:
 
 ## 서 있는 그림이 바닥에 드리우는 그림자: 같은 그림을 검게, 오른쪽으로 눕혀서 그린다(빛은 왼쪽 위).
 func _cast_shadow(texture: Texture2D, foot: Vector2, wide: float, tall: float, flip: float = 1.0) -> void:
+	if GameData.low_gfx:
+		return
 	draw_set_transform_matrix(Transform2D(Vector2(flip, 0.0), Vector2(-0.55, 0.3), foot))
 	draw_texture_rect(texture, Rect2(-wide / 2.0, -tall, wide, tall), false, Color(0, 0, 0, 0.3))
 	draw_set_transform_matrix(Transform2D.IDENTITY)
@@ -539,8 +544,9 @@ func _draw_hex(center: Vector2, _half: Vector2, cell: float, color: Color, lit: 
 	var low := _hex_points(top_center + Vector2(0, depth), width, height)
 	# 바닥에 드리운 그림자: 빛이 왼쪽 위에서 오므로 오른쪽 아래로 길게, 두 겹으로 부드럽게.
 	var shade_center := top_center + Vector2(cell * 0.07, depth + cell * 0.1)
-	draw_colored_polygon(_hex_points(shade_center, width * 1.14, height * 1.14), Color(0, 0, 0, 0.14))
-	draw_colored_polygon(_hex_points(shade_center, width * 1.04, height * 1.04), Color(0, 0, 0, 0.24))
+	if not GameData.low_gfx:
+		draw_colored_polygon(_hex_points(shade_center, width * 1.14, height * 1.14), Color(0, 0, 0, 0.14))
+		draw_colored_polygon(_hex_points(shade_center, width * 1.04, height * 1.04), Color(0, 0, 0, 0.24))
 	# 옆면 세 쪽: 왼쪽이 가장 밝고 오른쪽이 가장 어두워 덩어리가 느껴진다.
 	draw_colored_polygon(PackedVector2Array([top[0], top[5], low[5], low[0]]), color.darkened(0.38))
 	draw_colored_polygon(PackedVector2Array([top[5], top[4], low[4], low[5]]), color.darkened(0.52))
@@ -659,6 +665,8 @@ func _glow_sprite(name: String, center: Vector2, wide: float, tint: Color, turn:
 
 ## 빛나는 판 효과: 차례인 말 발밑의 마법진, 칸의 소용돌이·반짝임·저주 연기, 착지 충격 고리, 스킬 빛기둥.
 func _draw_glow() -> void:
+	if GameData.low_gfx:
+		return
 	if game == null or shown_pos.is_empty() or Fx.tex("ring_shock") == null:
 		return
 	var layout := _layout()
