@@ -16,6 +16,13 @@ ARGS = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 SOURCE = Path(ARGS[0]) if ARGS else Path("out/tripo")
 CELL = int(ARGS[1]) if len(ARGS) > 1 else 256
 FRAMES = 12
+VIEWS = {}
+try:
+	import json
+	for job in json.loads((Path(__file__).resolve().parent.parent / "tripo" / "jobs.json").read_text())["jobs"]:
+		VIEWS[job["name"]] = job.get("view", 90.0)
+except Exception as error:
+	print("RENDER 주문서를 못 읽음", error)
 ELEVATION = math.radians(16.0)
 ## 카메라를 돌리는 각도. 90도가 정면이고, 55도는 오른쪽을 보는 비스듬한 앞모습.
 FACING = 55.0
@@ -262,9 +269,9 @@ def render_folder(folder: Path) -> None:
 		low, high = bounds()
 		print("RENDER", folder.name, "모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
-		# 트리포는 넣어 준 그림을 '정면(90도)에서 본 모습'으로 삼아 모델을 만든다. 그래서 90도에서 찍으면 원래 그림과 같은 방향이 된다.
-		# (그림과 견줘 각도를 찾는 best_view는 10~40도씩 틀리는 일이 있어 쓰지 않는다.)
-		view_angle = math.radians(90.0)
+		# 찍는 방향: 주문서(tripo/jobs.json)의 view 각도. 90도가 트리포가 정한 정면이고, 영웅마다 원래 그림처럼
+		# 비스듬한 앞모습이 되도록 눈으로 보고 정해 둔다(자세가 비대칭인 모델은 정면이 꽤 틀어져 있다).
+		view_angle = math.radians(float(VIEWS.get(folder.name, 90.0)))
 		shots = []
 		for step in range(8):
 			pivot.rotation_euler = (0, 0, math.radians(step * 45))
