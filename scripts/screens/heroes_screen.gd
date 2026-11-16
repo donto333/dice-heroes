@@ -6,6 +6,7 @@ const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 
 const STAT_NAMES := [["move", "이동"], ["attack", "공격"], ["defense", "방어"], ["intellect", "지력"]]
@@ -126,13 +127,32 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	button.add_theme_stylebox_override("pressed", Kit.box(Color("0f3d85"), Color.WHITE, 3, 12, 0))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.pressed.connect(_on_hero.bind(id))
+	var frame_tex := MenuArt.tex("hero_card")
+	if frame_tex != null:
+		# 금테 카드 틀(위 보석 장식). 등급 색 테두리 대신 틀을 덮고, 없는 영웅은 어둡게.
+		for state in ["normal", "hover", "pressed"]:
+			var fill := Kit.box(Color("0f3d85") if state != "hover" else Color("1a4fa0"), Color.TRANSPARENT, 0, 10, 0)
+			fill.expand_margin_left = -6
+			fill.expand_margin_right = -6
+			fill.expand_margin_top = -10
+			fill.expand_margin_bottom = -8
+			button.add_theme_stylebox_override(state, fill)
+		var frame := TextureRect.new()
+		frame.texture = frame_tex
+		frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		frame.stretch_mode = TextureRect.STRETCH_SCALE
+		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		frame.modulate = Color.WHITE if owned else Color(0.6, 0.62, 0.72)
+		button.add_child(frame)
 	var column := Kit.vbox(2)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	column.offset_left = 4
-	column.offset_right = -4
-	column.offset_top = 4
-	column.offset_bottom = -4
+	var inset := 4 if frame_tex == null else 9
+	column.offset_left = inset
+	column.offset_right = -inset
+	column.offset_top = inset + (6 if frame_tex != null else 0)
+	column.offset_bottom = -inset
 	button.add_child(column)
 	var face := Portrait.new()
 	face.custom_minimum_size = Vector2(0, 138)
