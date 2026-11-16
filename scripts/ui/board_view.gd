@@ -118,6 +118,17 @@ var party_anims: Array = [[], []]
 const ANIM_FRAMES := 12
 const ANIM_BODY := 0.625
 const ANIM_FOOT := 0.8125
+## 움직이는 그림 한 장에서 한 줄에 놓인 칸 수(6칸씩 두 줄). 예전 그림은 12칸 한 줄이다.
+const ANIM_COLUMNS := 6
+
+
+## 움직이는 그림에서 frame번째 칸의 자리. 한 줄짜리 예전 그림과 두 줄짜리 새 그림을 모두 읽는다.
+func _anim_region(sheet: Texture2D, frame: int) -> Rect2:
+	var sheet_size := sheet.get_size()
+	if sheet_size.x >= sheet_size.y * float(ANIM_FRAMES) - 0.5:
+		return Rect2(frame * sheet_size.y, 0, sheet_size.y, sheet_size.y)
+	var cell_size := sheet_size.x / float(ANIM_COLUMNS)
+	return Rect2((frame % ANIM_COLUMNS) * cell_size, floorf(float(frame) / float(ANIM_COLUMNS)) * cell_size, cell_size, cell_size)
 ## 말이 보는 방향(1 오른쪽, -1 왼쪽). 움직인 쪽을 본다.
 var _facing: Array = [1.0, 1.0]
 ## 착지 직후 눌렸다 펴지는 정도(말마다 0~1, 시간이 지나면 0으로)
@@ -858,10 +869,9 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 			var follow_sheet: Texture2D = follow_anims.get("walk" if hop_t >= 0.0 else "idle", follow_anims.get("idle"))
 			if follow_sheet != null:
 				var follow_frame := int(_anim_time * (16.0 if hop_t >= 0.0 else 6.0) + follow_index * 4 + 2) % ANIM_FRAMES
-				var follow_size := float(follow_sheet.get_height())
 				var follow_box := small_height * 1.08 / ANIM_BODY
 				draw_texture_rect_region(follow_sheet, Rect2(-follow_box / 2.0, -follow_box * ANIM_FOOT, follow_box, follow_box),
-					Rect2(follow_frame * follow_size, 0, follow_size, follow_size), Color(0.9, 0.9, 0.95))
+					_anim_region(follow_sheet, follow_frame), Color(0.9, 0.9, 0.95))
 			else:
 				draw_texture_rect(follower, Rect2(-small_width / 2.0, -small_height, small_width, small_height), false, Color(0.9, 0.9, 0.95))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -876,10 +886,9 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 			# 움직이는 모형: 이동 중에는 걷는 그림을 빠르게, 서 있을 때는 숨 쉬는 그림을 천천히 넘긴다. 통통 튀는 늘림은 쓰지 않는다.
 			var speed := 16.0 if hop_t >= 0.0 else 6.0
 			var frame := int(_anim_time * speed + player_index * 5) % ANIM_FRAMES
-			var frame_size := float(sheet.get_height())
 			var box := height * 1.08 / ANIM_BODY
 			draw_set_transform(base, 0.0, Vector2(facing, 1.0))
-			draw_texture_rect_region(sheet, Rect2(-box / 2.0, -box * ANIM_FOOT, box, box), Rect2(frame * frame_size, 0, frame_size, frame_size))
+			draw_texture_rect_region(sheet, Rect2(-box / 2.0, -box * ANIM_FOOT, box, box), _anim_region(sheet, frame))
 		else:
 			draw_set_transform(base, 0.0, Vector2(stretch.x * facing, stretch.y))
 			draw_texture_rect(texture, Rect2(-width / 2.0, -height, width, height), false)
