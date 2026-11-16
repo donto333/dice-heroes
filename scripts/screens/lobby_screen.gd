@@ -13,6 +13,8 @@ const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const RouletteWheel := preload("res://scripts/ui/roulette_wheel.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const LOBBY_ART := "res://assets/ui_lobby/"
+## 로비 그림이 화면보다 몇 배로 저장됐나의 거꾸로(2배 → 0.5)
+const SLICE_SCALE := 0.5
 
 const SLOT_NAMES := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
 
@@ -115,6 +117,11 @@ func _slice(name: String, margin: int, fallback: Color) -> Control:
 		panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		return panel
+	# 로비 그림은 화면 크기의 약 2배로 저장돼 있다. 조각 판을 그대로 쓰면 모서리가 2배로 커져서
+	# 작은 띠(높이 < 모서리×2)에서는 그림이 밖으로 삐져나온다. 그래서 2배 크기 판을 0.5배로 줄여 그린다.
+	var wrap := Control.new()
+	wrap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var patch := NinePatchRect.new()
 	patch.texture = tex
 	patch.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -122,9 +129,11 @@ func _slice(name: String, margin: int, fallback: Color) -> Control:
 	patch.patch_margin_right = margin
 	patch.patch_margin_top = margin
 	patch.patch_margin_bottom = margin
-	patch.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	patch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return patch
+	patch.scale = Vector2.ONE * SLICE_SCALE
+	wrap.add_child(patch)
+	wrap.resized.connect(func() -> void: patch.size = wrap.size / SLICE_SCALE)
+	return wrap
 
 
 ## 그림 몸통을 가진 버튼. 몸통은 art(늘어나는 그림) 또는 slice(가운데만 늘어남). 누르면 살짝 줄어든다.
@@ -324,7 +333,7 @@ func _add_top_bar() -> void:
 	# 띠 그림과 버튼의 가로세로 비율이 같아서(약 5.2:1) 조각내지 않고 통째로 늘린다(메달이 찌그러지지 않게).
 	var profile_art := _picture("plate_profile")
 	var who := _art_button(profile_art if profile_art != null else _slice("", 0, Color("1a3f8f")))
-	who.custom_minimum_size = Vector2(300, 58)
+	who.custom_minimum_size = Vector2(290, 56)
 	who.pressed.connect(app.show_profile)
 	bar.add_child(who)
 	var medal := _bold(str(int(profile["level"])), 24, Color.WHITE, Color("12264d"), 6, HORIZONTAL_ALIGNMENT_CENTER)
@@ -338,12 +347,14 @@ func _add_top_bar() -> void:
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	names.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anchor(names, 0.0, 0.0, 1.0, 1.0)
-	names.offset_left = 74
-	names.offset_right = -14
+	names.offset_left = 70
+	names.offset_right = -16
+	names.offset_top = 7
+	names.offset_bottom = -7
 	who.add_child(names)
-	names.add_child(_bold(str(profile["nickname"]), 21, Color.WHITE, Color("0b1f4d"), 5))
+	names.add_child(_bold(str(profile["nickname"]), 19, Color.WHITE, Color("0b1f4d"), 5))
 	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
-	names.add_child(_bold("%s · 리그 %d위" % [tier["name"], Profile.league_rank(profile, app.eco)], 14, Kit.GOLD, Color("0b1f4d"), 4))
+	names.add_child(_bold("%s · 리그 %d위" % [tier["name"], Profile.league_rank(profile, app.eco)], 13, Kit.GOLD, Color("0b1f4d"), 4))
 
 	# 시스템 버튼: 아이콘 아래에 이름을 적는다(기준 그림처럼). 설정 · 공지 · 우편 · 출석 · 룰렛 · 리그 · 방법
 	var system_buttons := [
@@ -363,7 +374,7 @@ func _add_top_bar() -> void:
 	bar.add_child(divider)
 	for spec in system_buttons:
 		var button := _art_button(_slice("btn_sys", 24, Color("1a3f8f")))
-		button.custom_minimum_size = Vector2(58, 58)
+		button.custom_minimum_size = Vector2(56, 56)
 		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		button.pressed.connect(spec[3])
 		var glyph := _lobby_icon(str(spec[1]), 32.0)
@@ -387,27 +398,31 @@ func _add_top_bar() -> void:
 	# 재화: 골드 · 보석. + 버튼은 상점으로.
 	for spec in [["gold", Kit.GOLD, int(profile["gold"]), "grow"], ["gem", Kit.GEM, int(profile["gems"]), "gems"]]:
 		var holder := Control.new()
-		holder.custom_minimum_size = Vector2(196, 48)
+		holder.custom_minimum_size = Vector2(224, 44)
 		holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		holder.add_child(_slice("plate_currency", 40, Color("1a3f8f")))
-		var coin := Kit.icon(str(spec[0]), 40.0)
-		coin.position = Vector2(2, 4)
+		var coin := Kit.icon(str(spec[0]), 38.0)
+		_anchor(coin, 0.0, 0.5, 0.0, 0.5)
+		coin.offset_left = 4
+		coin.offset_right = 42
+		coin.offset_top = -19
+		coin.offset_bottom = 19
 		holder.add_child(coin)
-		var amount := _bold(Kit.comma(int(spec[2])), 22, Color.WHITE, Color("0b1f4d"), 5, HORIZONTAL_ALIGNMENT_RIGHT)
+		var amount := _bold(Kit.comma(int(spec[2])), 21, Color.WHITE, Color("0b1f4d"), 5, HORIZONTAL_ALIGNMENT_RIGHT)
 		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_anchor(amount, 0.0, 0.0, 1.0, 1.0)
-		amount.offset_left = 44
-		amount.offset_right = -52
+		amount.offset_left = 46
+		amount.offset_right = -50
 		holder.add_child(amount)
 		var plus := _art_button(_picture("btn_plus"))
 		if plus.get_child_count() == 0:
 			plus.add_child(Kit.label("+", 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-		_anchor(plus, 1.0, 0.0, 1.0, 1.0)
-		plus.offset_left = -46
-		plus.offset_right = -2
-		plus.offset_top = 2
-		plus.offset_bottom = -2
+		_anchor(plus, 1.0, 0.5, 1.0, 0.5)
+		plus.offset_left = -42
+		plus.offset_right = -4
+		plus.offset_top = -19
+		plus.offset_bottom = 19
 		plus.pressed.connect(_on_shop_tab.bind(str(spec[3])))
 		holder.add_child(plus)
 		bar.add_child(holder)
