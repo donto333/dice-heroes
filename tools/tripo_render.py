@@ -87,30 +87,65 @@ def make_camera(low: Vector, high: Vector):
 	return pivot
 
 
-def front_angle(rigs: list) -> float:
-	"""모델이 바라보는 쪽을 뼈대에서 알아내, 정면에서 찍으려면 카메라를 몇 도 돌려야 하는지 돌려준다.
-	(뼈대를 넣으면 모델마다 앞이 다른 쪽을 향해서, 고정 각도로 찍으면 옆모습·뒷모습이 나온다.)
-	왼쪽·오른쪽 어깨(없으면 팔·다리) 뼈의 위치로 '왼쪽→오른쪽'을 구하고, 그것과 위쪽의 수직 방향을 앞으로 본다."""
+def cloud(skinned_only: bool) -> list:
+	"""지금 장면의 모델 점들을 (가운데·바닥 기준, 키를 1로 맞춰) 돌려준다. 약 1500개만 고른다."""
+	points = []
+	depsgraph = bpy.context.evaluated_depsgraph_get()
+	for obj in bpy.context.scene.objects:
+		if obj.type != "MESH" or obj.hide_render:
+			continue
+		if skinned_only and not any(modifier.type == "ARMATURE" for modifier in obj.modifiers):
+			continue
+		evaluated = obj.evaluated_get(depsgraph)
+		mesh = evaluated.to_mesh()
+		step = max(1, len(mesh.vertices) // 1500)
+		for index in range(0, len(mesh.vertices), step):
+			points.append(evaluated.matrix_world @ mesh.vertices[index].co)
+		evaluated.to_mesh_clear()
+	if not points:
+		return []
+	low_z = min(point.z for point in points)
+	high_z = max(point.z for point in points)
+	mid_x = (min(point.x for point in points) + max(point.x for point in points)) * 0.5
+	mid_y = (min(point.y for point in points) + max(point.y for point in points)) * 0.5
+	scale = 1.0 / max(high_z - low_z, 1e-6)
+	return [Vector(((point.x - mid_x) * scale, (point.y - mid_y) * scale, (point.z - low_z) * scale)) for point in points]
+
+
+def front_angle(rigs: list, original: list) -> float:
+	"""정면에서 찍으려면 카메라를 몇 도 돌려야 하는지 돌려준다.
+	뼈대를 넣으면 모델이 저마다 다른 쪽으로 돌아가 있다. 원래 모델(앞이 90도 쪽으로 정해져 있음)의 점들과
+	뼈대 모델의 기본 자세 점들을 3도씩 돌려 가며 겹쳐 보고, 가장 잘 겹치는 각도만큼 돌아갔다고 본다."""
+	from mathutils import kdtree
+	if not original:
+		return math.radians(90.0)
 	for rig in rigs:
-		pairs = {}
-		for bone in rig.pose.bones:
-			name = bone.name.lower().replace("mixamorig:", "").replace("_", "").replace(".", "")
-			for part in ("shoulder", "arm", "upleg", "thigh", "hand"):
-				if part in name:
-					side = "l" if ("left" in name or name.startswith("l") or name.endswith("l")) else ("r" if ("right" in name or name.startswith("r") or name.endswith("r")) else "")
-					if side and (part, side) not in pairs:
-						pairs[(part, side)] = rig.matrix_world @ bone.head
-		for part in ("shoulder", "arm", "upleg", "thigh", "hand"):
-			if (part, "l") in pairs and (part, "r") in pairs:
-				across = pairs[(part, "l")] - pairs[(part, "r")]
-				forward = Vector((across.x, across.y, 0.0)).cross(Vector((0, 0, 1)))
-				if forward.length < 1e-5:
-					continue
-				angle = math.atan2(forward.x, -forward.y)
-				print("RENDER 앞 방향:", part, "각도", round(math.degrees(angle), 1))
-				return angle
-		print("RENDER 앞 방향을 못 찾음. 뼈 이름:", [bone.name for bone in rig.pose.bones][:12])
-	return math.radians(90.0)
+		rig.data.pose_position = "REST"
+	bpy.context.view_layer.update()
+	posed = cloud(True)
+	for rig in rigs:
+		rig.data.pose_position = "POSE"
+	bpy.context.view_layer.update()
+	if not posed:
+		return math.radians(90.0)
+	tree = kdtree.KDTree(len(original))
+	for index, point in enumerate(original):
+		tree.insert(point, index)
+	tree.balance()
+	sample = posed[::3]
+	best = (1e9, 0.0)
+	for degrees in range(0, 360, 3):
+		turn = math.radians(degrees)
+		cos_t, sin_t = math.cos(turn), math.sin(turn)
+		total = 0.0
+		for point in sample:
+			# 뼈대 모델의 점을 -각도만큼 되돌려 원래 모델에 겹쳐 본다.
+			back = Vector((point.x * cos_t + point.y * sin_t, -point.x * sin_t + point.y * cos_t, point.z))
+			total += tree.find(back)[2]
+		if total < best[0]:
+			best = (total, turn)
+	print("RENDER 앞 방향: 원래 모델보다", round(math.degrees(best[1])), "도 돌아가 있음 (어긋남 %.4f)" % (best[0] / len(sample)))
+	return math.radians(90.0) + best[1]
 
 
 def calibrate(camera, folder: Path) -> None:
@@ -164,9 +199,11 @@ def render_folder(folder: Path) -> None:
 	out = folder / "render"
 	out.mkdir(exist_ok=True)
 	model = folder / "model.glb"
+	original = []
 	if model.exists():
 		reset()
 		bpy.ops.import_scene.gltf(filepath=str(model))
+		original = cloud(False)
 		low, high = bounds()
 		print("RENDER", folder.name, "모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
@@ -194,7 +231,7 @@ def render_folder(folder: Path) -> None:
 		print("RENDER", folder.name, "동작 모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
 		# 정면에서 35도 돌린 방향으로 놓고, 가만히 선 자세로 카메라를 맞춘다. 한 번은 대충, 한 번은 정확히.
-		pivot.rotation_euler = (0, 0, front_angle(rigs) - math.radians(35.0))
+		pivot.rotation_euler = (0, 0, front_angle(rigs, original) - math.radians(35.0))
 		scene.camera.data.ortho_scale *= 1.5
 		calibrate(scene.camera, out)
 		calibrate(scene.camera, out)
