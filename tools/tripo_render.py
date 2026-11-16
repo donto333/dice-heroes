@@ -87,6 +87,32 @@ def make_camera(low: Vector, high: Vector):
 	return pivot
 
 
+def front_angle(rigs: list) -> float:
+	"""모델이 바라보는 쪽을 뼈대에서 알아내, 정면에서 찍으려면 카메라를 몇 도 돌려야 하는지 돌려준다.
+	(뼈대를 넣으면 모델마다 앞이 다른 쪽을 향해서, 고정 각도로 찍으면 옆모습·뒷모습이 나온다.)
+	왼쪽·오른쪽 어깨(없으면 팔·다리) 뼈의 위치로 '왼쪽→오른쪽'을 구하고, 그것과 위쪽의 수직 방향을 앞으로 본다."""
+	for rig in rigs:
+		pairs = {}
+		for bone in rig.pose.bones:
+			name = bone.name.lower().replace("mixamorig:", "").replace("_", "").replace(".", "")
+			for part in ("shoulder", "arm", "upleg", "thigh", "hand"):
+				if part in name:
+					side = "l" if ("left" in name or name.startswith("l") or name.endswith("l")) else ("r" if ("right" in name or name.startswith("r") or name.endswith("r")) else "")
+					if side and (part, side) not in pairs:
+						pairs[(part, side)] = rig.matrix_world @ bone.head
+		for part in ("shoulder", "arm", "upleg", "thigh", "hand"):
+			if (part, "l") in pairs and (part, "r") in pairs:
+				across = pairs[(part, "l")] - pairs[(part, "r")]
+				forward = Vector((across.x, across.y, 0.0)).cross(Vector((0, 0, 1)))
+				if forward.length < 1e-5:
+					continue
+				angle = math.atan2(forward.x, -forward.y)
+				print("RENDER 앞 방향:", part, "각도", round(math.degrees(angle), 1))
+				return angle
+		print("RENDER 앞 방향을 못 찾음. 뼈 이름:", [bone.name for bone in rig.pose.bones][:12])
+	return math.radians(90.0)
+
+
 def calibrate(camera, folder: Path) -> None:
 	"""한 장을 찍어 보고, 실제로 그려진 모습이 칸 가운데에 키 62.5%로 오도록 카메라를 옮기고 맞춘다.
 	(뼈대가 든 모델은 블렌더가 알려 주는 크기가 실제와 달라서, 찍힌 그림으로 직접 잰다.)"""
@@ -168,7 +194,7 @@ def render_folder(folder: Path) -> None:
 		print("RENDER", folder.name, "동작 모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
 		# 정면에서 35도 돌린 방향으로 놓고, 가만히 선 자세로 카메라를 맞춘다. 한 번은 대충, 한 번은 정확히.
-		pivot.rotation_euler = (0, 0, math.radians(FACING))
+		pivot.rotation_euler = (0, 0, front_angle(rigs) - math.radians(35.0))
 		scene.camera.data.ortho_scale *= 1.5
 		calibrate(scene.camera, out)
 		calibrate(scene.camera, out)
