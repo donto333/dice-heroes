@@ -261,7 +261,7 @@ def render_folder(folder: Path) -> None:
 	out.mkdir(exist_ok=True)
 	model = folder / "model.glb"
 	original = []
-	view_angle = math.radians(55.0)
+	view_angle = math.radians(float(VIEWS.get(folder.name, 90.0)))
 	if model.exists():
 		reset()
 		bpy.ops.import_scene.gltf(filepath=str(model))
