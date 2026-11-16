@@ -6,6 +6,7 @@ const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const MapPreview := preload("res://scripts/ui/map_preview.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 
@@ -14,16 +15,13 @@ var app
 
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
-	var column := Kit.screen_frame(self, 16)
-	move_child(Kit.backdrop(self, "ui/bg_adventure", 0.5), 1)
-	var top := TopBar.new()
-	column.add_child(top)
-	top.setup(app)
+	# 시안식 틀: 왼쪽 세로 판 없이 큰 금테 판 하나(위 홈 버튼으로 로비).
+	var column := MenuArt.frame(self, app, "ui/bg_adventure", [], "", func(_id: String) -> void: pass)
 	var adventure: Dictionary = app.data.get("adventure", {})
 	var stage_count := Profile.all_stages(adventure).size()
 	var header := Kit.hbox(10)
 	column.add_child(header)
-	header.add_child(Kit.expand(Kit.title("모험", 44)))
+	header.add_child(Kit.expand(Kit.label("챕터를 골라 스테이지에 도전하세요", 22, Color.WHITE)))
 	header.add_child(Kit.label("★ %d / %d" % [Profile.total_stars(app.profile), stage_count * 3], 28, Kit.GOLD))
 
 	var scroll := ScrollContainer.new()
@@ -36,9 +34,6 @@ func setup(main_app, _params: Dictionary) -> void:
 	for chapter in adventure.get("chapters", []):
 		body.add_child(_chapter_card(chapter, adventure))
 
-	var back := Kit.button("로비로", Kit.PANEL_LIGHT, 26, 80)
-	back.pressed.connect(func(): app.go("lobby"))
-	column.add_child(back)
 
 
 func _chapter_card(chapter: Dictionary, adventure: Dictionary) -> Control:

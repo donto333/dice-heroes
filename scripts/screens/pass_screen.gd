@@ -5,17 +5,15 @@ extends Control
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 
 var app
 
 
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
-	var column := Kit.screen_frame(self, 16)
-	move_child(Kit.backdrop(self, "ui/bg_pass", 0.5), 1)
-	var top := TopBar.new()
-	column.add_child(top)
-	top.setup(app)
+	# 시안식 틀: 왼쪽 세로 판 없이 큰 금테 판 하나(위 홈 버튼으로 로비).
+	var column := MenuArt.frame(self, app, "ui/bg_pass", [], "", func(_id: String) -> void: pass)
 	var table: Dictionary = app.eco.get("pass", {})
 	var levels: Array = table.get("levels", [])
 	var level := Profile.pass_level(app.profile, app.eco)
@@ -56,9 +54,6 @@ func setup(main_app, _params: Dictionary) -> void:
 	for index in levels.size():
 		body.add_child(_level_row(index + 1, levels[index], level))
 	column.add_child(Kit.para("프리미엄 패스는 아직 살 수 없어요. 정식 버전에서 열릴 예정이에요.", 17, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	var back := Kit.button("로비로", Kit.PANEL_LIGHT, 26, 80)
-	back.pressed.connect(_on_back)
-	column.add_child(back)
 
 
 func _level_row(number: int, entry: Dictionary, level: int) -> Control:

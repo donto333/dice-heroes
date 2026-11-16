@@ -4,6 +4,7 @@ extends Control
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 
 var app
@@ -14,11 +15,9 @@ var _code_edit: TextEdit
 
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
-	var column := Kit.screen_frame(self, 16)
-	move_child(Kit.backdrop(self, "ui/bg_settings", 0.5), 1)
-	var top := TopBar.new()
-	column.add_child(top)
-	top.setup(app)
+	# 시안식 틀: 왼쪽 세로 판에 설정 항목, 오른쪽 큰 금테 판.
+	var rail := [["settings", "게임 설정", "settings"], ["help", "게임 방법", "help"], ["title", "타이틀로", "exit"]]
+	var column := MenuArt.frame(self, app, "ui/bg_settings", rail, "settings", _on_rail)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -227,10 +226,6 @@ func setup(main_app, _params: Dictionary) -> void:
 	to_title.pressed.connect(func(): app.go("title"))
 	about_column.add_child(to_title)
 
-	var nav := BottomNav.new()
-	column.add_child(nav)
-	nav.setup("settings", app.badges())
-	nav.tab_pressed.connect(_on_tab)
 
 
 ## 로비로 가서 새 소식 창을 다시 띄운다.
@@ -404,6 +399,15 @@ func _on_reset() -> void:
 func _confirm_reset() -> void:
 	app.reset_profile()
 	app.go_loading("title", {}, "처음으로 돌아가는 중...", 0.8)
+
+
+func _on_rail(id: String) -> void:
+	match id:
+		"help":
+			_on_help()
+		"title":
+			app.play("click")
+			app.go("title")
 
 
 func _on_tab(screen_name: String) -> void:

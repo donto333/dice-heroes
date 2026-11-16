@@ -11,6 +11,7 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const DiePreview := preload("res://scripts/ui/die_preview.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 
 const BANNER := ["zeus", "lubu", "sejong", "nightingale"]
 
@@ -19,29 +20,16 @@ var app
 
 ## 상점 탭: 소환(소환·특가) / 성장(유물·골드 교환) / 꾸미기(주사위) / 보석(마일리지·보석 상점)
 const TABS := [["summon", "소환"], ["grow", "성장"], ["look", "꾸미기"], ["gems", "보석"]]
+## 왼쪽 세로 판 항목: [id, 글자, 아이콘]
+const RAIL := [["summon", "영웅 소환", "summon"], ["grow", "성장", "upgrade"], ["look", "주사위 꾸미기", "dice"], ["gems", "보석", "gem"]]
 var _tab := "summon"
 
 
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
 	_tab = str(_params.get("tab", "summon"))
-	var column := Kit.screen_frame(self, 16)
-	move_child(Kit.backdrop(self, "ui/bg_shop", 0.5), 1)
-	var top := TopBar.new()
-	column.add_child(top)
-	top.setup(app)
-
-	var tabs := Kit.hbox(8)
-	column.add_child(tabs)
-	for spec in TABS:
-		var on: bool = str(spec[0]) == _tab
-		var tab_button := Kit.button(str(spec[1]), Color("ffc62b") if on else Color("2f74d6"), 24, 64)
-		if on:
-			for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-				tab_button.add_theme_color_override(state, Color("5a3200"))
-			tab_button.add_theme_constant_override("outline_size", 0)
-		tab_button.pressed.connect(_on_shop_tab.bind(str(spec[0])))
-		tabs.add_child(Kit.expand(tab_button))
+	# 시안식 틀: 왼쪽 세로 판에 상점 항목, 오른쪽 큰 금테 판.
+	var column := MenuArt.frame(self, app, "ui/bg_shop", RAIL, _tab, _on_shop_tab)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -63,11 +51,6 @@ func setup(main_app, _params: Dictionary) -> void:
 			body.add_child(_summon_panel())
 			body.add_child(_deals_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-
-	var nav := BottomNav.new()
-	column.add_child(nav)
-	nav.setup("shop", app.badges())
-	nav.tab_pressed.connect(_on_tab)
 
 
 func _summon_panel() -> Control:

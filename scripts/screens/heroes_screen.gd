@@ -23,47 +23,28 @@ var _count_label: Label
 func setup(main_app, params: Dictionary) -> void:
 	app = main_app
 	_filter = str(params.get("filter", ""))
-	var column := Kit.screen_frame(self, 16)
-	move_child(Kit.backdrop(self, "ui/bg_heroes", 0.5), 1)
-	var top := TopBar.new()
-	column.add_child(top)
-	top.setup(app)
-
-	var party_row := Kit.hbox(10)
-	column.add_child(party_row)
-	for slot in ["attack", "defense", "support"]:
-		var id := str(app.profile["party"].get(slot, ""))
-		var face := Portrait.new()
-		face.custom_minimum_size = Vector2(110, 110)
-		var info: Dictionary = app.character(id)
-		face.show_character(info, Kit.CATEGORY_COLORS.get(info.get("category", ""), Kit.LINE))
-		party_row.add_child(face)
-	var edit := Kit.button("파티 편성", Color("f39a1c"), 28, 110)
-	edit.pressed.connect(_on_edit_party)
-	party_row.add_child(Kit.expand(edit))
+	# 시안식 틀: 왼쪽 세로 판에 영웅 목록·앨범·파티 편성, 오른쪽 큰 금테 판.
+	var rail := [["list", "영웅 목록", "heroes"], ["album", "영웅 앨범", "album"], ["party", "파티 편성", "swords"]]
+	var column := MenuArt.frame(self, app, "ui/bg_heroes", rail, "list", _on_rail)
 
 	var header := Kit.hbox(10)
 	column.add_child(header)
-	_count_label = Kit.label("", 26, Kit.GOLD)
+	_count_label = Kit.label("", 24, Kit.GOLD)
 	header.add_child(Kit.expand(_count_label))
-	var album := Kit.button("앨범", Kit.PRIMARY if Profile.album_has_claimable(app.profile, app.eco, app.data["characters"]) else Color("8a55e0"), 20, 56)
-	album.custom_minimum_size = Vector2(96, 56)
-	album.pressed.connect(_open_album)
-	header.add_child(album)
-	var all_up := Kit.button("일괄 강화", Color("27a35a"), 20, 56)
-	all_up.custom_minimum_size = Vector2(150, 56)
+	var all_up := Kit.button("일괄 강화", Color("27a35a"), 20, 52)
+	all_up.custom_minimum_size = Vector2(140, 52)
 	all_up.disabled = not bool(app.badges().get("heroes", false))
 	all_up.pressed.connect(_upgrade_all)
 	header.add_child(all_up)
-	_owned_button = Kit.button("", Kit.PANEL_LIGHT, 20, 56)
-	_owned_button.custom_minimum_size = Vector2(190, 56)
+	_owned_button = Kit.button("", Kit.PANEL_LIGHT, 20, 52)
+	_owned_button.custom_minimum_size = Vector2(180, 52)
 	_owned_button.pressed.connect(_on_owned_toggle)
 	header.add_child(_owned_button)
 
 	var tabs := Kit.hbox(6)
 	column.add_child(tabs)
 	for category in ["", "영웅", "위인", "신화", "근현대"]:
-		var tab := Kit.button("전체" if category == "" else category, Kit.PANEL, 20, 56)
+		var tab := Kit.button("전체" if category == "" else category, Kit.PANEL, 20, 48)
 		tab.pressed.connect(_on_filter.bind(category))
 		tabs.add_child(Kit.expand(tab))
 		_tabs[category] = tab
@@ -79,10 +60,6 @@ func setup(main_app, params: Dictionary) -> void:
 	_grid.add_theme_constant_override("v_separation", 8)
 	scroll.add_child(_grid)
 
-	var nav := BottomNav.new()
-	column.add_child(nav)
-	nav.setup("heroes", app.badges())
-	nav.tab_pressed.connect(_on_tab)
 	_rebuild()
 
 
@@ -368,6 +345,15 @@ func _on_owned_toggle() -> void:
 	app.play("click")
 	_owned_only = not _owned_only
 	_rebuild()
+
+
+## 왼쪽 세로 판: 영웅 목록은 지금 화면, 앨범은 창, 파티 편성은 파티 화면.
+func _on_rail(id: String) -> void:
+	match id:
+		"album":
+			_open_album()
+		"party":
+			_on_edit_party()
 
 
 func _on_tab(screen_name: String) -> void:

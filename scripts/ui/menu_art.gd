@@ -3,6 +3,8 @@ extends RefCounted
 ## 왼쪽 세로 메뉴 판·버튼, 위 띠, 제목 명판, 재화 캡슐, 더하기 버튼, 영웅 카드 테두리, 목록 줄, 탭, 큰 판.
 ## 그림이 없으면 null을 돌려주고, 부르는 쪽은 예전 모양으로 그린다.
 
+const Kit := preload("res://scripts/ui/kit.gd")
+
 const ART := "res://assets/ui_menu/"
 
 ## 화면 이름 → [제목, 아이콘]. 위 띠 왼쪽 제목 명판에 쓴다.
@@ -103,3 +105,131 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.add_child(label)
 	return plate
+
+
+# ---------------------------------------------------------------- 시안식 화면 틀
+
+## 시안식 메뉴 화면 틀을 만든다(2026-11-17 사용자 결정: 이동 메뉴는 홈 버튼 하나).
+## 위: 홈 버튼 · 제목 명판 · (빈칸) · 골드·보석 캡슐
+## 아래: 왼쪽 세로 판에 이 화면 안의 항목(tabs: [[id, 글자, 아이콘], ...]), 오른쪽 큰 금테 판.
+## 큰 판 안쪽 세로 상자를 돌려준다. 항목을 누르면 on_tab(id)를 부른다. 항목이 없으면 세로 판도 없다.
+static func frame(screen: Control, app, backdrop_art: String, tabs: Array, active: String, on_tab: Callable) -> VBoxContainer:
+	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	screen.add_child(Kit.sky())
+	if backdrop_art != "":
+		Kit.backdrop(screen, backdrop_art, 1.0)
+	var shade := ColorRect.new()
+	shade.color = Color(0.0, 0.03, 0.14, 0.38)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	screen.add_child(shade)
+	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	screen.add_child(margin)
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 10)
+	margin.add_child(outer)
+
+	# 위 줄
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	head.custom_minimum_size = Vector2(0, 62)
+	outer.add_child(head)
+	var home := Button.new()
+	home.custom_minimum_size = Vector2(78, 58)
+	home.tooltip_text = "로비로"
+	if not skin_button(home, "menu_off", Vector4(30, 26, 30, 26), Vector4(4, 4, 4, 4)):
+		Kit.paint(home, Kit.PANEL_LIGHT)
+	var home_icon: TextureRect = Kit.icon("home", 40.0)
+	home_icon.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	home_icon.position = Vector2(19, 9)
+	home_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	home.add_child(home_icon)
+	home.pressed.connect(func() -> void:
+		app.play("click")
+		app.go("lobby"))
+	head.add_child(home)
+	var spec: Array = TITLES.get(str(app.current_name), ["", ""])
+	var plate := title_plate(str(spec[0]), Kit.icon(str(spec[1]), 40.0).texture)
+	if plate != null:
+		plate.custom_minimum_size = Vector2(250, 62)
+		head.add_child(plate)
+	else:
+		head.add_child(Kit.label(str(spec[0]), 32))
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(gap)
+	head.add_child(_money_chip("gold", int(app.profile.get("gold", 0)), Kit.GOLD))
+	head.add_child(_money_chip("gem", int(app.profile.get("gems", 0)), Kit.GEM))
+
+	# 본문: 왼쪽 항목 판 + 오른쪽 큰 판
+	var body := HBoxContainer.new()
+	body.add_theme_constant_override("separation", 12)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outer.add_child(body)
+	if not tabs.is_empty():
+		var rail := PanelContainer.new()
+		rail.custom_minimum_size = Vector2(212, 0)
+		var rail_style = style("rail_panel", Vector4(24, 34, 24, 34), Vector4(12, 18, 12, 18))
+		rail.add_theme_stylebox_override("panel", rail_style if rail_style != null else Kit.plate(Color("17357f"), Kit.TRIM, 20.0, 12, false))
+		body.add_child(rail)
+		var list := VBoxContainer.new()
+		list.add_theme_constant_override("separation", 10)
+		rail.add_child(list)
+		for entry in tabs:
+			list.add_child(_rail_button(entry, str(entry[0]) == active, on_tab))
+	var board := PanelContainer.new()
+	board.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var board_style = style("content_panel", Vector4(30, 30, 30, 30), Vector4(24, 22, 24, 22))
+	board.add_theme_stylebox_override("panel", board_style if board_style != null else Kit.plate(Color("17357f"), Kit.TRIM, 20.0, 18, true))
+	body.add_child(board)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 10)
+	board.add_child(content)
+	return content
+
+
+## 세로 판의 항목 버튼: 고른 것은 금색, 나머지는 파란 알약. 왼쪽에 아이콘, 오른쪽에 글자.
+static func _rail_button(entry: Array, on: bool, on_tab: Callable) -> Button:
+	var button := Button.new()
+	button.text = str(entry[1])
+	button.custom_minimum_size = Vector2(0, 62)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.add_theme_font_size_override("font_size", 22)
+	if not skin_button(button, "menu_on" if on else "menu_off", Vector4(30, 26, 30, 26), Vector4(16, 4, 12, 6)):
+		Kit.paint(button, Color("ffc62b") if on else Color("2f74d6"))
+	var ink := Color("5a3200") if on else Color.WHITE
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(state, ink)
+	button.add_theme_constant_override("outline_size", 0 if on else 6)
+	button.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.25))
+	if entry.size() > 2:
+		var picture: TextureRect = Kit.icon(str(entry[2]), 36.0)
+		if picture.texture != null:
+			button.icon = picture.texture
+			button.expand_icon = false
+			button.add_theme_constant_override("icon_max_width", 36)
+			button.add_theme_constant_override("h_separation", 10)
+	button.pressed.connect(func() -> void: on_tab.call(str(entry[0])))
+	return button
+
+
+## 위 줄 재화 캡슐(아이콘 + 오른쪽 정렬 숫자).
+static func _money_chip(icon_name: String, amount: int, color: Color) -> Control:
+	var capsule := PanelContainer.new()
+	capsule.custom_minimum_size = Vector2(190, 46)
+	capsule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var art = style("currency", Vector4(24, 0, 24, 0), Vector4(8, 3, 18, 3))
+	capsule.add_theme_stylebox_override("panel", art if art != null else Kit.box(Color(0, 0.06, 0.22, 0.72), color.darkened(0.2), 2, 20, 4))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	capsule.add_child(row)
+	row.add_child(Kit.icon(icon_name, 34.0))
+	var label: Label = Kit.label(Kit.comma(amount), 23, color, HORIZONTAL_ALIGNMENT_RIGHT)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	return capsule
