@@ -1531,7 +1531,18 @@ func _roll_row(row: HBoxContainer, rolls: Array, tail: String) -> void:
 	end.text = tail
 
 
+## 관문지기·골의 수호자와 싸우는 동안에는 전투 곡을 틀고, 끝나면 대전 곡으로 돌아온다.
 func _show_battle(event: Dictionary) -> void:
+	var defender := str(event.get("defender", ""))
+	var boss := str(event.get("target", "")) == "keeper" and (defender.begins_with("관문지기") or defender == _goal_name())
+	if boss:
+		app.music.play_track("boss")
+	await _show_battle_inner(event)
+	if boss and game.winner < 0:
+		app.music.play_track("match")
+
+
+func _show_battle_inner(event: Dictionary) -> void:
 	_hint("battle", "전투! 양쪽이 주사위를 굴려 합이 큰 쪽이 이겨요. 지면 직전 거점(파란 깃발)으로 돌아가요. 이기면 카드를 받아요.")
 	await _wait_for_board()
 	var who := int(event["player"])
@@ -1730,6 +1741,9 @@ func _show_game_over() -> void:
 		text = "패배... AI가 먼저 들어갔습니다."
 		color = Color("ff6b6b")
 		outcome = "lose"
+	# 결과 곡: 이기면(친구 대전은 누가 이기든) 승리 곡, 지면 패배 곡.
+	if outcome != "draw":
+		app.music.play_track("victory" if (_is_local() or outcome == "win") else "defeat")
 	# 결과 음성: 내 ATTACK 영웅(친구 대전은 이긴 쪽)이 한마디.
 	if outcome != "draw":
 		var speaker := int(game.winner) if _is_local() else 0

@@ -16,7 +16,8 @@ const ProfileCard := preload("res://scripts/ui/profile_card.gd")
 const LoadingOverlay := preload("res://scripts/ui/loading_overlay.gd")
 const Opening := preload("res://scripts/ui/opening.gd")
 ## 화면마다 틀 배경음악
-const SCREEN_MUSIC := {"match": "match"}
+const SCREEN_MUSIC := {"match": "match", "title": "title", "login": "title",
+	"shop": "shop", "heroes": "shop", "missions": "shop", "pass": "shop"}
 
 const SCREENS := {
 	"title": preload("res://scripts/screens/title_screen.gd"),
