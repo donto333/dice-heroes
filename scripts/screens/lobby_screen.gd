@@ -334,7 +334,7 @@ func _add_top_bar() -> void:
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	names.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anchor(names, 0.0, 0.0, 1.0, 1.0)
-	names.offset_left = 62
+	names.offset_left = 74
 	names.offset_right = -14
 	who.add_child(names)
 	names.add_child(_bold(str(profile["nickname"]), 21, Color.WHITE, Color("0b1f4d"), 5))
