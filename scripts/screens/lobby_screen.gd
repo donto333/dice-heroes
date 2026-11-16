@@ -475,11 +475,13 @@ func _rank_tile() -> Button:
 	var strip := Control.new()
 	strip.custom_minimum_size = Vector2(0, 40)
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	strip.add_child(_slice("strip_event", 26, Color("fff4dc")))
+	# 띠 그림은 왼쪽 빨간 딱지 자리가 넓어서 조각내지 않고 통째로 늘린다.
+	var strip_art := _picture("strip_event")
+	strip.add_child(strip_art if strip_art != null else _slice("", 0, Color("fff4dc")))
 	stack.add_child(strip)
 	var chip := _bold("EVENT" if not events.is_empty() else "GO", 14, Color.WHITE, Color("7a0f0f"), 3, HORIZONTAL_ALIGNMENT_CENTER)
 	chip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_anchor(chip, 0.03, 0.0, 0.2, 1.0)
+	_anchor(chip, 0.04, 0.12, 0.21, 0.82)
 	strip.add_child(chip)
 	var event_text := str(events[0]["name"]) if not events.is_empty() else "지금 바로 대전 시작!"
 	var line := Kit.label(event_text, 17, Color("b5450c"))
@@ -487,7 +489,7 @@ func _rank_tile() -> Button:
 	line.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	line.clip_text = true
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anchor(line, 0.23, 0.0, 0.86, 1.0)
+	_anchor(line, 0.25, 0.0, 0.86, 1.0)
 	strip.add_child(line)
 	return tile
 
