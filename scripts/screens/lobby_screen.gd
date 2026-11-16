@@ -345,29 +345,40 @@ func _add_top_bar() -> void:
 	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
 	names.add_child(_bold("%s · 리그 %d위" % [tier["name"], Profile.league_rank(profile, app.eco)], 14, Kit.GOLD, Color("0b1f4d"), 4))
 
-	# 시스템 버튼: 설정 · 공지 · 우편 · 출석 · 룰렛 · 리그 · 방법
+	# 시스템 버튼: 아이콘 아래에 이름을 적는다(기준 그림처럼). 설정 · 공지 · 우편 · 출석 · 룰렛 · 리그 · 방법
 	var system_buttons := [
-		["settings", false, _on_tab.bind("settings")],
-		["ic_notice", false, _on_notices],
-		["mail", Profile.unclaimed_mail_count(profile) > 0, open_mailbox],
-		["attend", Profile.can_check_in(profile, app.today()), _on_attendance_shortcut],
-		["roulette", Profile.can_spin_free(profile, app.eco), open_roulette],
-		["league", false, _on_league],
-		["help", false, _on_help],
+		["설정", "settings", false, _on_tab.bind("settings")],
+		["공지", "ic_notice", false, _on_notices],
+		["우편", "mail", Profile.unclaimed_mail_count(profile) > 0, open_mailbox],
+		["출석", "attend", Profile.can_check_in(profile, app.today()), _on_attendance_shortcut],
+		["룰렛", "roulette", Profile.can_spin_free(profile, app.eco), open_roulette],
+		["리그", "league", false, _on_league],
+		["방법", "help", false, _on_help],
 	]
+	var divider := ColorRect.new()
+	divider.color = Color(1, 1, 1, 0.45)
+	divider.custom_minimum_size = Vector2(2, 40)
+	divider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(divider)
 	for spec in system_buttons:
-		var button := _art_button(_slice("btn_sys", 30, Color("1a3f8f")))
-		button.custom_minimum_size = Vector2(54, 54)
+		var button := _art_button(_slice("btn_sys", 24, Color("1a3f8f")))
+		button.custom_minimum_size = Vector2(58, 58)
 		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		button.pressed.connect(spec[2])
-		var glyph := _lobby_icon(str(spec[0]), 36.0)
-		glyph.set_anchors_preset(Control.PRESET_CENTER)
-		glyph.offset_left = -18
-		glyph.offset_top = -18
-		glyph.offset_right = 18
-		glyph.offset_bottom = 18
+		button.pressed.connect(spec[3])
+		var glyph := _lobby_icon(str(spec[1]), 32.0)
+		_anchor(glyph, 0.5, 0.0, 0.5, 0.0)
+		glyph.offset_left = -16
+		glyph.offset_right = 16
+		glyph.offset_top = 4
+		glyph.offset_bottom = 36
 		button.add_child(glyph)
-		if bool(spec[1]):
+		var caption := _bold(str(spec[0]), 13, Color.WHITE, Color("0b1f4d"), 4, HORIZONTAL_ALIGNMENT_CENTER)
+		_anchor(caption, 0.0, 1.0, 1.0, 1.0)
+		caption.offset_top = -22
+		caption.offset_bottom = -3
+		button.add_child(caption)
+		if bool(spec[2]):
 			_red_badge(button)
 		bar.add_child(button)
 
@@ -518,9 +529,37 @@ func _adventure_tile() -> Button:
 	stack.add_child(Kit.expand(Control.new()))
 	var stars := Profile.total_stars(app.profile)
 	var most := _max_stars()
-	stack.add_child(_bold("별 %d / %d" % [stars, most], 17, Color.WHITE, Color("0f5a2c"), 5))
-	stack.add_child(Kit.bar(float(stars) / float(max(most, 1)), Kit.GOLD, 12))
+	var ratio := float(stars) / float(max(most, 1))
+	# 진행도 캡슐(기준 그림처럼 어두운 띠 안에 글자와 막대)
+	var capsule := PanelContainer.new()
+	var capsule_style := Kit.box(Color(0.02, 0.18, 0.08, 0.72), Color(1, 1, 1, 0.55), 2, 14, 6)
+	capsule_style.content_margin_left = 10
+	capsule_style.content_margin_right = 10
+	capsule.add_theme_stylebox_override("panel", capsule_style)
+	capsule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(capsule)
+	var inside := Kit.vbox(3)
+	inside.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	capsule.add_child(inside)
+	var line := Kit.hbox(4)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inside.add_child(line)
+	line.add_child(_bold("★ %d / %d" % [stars, most], 15, Kit.GOLD, Color("0b2a14"), 4))
+	line.add_child(Kit.expand(Control.new()))
+	line.add_child(_bold("%d%%" % int(round(ratio * 100.0)), 15, Color.WHITE, Color("0b2a14"), 4))
+	inside.add_child(Kit.bar(ratio, Kit.GOLD, 9))
 	return tile
+
+
+## 타일 오른쪽 아래 꺾쇠(>): 누르면 들어간다는 표시
+func _chevron(parent: Control, color: Color, outline: Color) -> void:
+	var mark := _bold(">", 22, color, outline, 4, HORIZONTAL_ALIGNMENT_RIGHT)
+	_anchor(mark, 1.0, 1.0, 1.0, 1.0)
+	mark.offset_left = -30
+	mark.offset_right = -12
+	mark.offset_top = -34
+	mark.offset_bottom = -8
+	parent.add_child(mark)
 
 
 ## spec: [이름, 영어, 아이콘, 설명, 빨간 점, 누르면]
@@ -528,22 +567,22 @@ func _white_tile(spec: Array) -> Button:
 	var tile := _art_button(_slice("tile_white", 40, Color("f2f6ff")))
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile.pressed.connect(spec[5])
-	var inner := _inner(tile, 12, 8, 12, 10)
+	var inner := _inner(tile, 12, 8, 30, 10)
 	var row := Kit.hbox(8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(row)
-	var glyph := _lobby_icon(str(spec[2]), 56.0)
+	var glyph := _lobby_icon(str(spec[2]), 62.0)
 	glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(glyph)
-	var text := Kit.vbox(0)
+	var text := Kit.vbox(-2)
 	text.alignment = BoxContainer.ALIGNMENT_CENTER
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(Kit.expand(text))
-	var title := Kit.label(str(spec[0]), 24, Color("12264d"))
+	var title := Kit.label(str(spec[0]), 28, Color("12264d"))
 	title.remove_theme_color_override("font_shadow_color")
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.add_child(title)
-	var english := Kit.label(str(spec[1]), 11, Color("4a6aa8"))
+	var english := Kit.label(str(spec[1]), 12, Color("4a6aa8"))
 	english.remove_theme_color_override("font_shadow_color")
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.add_child(english)
@@ -551,6 +590,7 @@ func _white_tile(spec: Array) -> Button:
 	sub.remove_theme_color_override("font_shadow_color")
 	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.add_child(sub)
+	_chevron(tile, Color("2b5fc4"), Color.WHITE)
 	if bool(spec[4]):
 		_red_badge(tile)
 	return tile
@@ -561,18 +601,23 @@ func _navy_tile(spec: Array) -> Button:
 	var tile := _art_button(_slice("tile_navy", 34, Color("17398a")))
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile.pressed.connect(_on_tab.bind(str(spec[4])))
-	var inner := _inner(tile, 8, 8, 8, 10)
-	var stack := Kit.vbox(0)
-	stack.alignment = BoxContainer.ALIGNMENT_CENTER
-	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	inner.add_child(stack)
-	var glyph := _lobby_icon(str(spec[2]), 50.0)
-	glyph.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	stack.add_child(glyph)
-	stack.add_child(_bold(str(spec[0]), 22, Color.WHITE, Color("0b1f4d"), 5, HORIZONTAL_ALIGNMENT_CENTER))
-	var english := Kit.label(str(spec[1]), 10, Color(1, 1, 1, 0.75), HORIZONTAL_ALIGNMENT_CENTER)
+	var inner := _inner(tile, 12, 8, 26, 10)
+	var row := Kit.hbox(6)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(row)
+	var glyph := _lobby_icon(str(spec[2]), 54.0)
+	glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(glyph)
+	var text := Kit.vbox(-2)
+	text.alignment = BoxContainer.ALIGNMENT_CENTER
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
+	text.add_child(_bold(str(spec[0]), 24, Color.WHITE, Color("0b1f4d"), 5))
+	var english := Kit.label(str(spec[1]), 11, Color(1, 1, 1, 0.8))
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stack.add_child(english)
+	text.add_child(english)
+	_chevron(tile, Color.WHITE, Color("0b1f4d"))
 	var mark := str(spec[3])
 	if mark == "dot":
 		_red_badge(tile)
@@ -602,7 +647,7 @@ func _add_bottom_dock() -> void:
 
 	# 출전 파티: 누르면 영웅 화면(파티 편성)
 	var party_button := _art_button(null)
-	party_button.custom_minimum_size = Vector2(420, 0)
+	party_button.custom_minimum_size = Vector2(440, 0)
 	party_button.pressed.connect(_on_tab.bind("heroes"))
 	row.add_child(party_button)
 	var party_row := Kit.hbox(8)
@@ -623,14 +668,7 @@ func _add_bottom_dock() -> void:
 	for slot in ["attack", "defense", "support"]:
 		var member: Dictionary = app.character(str(party.get(slot, "")))
 		categories.append(str(member.get("category", "")))
-		var face := Portrait.new()
-		face.custom_minimum_size = Vector2(62, 62)
-		face.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		face.border_width = 3.0
-		face.border = Kit.GRADE_COLORS.get(int(member.get("grade", 1)), Kit.GOLD)
-		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		face.show_character(member, Kit.CATEGORY_COLORS.get(member.get("category", ""), Kit.LINE))
-		party_row.add_child(face)
+		party_row.add_child(_framed_face(member))
 	var synergy: Dictionary = Game.synergy_of(app.data.get("rules", {}).get("synergy", {}), categories)
 	if not synergy.is_empty():
 		var chip := PanelContainer.new()
@@ -640,7 +678,7 @@ func _add_bottom_dock() -> void:
 		chip_style.content_margin_right = 14
 		chip.add_theme_stylebox_override("panel", chip_style)
 		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		chip.add_child(_bold(str(synergy.get("name", "")), 18, Color.WHITE, Color("0f5a2c"), 4))
+		chip.add_child(_bold(str(synergy.get("name", "")), 20, Color.WHITE, Color("0f5a2c"), 4))
 		party_row.add_child(chip)
 
 	row.add_child(Kit.expand(Control.new()))
@@ -665,6 +703,9 @@ func _add_bottom_dock() -> void:
 	task_row.offset_top = 6
 	task_row.offset_bottom = -6
 	task.add_child(task_row)
+	var todo_icon := Kit.icon("todo", 36.0)
+	todo_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	task_row.add_child(todo_icon)
 	var head := Kit.vbox(-2)
 	head.alignment = BoxContainer.ALIGNMENT_CENTER
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -687,6 +728,55 @@ func _add_bottom_dock() -> void:
 	task_row.add_child(go)
 	if left > 0:
 		_red_badge(task)
+
+
+## 액자에 넣은 작은 초상화: ★★★는 금테, 나머지는 은테(assets/ui_kit/slot_frame*). 아래에 별, 오른쪽 아래에 레벨.
+func _framed_face(member: Dictionary) -> Control:
+	var grade := int(member.get("grade", 1))
+	var gold := grade >= 3
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(60, 72)
+	holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 액자 그림의 안쪽 창 자리(가로·세로 비율). slot_frame 155×170, slot_frame_gold 162×170.
+	var window := Rect2(0.14, 0.2, 0.72, 0.64) if gold else Rect2(0.08, 0.17, 0.84, 0.74)
+	var box := Control.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(box, 0.0, 0.0, 1.0, 0.0)
+	box.offset_bottom = 62
+	holder.add_child(box)
+	var face := Portrait.new()
+	face.border_width = 0.0
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face.show_character(member, Kit.CATEGORY_COLORS.get(member.get("category", ""), Kit.LINE))
+	_anchor(face, window.position.x, window.position.y, window.end.x, window.end.y)
+	box.add_child(face)
+	var frame_path := "res://assets/ui_kit/%s.png" % ("slot_frame_gold" if gold else "slot_frame")
+	if ResourceLoader.exists(frame_path):
+		var frame := TextureRect.new()
+		frame.texture = load(frame_path)
+		frame.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		frame.stretch_mode = TextureRect.STRETCH_SCALE
+		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(frame)
+	else:
+		face.border_width = 3.0
+		face.border = Kit.GRADE_COLORS.get(grade, Kit.GOLD)
+	var id := str(member.get("id", ""))
+	if id != "" and Profile.owns(app.profile, id):
+		var level := _bold("Lv.%d" % Profile.level_of(app.profile, id), 11, Color.WHITE, Color("0b1f4d"), 3, HORIZONTAL_ALIGNMENT_RIGHT)
+		_anchor(level, 0.0, 0.0, 1.0, 0.0)
+		level.offset_top = 40
+		level.offset_bottom = 54
+		level.offset_right = -8
+		box.add_child(level)
+	var stars := _bold("★".repeat(grade), 12, Kit.GOLD, Color("3a2400"), 3, HORIZONTAL_ALIGNMENT_CENTER)
+	_anchor(stars, 0.0, 1.0, 1.0, 1.0)
+	stars.offset_top = -14
+	holder.add_child(stars)
+	return holder
 
 
 func _on_league() -> void:
