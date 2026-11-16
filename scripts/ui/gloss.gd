@@ -4,6 +4,7 @@ extends Control
 ## 누르면 몸통이 아래로 내려가고, 꺼지면 회색이 된다. 색은 Kit.paint()가 정한다.
 
 const DISABLED := Color("7d8fa9")
+const UiSkin := preload("res://scripts/ui/skin.gd")
 
 var color := Color("2fb457")
 var edge := Color("0e4a22")
@@ -87,6 +88,8 @@ func _draw() -> void:
 	if over:
 		fill = fill.lightened(0.08)
 	var r := radius if radius > 0.0 else minf(22.0, size.y * 0.5)
+	if _draw_skin(off, down, over, r):
+		return
 	var thick := 2.0 if down else (4.0 if off else depth)
 	var sink := depth - thick if not off else 0.0
 
@@ -168,3 +171,62 @@ func _draw() -> void:
 		halo.set_corner_radius_all(int(r + 4.0))
 		halo.anti_aliasing_size = 1.2
 		draw_style_box(halo, Rect2(-3, sink - 3, size.x + 6, size.y - sink + 6))
+
+
+## 그림 버튼(assets/ui_kit)으로 그린다. 그림이 없으면 false(예전 도형 그리기로).
+## 길쭉하면 btn_색, 정사각형에 가까우면 sq_색, 동그란 버튼이면 round_색 그림을 쓴다.
+func _draw_skin(off: bool, down: bool, over: bool, r: float) -> bool:
+	var tone := "gray" if (off and not keep_color) else UiSkin.tone(color)
+	var aspect := size.x / maxf(size.y, 1.0)
+	var family := "btn"
+	if r >= minf(size.x, size.y) * 0.45 and aspect < 1.35:
+		family = "round"
+	elif aspect < 2.7:
+		# 짧은 버튼은 양 끝 장식이 글자를 가리므로 장식 없는 네모 그림을 쓴다.
+		family = "sq"
+	var texture: Texture2D = UiSkin.tex("%s_%s" % [family, tone])
+	if texture == null and family == "round":
+		texture = UiSkin.tex("round_blue")
+	if texture == null and family == "sq":
+		texture = UiSkin.tex("sq_blue")
+	if texture == null and family == "btn":
+		texture = UiSkin.tex("btn_blue")
+	if texture == null:
+		# 맞는 모양의 그림이 없으면 예전 도형 버튼으로 그린다(긴 버튼 그림을 억지로 구기지 않는다).
+		return false
+	# 가장 중요한 큰 금색 버튼(게임 시작 등)은 날개 장식이 달린 특별한 그림을 쓴다.
+	var fancy := family == "btn" and tone == "gold" and size.y >= 92.0 and aspect >= 2.2 and UiSkin.has("btn_start")
+	if fancy:
+		texture = UiSkin.tex("btn_start")
+	var tint := Color.WHITE
+	if off and keep_color:
+		tint = Color(0.55, 0.55, 0.6)
+	elif off:
+		tint = Color(0.86, 0.86, 0.9, 0.92)
+	elif down:
+		tint = Color(0.82, 0.82, 0.86)
+	elif over:
+		tint = Color(1.1, 1.1, 1.1)
+	var sink := 2.0 if down else 0.0
+	var dest := Rect2(-2.0, -2.0 + sink, size.x + 4.0, size.y + 4.0)
+	var item := get_canvas_item()
+	if family == "btn":
+		UiSkin.draw_bar(item, texture, dest.grow(3.0) if fancy else dest, 0.82, tint, 0.2 if fancy else 0.0)
+	else:
+		# 네모·동그라미: 귀퉁이는 그대로 두고 가운데만 늘린다(가로세로 비율이 달라도 테가 찌그러지지 않게).
+		var width := float(texture.get_width())
+		var height := float(texture.get_height())
+		var cut := minf(width, height) * 0.36
+		var ratio := minf(dest.size.x / width, dest.size.y / height)
+		UiSkin.draw_grid(item, texture, dest, [0.0, cut, width - cut, width], [false, true, false],
+			[0.0, cut, height - cut, height], [false, true, false], ratio, tint)
+	if alert and not off:
+		var pulse := 0.5 + 0.5 * sin(_time * 5.0)
+		var halo := StyleBoxFlat.new()
+		halo.draw_center = false
+		halo.border_color = Color(1.0, 0.92, 0.45, 0.5 + pulse * 0.5)
+		halo.set_border_width_all(int(4.0 + pulse * 2.0))
+		halo.set_corner_radius_all(int(minf(size.y * 0.5, r + 8.0)))
+		halo.anti_aliasing_size = 1.2
+		draw_style_box(halo, Rect2(-5, sink - 5, size.x + 10, size.y + 10))
+	return true

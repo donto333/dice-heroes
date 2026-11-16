@@ -8,6 +8,8 @@ const Ambience := preload("res://scripts/ui/ambience.gd")
 const Sweep := preload("res://scripts/ui/sweep.gd")
 const OrnateBox := preload("res://scripts/ui/ornate_box.gd")
 const Ribbon := preload("res://scripts/ui/ribbon.gd")
+const UiSkin := preload("res://scripts/ui/skin.gd")
+const SkinBar := preload("res://scripts/ui/skin_bar.gd")
 ## 판 테두리의 금색
 const TRIM := Color("f2c14e")
 const BG := Color("2a8be6")
@@ -305,6 +307,13 @@ static func bar(value: float, color: Color, height: float = 14.0) -> ProgressBar
 	result.custom_minimum_size = Vector2(0, height)
 	result.add_theme_stylebox_override("background", box(Color(0, 0.1, 0.3, 0.55), Color.TRANSPARENT, 0, 7, 0))
 	result.add_theme_stylebox_override("fill", box(color, Color.TRANSPARENT, 0, 7, 0))
+	# 그림 막대: 금빛/푸른빛 광택 막대 그림이 있으면 채움을 그림으로 그린다.
+	var tone: String = UiSkin.tone(color)
+	var art := "bar_fill_gold" if tone in ["gold", "red"] else ("bar_fill_blue" if tone in ["blue", "teal"] else "")
+	if art != "" and UiSkin.has(art):
+		var fill := SkinBar.new()
+		fill.art = art
+		result.add_theme_stylebox_override("fill", fill)
 	return result
 
 

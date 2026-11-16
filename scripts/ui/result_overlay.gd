@@ -53,7 +53,9 @@ func _ready() -> void:
 
 	_panel = PanelContainer.new()
 	_panel.custom_minimum_size = Vector2(1080, 0)
-	_panel.add_theme_stylebox_override("panel", Kit.plate(Color("2a2f9c"), Kit.TRIM, 28.0, 24))
+	var frame = Kit.plate(Color("2a2f9c"), Kit.TRIM, 28.0, 30)
+	frame.grand = true
+	_panel.add_theme_stylebox_override("panel", frame)
 	center.add_child(_panel)
 
 	# 가로 화면: 왼쪽에 결과·MVP·보상, 오른쪽에 자세한 기록과 버튼.

@@ -36,6 +36,11 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 	# 장식 창: 깊은 남보라 몸통에 금색 두 줄 테와 귀퉁이 보석
 	var frame = Kit.plate(Color("243a9c"), Kit.TRIM, 28.0, 24)
 	frame.trim_width = 5.0
+	# 그림 창틀: 위·아래 가운데 장식이 달린 화려한 틀. 테가 두꺼워 여백을 넉넉히 둔다.
+	frame.grand = true
+	if Kit.UiSkin.has("win_navy"):
+		frame.set_content_margin_all(34)
+		frame.content_margin_top = 44
 	_panel.add_theme_stylebox_override("panel", frame)
 	center.add_child(_panel)
 	_column = Kit.vbox(16)
