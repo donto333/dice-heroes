@@ -6,6 +6,12 @@ extends Node
 const RATE := 22050
 const VOLUME := 0.22
 const PLAYERS := 5
+const FILE_DIR := "res://assets/audio/sfx"
+## 파일에서 읽은 소리는 최대 크기를 맞춰 두었으므로 이만큼(dB) 줄여서 튼다.
+const FILE_VOLUME_DB := -8.0
+## 자주 나는 짧은 소리는 더 작게 튼다.
+const QUIET_SOUNDS := {"click": -16.0, "card": -12.0, "good": -11.0, "coin": -11.0, "whoosh": -12.0}
+var _from_file: Dictionary = {}
 
 var _sounds: Dictionary = {}
 var _players: Array = []
@@ -39,6 +45,15 @@ func _ready() -> void:
 	_sounds["fling"] = _sweep(900.0, 180.0, 0.4)
 	_sounds["land"] = _tone([[160.0, 0.05], [110.0, 0.07]], "triangle")
 	_sounds["coin"] = _tone([[1318.5, 0.05], [1760.0, 0.1]], "sine")
+	# 녹음된 효과음 파일(assets/audio/sfx/이름.ogg)이 있으면 합성한 소리 대신 쓴다.
+	# 파일은 tools/sfx_prompts.json 주문서로 ElevenLabs에서 만든 것이다.
+	for sound_name in _sounds.keys():
+		var path := "%s/%s.ogg" % [FILE_DIR, sound_name]
+		if ResourceLoader.exists(path):
+			var stream = load(path)
+			if stream is AudioStream:
+				_sounds[sound_name] = stream
+				_from_file[sound_name] = true
 
 
 func play(sound_name: String) -> void:
@@ -47,6 +62,7 @@ func play(sound_name: String) -> void:
 	var player: AudioStreamPlayer = _players[_next]
 	_next = (_next + 1) % _players.size()
 	player.stream = _sounds[sound_name]
+	player.volume_db = float(QUIET_SOUNDS.get(sound_name, FILE_VOLUME_DB)) if _from_file.has(sound_name) else 0.0
 	player.play()
 
 

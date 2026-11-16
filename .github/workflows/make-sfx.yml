@@ -1,0 +1,22 @@
+# 효과음 만들기: claude/gen-audio 브랜치에 주문서(tools/sfx_prompts.json)를 올리면
+# ElevenLabs로 효과음을 만들어 '산출물(artifact)'로 남긴다. 게임에 넣는 것은 따로 PR로 한다.
+name: Make SFX
+on:
+  push:
+    branches: ["claude/gen-audio"]
+    paths: ["tools/sfx_prompts.json", "tools/make_sfx.py", ".github/workflows/make-sfx.yml"]
+permissions:
+  contents: read
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 효과음 만들기
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: python3 tools/make_sfx.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sfx
+          path: out/

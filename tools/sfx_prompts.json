@@ -1,0 +1,24 @@
+{
+  "_comment": "ElevenLabs 효과음 주문서. 이름은 scripts/ui/sfx.gd의 소리 이름과 같다. .github/workflows/make-sfx.yml이 이 파일을 읽어 만든다. seconds는 0.5~30.",
+  "sounds": [
+    {"name": "click", "seconds": 0.5, "text": "Soft bubbly UI button tap, short cute pop, casual mobile game"},
+    {"name": "step", "seconds": 0.5, "text": "Single light wooden game piece hop on a board, short tok"},
+    {"name": "dice", "seconds": 1.2, "text": "Two dice shaken and rolled on a wooden table, rattling then settling"},
+    {"name": "hit", "seconds": 0.6, "text": "Cartoon sword hit, short punchy slash impact, game combat"},
+    {"name": "win", "seconds": 1.5, "text": "Short bright victory jingle, cheerful brass and bells, casual mobile game"},
+    {"name": "lose", "seconds": 1.5, "text": "Short sad descending jingle, gentle, casual mobile game fail"},
+    {"name": "good", "seconds": 0.7, "text": "Positive chime, two rising marimba notes, reward pickup"},
+    {"name": "bad", "seconds": 0.7, "text": "Negative low buzz, two falling notes, soft error, casual game"},
+    {"name": "reveal", "seconds": 0.8, "text": "Magical reveal swell, rising shimmer, card flip reveal"},
+    {"name": "whoosh", "seconds": 0.6, "text": "Fast airy whoosh swipe, UI banner sliding in"},
+    {"name": "impact", "seconds": 0.8, "text": "Heavy cinematic drum impact, deep boom with short tail"},
+    {"name": "sparkle", "seconds": 0.8, "text": "Glittering sparkle twinkle, high bells, magical dust"},
+    {"name": "card", "seconds": 0.5, "text": "Playing card dealt, quick paper flick"},
+    {"name": "skill", "seconds": 1.0, "text": "Hero special ability activation, energy charge up then burst, anime game"},
+    {"name": "fanfare", "seconds": 3.0, "text": "Triumphant short fanfare, brass and drums, game match victory"},
+    {"name": "defeat", "seconds": 3.0, "text": "Somber short defeat sting, low strings descending, game over"},
+    {"name": "fling", "seconds": 0.8, "text": "Cartoon character knocked back flying away, descending whistle"},
+    {"name": "land", "seconds": 0.5, "text": "Soft thud landing on ground, short"},
+    {"name": "coin", "seconds": 0.6, "text": "Coins collected, bright metallic clink, game reward"}
+  ]
+}
