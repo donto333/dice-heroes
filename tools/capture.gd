@@ -285,6 +285,23 @@ func _run() -> void:
 		match_screen._board_view.reset_pieces()
 		match_screen._board_view.focus_on(0)
 		await _wait(0.3)
+	# 갈림길 안개 확인: 내 말을 첫 갈림길 칸에 잠깐 세워 두 갈래가 안개에 가려진 모습을 찍고 되돌린다.
+	var fork_id := -1
+	for id in gate_game.nodes:
+		if (gate_game.nodes[id].get("next", []) as Array).size() > 1:
+			if fork_id < 0 or int(gate_game.dist_to_goal.get(id, 0)) > int(gate_game.dist_to_goal.get(fork_id, 0)):
+				fork_id = int(id)
+	if fork_id >= 0:
+		var fork_before := int(gate_game.players[0]["pos"])
+		gate_game.players[0]["pos"] = fork_id
+		match_screen._board_view.reset_pieces()
+		match_screen._board_view.focus_on(0)
+		await _wait(0.6)
+		await _shot("14g_branch_fog")
+		gate_game.players[0]["pos"] = fork_before
+		match_screen._board_view.reset_pieces()
+		match_screen._board_view.focus_on(0)
+		await _wait(0.3)
 	match_screen._cutin.play(_app.character("lubu"), "천하무쌍", "2턴간 공격 주사위 +2개", Color("4fc3f7"))
 	await _wait(0.6)
 	await _shot("14e_cutin")
