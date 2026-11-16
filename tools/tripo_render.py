@@ -17,6 +17,8 @@ SOURCE = Path(ARGS[0]) if ARGS else Path("out/tripo")
 CELL = int(ARGS[1]) if len(ARGS) > 1 else 256
 FRAMES = 12
 ELEVATION = math.radians(16.0)
+## 카메라를 돌리는 각도. 90도가 정면이고, 55도는 오른쪽을 보는 비스듬한 앞모습.
+FACING = 55.0
 
 
 def reset() -> None:
@@ -47,6 +49,7 @@ def reset() -> None:
 
 
 def bounds():
+	"""지금 자세에서 모델이 차지하는 상자. 뼈대로 움직인 뒤의 실제 점 위치로 잰다(8개에 1개꼴로 본다)."""
 	low = Vector((1e9, 1e9, 1e9))
 	high = Vector((-1e9, -1e9, -1e9))
 	depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -54,10 +57,13 @@ def bounds():
 		if obj.type != "MESH":
 			continue
 		evaluated = obj.evaluated_get(depsgraph)
-		for corner in evaluated.bound_box:
-			point = evaluated.matrix_world @ Vector(corner)
+		mesh = evaluated.to_mesh()
+		matrix = evaluated.matrix_world
+		for index in range(0, len(mesh.vertices), 8):
+			point = matrix @ mesh.vertices[index].co
 			low = Vector((min(low.x, point.x), min(low.y, point.y), min(low.z, point.z)))
 			high = Vector((max(high.x, point.x), max(high.y, point.y), max(high.z, point.z)))
+		evaluated.to_mesh_clear()
 	return low, high
 
 
@@ -66,7 +72,8 @@ def make_camera(low: Vector, high: Vector):
 	data.type = "ORTHO"
 	size = high - low
 	# 동작 중에 팔·무기가 나가도 잘리지 않게 넉넉히 잡는다.
-	data.ortho_scale = max(size.z, size.x, size.y) * 1.45
+	# 키의 1.6배를 한 칸으로 잡는다: 발은 칸 위에서 80% 지점, 머리는 20% 지점에 온다(게임이 이 비율로 그린다).
+	data.ortho_scale = size.z * 1.6
 	camera = bpy.data.objects.new("Cam", data)
 	bpy.context.scene.collection.objects.link(camera)
 	bpy.context.scene.camera = camera
@@ -74,7 +81,7 @@ def make_camera(low: Vector, high: Vector):
 	pivot.location = Vector(((low.x + high.x) * 0.5, (low.y + high.y) * 0.5, low.z + size.z * 0.5))
 	bpy.context.scene.collection.objects.link(pivot)
 	camera.parent = pivot
-	distance = max(size.x, size.y, size.z) * 4.0
+	distance = size.z * 6.0
 	camera.location = (0, -distance * math.cos(ELEVATION), distance * math.sin(ELEVATION))
 	camera.rotation_euler = (math.pi * 0.5 - ELEVATION, 0, 0)
 	return pivot
@@ -128,8 +135,14 @@ def render_folder(folder: Path) -> None:
 		rigs = [obj for obj in scene.objects if obj.type == "ARMATURE"]
 		actions = list(bpy.data.actions)
 		print("RENDER", folder.name, anim.name, "뼈대", len(rigs), "동작", [(a.name, tuple(a.frame_range)) for a in actions])
-		scene.frame_set(0)
+		idle = [action for action in actions if action.name.lower().startswith("idle")] or actions
+		for rig in rigs:
+			if rig.animation_data is None:
+				rig.animation_data_create()
+			rig.animation_data.action = idle[0]
+		scene.frame_set(int(idle[0].frame_range[0]))
 		low, high = bounds()
+		print("RENDER", folder.name, "동작 모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
 		for action in actions:
 			for rig in rigs:
@@ -140,16 +153,16 @@ def render_folder(folder: Path) -> None:
 				rig.animation_data.action = action
 			start, end = action.frame_range
 			label = "".join(ch if ch.isalnum() else "_" for ch in action.name.lower())[:24]
-			for angle_name, angle in (("front", 0.0), ("side", 90.0)):
-				pivot.rotation_euler = (0, 0, math.radians(angle))
-				shots = []
-				for index in range(FRAMES):
-					scene.frame_set(int(round(start + (end - start) * index / FRAMES)))
-					path = out / ("%s_%s_%02d.png" % (label, angle_name, index))
-					shoot(path)
-					shots.append(path)
-				join(shots, out / ("%s_%s_%s.png" % (anim.stem, label, angle_name)))
-
+			kind = action.name.split("_")[0].lower()
+			# 정면에서 35도 돌린 비스듬한 앞모습 한 방향만 찍는다(반대 방향은 게임이 뒤집어 그린다).
+			pivot.rotation_euler = (0, 0, math.radians(FACING))
+			shots = []
+			for index in range(FRAMES):
+				scene.frame_set(int(round(start + (end - start) * index / FRAMES)))
+				path = out / ("%s_%02d.png" % (label, index))
+				shoot(path)
+				shots.append(path)
+			join(shots, out / ("%s_%s.png" % (folder.name, kind)))
 
 for item in sorted(SOURCE.iterdir()):
 	if item.is_dir():
