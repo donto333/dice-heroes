@@ -7,6 +7,7 @@ const GameData := preload("res://scripts/game_data.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const SaveStore := preload("res://scripts/save_store.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
+const Voice := preload("res://scripts/ui/voice.gd")
 const Dialog := preload("res://scripts/ui/dialog.gd")
 const Toast := preload("res://scripts/ui/toast.gd")
 const Music := preload("res://scripts/ui/music.gd")
@@ -15,7 +16,8 @@ const ProfileCard := preload("res://scripts/ui/profile_card.gd")
 const LoadingOverlay := preload("res://scripts/ui/loading_overlay.gd")
 const Opening := preload("res://scripts/ui/opening.gd")
 ## 화면마다 틀 배경음악
-const SCREEN_MUSIC := {"match": "match"}
+const SCREEN_MUSIC := {"match": "match", "title": "title", "login": "title",
+	"shop": "shop", "heroes": "shop", "missions": "shop", "pass": "shop"}
 
 const SCREENS := {
 	"title": preload("res://scripts/screens/title_screen.gd"),
@@ -37,12 +39,13 @@ const SCREEN_MOODS := {
 	"settings": Color("1a6470"), "adventure": Color("2c6a3c"), "pass": Color("7a2a6a"), "help": Color("1a6470"),
 }
 const RotateGuard := preload("res://scripts/ui/rotate_guard.gd")
-const VERSION := "0.19.0"
+const VERSION := "0.20.0"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
 var profile: Dictionary = {}
 var sfx: Node
+var voice: Node
 var music: Node
 var rng := RandomNumberGenerator.new()
 var current_screen: Control
@@ -66,6 +69,9 @@ func _ready() -> void:
 		_characters_by_id[str(character["id"])] = character
 	sfx = Sfx.new()
 	add_child(sfx)
+	voice = Voice.new()
+	add_child(voice)
+	voice.spoke.connect(func(seconds: float): music.duck(seconds))
 	music = Music.new()
 	add_child(music)
 	_layer = Control.new()
@@ -197,6 +203,34 @@ func bgm_on() -> bool:
 	return not has_profile() or bool(profile.get("settings", {}).get("bgm", true))
 
 
+## 소리 크기(0~100). kind: sfx·voice·bgm
+func volume(kind: String) -> int:
+	if not has_profile():
+		return 100
+	return clampi(int(profile.get("settings", {}).get(kind + "_volume", 100)), 0, 100)
+
+
+## 설정의 소리 크기를 세 부품에 반영한다.
+func apply_volumes() -> void:
+	sfx.gain_db = _gain_db(volume("sfx"))
+	voice.gain_db = _gain_db(volume("voice"))
+	music.set_gain(_gain_db(volume("bgm")))
+
+
+func _gain_db(percent: int) -> float:
+	return -60.0 if percent <= 0 else linear_to_db(float(percent) / 100.0)
+
+
+func voice_on() -> bool:
+	return not has_profile() or bool(profile.get("settings", {}).get("voice", true))
+
+
+## 영웅 음성을 튼다. kind: select·idle·move·attack·defend·skill·win·lose
+func say(hero_id: String, kind: String) -> void:
+	if voice_on() and not instant:
+		voice.say(hero_id, kind)
+
+
 func play(sound: String) -> void:
 	if sfx_on():
 		sfx.play(sound)
@@ -268,6 +302,7 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 		var enter: Tween = screen.create_tween().set_parallel(true)
 		enter.tween_property(screen, "modulate:a", 1.0, 0.18)
 		enter.tween_property(screen, "scale", Vector2.ONE, 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	apply_volumes()
 	music.play_track(SCREEN_MUSIC.get(screen_name, "lobby"))
 
 

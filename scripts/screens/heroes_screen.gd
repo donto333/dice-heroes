@@ -159,6 +159,7 @@ func _card(character: Dictionary, owned: bool) -> Control:
 
 func _on_hero(id: String) -> void:
 	app.play("click")
+	app.say(id, "select")
 	show_hero(id)
 
 
@@ -259,7 +260,7 @@ func _set_avatar(id: String) -> void:
 func _upgrade(id: String) -> void:
 	if Profile.upgrade(app.profile, app.eco, id):
 		app.save()
-		app.play("win")
+		app.play("upgrade")
 		app.toast("%s 레벨 %d!" % [app.character(id)["name"], Profile.level_of(app.profile, id)])
 		app.go("heroes", {"filter": _filter})
 		app.current_screen.show_hero(id)
@@ -308,7 +309,7 @@ func _claim_album(category: String, window_id: int) -> void:
 	if reward.is_empty():
 		return
 	app.save()
-	app.play("win")
+	app.play("upgrade")
 	var window := instance_from_id(window_id)
 	if is_instance_valid(window):
 		window.call("close")
@@ -323,7 +324,7 @@ func _upgrade_all() -> void:
 		app.toast("지금 강화할 수 있는 영웅이 없어요.")
 		return
 	app.save()
-	app.play("win")
+	app.play("upgrade")
 	app.go("heroes", {"filter": _filter})
 	app.toast("영웅을 %d번 강화했어요!" % count)
 

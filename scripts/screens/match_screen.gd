@@ -23,6 +23,11 @@ const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 const BigDice := preload("res://scripts/ui/big_dice.gd")
 const AimBar := preload("res://scripts/ui/aim_bar.gd")
 const Cutin := preload("res://scripts/ui/cutin.gd")
+## 이동할 때 음성이 나올 확률
+const MOVE_VOICE_CHANCE := 0.4
+var _voice_rng := RandomNumberGenerator.new()
+## 따라잡기 안내는 한 판에 한 번만 한다.
+var _catchup_announced := false
 const Fx := preload("res://scripts/ui/fx.gd")
 ## 턴 제한이 이만큼 남으면 턴 배너에 남은 턴을 보여 준다.
 const LAST_TURNS_WARNING := 5
@@ -241,6 +246,7 @@ func _build_ui() -> void:
 	_roll_button.button_down.connect(_on_roll_down)
 	_roll_button.button_up.connect(_on_roll_up)
 	_aim_bar = AimBar.new()
+	_aim_bar.started.connect(func(): _play("aim"))
 	board_area.add_child(_aim_bar)
 	_aim_bar.anchor_left = 1.0
 	_aim_bar.anchor_right = 1.0
@@ -546,6 +552,26 @@ func _notify(character: Dictionary, title: String, text: String, color: Color) -
 
 
 ## 카드 연출: 카드가 손(왼쪽 줄)에서 날아와 가운데서 커지며 번쩍이고, 쓴 사람의 말로 날아가 터진다.
+## 안내 음성(announcer). delay초 뒤에 말한다.
+func _announce(kind: String, delay: float = 0.0) -> void:
+	if delay <= 0.0:
+		app.say("announcer", kind)
+	else:
+		get_tree().create_timer(delay).timeout.connect(app.say.bind("announcer", kind))
+
+
+## 전투 상대가 영웅이 아니면 그 적의 음성 이름(enemy_gate·enemy_boss·enemy_keeper·enemy_monster). 영웅이면 "".
+func _enemy_voice(event: Dictionary) -> String:
+	if str(event.get("target", "")) == "ambush":
+		return "enemy_monster"
+	if str(event.get("target", "")) != "keeper":
+		return ""
+	var enemy_name := str(event.get("defender", ""))
+	if enemy_name == _goal_name():
+		return "enemy_boss"
+	return "enemy_gate" if enemy_name.begins_with("관문지기") else "enemy_keeper"
+
+
 func _show_card(event: Dictionary) -> void:
 	var who := int(event["player"])
 	_say(who, "카드 %s!" % event["name"])
@@ -650,12 +676,13 @@ func _show_tile(event: Dictionary) -> void:
 	panel.position = board_rect.get_center() - panel.size / 2.0 - global_position
 	panel.pivot_offset = panel.size / 2.0
 	panel.scale = Vector2(0.6, 0.6)
-	_play("good" if good else "bad")
+	# 칸 종류마다 소리가 다르다(없으면 좋음/나쁨 소리).
+	var tile_sound := "tile_%s" % str(event.get("tile", ""))
+	_play(tile_sound if app.sfx.has(tile_sound) else ("good" if good else "bad"))
 	# 칸 효과 알갱이: 보물은 금화, 좋은 일은 반짝이, 나쁜 일은 보라 연기
 	if event.has("player") and not bool(event.get("small", false)):
 		var spot := _piece_spot(int(event["player"]))
 		if str(event.get("tile", "")) == "treasure":
-			_play("coin")
 			_fx.burst(spot, "coin", 20)
 		elif good:
 			# 좋은 일: 전진·워프는 푸른 고리와 빛, 나머지는 금빛 반짝임
@@ -1143,6 +1170,8 @@ func _start_game() -> void:
 	_add_result_text("맵: %s(%s)  ·  골의 수호자: %s\n먼저 골(분홍 칸)의 수호자를 이기고 들어가면 승리!" % [game.board_name, game.board_shape, _goal_name()], Color.WHITE)
 	_refresh()
 	var playing = game
+	_play("versus")
+	_announce("start", 0.8)
 	await _versus.play([_versus_side(0), _versus_side(1)],
 		"%s (%s)" % [game.board_name, game.board_shape], "%s\n골의 수호자: %s  ·  %d턴 제한" % [game.board_feature, _goal_name(), game.max_rounds], _mode == "rank")
 	if playing != game or not is_inside_tree():
@@ -1188,6 +1217,11 @@ func _advance() -> void:
 		var small := "%d / %d턴" % [min(game.round_number, game.max_rounds), game.max_rounds]
 		if turns_left <= LAST_TURNS_WARNING and turns_left >= 1:
 			small = "마지막 턴!" if turns_left == 1 else "남은 턴 %d" % turns_left
+		_play("banner")
+		if turns_left == 1:
+			_announce("last_turn")
+		elif _is_local() or game.current == 0:
+			_announce("turn")
 		await _banner.play(small, _turn_title(game.current), PLAYER_TEXT_COLORS[game.current])
 		if playing != game:
 			return
@@ -1217,7 +1251,9 @@ func _advance() -> void:
 	_waiting_for_player = false
 	_show_game_over()
 	var happy: bool = game.winner == 0 or _is_local()
-	_play("fanfare" if happy else "defeat")
+	# 배경음악이 켜져 있으면 승리·패배 곡이 나오므로 효과음은 음악을 껐을 때만 낸다.
+	if not app.bgm_on():
+		_play("fanfare" if happy else "defeat")
 	if happy:
 		_fx.flash(Color(1.0, 0.95, 0.6, 0.6), 0.5)
 		_fx.shower("petal", 70)
@@ -1445,6 +1481,7 @@ func _present_events() -> void:
 				var caster := int(event["player"])
 				_say(caster, "%s!" % event["name"])
 				_play("skill")
+				app.say(str(_character_named(str(event["hero"])).get("id", "")), "skill")
 				_fx.flash(Color(1, 1, 1, 0.7), 0.25)
 				_fx.speed_lines(_board_center(), PLAYER_TEXT_COLORS[caster].lightened(0.4), 1.1)
 				# 영웅 분류마다 효과가 다르다: 영웅은 불꽃, 위인은 별빛, 신화는 얼음 결정, 근현대는 금빛.
@@ -1472,6 +1509,9 @@ func _show_move(event: Dictionary) -> void:
 	var row := _dice_row("이동", event["rolls"], "", PLAYER_TEXT_COLORS[who])
 	_result_box.add_child(row)
 	_trim_results()
+	# 이동 음성: 내 ATTACK 영웅이 가끔 한마디(매번 하면 시끄럽다).
+	if (who == 0 or _is_local()) and _voice_rng.randf() < MOVE_VOICE_CHANCE:
+		app.say(str(game.char_of(who, "attack").get("id", "")), "move")
 	if not event["rolls"].is_empty():
 		# 판 가운데 큰 주사위 연출. 아래 결과 줄의 작은 주사위도 같이 구른다.
 		_play("dice")
@@ -1485,6 +1525,9 @@ func _show_move(event: Dictionary) -> void:
 			caption = "%s 주사위 컨트롤 성공! (%s)" % [game.players[who]["name"], aim_name]
 		elif str(event.get("aim", "")) != "" and _humans[who]:
 			caption = "%s 주사위 컨트롤 실패 (%s)" % [game.players[who]["name"], aim_name]
+		if bool(event.get("catchup", false)) and not _catchup_announced:
+			_catchup_announced = true
+			_announce("catchup")
 		if bool(event.get("catchup", false)):
 			# 많이 뒤처진 쪽은 큰 눈이 잘 나온다는 것을 알려 준다.
 			caption = "%s 따라잡기! 큰 눈이 잘 나와요" % game.players[who]["name"]
@@ -1495,7 +1538,8 @@ func _show_move(event: Dictionary) -> void:
 		_fx.burst(_board_center() - Vector2(0, 40), "spark", 16)
 		if doubled:
 			_say(who, "더블! 게이지 +%d%%" % game.double_gauge)
-			_play("sparkle")
+			_play("double")
+			_announce("double")
 			_fx.flash(Color(1.0, 0.9, 0.4, 0.45), 0.35)
 			_fx.burst(_board_center() - Vector2(0, 40), "star", 24, 1.3)
 		# 연출을 기다리는 사이에 결과 줄이 지워졌을 수 있다(다시 하기 등).
@@ -1527,11 +1571,41 @@ func _roll_row(row: HBoxContainer, rolls: Array, tail: String) -> void:
 	end.text = tail
 
 
+## 관문지기·골의 수호자와 싸우는 동안에는 전투 곡을 틀고, 끝나면 대전 곡으로 돌아온다.
 func _show_battle(event: Dictionary) -> void:
+	var defender := str(event.get("defender", ""))
+	var boss := str(event.get("target", "")) == "keeper" and (defender.begins_with("관문지기") or defender == _goal_name())
+	if boss:
+		app.music.play_track("boss")
+	# 적(영웅이 아닌 상대)은 등장할 때와 끝났을 때 한마디 한다.
+	var foe := _enemy_voice(event)
+	_announce("gate" if boss else "battle")
+	if foe != "":
+		get_tree().create_timer(1.0).timeout.connect(app.say.bind(foe, "appear"))
+	await _show_battle_inner(event)
+	# 내 쪽에서 본 승패 소리. 습격은 막는 쪽이 플레이어다.
+	var player_won: bool = (not bool(event["won"])) if str(event.get("target", "")) == "ambush" else bool(event["won"])
+	var mine: bool = _is_local() or int(event["player"]) == 0
+	if boss and player_won:
+		_play("goal" if defender == _goal_name() else "gate_open")
+	else:
+		_play("battle_win" if player_won == mine else "battle_lose")
+	if foe != "":
+		app.say(foe, "lose" if player_won else "win")
+	if boss and game.winner < 0:
+		app.music.play_track("match")
+
+
+func _show_battle_inner(event: Dictionary) -> void:
 	_hint("battle", "전투! 양쪽이 주사위를 굴려 합이 큰 쪽이 이겨요. 지면 직전 거점(파란 깃발)으로 돌아가요. 이기면 카드를 받아요.")
 	await _wait_for_board()
 	var who := int(event["player"])
 	var other := 1 - who
+	# 전투 음성: 공격하는 영웅이 먼저 외치고, 조금 뒤 막는 영웅이 받아친다(영웅이 아니면 소리 없음).
+	app.say(str(_character_named(str(event.get("attacker", ""))).get("id", "")), "attack")
+	var defender_id := str(_character_named(str(event.get("defender", ""))).get("id", ""))
+	if defender_id != "":
+		get_tree().create_timer(0.9).timeout.connect(app.say.bind(defender_id, "defend"))
 	if str(event.get("target", "")) == "ambush":
 		_hide_log()
 		await _battle_overlay.play(event, {
@@ -1721,6 +1795,13 @@ func _show_game_over() -> void:
 		text = "패배... AI가 먼저 들어갔습니다."
 		color = Color("ff6b6b")
 		outcome = "lose"
+	# 결과 곡: 이기면(친구 대전은 누가 이기든) 승리 곡, 지면 패배 곡.
+	if outcome != "draw":
+		app.music.play_track("victory" if (_is_local() or outcome == "win") else "defeat")
+	# 결과 음성: 내 ATTACK 영웅(친구 대전은 이긴 쪽)이 한마디.
+	if outcome != "draw":
+		var speaker := int(game.winner) if _is_local() else 0
+		app.say(str(game.char_of(speaker, "attack").get("id", "")), "win" if (_is_local() or outcome == "win") else "lose")
 	_result_text = text
 	var label := _make_label(34, text)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

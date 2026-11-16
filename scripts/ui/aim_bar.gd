@@ -18,7 +18,11 @@ func _ready() -> void:
 	visible = false
 
 
+## 막대가 차오르기 시작할 때 알린다(소리를 내는 데 쓴다).
+signal started
+
 func start() -> void:
+	started.emit()
 	_time = 0.0
 	value = 0.0
 	_running = true

@@ -89,6 +89,8 @@ func _init() -> void:
 	_test_sweep()
 	_test_double()
 	_test_gate()
+	_test_voice_lines()
+	_test_audio_tables()
 	_test_idle()
 	_test_minigame_and_league()
 	_test_relics()
@@ -1489,3 +1491,26 @@ func _test_idle() -> void:
 	profile["gems"] = int(eco["sweep"]["extra_cost_gems"])
 	_check(Profile.buy_sweep(profile, eco) and Profile.sweeps_left(profile, eco) == 1 and int(profile["gems"]) == 0, "소탕 추가 구매가 틀림")
 	_check(not Profile.buy_sweep(profile, eco), "보석 없이 소탕을 삼")
+
+
+## 음성 대사표: 영웅 48명 모두 8가지 상황 대사가 있고, 소리 파일 이름이 대사표와 맞는다.
+func _test_voice_lines() -> void:
+	var table: Dictionary = GameData.load_json("res://data/voice_lines.json")
+	var kinds: Array = table.get("kinds", [])
+	_check(kinds.size() == 8, "음성 상황이 8가지가 아님")
+	for character in _data["characters"]:
+		var id := str(character["id"])
+		var hero: Dictionary = table.get("heroes", {}).get(id, {})
+		_check(not hero.is_empty(), "음성 대사가 없는 영웅: " + id)
+		for kind in kinds:
+			_check(str(hero.get("lines", {}).get(kind, "")) != "", "대사가 빈 곳: %s %s" % [id, kind])
+
+
+## 안내·적 음성 대사표가 코드에서 쓰는 이름과 맞는다.
+func _test_audio_tables() -> void:
+	var extra: Dictionary = GameData.load_json("res://data/voice_extra.json").get("heroes", {})
+	for kind in ["start", "turn", "battle", "double", "gate", "catchup", "last_turn"]:
+		_check(str(extra.get("announcer", {}).get("lines", {}).get(kind, "")) != "", "안내 음성 대사가 없음: " + kind)
+	for enemy in ["enemy_gate", "enemy_boss", "enemy_keeper", "enemy_monster"]:
+		for kind in ["appear", "win", "lose"]:
+			_check(str(extra.get(enemy, {}).get("lines", {}).get(kind, "")) != "", "적 음성 대사가 없음: %s %s" % [enemy, kind])
