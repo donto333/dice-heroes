@@ -276,7 +276,24 @@ func voice_on() -> bool:
 ## 영웅 음성을 튼다. kind: select·idle·move·attack·defend·skill·win·lose
 func say(hero_id: String, kind: String) -> void:
 	if voice_on() and not instant:
+		if hero_id == "announcer":
+			hero_id = "announcer_" + announcer_id()
 		voice.say(hero_id, kind)
+
+
+## 안내 음성 목록(data/voice_extra.json의 announcers: id와 설정에 보일 이름).
+func announcers() -> Array:
+	return GameData.load_json("res://data/voice_extra.json").get("announcers", [])
+
+
+## 설정에서 고른 안내 음성 id. 고른 적이 없거나 목록에 없으면 첫 번째.
+func announcer_id() -> String:
+	var list := announcers()
+	var chosen := str(profile.get("settings", {}).get("announcer", "")) if has_profile() else ""
+	for entry in list:
+		if str(entry.get("id", "")) == chosen:
+			return chosen
+	return str(list[0].get("id", "")) if not list.is_empty() else ""
 
 
 

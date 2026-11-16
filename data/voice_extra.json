@@ -1,22 +1,23 @@
 {
- "_comment": "영웅이 아닌 음성: 안내 음성(announcer)과 적 음성(enemy_*). 파일은 assets/audio/voice/<id>_<상황>.ogg. tags가 있는 것은 v3 모델에 연기 지시를 붙여 만든 것(2026-11-16 사용자가 고름).",
+ "_comment": "영웅이 아닌 음성: 안내 음성과 적 음성(enemy_*). 파일은 assets/audio/voice/<id>_<상황>.ogg. 안내 음성은 네 가지(announcers 목록, 파일 announcer_<id>_<상황>.ogg) 중 설정에서 고른다. heroes.announcer는 기본값(l)과 같은 대사표. v3 모델에 연기 지시를 붙여 만든 것(2026-11-16 사용자가 고름).",
  "heroes": {
   "announcer": {
-   "voice": "IAETYMYM3nJvjnlkVTKI",
-   "voice_name": "deoksu",
+   "voice": "hjCvGtSCRPyjYwe2lDf1",
+   "voice_name": "juan",
    "lines": {
-    "start": "게임 시작!",
-    "turn": "내 차례!",
-    "enemy_turn": "상대 차례!",
-    "battle": "전투!",
-    "double": "더블!",
-    "gate": "관문 전투!",
-    "goal": "골인!",
-    "catchup": "따라잡기 찬스!",
-    "last_turn": "마지막 턴!",
-    "win": "승리!",
-    "lose": "패배..."
-   }
+    "start": "게임을 시작합니다!",
+    "turn": "당신의 차례입니다!",
+    "enemy_turn": "상대의 차례입니다.",
+    "battle": "전투가 시작됩니다!",
+    "double": "더블입니다!",
+    "gate": "관문 전투입니다!",
+    "goal": "골인입니다!",
+    "catchup": "따라잡기 기회입니다!",
+    "last_turn": "마지막 턴입니다!",
+    "win": "승리했습니다!",
+    "lose": "패배했습니다."
+   },
+   "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게"
   },
   "enemy_gate": {
    "voice": "LrQhxz410fuKCcLPDGHz",
@@ -73,6 +74,96 @@
     "win": "괴물처럼 음산하게 웃는다",
     "lose": "쓰러지며 괴롭게 신음한다"
    }
+  },
+  "announcer_l": {
+   "voice": "hjCvGtSCRPyjYwe2lDf1",
+   "voice_name": "juan",
+   "lines": {
+    "start": "게임을 시작합니다!",
+    "turn": "당신의 차례입니다!",
+    "enemy_turn": "상대의 차례입니다.",
+    "battle": "전투가 시작됩니다!",
+    "double": "더블입니다!",
+    "gate": "관문 전투입니다!",
+    "goal": "골인입니다!",
+    "catchup": "따라잡기 기회입니다!",
+    "last_turn": "마지막 턴입니다!",
+    "win": "승리했습니다!",
+    "lose": "패배했습니다."
+   },
+   "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게"
+  },
+  "announcer_m": {
+   "voice": "n2fbxG88jqAoaVPUy3IG",
+   "voice_name": "yooni",
+   "lines": {
+    "start": "게임 시작!",
+    "turn": "내 차례!",
+    "enemy_turn": "상대 차례!",
+    "battle": "전투!",
+    "double": "더블!",
+    "gate": "관문 전투!",
+    "goal": "골인!",
+    "catchup": "따라잡기 찬스!",
+    "last_turn": "마지막 턴!",
+    "win": "승리!",
+    "lose": "패배..."
+   },
+   "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게"
+  },
+  "announcer_n": {
+   "voice": "n2fbxG88jqAoaVPUy3IG",
+   "voice_name": "yooni",
+   "lines": {
+    "start": "게임을 시작합니다!",
+    "turn": "당신의 차례입니다!",
+    "enemy_turn": "상대의 차례입니다.",
+    "battle": "전투가 시작됩니다!",
+    "double": "더블입니다!",
+    "gate": "관문 전투입니다!",
+    "goal": "골인입니다!",
+    "catchup": "따라잡기 기회입니다!",
+    "last_turn": "마지막 턴입니다!",
+    "win": "승리했습니다!",
+    "lose": "패배했습니다."
+   },
+   "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게"
+  },
+  "announcer_o": {
+   "voice": "wzMVIc8FAFmgMxFpN0uM",
+   "voice_name": "deokpal",
+   "lines": {
+    "start": "게임을 시작합니다!",
+    "turn": "당신의 차례입니다!",
+    "enemy_turn": "상대의 차례입니다.",
+    "battle": "전투가 시작됩니다!",
+    "double": "더블입니다!",
+    "gate": "관문 전투입니다!",
+    "goal": "골인입니다!",
+    "catchup": "따라잡기 기회입니다!",
+    "last_turn": "마지막 턴입니다!",
+    "win": "승리했습니다!",
+    "lose": "패배했습니다."
+   },
+   "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게"
   }
- }
+ },
+ "announcers": [
+  {
+   "id": "l",
+   "label": "남성 아나운서"
+  },
+  {
+   "id": "m",
+   "label": "여성 아나운서(짧게)"
+  },
+  {
+   "id": "n",
+   "label": "여성 아나운서"
+  },
+  {
+   "id": "o",
+   "label": "차분한 남성"
+  }
+ ]
 }
