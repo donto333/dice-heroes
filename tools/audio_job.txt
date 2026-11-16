@@ -1,1 +1,2 @@
-make_batch2.py
+list_voices.py
+# 2026-11-16 목소리 목록 다시 확인
