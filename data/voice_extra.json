@@ -1,5 +1,5 @@
 {
- "_comment": "영웅이 아닌 음성: 안내 음성(announcer)과 적 음성(enemy_*). 파일은 assets/audio/voice/<id>_<상황>.ogg. tools/make_batch2.py가 만든다.",
+ "_comment": "영웅이 아닌 음성: 안내 음성(announcer)과 적 음성(enemy_*). 파일은 assets/audio/voice/<id>_<상황>.ogg. tags가 있는 것은 v3 모델에 연기 지시를 붙여 만든 것(2026-11-16 사용자가 고름).",
  "heroes": {
   "announcer": {
    "voice": "IAETYMYM3nJvjnlkVTKI",
@@ -28,30 +28,45 @@
    }
   },
   "enemy_boss": {
-   "voice": "UmYoqGlufKxhJ6NCx5Mv",
-   "voice_name": "jangho",
+   "voice": "omI5ljpPfx2qLiwaLr5t",
+   "voice_name": "위엄 도독3",
    "lines": {
-    "appear": "잘도 여기까지 왔구나.",
-    "win": "아직 멀었다!",
-    "lose": "훌륭하다... 네가 이겼다."
+    "appear": "잘도 여기까지 왔구나. 허나, 여기가 끝이다.",
+    "win": "아직 멀었다. 더 강해져서 오너라!",
+    "lose": "훌륭하다... 이 승부, 네가 이겼다."
+   },
+   "tags": {
+    "appear": "낮고 위압적으로, 천천히",
+    "win": "위엄 있게 꾸짖으며",
+    "lose": "숨을 몰아쉬며 담담하게"
    }
   },
   "enemy_keeper": {
-   "voice": "N2lVS1w4EtoT3dr4eOWO",
-   "voice_name": "callum",
+   "voice": "s8JtlFs6n1bywa1BkH7G",
+   "voice_name": "장비",
    "lines": {
-    "appear": "어디 한번 덤벼 봐라!",
-    "win": "하하하, 약하구나!",
-    "lose": "이런, 졌군."
+    "appear": "이 거점은 내가 지킨다. 어디 덤벼 봐라!",
+    "win": "하하하! 그 실력으로 어딜 넘보느냐!",
+    "lose": "이런... 내가 지다니."
+   },
+   "tags": {
+    "appear": "거칠고 자신만만하게",
+    "win": "크게 비웃으며",
+    "lose": "어이없어하며"
    }
   },
   "enemy_monster": {
-   "voice": "nPczCjzI2devNBz1zQrb",
-   "voice_name": "brian",
+   "voice": "bHnQ6ikU0Hwws51HQXJb",
+   "voice_name": "패왕 무신2",
    "lines": {
     "appear": "크아아아!",
     "win": "크하하하!",
     "lose": "끄으윽..."
+   },
+   "tags": {
+    "appear": "짐승처럼 사납게 포효한다",
+    "win": "괴물처럼 음산하게 웃는다",
+    "lose": "쓰러지며 괴롭게 신음한다"
    }
   }
  }
