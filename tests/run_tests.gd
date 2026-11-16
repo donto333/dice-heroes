@@ -90,6 +90,7 @@ func _init() -> void:
 	_test_double()
 	_test_gate()
 	_test_voice_lines()
+	_test_audio_tables()
 	_test_idle()
 	_test_minigame_and_league()
 	_test_relics()
@@ -1503,3 +1504,13 @@ func _test_voice_lines() -> void:
 		_check(not hero.is_empty(), "음성 대사가 없는 영웅: " + id)
 		for kind in kinds:
 			_check(str(hero.get("lines", {}).get(kind, "")) != "", "대사가 빈 곳: %s %s" % [id, kind])
+
+
+## 안내·적 음성 대사표가 코드에서 쓰는 이름과 맞는다.
+func _test_audio_tables() -> void:
+	var extra: Dictionary = GameData.load_json("res://data/voice_extra.json").get("heroes", {})
+	for kind in ["start", "turn", "battle", "double", "gate", "catchup", "last_turn"]:
+		_check(str(extra.get("announcer", {}).get("lines", {}).get(kind, "")) != "", "안내 음성 대사가 없음: " + kind)
+	for enemy in ["enemy_gate", "enemy_boss", "enemy_keeper", "enemy_monster"]:
+		for kind in ["appear", "win", "lose"]:
+			_check(str(extra.get(enemy, {}).get("lines", {}).get(kind, "")) != "", "적 음성 대사가 없음: %s %s" % [enemy, kind])

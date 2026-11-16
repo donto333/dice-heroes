@@ -62,7 +62,7 @@ func setup(main_app, _params: Dictionary) -> void:
 func _on_mission_tab(id: String) -> void:
 	if id == _tab:
 		return
-	app.play("click")
+	app.play("tab")
 	app.go("missions", {"tab": id})
 
 
@@ -176,7 +176,7 @@ func _on_guide() -> void:
 	if reward.is_empty():
 		return
 	app.save()
-	app.play("win")
+	app.play("reward")
 	app.toast("길잡이 보상: %s" % Kit.reward_line(reward))
 	app.go("missions", {"tab": _tab})
 
@@ -212,7 +212,7 @@ func _on_achievement(id: String) -> void:
 	if reward.is_empty():
 		return
 	app.save()
-	app.play("win")
+	app.play("reward")
 	app.toast("업적 보상: %s" % Kit.reward_line(reward))
 	app.go("missions", {"tab": _tab})
 
@@ -248,7 +248,7 @@ func _on_check_in() -> void:
 	if reward.is_empty():
 		return
 	app.save()
-	app.play("win")
+	app.play("stamp")
 	app.toast("출석 보상: %s" % Kit.reward_line(reward))
 	app.go("missions", {"tab": _tab})
 
@@ -268,7 +268,7 @@ func _on_all_clear() -> void:
 	if reward.is_empty():
 		return
 	app.save()
-	app.play("win")
+	app.play("reward")
 	app.toast("모든 미션 완료! %s" % Kit.reward_line(reward))
 	app.go("missions", {"tab": _tab})
 
@@ -278,7 +278,7 @@ func _on_claim_everything() -> void:
 	if int(total["count"]) == 0:
 		return
 	app.save()
-	app.play("win")
+	app.play("reward")
 	app.toast("보상 %d개: %s" % [int(total["count"]), Kit.reward_line({"gold": int(total["gold"]), "gems": int(total["gems"])})])
 	app.go("missions", {"tab": _tab})
 

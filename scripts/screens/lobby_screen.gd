@@ -265,6 +265,10 @@ func _add_hero_area() -> void:
 
 	# 말풍선: 분류마다 말투가 다르고, 들어올 때마다 바뀐다.
 	var lines: Array = GREETINGS.get(str(leader.get("category", "")), GREETINGS["영웅"])
+	# 누르면 나오는 음성(idle)과 같은 말을 보여 준다. 대사표에 없으면 분류별 인사말을 쓴다.
+	var spoken := str(GameData.load_json("res://data/voice_lines.json").get("heroes", {}).get(str(leader.get("id", "")), {}).get("lines", {}).get("idle", ""))
+	if spoken != "":
+		lines = [spoken]
 	var bubble := PanelContainer.new()
 	bubble.add_theme_stylebox_override("panel", Kit.box(Color(1, 1, 1, 0.96), Color("1a56b0"), 3, 22, 12))
 	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -830,7 +834,7 @@ func _on_mail_claim(id: String) -> void:
 	if reward.is_empty():
 		return
 	app.save()
-	app.play("win")
+	app.play("reward")
 	_close_all_dialogs()
 	app.go("lobby")
 	app.toast("우편 선물: %s" % Kit.reward_line(reward))
@@ -907,7 +911,7 @@ func _on_spin() -> void:
 	await _wheel.spin_to(int(result["index"]))
 	if not is_inside_tree():
 		return
-	app.play("win")
+	app.play("reward")
 	app.toast("룰렛 보상: %s" % Kit.reward_line(result["reward"]))
 	_refresh_roulette()
 
@@ -934,6 +938,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"소리가 더 풍성해졌어요: 칸마다 다른 효과음, \"전투!\" \"내 차례!\" 안내 음성, 적들의 목소리. 설정에서 효과음·음성·음악 크기를 따로 조절할 수 있어요.",
 	"새 로비: 왼쪽에 대표 영웅, 오른쪽에 큰 타일(랭크전·모험·AI전·친구 대전·오늘의 도전·영웅·상점·미션·시즌 패스)로 로비를 새로 꾸몄어요. 진행 중 이벤트는 랭크전 타일 안에, 출전 파티와 오늘 할 일은 아래 띠에 보여요.",
 	"배경음악이 7곡으로 늘었어요: 타이틀·로비·상점·대전·관문 전투·승리·패배. 화면마다 다른 곡이 나와요.",
 	"영웅 48명이 말을 해요! 도감에서 누르거나 이동·공격·방어·스킬·승패 때 목소리가 나와요. 효과음도 새로 녹음했어요. (설정에서 끌 수 있어요)",

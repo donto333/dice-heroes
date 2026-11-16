@@ -1,24 +1,255 @@
 {
   "_comment": "ElevenLabs 효과음 주문서. 이름은 scripts/ui/sfx.gd의 소리 이름과 같다. .github/workflows/make-sfx.yml이 이 파일을 읽어 만든다. seconds는 0.5~30.",
   "sounds": [
-    {"name": "click", "seconds": 0.5, "text": "Soft bubbly UI button tap, short cute pop, casual mobile game"},
-    {"name": "step", "seconds": 0.5, "text": "Single light wooden game piece hop on a board, short tok"},
-    {"name": "dice", "seconds": 1.2, "text": "Two dice shaken and rolled on a wooden table, rattling then settling"},
-    {"name": "hit", "seconds": 0.6, "text": "Cartoon sword hit, short punchy slash impact, game combat"},
-    {"name": "win", "seconds": 1.5, "text": "Short bright victory jingle, cheerful brass and bells, casual mobile game"},
-    {"name": "lose", "seconds": 1.5, "text": "Short sad descending jingle, gentle, casual mobile game fail"},
-    {"name": "good", "seconds": 0.7, "text": "Positive chime, two rising marimba notes, reward pickup"},
-    {"name": "bad", "seconds": 0.7, "text": "Negative low buzz, two falling notes, soft error, casual game"},
-    {"name": "reveal", "seconds": 0.8, "text": "Magical reveal swell, rising shimmer, card flip reveal"},
-    {"name": "whoosh", "seconds": 0.6, "text": "Fast airy whoosh swipe, UI banner sliding in"},
-    {"name": "impact", "seconds": 0.8, "text": "Heavy cinematic drum impact, deep boom with short tail"},
-    {"name": "sparkle", "seconds": 0.8, "text": "Glittering sparkle twinkle, high bells, magical dust"},
-    {"name": "card", "seconds": 0.5, "text": "Playing card dealt, quick paper flick"},
-    {"name": "skill", "seconds": 1.0, "text": "Hero special ability activation, energy charge up then burst, anime game"},
-    {"name": "fanfare", "seconds": 3.0, "text": "Triumphant short fanfare, brass and drums, game match victory"},
-    {"name": "defeat", "seconds": 3.0, "text": "Somber short defeat sting, low strings descending, game over"},
-    {"name": "fling", "seconds": 0.8, "text": "Cartoon character knocked back flying away, descending whistle"},
-    {"name": "land", "seconds": 0.5, "text": "Soft thud landing on ground, short"},
-    {"name": "coin", "seconds": 0.6, "text": "Coins collected, bright metallic clink, game reward"}
+    {
+      "name": "click",
+      "seconds": 0.5,
+      "text": "Soft bubbly UI button tap, short cute pop, casual mobile game"
+    },
+    {
+      "name": "step",
+      "seconds": 0.5,
+      "text": "One loud clear wooden game piece tap on a board, single tok, close microphone"
+    },
+    {
+      "name": "dice",
+      "seconds": 1.2,
+      "text": "Two dice shaken and rolled on a wooden table, rattling then settling"
+    },
+    {
+      "name": "hit",
+      "seconds": 0.6,
+      "text": "Cartoon sword hit, short punchy slash impact, game combat"
+    },
+    {
+      "name": "win",
+      "seconds": 1.5,
+      "text": "Short bright victory jingle, cheerful brass and bells, casual mobile game"
+    },
+    {
+      "name": "lose",
+      "seconds": 1.5,
+      "text": "Short sad descending jingle, gentle, casual mobile game fail"
+    },
+    {
+      "name": "good",
+      "seconds": 0.7,
+      "text": "Positive chime, two rising marimba notes, reward pickup"
+    },
+    {
+      "name": "bad",
+      "seconds": 0.7,
+      "text": "Negative low buzz, two falling notes, soft error, casual game"
+    },
+    {
+      "name": "reveal",
+      "seconds": 0.8,
+      "text": "Magical reveal swell, rising shimmer, card flip reveal"
+    },
+    {
+      "name": "whoosh",
+      "seconds": 0.6,
+      "text": "Fast airy whoosh swipe, UI banner sliding in"
+    },
+    {
+      "name": "impact",
+      "seconds": 0.8,
+      "text": "Heavy cinematic drum impact, deep boom with short tail"
+    },
+    {
+      "name": "sparkle",
+      "seconds": 0.8,
+      "text": "Glittering sparkle twinkle, high bells, magical dust"
+    },
+    {
+      "name": "card",
+      "seconds": 0.5,
+      "text": "Playing card dealt, quick paper flick"
+    },
+    {
+      "name": "skill",
+      "seconds": 1.0,
+      "text": "Hero special ability activation, energy charge up then burst, anime game"
+    },
+    {
+      "name": "fanfare",
+      "seconds": 3.0,
+      "text": "Triumphant short fanfare, brass and drums, game match victory"
+    },
+    {
+      "name": "defeat",
+      "seconds": 3.0,
+      "text": "Somber short defeat sting, low strings descending, game over"
+    },
+    {
+      "name": "fling",
+      "seconds": 0.8,
+      "text": "Cartoon character knocked back flying away, descending whistle"
+    },
+    {
+      "name": "land",
+      "seconds": 0.5,
+      "text": "One loud clear soft thump of a game piece landing, close microphone"
+    },
+    {
+      "name": "coin",
+      "seconds": 0.6,
+      "text": "Coins collected, bright metallic clink, game reward"
+    },
+    {
+      "name": "tile_treasure",
+      "seconds": 0.9,
+      "text": "Treasure chest opening with sparkling coins, short happy game reward"
+    },
+    {
+      "name": "tile_prison",
+      "seconds": 0.9,
+      "text": "Heavy iron jail door slamming shut with a metallic clang, short"
+    },
+    {
+      "name": "tile_curse",
+      "seconds": 1.0,
+      "text": "Dark magic curse cast, eerie low whoosh with a sinister shimmer, short"
+    },
+    {
+      "name": "tile_luck",
+      "seconds": 0.9,
+      "text": "Lucky charm chime, bright magical bells rising, short and cheerful"
+    },
+    {
+      "name": "tile_forward",
+      "seconds": 0.7,
+      "text": "Fast upward dash boost, cartoon speed swoosh with a spring"
+    },
+    {
+      "name": "tile_trap",
+      "seconds": 0.8,
+      "text": "Trap snapping shut, sharp mechanical snap with a short thud"
+    },
+    {
+      "name": "tile_fate",
+      "seconds": 1.0,
+      "text": "Mysterious fate reveal, deep gong with a magical swell, short"
+    },
+    {
+      "name": "gate_open",
+      "seconds": 1.4,
+      "text": "Large stone castle gate grinding open, heavy and triumphant, short"
+    },
+    {
+      "name": "goal",
+      "seconds": 1.6,
+      "text": "Goal reached celebration, bright bell hit with a rising cheer of horns, short"
+    },
+    {
+      "name": "battle_win",
+      "seconds": 0.9,
+      "text": "Victory stamp impact, punchy drum hit with a bright brass stab, game battle won"
+    },
+    {
+      "name": "battle_lose",
+      "seconds": 0.9,
+      "text": "Defeat stamp impact, dull low drum hit with a falling tone, game battle lost"
+    },
+    {
+      "name": "banner",
+      "seconds": 0.7,
+      "text": "Turn start banner slide in, quick whoosh ending in a light drum hit"
+    },
+    {
+      "name": "versus",
+      "seconds": 1.4,
+      "text": "Versus screen clash, two heavy metallic slams and a rumbling impact, fighting game"
+    },
+    {
+      "name": "double",
+      "seconds": 0.9,
+      "text": "Double dice bonus, two quick bright dings then a sparkle, casual game"
+    },
+    {
+      "name": "card_attack",
+      "seconds": 0.7,
+      "text": "Magic attack card cast, sharp fiery whoosh and strike"
+    },
+    {
+      "name": "card_debuff",
+      "seconds": 0.8,
+      "text": "Hex debuff card cast, wobbly descending magic tone"
+    },
+    {
+      "name": "card_heal",
+      "seconds": 0.9,
+      "text": "Healing card cast, soft warm chime with a gentle shimmer"
+    },
+    {
+      "name": "upgrade",
+      "seconds": 1.2,
+      "text": "Hero upgrade success, rising power up arpeggio ending in a bright shine"
+    },
+    {
+      "name": "reward",
+      "seconds": 0.8,
+      "text": "Reward claimed, coins and a cheerful short ding"
+    },
+    {
+      "name": "purchase",
+      "seconds": 0.7,
+      "text": "Shop purchase confirmed, cash register ka-ching, short"
+    },
+    {
+      "name": "levelup",
+      "seconds": 1.5,
+      "text": "Level up jingle, short triumphant rising fanfare with sparkle, mobile game"
+    },
+    {
+      "name": "summon_1",
+      "seconds": 1.0,
+      "text": "Card summon reveal common, soft magical pop with a light chime"
+    },
+    {
+      "name": "summon_2",
+      "seconds": 1.3,
+      "text": "Card summon reveal rare, magical burst with bright shimmering chimes"
+    },
+    {
+      "name": "summon_3",
+      "seconds": 2.0,
+      "text": "Card summon reveal legendary, dramatic golden burst with a choir hit and sparkling fanfare"
+    },
+    {
+      "name": "roulette_tick",
+      "seconds": 0.5,
+      "text": "Single wheel of fortune tick, short plastic click"
+    },
+    {
+      "name": "stamp",
+      "seconds": 0.6,
+      "text": "Rubber stamp pressed on paper, satisfying thump"
+    },
+    {
+      "name": "tab",
+      "seconds": 0.5,
+      "text": "Soft UI tab switch, light airy tick"
+    },
+    {
+      "name": "back",
+      "seconds": 0.5,
+      "text": "Soft UI back button, low short pop"
+    },
+    {
+      "name": "popup",
+      "seconds": 0.5,
+      "text": "UI popup window opening, quick soft bubble swell"
+    },
+    {
+      "name": "denied",
+      "seconds": 0.6,
+      "text": "UI error denied, two short low muted buzzes, gentle"
+    },
+    {
+      "name": "aim",
+      "seconds": 1.2,
+      "text": "Power meter charging up, steadily rising electronic tone, short"
+    }
   ]
 }

@@ -199,7 +199,7 @@ func _on_mileage() -> void:
 	if reward.is_empty():
 		return
 	app.save()
-	app.play("win")
+	app.play("purchase")
 	app.go("shop", {"tab": _tab})
 	app.toast("마일리지 보상: %s" % Kit.reward_line(reward))
 
@@ -246,9 +246,10 @@ func _on_relic(id: String) -> void:
 		Profile.equip_relic(app.profile, id)
 		app.play("click")
 	elif Profile.buy_relic(app.profile, app.eco, id):
-		app.play("win")
+		app.play("purchase")
 		app.toast("%s을(를) 샀어요! 바로 장착했어요." % Profile.relic(app.eco, id)["name"])
 	else:
+		app.play("denied")
 		app.toast("골드나 보석이 모자라요.")
 		return
 	app.save()
@@ -295,9 +296,10 @@ func _on_dice_skin(id: String) -> void:
 		Profile.equip_dice_skin(app.profile, id)
 		app.play("click")
 	elif Profile.buy_dice_skin(app.profile, app.eco, id):
-		app.play("win")
+		app.play("purchase")
 		app.toast("%s를 샀어요! 바로 쓸게요." % Profile.dice_skin(app.eco, id)["name"])
 	else:
+		app.play("denied")
 		app.toast("골드나 보석이 모자라요.")
 		return
 	app.save()
@@ -380,6 +382,7 @@ func _on_paid(count: int) -> void:
 	var summon: Dictionary = app.eco.get("summon", {})
 	var cost := int(summon.get("cost_ten" if count >= 10 else "cost_one", 100))
 	if not Profile.pay(app.profile, "gems", cost):
+		app.play("denied")
 		app.toast("보석이 모자라요.")
 		return
 	_summon(count)
@@ -399,7 +402,7 @@ func _summon(count: int) -> void:
 		app.add_child(ritual)
 		app.play("skill")
 		await ritual.play(best_grade)
-	app.play("reveal")
+	app.play("summon_%d" % clampi(best_grade, 1, 3))
 	app.go("shop", {"tab": _tab})
 	app.current_screen.show_results(results)
 
@@ -446,7 +449,7 @@ func show_results(results: Array) -> void:
 		tween.tween_property(cell, "modulate:a", 1.0, 0.08)
 		tween.parallel().tween_property(cell, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if best >= 3:
-		app.play("win")
+		app.play("purchase")
 
 
 func _on_exchange(index: int) -> void:
@@ -460,7 +463,7 @@ func _on_exchange(index: int) -> void:
 func _on_shop_tab(id: String) -> void:
 	if id == _tab:
 		return
-	app.play("click")
+	app.play("tab")
 	app.go("shop", {"tab": id})
 
 

@@ -10,7 +10,16 @@ const FILE_DIR := "res://assets/audio/sfx"
 ## 파일에서 읽은 소리는 최대 크기를 맞춰 두었으므로 이만큼(dB) 줄여서 튼다.
 const FILE_VOLUME_DB := -8.0
 ## 자주 나는 짧은 소리는 더 작게 튼다.
-const QUIET_SOUNDS := {"click": -16.0, "card": -12.0, "good": -11.0, "coin": -11.0, "whoosh": -12.0}
+const QUIET_SOUNDS := {"click": -16.0, "card": -12.0, "good": -11.0, "coin": -11.0, "whoosh": -12.0,
+	"tab": -15.0, "step": -13.0, "land": -12.0, "roulette_tick": -13.0, "banner": -11.0, "aim": -14.0, "denied": -11.0, "reward": -10.0}
+## 새 소리 이름 → 파일이 없을 때 대신 쓰는 예전 소리
+const FALLBACKS := {"tile_treasure": "coin", "tile_prison": "bad", "tile_curse": "bad", "tile_luck": "good", "tile_forward": "good",
+	"tile_trap": "bad", "tile_fate": "reveal", "gate_open": "win", "goal": "win", "battle_win": "good", "battle_lose": "bad",
+	"banner": "whoosh", "versus": "impact", "double": "sparkle", "card_attack": "sparkle", "card_debuff": "sparkle", "card_heal": "sparkle",
+	"upgrade": "win", "reward": "win", "purchase": "win", "levelup": "win", "summon_1": "reveal", "summon_2": "reveal", "summon_3": "reveal",
+	"roulette_tick": "click", "stamp": "good", "tab": "click", "denied": "bad", "aim": "reveal"}
+## 설정의 효과음 크기(0~1)를 dB로 바꾼 값. main.gd가 넣는다.
+var gain_db := 0.0
 var _from_file: Dictionary = {}
 
 var _sounds: Dictionary = {}
@@ -45,6 +54,9 @@ func _ready() -> void:
 	_sounds["fling"] = _sweep(900.0, 180.0, 0.4)
 	_sounds["land"] = _tone([[160.0, 0.05], [110.0, 0.07]], "triangle")
 	_sounds["coin"] = _tone([[1318.5, 0.05], [1760.0, 0.1]], "sine")
+	# 새로 생긴 소리 이름: 파일이 없으면 비슷한 예전 소리로 대신한다.
+	for sound_name in FALLBACKS:
+		_sounds[sound_name] = _sounds[FALLBACKS[sound_name]]
 	# 녹음된 효과음 파일(assets/audio/sfx/이름.ogg)이 있으면 합성한 소리 대신 쓴다.
 	# 파일은 tools/sfx_prompts.json 주문서로 ElevenLabs에서 만든 것이다.
 	for sound_name in _sounds.keys():
@@ -62,7 +74,7 @@ func play(sound_name: String) -> void:
 	var player: AudioStreamPlayer = _players[_next]
 	_next = (_next + 1) % _players.size()
 	player.stream = _sounds[sound_name]
-	player.volume_db = float(QUIET_SOUNDS.get(sound_name, FILE_VOLUME_DB)) if _from_file.has(sound_name) else 0.0
+	player.volume_db = (float(QUIET_SOUNDS.get(sound_name, FILE_VOLUME_DB)) if _from_file.has(sound_name) else 0.0) + gain_db
 	player.play()
 
 
@@ -167,3 +179,7 @@ func _to_stream(samples: PackedFloat32Array) -> AudioStreamWAV:
 	stream.stereo = false
 	stream.data = bytes
 	return stream
+
+
+func has(sound_name: String) -> bool:
+	return _sounds.has(sound_name)

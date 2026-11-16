@@ -149,6 +149,7 @@ func _on_stage(id: String) -> void:
 ## 보석으로 소탕 횟수를 하나 사고 바로 소탕한다.
 func _buy_sweep(id: String) -> void:
 	if not Profile.buy_sweep(app.profile, app.eco):
+		app.play("denied")
 		app.toast("보석이 모자라요.")
 		return
 	_sweep(id)
@@ -162,7 +163,7 @@ func _sweep(id: String) -> void:
 		app.toast("지금은 소탕할 수 없어요.")
 		return
 	app.save()
-	app.play("win")
+	app.play("reward")
 	app.go("adventure")
 	app.toast("소탕 완료: %s · 경험치 +%d" % [Kit.reward_line(reward), int(reward["exp"])])
 

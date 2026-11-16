@@ -6,7 +6,12 @@ extends Node
 const DIR := "res://assets/audio/voice"
 const VOLUME_DB := -3.0
 
+## 말을 시작하면 그 길이(초)와 함께 알린다(배경음악을 잠깐 줄이는 데 쓴다).
+signal spoke(seconds: float)
+
 var enabled := true
+## 설정의 음성 크기를 dB로 바꾼 값
+var gain_db := 0.0
 var _players: Array = []
 var _next := 0
 
@@ -36,5 +41,7 @@ func say(hero_id: String, kind: String) -> bool:
 	var player: AudioStreamPlayer = _players[_next]
 	_next = (_next + 1) % _players.size()
 	player.stream = stream
+	player.volume_db = VOLUME_DB + gain_db
 	player.play()
+	spoke.emit(float(stream.get_length()))
 	return true

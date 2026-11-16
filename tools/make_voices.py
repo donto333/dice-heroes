@@ -6,7 +6,7 @@ key = os.environ.get("ELEVENLABS_API_KEY", "")
 if not key:
     sys.exit("ELEVENLABS_API_KEY가 없습니다.")
 only = set(filter(None, os.environ.get("ONLY", "").split(",")))
-table = json.load(open("data/voice_lines.json", encoding="utf-8"))
+table = json.load(open(os.environ.get("VOICE_TABLE", "data/voice_lines.json"), encoding="utf-8"))
 os.makedirs("out", exist_ok=True)
 made = failed = cost = 0
 for hero_id, hero in table["heroes"].items():
