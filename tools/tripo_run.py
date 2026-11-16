@@ -15,6 +15,9 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 BASE = "https://openapi.tripo3d.com/v3"
+## 예전(v2) 키는 새 주소에서 "Invalid API key"가 나온다. 그때는 예전 주소로 같은 일을 한다.
+V2_BASES = ["https://api.tripo3d.ai/v2/openapi", "https://api.tripo3d.com/v2/openapi"]
+V2 = False
 OUT = ROOT / "out" / "tripo"
 ## 비밀값 이름을 모르므로 흔한 이름을 차례로 찾아본다.
 KEY_NAMES = ["TRIPO_API_KEY", "TRIPO_KEY", "TRIPO", "TRIPO_API", "TRIPO3D_API_KEY", "TRIPO_TOKEN", "TRIPO_SECRET", "TRIPO_AI_API_KEY"]
@@ -32,6 +35,7 @@ def find_key() -> str:
 
 def call(method: str, path: str, key: str, **kwargs) -> dict:
 	headers = {"Authorization": "Bearer " + key}
+	quiet = kwargs.pop("quiet", False)
 	for attempt in range(4):
 		response = requests.request(method, BASE + path, headers=headers, timeout=120, **kwargs)
 		if response.status_code in (429, 500, 502, 503) and attempt < 3:
@@ -43,7 +47,8 @@ def call(method: str, path: str, key: str, **kwargs) -> dict:
 	except ValueError:
 		body = {"code": -1, "raw": response.text[:400]}
 	if response.status_code != 200 or body.get("code") != 0:
-		print("요청 실패:", method, path, response.status_code, json.dumps(body, ensure_ascii=False)[:600])
+		if not quiet:
+			print("요청 실패:", method, path, response.status_code, json.dumps(body, ensure_ascii=False)[:600])
 		raise RuntimeError("tripo %s %s" % (method, path))
 	return body["data"]
 
@@ -52,7 +57,7 @@ def wait(task_id: str, key: str, label: str) -> dict:
 	started = time.time()
 	last = -1
 	while True:
-		data = call("GET", "/tasks/" + task_id, key)
+		data = call("GET", ("/task/" if V2 else "/tasks/") + task_id, key)
 		status = data.get("status")
 		progress = data.get("progress", 0)
 		if progress != last:
@@ -82,7 +87,7 @@ def download(url: str, target: Path) -> None:
 def urls_of(output: dict) -> list:
 	"""작업 결과에서 모델 주소들을 꺼낸다(항목 이름이 작업마다 달라서 넓게 찾는다)."""
 	found = []
-	for name in ("model_url", "pbr_model_url", "base_model_url", "model"):
+	for name in ("model_url", "pbr_model_url", "base_model_url", "pbr_model", "model", "base_model"):
 		value = output.get(name)
 		if isinstance(value, str) and value.startswith("http"):
 			found.append(value)
@@ -115,10 +120,21 @@ def run_job(job: dict, key: str) -> None:
 		prepared = folder / "input.png"
 		prepare_image(ROOT / job["image"], prepared)
 		with open(prepared, "rb") as handle:
-			token = call("POST", "/files", key, files={"file": ("input.png", handle, "image/png")})["file_token"]
-		body = {"input": token, "model": job.get("model", "v3.1-20260211"), "texture": True, "pbr": False,
-			"face_limit": int(job.get("face_limit", 30000)), "texture_quality": job.get("texture_quality", "standard")}
-		tasks["model_task"] = call("POST", "/generation/image-to-model", key, json=body)["task_id"]
+			if V2:
+				uploaded = call("POST", "/upload/sts", key, files={"file": ("input.png", handle, "image/png")})
+				token = uploaded.get("image_token") or uploaded.get("file_token")
+			else:
+				token = call("POST", "/files", key, files={"file": ("input.png", handle, "image/png")})["file_token"]
+		if V2:
+			body = {"type": "image_to_model", "file": {"type": "png", "file_token": token}, "texture": True, "pbr": False,
+				"face_limit": int(job.get("face_limit", 30000))}
+			if job.get("model_v2"):
+				body["model_version"] = job["model_v2"]
+			tasks["model_task"] = call("POST", "/task", key, json=body)["task_id"]
+		else:
+			body = {"input": token, "model": job.get("model", "v3.1-20260211"), "texture": True, "pbr": False,
+				"face_limit": int(job.get("face_limit", 30000)), "texture_quality": job.get("texture_quality", "standard")}
+			tasks["model_task"] = call("POST", "/generation/image-to-model", key, json=body)["task_id"]
 		print("  TASK %s model_task %s" % (name, tasks["model_task"]))
 	model = wait(tasks["model_task"], key, name + " 모델")
 	for index, url in enumerate(urls_of(model.get("output") or {})[:1]):
@@ -128,7 +144,10 @@ def run_job(job: dict, key: str) -> None:
 		download(shot, folder / "preview.webp")
 	if job.get("rig"):
 		if not tasks["rig_task"]:
-			check = call("POST", "/animations/rig-check", key, json={"input": tasks["model_task"]})
+			if V2:
+				check = call("POST", "/task", key, json={"type": "animate_prerigcheck", "original_model_task_id": tasks["model_task"]})
+			else:
+				check = call("POST", "/animations/rig-check", key, json={"input": tasks["model_task"]})
 			print("  뼈대 검사 응답:", json.dumps(check, ensure_ascii=False)[:300])
 			if "task_id" in check and "riggable" not in check:
 				check = (wait(check["task_id"], key, name + " 뼈대 검사").get("output") or {})
@@ -137,8 +156,12 @@ def run_job(job: dict, key: str) -> None:
 				print("  이 모델은 뼈대를 넣을 수 없다고 함. 동작 없이 넘어간다.")
 				(folder / "tasks.json").write_text(json.dumps(tasks, indent="\t"))
 				return
-			body = {"input": tasks["model_task"], "model": "v3.0-20260909", "rig_type": check.get("rig_type", "biped"), "spec": "mixamo"}
-			tasks["rig_task"] = call("POST", "/animations/rig", key, json=body)["task_id"]
+			if V2:
+				body = {"type": "animate_rig", "original_model_task_id": tasks["model_task"], "out_format": "glb", "spec": "mixamo"}
+				tasks["rig_task"] = call("POST", "/task", key, json=body)["task_id"]
+			else:
+				body = {"input": tasks["model_task"], "model": "v3.0-20260909", "rig_type": check.get("rig_type", "biped"), "spec": "mixamo"}
+				tasks["rig_task"] = call("POST", "/animations/rig", key, json=body)["task_id"]
 			print("  TASK %s rig_task %s" % (name, tasks["rig_task"]))
 		rig = wait(tasks["rig_task"], key, name + " 뼈대")
 		for url in urls_of(rig.get("output") or {})[:1]:
@@ -146,8 +169,18 @@ def run_job(job: dict, key: str) -> None:
 		animations = job.get("animations", [])
 		if animations:
 			if not tasks["anim_task"]:
-				body = {"input": tasks["rig_task"], "animations": animations[:5], "out_format": "glb", "animate_in_place": True}
-				tasks["anim_task"] = call("POST", "/animations/retarget", key, json=body)["task_id"]
+				if V2:
+					body = {"type": "animate_retarget", "original_model_task_id": tasks["rig_task"], "out_format": "glb",
+						"animations": animations[:5], "bake_animation": True, "animate_in_place": True}
+					try:
+						tasks["anim_task"] = call("POST", "/task", key, json=body)["task_id"]
+					except RuntimeError:
+						# 예전 뼈대는 동작 이름이 preset:biped:<이름> 꼴이다.
+						body["animations"] = [item.replace("preset:", "preset:biped:") for item in animations[:5]]
+						tasks["anim_task"] = call("POST", "/task", key, json=body)["task_id"]
+				else:
+					body = {"input": tasks["rig_task"], "animations": animations[:5], "out_format": "glb", "animate_in_place": True}
+					tasks["anim_task"] = call("POST", "/animations/retarget", key, json=body)["task_id"]
 				print("  TASK %s anim_task %s" % (name, tasks["anim_task"]))
 			anim = wait(tasks["anim_task"], key, name + " 동작")
 			print("  동작 결과:", json.dumps(anim.get("output"), ensure_ascii=False)[:500])
@@ -157,8 +190,25 @@ def run_job(job: dict, key: str) -> None:
 
 
 def main() -> None:
+	global BASE, V2
 	key = find_key()
-	balance = call("GET", "/account/balance", key)
+	print("키 모양: 앞 4글자가 'tsk_'인가:", key.startswith("tsk_"), "/ 공백·따옴표 포함:", key != key.strip("'\" \n"))
+	try:
+		balance = call("GET", "/account/balance", key)
+	except RuntimeError:
+		balance = None
+		for base in V2_BASES:
+			BASE = base
+			try:
+				balance = call("GET", "/user/balance", key)
+				V2 = True
+				print("예전(v2) 주소로 연결됨:", base)
+				break
+			except RuntimeError:
+				continue
+		if balance is None:
+			print("이 키로는 트리포에 연결할 수 없다. 키가 틀렸거나 지워졌다.")
+			sys.exit(3)
 	print("남은 크레딧:", balance.get("balance"), "/ 묶인 크레딧:", balance.get("frozen"))
 	if len(sys.argv) > 1 and sys.argv[1] == "balance":
 		return
@@ -170,7 +220,7 @@ def main() -> None:
 		except Exception as error:  # 한 주문이 실패해도 나머지는 계속한다.
 			failed += 1
 			print("주문 실패:", job.get("name"), error)
-	after = call("GET", "/account/balance", key)
+	after = call("GET", "/user/balance" if V2 else "/account/balance", key)
 	print("끝난 뒤 크레딧:", after.get("balance"), "(이번에 쓴 양 %.1f)" % (float(balance.get("balance", 0)) - float(after.get("balance", 0))))
 	if failed:
 		sys.exit(1)
