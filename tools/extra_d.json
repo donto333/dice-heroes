@@ -1,0 +1,6 @@
+{"announcer_g": {"voice": "RlynaiseqcfHE3bZpqe4", "name": "G · Andy(D와 같은 목소리, 한국어 발음 고정)"},
+ "announcer_h": {"voice": "7DefdtnPMJMn3TdLwgxE", "name": "H · 위엄 군주3(젊은 한국어 남성)"},
+ "announcer_i": {"voice": "crWwrsPPSl30w8RZ3b2U", "name": "I · 후보1(한국어 남성)"},
+ "announcer_j": {"voice": "sJJRLbKn8NDyoru4pVnd", "name": "J · 미장부 도독(한국어 남성)"},
+ "tag": "라디오 진행자처럼 경쾌하고 또렷하게 외치며",
+ "lines": {"start": "게임 시작!", "turn": "내 차례!", "enemy_turn": "상대 차례!", "battle": "전투!", "double": "더블!", "gate": "관문 전투!", "goal": "골인!", "catchup": "따라잡기 찬스!", "last_turn": "마지막 턴!", "win": "승리!", "lose": "패배..."}}
