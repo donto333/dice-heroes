@@ -306,7 +306,7 @@
     "select": "백성을 위한 일이라면 무엇이든 하겠노라.",
     "idle": "밤이 깊었구나. 조금만 더 읽고 자야겠다.",
     "move": "함께 가 보자꾸나.",
-    "attack": "옳지 않은 것은 바로잡아야지!",
+    "attack": "그릇된 일은 바로잡아야 하느니라!",
     "defend": "서두르지 마라. 길은 있느니라.",
     "skill": "훈민정음! 백성의 소리를 글로 적어라!",
     "win": "모두의 지혜가 모인 덕이로다.",
@@ -316,7 +316,7 @@
     "select": "인자하고 기품 있게",
     "idle": "책장을 넘기듯 차분하게",
     "move": "온화하게",
-    "attack": "단호하지만 부드럽게",
+    "attack": "단호하지만 부드럽게, 또박또박",
     "defend": "침착하게",
     "skill": "힘 있게 선포하듯",
     "win": "흐뭇하게",
@@ -324,8 +324,8 @@
    }
   },
   "zhugeliang": {
-   "voice": "sJJRLbKn8NDyoru4pVnd",
-   "voice_name": "미장부",
+   "voice": "gvV8TAHma6jvCGUMAvBg",
+   "voice_name": "도독1",
    "lines": {
     "select": "와룡이 깨어났소. 천하의 계책을 들어 보시겠소?",
     "idle": "별의 움직임이 심상치 않구려.",
@@ -372,8 +372,8 @@
    }
   },
   "zhouyu": {
-   "voice": "crWwrsPPSl30w8RZ3b2U",
-   "voice_name": "후보1",
+   "voice": "gvV8TAHma6jvCGUMAvBg",
+   "voice_name": "도독1",
    "lines": {
     "select": "동남풍이 불어오는군. 때가 왔소.",
     "idle": "곡조가 틀리면, 나는 꼭 돌아본다오.",
@@ -396,8 +396,8 @@
    }
   },
   "jangyeongsil": {
-   "voice": "hjCvGtSCRPyjYwe2lDf1",
-   "voice_name": "juan",
+   "voice": "IAETYMYM3nJvjnlkVTKI",
+   "voice_name": "deoksu",
    "lines": {
     "select": "하늘의 시간을 재어 보겠습니다.",
     "idle": "이 톱니를 조금만 더 깎으면 될 것 같은데...",
@@ -667,7 +667,7 @@
     "idle": "싸움은 힘이 아니라 머리로 하는 것.",
     "move": "창을 들어라. 간다.",
     "attack": "전쟁의 여신의 창을 받아라!",
-    "defend": "내 방패는 뚫을 수 없다.",
+    "defend": "내 방패는 깨지지 않는다.",
     "skill": "가호를 내리노라. 두려워 말고 싸워라.",
     "win": "잘 싸웠다. 지혜로운 승리로다.",
     "lose": "이번은... 네가 한 수 위였구나."
@@ -677,7 +677,7 @@
     "idle": "차분하게",
     "move": "단호하게",
     "attack": "날카롭게 외치며",
-    "defend": "차갑게",
+    "defend": "차갑게, 또박또박",
     "skill": "엄숙하게 선언하듯",
     "win": "품위 있게",
     "lose": "분하지만 기품 있게"
