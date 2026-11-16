@@ -148,6 +148,60 @@ def front_angle(rigs: list, original: list) -> float:
 	return math.radians(90.0) + best[1]
 
 
+def _boxed(pixels, mask, side: int = 48):
+	"""그림에서 캐릭터가 차지한 상자만 잘라 side×side로 줄인다(가장 가까운 점 고르기)."""
+	import numpy as np
+	rows = np.where(mask.any(axis=1))[0]
+	cols = np.where(mask.any(axis=0))[0]
+	if len(rows) == 0:
+		return None, None
+	pick_rows = np.linspace(rows[0], rows[-1], side).astype(int)
+	pick_cols = np.linspace(cols[0], cols[-1], side).astype(int)
+	return pixels[pick_rows][:, pick_cols, :3], mask[pick_rows][:, pick_cols]
+
+
+def best_view(pivot, folder: Path) -> float:
+	"""모델을 10도씩 돌려 가며 작게 찍어 보고, 주문할 때 넣은 그림(input.png)과 가장 닮은 각도를 돌려준다.
+	트리포 모델은 앞이 어느 쪽인지 저마다 달라서, 원래 그림과 같은 방향에서 찍으려면 이렇게 찾아야 한다."""
+	import numpy as np
+	source = folder / "input.png"
+	if not source.exists():
+		return math.radians(55.0)
+	image = bpy.data.images.load(str(source))
+	width, height = image.size
+	wanted = np.array(image.pixels[:], dtype=np.float32).reshape(height, width, 4)
+	bpy.data.images.remove(image)
+	target, target_mask = _boxed(wanted, wanted[:, :, :3].min(axis=2) < 0.9)
+	if target is None:
+		return math.radians(55.0)
+	scene = bpy.context.scene
+	saved = (scene.render.resolution_x, scene.render.resolution_y, scene.cycles.samples)
+	scene.render.resolution_x = 96
+	scene.render.resolution_y = 96
+	scene.cycles.samples = 6
+	best = (1e9, 55.0)
+	for degrees in range(0, 360, 10):
+		pivot.rotation_euler = (0, 0, math.radians(degrees))
+		path = folder / "render" / "probe.png"
+		shoot(path)
+		shot = bpy.data.images.load(str(path))
+		pixels = np.array(shot.pixels[:], dtype=np.float32).reshape(96, 96, 4)
+		bpy.data.images.remove(shot)
+		view, view_mask = _boxed(pixels, pixels[:, :, 3] > 0.3)
+		if view is None:
+			continue
+		both = target_mask & view_mask
+		outline = 1.0 - both.sum() / max((target_mask | view_mask).sum(), 1)
+		color = float(np.abs(view[both] - target[both]).mean()) if both.any() else 1.0
+		score = outline + color * 2.0
+		if score < best[0]:
+			best = (score, float(degrees))
+	(folder / "render" / "probe.png").unlink(missing_ok=True)
+	scene.render.resolution_x, scene.render.resolution_y, scene.cycles.samples = saved
+	print("RENDER 원래 그림과 가장 닮은 각도:", best[1], "(점수 %.3f)" % best[0])
+	return math.radians(best[1])
+
+
 def calibrate(camera, folder: Path) -> None:
 	"""한 장을 찍어 보고, 실제로 그려진 모습이 칸 가운데에 키 62.5%로 오도록 카메라를 옮기고 맞춘다.
 	(뼈대가 든 모델은 블렌더가 알려 주는 크기가 실제와 달라서, 찍힌 그림으로 직접 잰다.)"""
@@ -200,6 +254,7 @@ def render_folder(folder: Path) -> None:
 	out.mkdir(exist_ok=True)
 	model = folder / "model.glb"
 	original = []
+	view_angle = math.radians(55.0)
 	if model.exists():
 		reset()
 		bpy.ops.import_scene.gltf(filepath=str(model))
@@ -207,6 +262,7 @@ def render_folder(folder: Path) -> None:
 		low, high = bounds()
 		print("RENDER", folder.name, "모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
+		view_angle = best_view(pivot, folder)
 		shots = []
 		for step in range(8):
 			pivot.rotation_euler = (0, 0, math.radians(step * 45))
@@ -231,7 +287,7 @@ def render_folder(folder: Path) -> None:
 		print("RENDER", folder.name, "동작 모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
 		# 정면에서 35도 돌린 방향으로 놓고, 가만히 선 자세로 카메라를 맞춘다. 한 번은 대충, 한 번은 정확히.
-		pivot.rotation_euler = (0, 0, front_angle(rigs, original) - math.radians(35.0))
+		pivot.rotation_euler = (0, 0, view_angle + front_angle(rigs, original) - math.radians(90.0))
 		scene.camera.data.ortho_scale *= 1.5
 		calibrate(scene.camera, out)
 		calibrate(scene.camera, out)
