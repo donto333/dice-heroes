@@ -1900,6 +1900,9 @@ func _record(outcome: String) -> PackedStringArray:
 		lines.append("오늘 첫 승리 보너스!")
 	if int(reward["level_ups"]) > 0:
 		lines.append("레벨 업! 플레이어 레벨 %d" % int(app.profile["level"]))
+		var level_now := int(app.profile["level"])
+		if Game.point_limit_at(app.data["rules"], level_now) > Game.point_limit_at(app.data["rules"], level_now - int(reward["level_ups"])):
+			lines.append("소환 포인트 한도가 %d로 늘었어요!" % Game.point_limit_at(app.data["rules"], level_now))
 	# 이번 판으로 새로 받을 수 있게 된 미션·업적
 	var new_missions := Profile.claimable_mission_count(app.profile, app.eco) - missions_before
 	var new_achievements := Profile.claimable_achievement_count(app.profile, app.data) - achievements_before

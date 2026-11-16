@@ -135,6 +135,37 @@ static func level_of(profile: Dictionary, id: String) -> int:
 
 
 ## 파티가 비어 있지 않고, 보유한 영웅이고, 서로 다르고, 포인트 제한 안인지.
+## 파티가 한도를 넘으면 가진 영웅 중 ★이 낮은 영웅으로 바꿔 한도 안에 맞춘다(한도가 줄었을 때 예전 파티 구제).
+## 지력 → 방어 → 공격 자리 순으로 바꾼다. 바꿨으면 true.
+static func fit_party(profile: Dictionary, characters: Array, point_limit: int) -> bool:
+	var grades := {}
+	for character in characters:
+		grades[str(character["id"])] = int(character["grade"])
+	var party: Dictionary = profile.get("party", {})
+	var changed := false
+	for slot in ["support", "defense", "attack"]:
+		var total := 0
+		for key in ["attack", "defense", "support"]:
+			total += int(grades.get(str(party.get(key, "")), 0))
+		if total <= point_limit:
+			break
+		var current := str(party.get(slot, ""))
+		var need := int(grades.get(current, 0)) - (total - point_limit)
+		var best := ""
+		for id in profile.get("owned", {}).keys():
+			var grade := int(grades.get(str(id), 99))
+			if str(id) in party.values() or grade >= int(grades.get(current, 0)):
+				continue
+			# 한도에 딱 맞는 가장 높은 ★을 고르고, 없으면 가장 낮은 ★
+			if best == "" or (grade <= need and (int(grades[best]) > need or grade > int(grades[best]))) or (int(grades[best]) > need and grade < int(grades[best])):
+				best = str(id)
+		if best != "":
+			party[slot] = best
+			changed = true
+	profile["party"] = party
+	return changed
+
+
 static func party_ok(profile: Dictionary, characters: Array, party: Dictionary, point_limit: int) -> bool:
 	var seen := {}
 	var total := 0

@@ -11,6 +11,7 @@ extends RefCounted
 
 const SLOTS := ["attack", "defense", "support"]
 const SLOT_LABELS := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
+## 소환 포인트 한도의 기본값. 실제 한도는 플레이어 레벨에 따라 달라진다(point_limit_at).
 const POINT_LIMIT := 6
 ## 턴 제한 기본값. 실제 값은 data/rules.json의 max_rounds.
 const MAX_ROUNDS := 50
@@ -275,6 +276,28 @@ func char_of(player_index: int, slot: String) -> Dictionary:
 
 func ability_of(player_index: int, slot: String) -> Dictionary:
 	return abilities.get(char_of(player_index, slot).get("ability", ""), {})
+
+
+## 플레이어 레벨에 따른 소환 포인트 한도(data/rules.json의 point_limits: 그 레벨부터 그 한도).
+static func point_limit_at(rules: Dictionary, level: int) -> int:
+	var limit := POINT_LIMIT
+	var best_level := -1
+	for step in rules.get("point_limits", []):
+		var from_level := int(step.get("level", 1))
+		if level >= from_level and from_level > best_level:
+			best_level = from_level
+			limit = int(step.get("limit", POINT_LIMIT))
+	return limit
+
+
+## 한도가 다음에 늘어나는 단계({"level", "limit"}). 더 없으면 빈 사전.
+static func next_point_step(rules: Dictionary, level: int) -> Dictionary:
+	var found := {}
+	for step in rules.get("point_limits", []):
+		var from_level := int(step.get("level", 1))
+		if from_level > level and (found.is_empty() or from_level < int(found["level"])):
+			found = step
+	return found
 
 
 func party_points(player_index: int) -> int:
