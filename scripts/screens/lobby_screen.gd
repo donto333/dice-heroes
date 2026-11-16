@@ -30,6 +30,9 @@ const GREETINGS := {
 	"근현대": ["새로운 길을 찾아 떠나 볼까요?", "한 걸음 더 멀리 가 봅시다!", "오늘은 느낌이 좋아요.", "출발 준비 끝났어요!"],
 }
 var _spin_button: Button
+var _hero_area: Control
+var _tile_column: Control
+var _task_bar: Control
 var _spin_info: Label
 
 
@@ -50,6 +53,8 @@ func setup(main_app, params: Dictionary) -> void:
 	_add_top_bar()
 	_add_tiles(badges)
 	_add_bottom_dock()
+	resized.connect(_relayout)
+	_relayout()
 
 	_maybe_league_reward()
 	_maybe_idle_reward()
@@ -61,6 +66,18 @@ func setup(main_app, params: Dictionary) -> void:
 		app.dialog("환영합니다!", text, [["게임 방법 보기", Color("6f43a6"), _on_help], ["바로 시작", Kit.ACCENT, _maybe_attendance]])
 	else:
 		_maybe_news()
+
+
+## 화면 비율이 달라도(휴대폰 20:9, 태블릿 4:3) 타일이 옆으로 늘어나지 않게 오른쪽 기둥 너비를 정하고,
+## 남는 자리는 왼쪽 영웅 그림이 쓴다. 오늘 할 일 바도 화면 너비에 맞춘다.
+func _relayout() -> void:
+	if _tile_column == null:
+		return
+	var width := clampf(size.x * 0.525, 520.0, 680.0)
+	_tile_column.offset_left = -width - 16.0
+	_hero_area.offset_right = -width - 28.0
+	if _task_bar != null:
+		_task_bar.custom_minimum_size.x = clampf(size.x - 520.0, 300.0, 640.0)
 
 
 # ---------------------------------------------------------------- 그림 부품 도우미
@@ -221,7 +238,8 @@ func _add_hero_area() -> void:
 	var leader := _leader()
 	var area := Control.new()
 	area.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anchor(area, 0.0, 0.09, 0.47, 0.87)
+	_anchor(area, 0.0, 0.09, 1.0, 0.87)
+	_hero_area = area
 	add_child(area)
 
 	# 영웅 그림: 가장자리가 하늘로 스며들게 흐리게 지운다.
@@ -237,24 +255,6 @@ func _add_hero_area() -> void:
 	fade.shader = _edge_fade_shader()
 	art.material = fade
 	area.add_child(art)
-
-	# 홀로그램 같은 모서리 괄호(명일방주식)
-	for corner in [[0.08, 0.02, 1, 1], [0.92, 0.94, -1, -1]]:
-		for piece in [Vector2(44, 4), Vector2(4, 44)]:
-			var line := ColorRect.new()
-			line.color = Kit.GOLD
-			line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			line.anchor_left = corner[0]
-			line.anchor_right = corner[0]
-			line.anchor_top = corner[1]
-			line.anchor_bottom = corner[1]
-			var w: float = piece.x * corner[2]
-			var h: float = piece.y * corner[3]
-			line.offset_left = min(0.0, w)
-			line.offset_right = max(0.0, w)
-			line.offset_top = min(0.0, h)
-			line.offset_bottom = max(0.0, h)
-			area.add_child(line)
 
 	# 그림을 누르면 한마디 하고 영웅 화면으로
 	var touch := _art_button(null)
@@ -298,8 +298,8 @@ func _edge_fade_shader() -> Shader:
 shader_type canvas_item;
 void fragment() {
 	vec4 c = texture(TEXTURE, UV);
-	float fx = smoothstep(0.0, 0.16, UV.x) * smoothstep(0.0, 0.16, 1.0 - UV.x);
-	float fy = smoothstep(0.0, 0.08, UV.y) * smoothstep(0.0, 0.26, 1.0 - UV.y);
+	float fx = smoothstep(0.0, 0.24, UV.x) * smoothstep(0.0, 0.2, 1.0 - UV.x);
+	float fy = smoothstep(0.0, 0.14, UV.y) * smoothstep(0.0, 0.3, 1.0 - UV.y);
 	c.a *= fx * fy;
 	COLOR = c * COLOR;
 }
@@ -321,20 +321,24 @@ func _add_top_bar() -> void:
 	add_child(bar)
 
 	# 프로필 띠: 금테 레벨 메달 + 닉네임 + 티어. 누르면 프로필 창.
-	var who := _art_button(_slice("plate_profile", 48, Color("1a3f8f")))
+	# 띠 그림과 버튼의 가로세로 비율이 같아서(약 5.2:1) 조각내지 않고 통째로 늘린다(메달이 찌그러지지 않게).
+	var profile_art := _picture("plate_profile")
+	var who := _art_button(profile_art if profile_art != null else _slice("", 0, Color("1a3f8f")))
 	who.custom_minimum_size = Vector2(300, 58)
 	who.pressed.connect(app.show_profile)
 	bar.add_child(who)
 	var medal := _bold(str(int(profile["level"])), 24, Color.WHITE, Color("12264d"), 6, HORIZONTAL_ALIGNMENT_CENTER)
 	medal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_anchor(medal, 0.0, 0.0, 0.0, 1.0)
-	medal.offset_right = 58
+	# 메달은 그림 왼쪽 0~17.7% 자리에 있다.
+	_anchor(medal, 0.0, 0.0, 0.177, 1.0)
+	medal.offset_top = -2
+	medal.offset_bottom = -2
 	who.add_child(medal)
 	var names := Kit.vbox(-2)
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	names.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anchor(names, 0.0, 0.0, 1.0, 1.0)
-	names.offset_left = 66
+	names.offset_left = 74
 	names.offset_right = -14
 	who.add_child(names)
 	names.add_child(_bold(str(profile["nickname"]), 21, Color.WHITE, Color("0b1f4d"), 5))
@@ -408,8 +412,9 @@ func _on_shop_tab(tab: String) -> void:
 func _add_tiles(badges: Dictionary) -> void:
 	var column := Kit.vbox(10)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anchor(column, 0.475, 0.115, 1.0, 0.855)
+	_anchor(column, 1.0, 0.115, 1.0, 0.855)
 	column.offset_right = -16
+	_tile_column = column
 	add_child(column)
 
 	# 1줄: 랭크전(가장 큼) + 모험
@@ -493,7 +498,7 @@ func _rank_tile() -> Button:
 	line.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	line.clip_text = true
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anchor(line, 0.25, 0.0, 0.86, 1.0)
+	_anchor(line, 0.28, 0.0, 0.86, 1.0)
 	strip.add_child(line)
 	return tile
 
@@ -646,8 +651,10 @@ func _add_bottom_dock() -> void:
 	for item in items:
 		if bool(item[2]):
 			finished += 1
-	var task := _art_button(_slice("bar_task", 40, Color("17398a")))
+	# bar_task 그림은 가운데에 진행 막대 홈이 있어 글자와 겹치므로, 홈이 없는 재화 캡슐 그림을 쓴다.
+	var task := _art_button(_slice("plate_currency", 40, Color("17398a")))
 	task.custom_minimum_size = Vector2(600, 0)
+	_task_bar = task
 	task.pressed.connect(open_todo)
 	row.add_child(task)
 	var task_row := Kit.hbox(10)
