@@ -19,12 +19,17 @@
    }
   },
   "enemy_gate": {
-   "voice": "SOYHLrjzK2X1ezoPC6cr",
-   "voice_name": "harry",
+   "voice": "LrQhxz410fuKCcLPDGHz",
+   "voice_name": "관우",
    "lines": {
-    "appear": "멈춰라! 여기는 못 지나간다!",
-    "win": "돌아가라!",
-    "lose": "크윽... 지나가라."
+    "appear": "멈춰라! 이 관문은 아무도 못 지나간다!",
+    "win": "썩 물러가라! 다시는 오지 마라!",
+    "lose": "크윽... 좋다, 지나가거라."
+   },
+   "tags": {
+    "appear": "엄하고 굵게 호령하며",
+    "win": "호통치며",
+    "lose": "분하지만 인정하며"
    }
   },
   "enemy_boss": {
