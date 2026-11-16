@@ -34,12 +34,12 @@ const SCREENS := {
 	"adventure": preload("res://scripts/screens/adventure_screen.gd"),
 	"pass": preload("res://scripts/screens/pass_screen.gd"),
 }
-## 화면마다 다른 판 색(분위기): 상점은 보라, 영웅은 짙은 남색, 미션은 나무색, 설정은 청록, 모험은 숲색, 패스는 자주.
+## 화면마다 다른 판 색(분위기). 시안식 틀을 쓰는 메뉴 화면(영웅·상점·미션·설정·모험·패스)은 시안처럼 모두 남색(2026-11-17).
 const SCREEN_MOODS := {
-	"lobby": Color("3b2f9e"), "shop": Color("5a2a9a"), "heroes": Color("1f3a82"), "missions": Color("7a4a22"),
-	"settings": Color("1a6470"), "adventure": Color("2c6a3c"), "pass": Color("7a2a6a"), "help": Color("1a6470"),
+	"lobby": Color("3b2f9e"), "shop": Color("1f3a82"), "heroes": Color("1f3a82"), "missions": Color("1f3a82"),
+	"settings": Color("1f3a82"), "adventure": Color("1f3a82"), "pass": Color("1f3a82"), "help": Color("1a6470"),
 }
-const VERSION := "0.22.1"
+const VERSION := "0.23.0"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}

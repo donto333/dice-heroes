@@ -5,6 +5,7 @@ extends Control
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 
 var app
@@ -17,23 +18,10 @@ var _tab := "today"
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
 	_tab = str(_params.get("tab", "today"))
-	var column := Kit.screen_frame(self, 16)
-	move_child(Kit.backdrop(self, "ui/bg_missions", 0.5), 1)
-	var top := TopBar.new()
-	column.add_child(top)
-	top.setup(app)
-	var tabs := Kit.hbox(8)
-	column.add_child(tabs)
+	# 시안식 틀: 왼쪽 세로 판에 오늘·업적, 오른쪽 큰 금테 판.
 	var ready_achievements: int = Profile.claimable_achievement_count(app.profile, app.data)
-	for spec in [["today", "오늘"], ["achievements", "업적%s" % (" (%d)" % ready_achievements if ready_achievements > 0 else "")]]:
-		var on: bool = str(spec[0]) == _tab
-		var tab_button := Kit.button(str(spec[1]), Color("ffc62b") if on else Color("2f74d6"), 24, 64)
-		if on:
-			for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-				tab_button.add_theme_color_override(state, Color("5a3200"))
-			tab_button.add_theme_constant_override("outline_size", 0)
-		tab_button.pressed.connect(_on_mission_tab.bind(str(spec[0])))
-		tabs.add_child(Kit.expand(tab_button))
+	var rail := [["today", "오늘 미션", "missions"], ["achievements", "업적%s" % (" (%d)" % ready_achievements if ready_achievements > 0 else ""), "trophy"]]
+	var column := MenuArt.frame(self, app, "ui/bg_missions", rail, _tab, _on_mission_tab)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -53,10 +41,6 @@ func setup(main_app, _params: Dictionary) -> void:
 			body.add_child(_guide_panel())
 		body.add_child(_attendance_panel())
 		body.add_child(_missions_panel())
-	var nav := BottomNav.new()
-	column.add_child(nav)
-	nav.setup("missions", app.badges())
-	nav.tab_pressed.connect(_on_tab)
 
 
 func _on_mission_tab(id: String) -> void:
