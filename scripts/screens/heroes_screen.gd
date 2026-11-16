@@ -164,6 +164,10 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(stars)
 	var caption: String = "%s\nLv.%d" % [character["name"], Profile.level_of(app.profile, id)] if owned else "%s\n미보유" % character["name"]
+	if frame_tex != null:
+		# 금테 카드: 아래 이름 띠에는 이름만, 레벨은 별 줄에 함께.
+		stars.text = "%s  %s" % ["★".repeat(grade), ("Lv.%d" % Profile.level_of(app.profile, id)) if owned else "미보유"]
+		caption = str(character["name"])
 	var text := Kit.label(caption, 16, Color.WHITE if owned else Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
