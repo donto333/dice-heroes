@@ -145,8 +145,13 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	if not skin_button(home, "menu_off", Vector4(30, 26, 30, 26), Vector4(4, 4, 4, 4)):
 		Kit.paint(home, Kit.PANEL_LIGHT)
 	var home_icon: TextureRect = Kit.icon("home", 40.0)
-	home_icon.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	home_icon.position = Vector2(19, 9)
+	home_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	home_icon.offset_left = 18
+	home_icon.offset_right = -18
+	home_icon.offset_top = 8
+	home_icon.offset_bottom = -10
+	home_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	home_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	home_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	home.add_child(home_icon)
 	home.pressed.connect(func() -> void:

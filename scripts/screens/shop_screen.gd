@@ -21,7 +21,7 @@ var app
 ## 상점 탭: 소환(소환·특가) / 성장(유물·골드 교환) / 꾸미기(주사위) / 보석(마일리지·보석 상점)
 const TABS := [["summon", "소환"], ["grow", "성장"], ["look", "꾸미기"], ["gems", "보석"]]
 ## 왼쪽 세로 판 항목: [id, 글자, 아이콘]
-const RAIL := [["summon", "영웅 소환", "summon"], ["grow", "성장", "upgrade"], ["look", "주사위 꾸미기", "dice"], ["gems", "보석", "gem"]]
+const RAIL := [["summon", "영웅 소환", "summon"], ["grow", "성장", "upgrade"], ["look", "주사위", "dice"], ["gems", "보석", "gem"]]
 var _tab := "summon"
 
 
