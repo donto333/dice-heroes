@@ -1,5 +1,5 @@
 extends Control
-## 로비(홈). 위: 프로필 띠 / 랭크 카드 / 대표 영웅과 파티 / 대전 버튼 / 아래 메뉴.
+## 로비(홈). 왼쪽: 대표 영웅 / 오른쪽: 기능 타일(랭크전·모험·대전 모드·영웅·상점·미션·패스) / 위: 프로필·시스템 버튼·재화 / 아래: 파티·오늘 할 일.
 ## 들어올 때 오늘 출석 보상을 아직 안 받았으면 출석 창을 띄운다.
 
 const GameData := preload("res://scripts/game_data.gd")
@@ -11,6 +11,8 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const RouletteWheel := preload("res://scripts/ui/roulette_wheel.gd")
+const Game := preload("res://scripts/rules/game.gd")
+const LOBBY_ART := "res://assets/ui_lobby/"
 
 const SLOT_NAMES := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
 
@@ -33,105 +35,21 @@ var _spin_info: Label
 
 func setup(main_app, params: Dictionary) -> void:
 	app = main_app
-	var column := Kit.screen_frame(self, 12, Kit.BG, 0.0)
-	# 로비 그림 위에 보랏빛을 덮어 차분하고 고급스러운 분위기를 낸다.
-	var lobby_art := Kit.backdrop(self, "ui/lobby_violet" if GameData.art("ui/lobby_violet") != null else "ui/lobby_bg", 1.0)
-	move_child(lobby_art, 1)
-	if GameData.art("ui/lobby_violet") == null:
-		var tint := ColorRect.new()
-		tint.color = Color(0.42, 0.3, 0.78, 0.5)
-		tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(tint)
-		move_child(tint, 2)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# 새 로비(2026-11-16, 밝은 캐주얼 + 명일방주식 배치):
+	# 왼쪽 절반은 대표 영웅, 오른쪽 절반은 큰 기능 타일 묶음, 위는 프로필·시스템 버튼·재화, 아래는 파티와 오늘 할 일.
+	# 그림 부품은 assets/ui_lobby/(Codex 주문서 job16, tools/import_lobby.py). 그림이 없으면 단색 상자로 대신한다.
+	_add_background()
 
 	# 새 우편이 있으면 우편함에 넣는다.
 	if Profile.deliver_mails(app.profile, app.data.get("mails", {})) > 0:
 		app.save()
 	var badges: Dictionary = app.badges()
-	column.add_child(_top_strip())
 
-	# 가로 로비: 왼쪽 세로 메뉴 → 큰 대표 영웅 카드 → 오른쪽에 배너·랭크·모드·게임 시작.
-	var body := Kit.hbox(12)
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(body)
-
-	var rail := Kit.vbox(2)
-	rail.alignment = BoxContainer.ALIGNMENT_CENTER
-	body.add_child(rail)
-	var rail_items := [
-		["영웅", "heroes", bool(badges.get("heroes", false)), _on_tab.bind("heroes")],
-		["상점", "shop", bool(badges.get("shop", false)), _on_tab.bind("shop")],
-		["미션", "missions", bool(badges.get("missions", false)), _on_tab.bind("missions")],
-		["패스", "pass", Profile.pass_claimable_count(app.profile, app.eco) > 0, _on_tab.bind("pass")],
-		["설정", "settings", false, _on_tab.bind("settings")],
-		["방법", "help", false, _on_help],
-	]
-	for spec in rail_items:
-		var item := Kit.icon_shortcut(str(spec[0]), str(spec[1]), bool(spec[2]), 58.0)
-		item.pressed.connect(spec[3])
-		rail.add_child(item)
-
-	body.add_child(_hero_card())
-
-	var side := Kit.vbox(8)
-	body.add_child(Kit.expand(side))
-	side.add_child(_banner())
-	# 오늘의 보상 줄: 빛나는 구슬 네 개(받을 것이 있으면 빨간 점). 모두의 마블의 보상 구슬 줄처럼.
-	var orbs := Kit.panel(Color(0.2, 0.14, 0.52, 0.86), Color("b79cff"), 6)
-	side.add_child(orbs)
-	var orb_row := Kit.hbox(6)
-	orbs.add_child(orb_row)
-	var orb_title := Kit.label("오늘의\n보상", 20, Color("ffe37a"), HORIZONTAL_ALIGNMENT_CENTER)
-	orb_title.custom_minimum_size = Vector2(84, 0)
-	orb_title.add_theme_constant_override("outline_size", 6)
-	orb_title.add_theme_color_override("font_outline_color", Color("2a0f5a"))
-	orb_row.add_child(orb_title)
-	var shortcuts := [
-		["출석", "orb_gold", Profile.can_check_in(app.profile, app.today()), _on_attendance_shortcut],
-		["룰렛", "orb_purple", Profile.can_spin_free(app.profile, app.eco), open_roulette],
-		["할 일", "orb_green", _todo_left() > 0, open_todo],
-		["우편", "orb_blue", Profile.unclaimed_mail_count(app.profile) > 0, open_mailbox],
-	]
-	for spec in shortcuts:
-		var shortcut := Kit.icon_shortcut(str(spec[0]), str(spec[1]), bool(spec[2]), 56.0)
-		shortcut.pressed.connect(spec[3])
-		orb_row.add_child(Kit.expand(shortcut))
-	side.add_child(_rank_card())
-
-	var tier: Dictionary = Profile.tier_of(app.eco, int(app.profile["trophies"]))
-	var streak := Profile.streak(app.profile)
-	var rank_note := "%s · 트로피 %d" % [tier["name"], int(app.profile["trophies"])]
-	if streak >= 2:
-		rank_note = "%d연승 중! 트로피 %d" % [streak, int(app.profile["trophies"])]
-	# 아래: 모드 타일 네 개(2×2)와 크게 '게임 시작'(랭크전)
-	var bottom := Kit.hbox(10)
-	bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	side.add_child(bottom)
-	var modes := GridContainer.new()
-	modes.columns = 2
-	modes.add_theme_constant_override("h_separation", 8)
-	modes.add_theme_constant_override("v_separation", 8)
-	bottom.add_child(Kit.expand(modes, 1.0))
-	var adventure := Kit.tile_button("모험", "goal", Color("e0532b"), "★ %d / %d" % [Profile.total_stars(app.profile), _max_stars()], 96.0, "ui/mode_adventure")
-	adventure.pressed.connect(_on_adventure)
-	var difficulty: Dictionary = Profile.ai_difficulty(app.eco, str(app.profile.get("ai_difficulty", "easy")))
-	var practice := Kit.tile_button("AI전", "fate", Color("2fb457"), "최근 %s" % difficulty["name"], 96.0, "ui/mode_ai")
-	practice.pressed.connect(_choose_difficulty)
-	var friend := Kit.tile_button("친구", "pawn", Color("19a8c9"), "한 기기 2인", 96.0, "ui/mode_friend")
-	friend.pressed.connect(_on_mode.bind("local"))
-	var done := Profile.challenge_done(app.profile)
-	var challenge := Kit.tile_button("도전", "ambush", Color("8a55e0") if not done else Color("6f9bd6"), "오늘 완료!" if done else "하루 한 번", 96.0, "ui/mode_challenge")
-	challenge.pressed.connect(_on_mode.bind("challenge"))
-	for tile in [adventure, practice, friend, challenge]:
-		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tile.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		modes.add_child(tile)
-	var rank_button := Kit.icon_button("게임 시작", "swords", Color("ffb81f"), 56, 150, rank_note)
-	rank_button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rank_button.pressed.connect(_on_mode.bind("rank"))
-	Kit.shimmer(rank_button)
-	bottom.add_child(Kit.expand(rank_button, 1.1))
+	_add_hero_area()
+	_add_top_bar()
+	_add_tiles(badges)
+	_add_bottom_dock()
 
 	_maybe_league_reward()
 	_maybe_idle_reward()
@@ -145,233 +63,624 @@ func setup(main_app, params: Dictionary) -> void:
 		_maybe_news()
 
 
-func _rank_card() -> Control:
-	var profile: Dictionary = app.profile
-	var trophies := int(profile["trophies"])
-	var tier: Dictionary = Profile.tier_of(app.eco, trophies)
-	var tier_color := Color(str(tier.get("color", "ffffff")))
-	var card := Kit.panel(Color("3b2f9e"), tier_color, 10)
-	var row := Kit.hbox(14)
-	card.add_child(row)
-	# 티어 문장 그림(assets/art/ui/tier_<순서>.jpg)
-	var emblem := ArtView.new()
-	emblem.show_art("ui/tier_%d" % Profile.tier_index(app.eco, trophies))
-	var has_emblem: bool = emblem.has_art()
-	if has_emblem:
-		emblem.custom_minimum_size = Vector2(84, 84)
-		emblem.focus_y = 0.5
-		row.add_child(emblem)
+# ---------------------------------------------------------------- 그림 부품 도우미
+
+## 로비 그림 부품(assets/ui_lobby/이름.png). 없으면 null.
+func _lobby_tex(name: String) -> Texture2D:
+	for ext in [".png", ".jpg"]:
+		var path: String = LOBBY_ART + name + str(ext)
+		if ResourceLoader.exists(path):
+			return load(path)
+	return null
+
+
+## 꽉 차게 늘어나는 그림 한 장. 그림이 없으면 null.
+func _picture(name: String, stretch: int = TextureRect.STRETCH_SCALE) -> TextureRect:
+	var tex := _lobby_tex(name)
+	if tex == null:
+		return null
+	var rect := TextureRect.new()
+	rect.texture = tex
+	rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = stretch
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rect
+
+
+## 모서리는 그대로 두고 가운데만 늘어나는 판(타일·띠). 그림이 없으면 단색 상자.
+func _slice(name: String, margin: int, fallback: Color) -> Control:
+	var tex := _lobby_tex(name)
+	if tex == null:
+		var panel := Panel.new()
+		panel.add_theme_stylebox_override("panel", Kit.box(fallback, Color(1, 1, 1, 0.5), 3, 18, 0))
+		panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return panel
+	var patch := NinePatchRect.new()
+	patch.texture = tex
+	patch.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	patch.patch_margin_left = margin
+	patch.patch_margin_right = margin
+	patch.patch_margin_top = margin
+	patch.patch_margin_bottom = margin
+	patch.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	patch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return patch
+
+
+## 그림 몸통을 가진 버튼. 몸통은 art(늘어나는 그림) 또는 slice(가운데만 늘어남). 누르면 살짝 줄어든다.
+func _art_button(body: Control) -> Button:
+	var button := Button.new()
+	button.flat = true
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	if body != null:
+		button.add_child(body)
+	button.resized.connect(func() -> void: button.pivot_offset = button.size / 2.0)
+	button.button_down.connect(func() -> void: button.scale = Vector2(0.96, 0.96))
+	button.button_up.connect(func() -> void: button.scale = Vector2.ONE)
+	return button
+
+
+## 아이콘: ic_로 시작하면 로비 전용 그림, 아니면 게임 공용 아이콘.
+func _lobby_icon(name: String, pixels: float) -> TextureRect:
+	if name.begins_with("ic_") and _lobby_tex(name) != null:
+		var rect := _picture(name, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+		rect.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		rect.custom_minimum_size = Vector2(pixels, pixels)
+		return rect
+	var fallback := {"ic_ai": "fate", "ic_friend_match": "friend", "ic_challenge": "attend", "ic_heroes_helmet": "heroes",
+		"ic_shop_stall": "shop", "ic_mission_board": "missions", "ic_pass_ticket": "pass", "ic_trophy": "trophy",
+		"ic_notice": "chat", "ic_party": "friend"}
+	return Kit.icon(str(fallback.get(name, name)), pixels)
+
+
+## 테두리가 있는 굵은 글자.
+func _bold(text: String, font_size: int, color: Color, outline: Color, outline_size: int = 6, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+	var result := Kit.label(text, font_size, color, align)
+	result.add_theme_constant_override("outline_size", outline_size)
+	result.add_theme_color_override("font_outline_color", outline)
+	result.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return result
+
+
+## 오른쪽 위 빨간 알림 점. text가 있으면 빨간 딱지에 글자.
+func _red_badge(parent: Control, text: String = "") -> void:
+	var badge := PanelContainer.new()
+	var style := Kit.box(Color("e8413b"), Color.WHITE, 2, 12, 2)
+	style.content_margin_left = 8 if text != "" else 0
+	style.content_margin_right = 8 if text != "" else 0
+	badge.add_theme_stylebox_override("panel", style)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if text != "":
+		var label := Kit.label(text, 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		label.remove_theme_color_override("font_shadow_color")
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.add_child(label)
 	else:
-		emblem.free()
-	var badge := Kit.label(str(tier["name"]), 34, tier_color, HORIZONTAL_ALIGNMENT_CENTER)
-	badge.custom_minimum_size = Vector2(120 if has_emblem else 150, 0)
-	badge.add_theme_constant_override("outline_size", 6)
-	badge.add_theme_color_override("font_outline_color", Color.BLACK)
-	row.add_child(badge)
-	var info := Kit.vbox(6)
-	row.add_child(Kit.expand(info))
-	var to_next := Profile.trophies_to_next(app.eco, trophies)
-	var next_text := "최고 티어!" if to_next == 0 else "다음 티어까지 %d" % to_next
-	var stats: Dictionary = profile["stats"]
-	info.add_child(Kit.label("트로피 %d · %s · 리그 %d위" % [trophies, next_text, Profile.league_rank(profile, app.eco)], 20))
-	var tiers: Array = app.eco.get("tiers", [])
-	var index := Profile.tier_index(app.eco, trophies)
-	var progress := 1.0
-	if index + 1 < tiers.size():
-		var low := int(tiers[index]["min"])
-		var high := int(tiers[index + 1]["min"])
-		progress = float(trophies - low) / float(max(high - low, 1))
-	info.add_child(Kit.bar(progress, tier_color, 14))
-	var side := Kit.label("전투력 %d\n%d승 %d패" % [Profile.my_power(profile, app.data["characters"], app.eco), int(stats["wins"]), int(stats["losses"])], 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
-	row.add_child(side)
-	# 카드를 누르면 순위표
-	var open := Button.new()
-	for state in ["normal", "hover", "pressed", "focus"]:
-		open.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	open.pressed.connect(_on_league)
-	card.add_child(open)
-	return card
+		badge.custom_minimum_size = Vector2(18, 18)
+	badge.anchor_left = 1.0
+	badge.anchor_right = 1.0
+	badge.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	badge.offset_right = 6
+	badge.offset_top = -8
+	parent.add_child(badge)
+
+
+func _anchor(control: Control, left: float, top: float, right: float, bottom: float) -> void:
+	control.anchor_left = left
+	control.anchor_top = top
+	control.anchor_right = right
+	control.anchor_bottom = bottom
+	control.offset_left = 0
+	control.offset_top = 0
+	control.offset_right = 0
+	control.offset_bottom = 0
+
+
+## 안쪽 여백을 둔 상자(버튼 안 글자 배치용). 마우스는 통과시킨다.
+func _inner(parent: Control, left: int, top: int, right: int, bottom: int) -> MarginContainer:
+	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", left)
+	margin.add_theme_constant_override("margin_top", top)
+	margin.add_theme_constant_override("margin_right", right)
+	margin.add_theme_constant_override("margin_bottom", bottom)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(margin)
+	return margin
+
+
+func _leader() -> Dictionary:
+	var leader_id := str(app.profile.get("avatar", ""))
+	if leader_id == "" or not Profile.owns(app.profile, leader_id):
+		leader_id = str(app.profile["party"].get("attack", ""))
+	return app.character(leader_id)
+
+
+# ---------------------------------------------------------------- 바탕
+
+func _add_background() -> void:
+	var sky := _picture("lobby_sky", TextureRect.STRETCH_KEEP_ASPECT_COVERED)
+	if sky == null:
+		add_child(Kit.sky())
+		return
+	add_child(sky)
+	# 바탕 위에 떠다니는 빛 알갱이
+	var ambience := Kit.Ambience.new()
+	ambience.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ambience.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(ambience)
+
+
+# ---------------------------------------------------------------- 왼쪽: 대표 영웅
+
+func _add_hero_area() -> void:
+	var leader := _leader()
+	var area := Control.new()
+	area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(area, 0.0, 0.09, 0.47, 0.87)
+	add_child(area)
+
+	# 영웅 그림: 가장자리가 하늘로 스며들게 흐리게 지운다.
+	var art := TextureRect.new()
+	art.texture = GameData.portrait_hd(str(leader.get("id", "")))
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.offset_left = 10
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fade := ShaderMaterial.new()
+	fade.shader = _edge_fade_shader()
+	art.material = fade
+	area.add_child(art)
+
+	# 홀로그램 같은 모서리 괄호(명일방주식)
+	for corner in [[0.08, 0.02, 1, 1], [0.92, 0.94, -1, -1]]:
+		for piece in [Vector2(44, 4), Vector2(4, 44)]:
+			var line := ColorRect.new()
+			line.color = Kit.GOLD
+			line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			line.anchor_left = corner[0]
+			line.anchor_right = corner[0]
+			line.anchor_top = corner[1]
+			line.anchor_bottom = corner[1]
+			var w: float = piece.x * corner[2]
+			var h: float = piece.y * corner[3]
+			line.offset_left = min(0.0, w)
+			line.offset_right = max(0.0, w)
+			line.offset_top = min(0.0, h)
+			line.offset_bottom = max(0.0, h)
+			area.add_child(line)
+
+	# 그림을 누르면 한마디 하고 영웅 화면으로
+	var touch := _art_button(null)
+	touch.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	touch.pressed.connect(app.say.bind(str(leader.get("id", "")), "idle"))
+	touch.pressed.connect(_on_tab.bind("heroes"))
+	area.add_child(touch)
+
+	# 말풍선: 분류마다 말투가 다르고, 들어올 때마다 바뀐다.
+	var lines: Array = GREETINGS.get(str(leader.get("category", "")), GREETINGS["영웅"])
+	var bubble := PanelContainer.new()
+	bubble.add_theme_stylebox_override("panel", Kit.box(Color(1, 1, 1, 0.96), Color("1a56b0"), 3, 22, 12))
+	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(bubble, 0.6, 0.06, 0.6, 0.06)
+	bubble.custom_minimum_size = Vector2(210, 0)
+	var said := Kit.para(str(lines[app.rng.randi_range(0, lines.size() - 1)]), 18, Color("12264d"), HORIZONTAL_ALIGNMENT_CENTER)
+	said.remove_theme_color_override("font_shadow_color")
+	said.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bubble.add_child(said)
+	area.add_child(bubble)
+
+	# 이름표: 등급 별과 이름
+	var tag := Kit.vbox(0)
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(tag, 0.03, 1.0, 0.03, 1.0)
+	tag.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	tag.offset_top = -86
+	var grade := int(leader.get("grade", 1))
+	tag.add_child(_bold("★".repeat(grade) + "  " + str(leader.get("category", "")), 18, Kit.GOLD, Color("12264d"), 5))
+	tag.add_child(_bold(str(leader.get("name", "")), 44, Color.WHITE, Color("12264d"), 9))
+	area.add_child(tag)
+
+
+func _edge_fade_shader() -> Shader:
+	var shader := Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec4 c = texture(TEXTURE, UV);
+	float fx = smoothstep(0.0, 0.16, UV.x) * smoothstep(0.0, 0.16, 1.0 - UV.x);
+	float fy = smoothstep(0.0, 0.08, UV.y) * smoothstep(0.0, 0.26, 1.0 - UV.y);
+	c.a *= fx * fy;
+	COLOR = c * COLOR;
+}
+"""
+	return shader
+
+
+# ---------------------------------------------------------------- 위: 프로필 · 시스템 버튼 · 재화
+
+func _add_top_bar() -> void:
+	var profile: Dictionary = app.profile
+	var bar := Kit.hbox(8)
+	bar.anchor_right = 1.0
+	bar.offset_left = 14
+	bar.offset_right = -14
+	bar.offset_top = 8
+	bar.offset_bottom = 66
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bar)
+
+	# 프로필 띠: 금테 레벨 메달 + 닉네임 + 티어. 누르면 프로필 창.
+	var who := _art_button(_slice("plate_profile", 48, Color("1a3f8f")))
+	who.custom_minimum_size = Vector2(300, 58)
+	who.pressed.connect(app.show_profile)
+	bar.add_child(who)
+	var medal := _bold(str(int(profile["level"])), 24, Color.WHITE, Color("12264d"), 6, HORIZONTAL_ALIGNMENT_CENTER)
+	medal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_anchor(medal, 0.0, 0.0, 0.0, 1.0)
+	medal.offset_right = 58
+	who.add_child(medal)
+	var names := Kit.vbox(-2)
+	names.alignment = BoxContainer.ALIGNMENT_CENTER
+	names.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(names, 0.0, 0.0, 1.0, 1.0)
+	names.offset_left = 66
+	names.offset_right = -14
+	who.add_child(names)
+	names.add_child(_bold(str(profile["nickname"]), 21, Color.WHITE, Color("0b1f4d"), 5))
+	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
+	names.add_child(_bold("%s · 리그 %d위" % [tier["name"], Profile.league_rank(profile, app.eco)], 14, Kit.GOLD, Color("0b1f4d"), 4))
+
+	# 시스템 버튼: 설정 · 공지 · 우편 · 출석 · 룰렛 · 리그 · 방법
+	var system_buttons := [
+		["settings", false, _on_tab.bind("settings")],
+		["ic_notice", false, _on_notices],
+		["mail", Profile.unclaimed_mail_count(profile) > 0, open_mailbox],
+		["attend", Profile.can_check_in(profile, app.today()), _on_attendance_shortcut],
+		["roulette", Profile.can_spin_free(profile, app.eco), open_roulette],
+		["league", false, _on_league],
+		["help", false, _on_help],
+	]
+	for spec in system_buttons:
+		var button := _art_button(_slice("btn_sys", 30, Color("1a3f8f")))
+		button.custom_minimum_size = Vector2(54, 54)
+		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		button.pressed.connect(spec[2])
+		var glyph := _lobby_icon(str(spec[0]), 36.0)
+		glyph.set_anchors_preset(Control.PRESET_CENTER)
+		glyph.offset_left = -18
+		glyph.offset_top = -18
+		glyph.offset_right = 18
+		glyph.offset_bottom = 18
+		button.add_child(glyph)
+		if bool(spec[1]):
+			_red_badge(button)
+		bar.add_child(button)
+
+	bar.add_child(Kit.expand(Control.new()))
+
+	# 재화: 골드 · 보석. + 버튼은 상점으로.
+	for spec in [["gold", Kit.GOLD, int(profile["gold"]), "grow"], ["gem", Kit.GEM, int(profile["gems"]), "gems"]]:
+		var holder := Control.new()
+		holder.custom_minimum_size = Vector2(196, 48)
+		holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.add_child(_slice("plate_currency", 40, Color("1a3f8f")))
+		var coin := Kit.icon(str(spec[0]), 40.0)
+		coin.position = Vector2(2, 4)
+		holder.add_child(coin)
+		var amount := _bold(Kit.comma(int(spec[2])), 22, Color.WHITE, Color("0b1f4d"), 5, HORIZONTAL_ALIGNMENT_RIGHT)
+		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_anchor(amount, 0.0, 0.0, 1.0, 1.0)
+		amount.offset_left = 44
+		amount.offset_right = -52
+		holder.add_child(amount)
+		var plus := _art_button(_picture("btn_plus"))
+		if plus.get_child_count() == 0:
+			plus.add_child(Kit.label("+", 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+		_anchor(plus, 1.0, 0.0, 1.0, 1.0)
+		plus.offset_left = -46
+		plus.offset_right = -2
+		plus.offset_top = 2
+		plus.offset_bottom = -2
+		plus.pressed.connect(_on_shop_tab.bind(str(spec[3])))
+		holder.add_child(plus)
+		bar.add_child(holder)
+
+
+func _on_shop_tab(tab: String) -> void:
+	app.play("click")
+	app.go("shop", {"tab": tab})
+
+
+# ---------------------------------------------------------------- 오른쪽: 기능 타일
+
+func _add_tiles(badges: Dictionary) -> void:
+	var column := Kit.vbox(10)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(column, 0.475, 0.115, 1.0, 0.855)
+	column.offset_right = -16
+	add_child(column)
+
+	# 1줄: 랭크전(가장 큼) + 모험
+	var row1 := Kit.hbox(10)
+	row1.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	row1.size_flags_stretch_ratio = 1.63
+	row1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(row1)
+	row1.add_child(_rank_tile())
+	row1.add_child(_adventure_tile())
+
+	# 2줄: 다른 대전 모드(흰 타일)
+	var row2 := Kit.hbox(10)
+	row2.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	row2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(row2)
+	var difficulty: Dictionary = Profile.ai_difficulty(app.eco, str(app.profile.get("ai_difficulty", "easy")))
+	var done := Profile.challenge_done(app.profile)
+	var modes := [
+		["AI전", "AI BATTLE", "ic_ai", "최근 %s" % difficulty["name"], false, _choose_difficulty],
+		["친구 대전", "FRIEND MATCH", "ic_friend_match", "한 기기 2인", false, _on_mode.bind("local")],
+		["오늘의 도전", "TODAY'S CHALLENGE", "ic_challenge", "오늘 완료!" if done else "하루 한 번", not done, _on_mode.bind("challenge")],
+	]
+	for spec in modes:
+		row2.add_child(_white_tile(spec))
+
+	# 3줄: 육성·운영(진파랑 타일)
+	var row3 := Kit.hbox(10)
+	row3.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	row3.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(row3)
+	var free_summon := Profile.free_summons_left(app.profile, app.eco) > 0
+	var menus := [
+		["영웅", "HEROES", "ic_heroes_helmet", "" if not bool(badges.get("heroes", false)) else "dot", "heroes"],
+		["상점", "SHOP", "ic_shop_stall", "무료 소환" if free_summon else ("dot" if bool(badges.get("shop", false)) else ""), "shop"],
+		["미션", "MISSION", "ic_mission_board", "dot" if bool(badges.get("missions", false)) else "", "missions"],
+		["시즌 패스", "SEASON PASS", "ic_pass_ticket", "dot" if Profile.pass_claimable_count(app.profile, app.eco) > 0 else "", "pass"],
+	]
+	for spec in menus:
+		row3.add_child(_navy_tile(spec))
+
+
+func _rank_tile() -> Button:
+	var profile: Dictionary = app.profile
+	var tile := _art_button(_picture("tile_rank"))
+	if tile.get_child_count() == 0:
+		tile.add_child(_slice("", 0, Kit.PRIMARY))
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.size_flags_stretch_ratio = 1.6
+	tile.pressed.connect(_on_mode.bind("rank"))
+	Kit.shimmer(tile)
+	var inner := _inner(tile, 22, 14, 22, 18)
+	var stack := Kit.vbox(0)
+	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(stack)
+	stack.add_child(_bold("RANK MATCH", 14, Color(1, 1, 1, 0.92), Color("a3480a"), 4))
+	stack.add_child(_bold("랭크전", 50, Color.WHITE, Color("a3480a"), 10))
+	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
+	var streak := Profile.streak(profile)
+	var note := "%s · 트로피 %s" % [tier["name"], Kit.comma(int(profile["trophies"]))]
+	if streak >= 2:
+		note = "%d연승 중! · 트로피 %s" % [streak, Kit.comma(int(profile["trophies"]))]
+	stack.add_child(_bold(note, 18, Color("fff3c4"), Color("a3480a"), 5))
+	stack.add_child(Kit.expand(Control.new()))
+	# 진행 중 이벤트 띠(명일방주의 '작전' 버튼처럼 이벤트를 타일 안에 보여 준다)
+	var events: Array = Profile.active_events(app.data.get("events", {}), app.today())
+	var strip := Control.new()
+	strip.custom_minimum_size = Vector2(0, 40)
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 띠 그림은 왼쪽 빨간 딱지 자리가 넓어서 조각내지 않고 통째로 늘린다.
+	var strip_art := _picture("strip_event")
+	strip.add_child(strip_art if strip_art != null else _slice("", 0, Color("fff4dc")))
+	stack.add_child(strip)
+	var chip := _bold("EVENT" if not events.is_empty() else "GO", 14, Color.WHITE, Color("7a0f0f"), 3, HORIZONTAL_ALIGNMENT_CENTER)
+	chip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_anchor(chip, 0.04, 0.12, 0.21, 0.82)
+	strip.add_child(chip)
+	var event_text := str(events[0]["name"]) if not events.is_empty() else "지금 바로 대전 시작!"
+	var line := Kit.label(event_text, 17, Color("b5450c"))
+	line.remove_theme_color_override("font_shadow_color")
+	line.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	line.clip_text = true
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(line, 0.25, 0.0, 0.86, 1.0)
+	strip.add_child(line)
+	return tile
+
+
+func _adventure_tile() -> Button:
+	var tile := _art_button(_picture("tile_adventure"))
+	if tile.get_child_count() == 0:
+		tile.add_child(_slice("", 0, Kit.ACCENT))
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.pressed.connect(_on_adventure)
+	var inner := _inner(tile, 16, 12, 16, 16)
+	var stack := Kit.vbox(0)
+	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(stack)
+	stack.add_child(_bold("모험", 40, Color.WHITE, Color("0f5a2c"), 9))
+	stack.add_child(_bold("ADVENTURE", 13, Color.WHITE, Color("0f5a2c"), 4))
+	stack.add_child(Kit.expand(Control.new()))
+	var stars := Profile.total_stars(app.profile)
+	var most := _max_stars()
+	stack.add_child(_bold("별 %d / %d" % [stars, most], 17, Color.WHITE, Color("0f5a2c"), 5))
+	stack.add_child(Kit.bar(float(stars) / float(max(most, 1)), Kit.GOLD, 12))
+	return tile
+
+
+## spec: [이름, 영어, 아이콘, 설명, 빨간 점, 누르면]
+func _white_tile(spec: Array) -> Button:
+	var tile := _art_button(_slice("tile_white", 40, Color("f2f6ff")))
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.pressed.connect(spec[5])
+	var inner := _inner(tile, 12, 8, 12, 10)
+	var row := Kit.hbox(8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(row)
+	var glyph := _lobby_icon(str(spec[2]), 56.0)
+	glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(glyph)
+	var text := Kit.vbox(0)
+	text.alignment = BoxContainer.ALIGNMENT_CENTER
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(Kit.expand(text))
+	var title := Kit.label(str(spec[0]), 24, Color("12264d"))
+	title.remove_theme_color_override("font_shadow_color")
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.add_child(title)
+	var english := Kit.label(str(spec[1]), 11, Color("4a6aa8"))
+	english.remove_theme_color_override("font_shadow_color")
+	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.add_child(english)
+	var sub := Kit.label(str(spec[3]), 14, Color("c4421f") if bool(spec[4]) else Color("3d5585"))
+	sub.remove_theme_color_override("font_shadow_color")
+	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.add_child(sub)
+	if bool(spec[4]):
+		_red_badge(tile)
+	return tile
+
+
+## spec: [이름, 영어, 아이콘, 딱지("" 없음, "dot" 빨간 점, 그 밖은 글자), 화면 이름]
+func _navy_tile(spec: Array) -> Button:
+	var tile := _art_button(_slice("tile_navy", 34, Color("17398a")))
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.pressed.connect(_on_tab.bind(str(spec[4])))
+	var inner := _inner(tile, 8, 8, 8, 10)
+	var stack := Kit.vbox(0)
+	stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(stack)
+	var glyph := _lobby_icon(str(spec[2]), 50.0)
+	glyph.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	stack.add_child(glyph)
+	stack.add_child(_bold(str(spec[0]), 22, Color.WHITE, Color("0b1f4d"), 5, HORIZONTAL_ALIGNMENT_CENTER))
+	var english := Kit.label(str(spec[1]), 10, Color(1, 1, 1, 0.75), HORIZONTAL_ALIGNMENT_CENTER)
+	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(english)
+	var mark := str(spec[3])
+	if mark == "dot":
+		_red_badge(tile)
+	elif mark != "":
+		_red_badge(tile, mark)
+	return tile
+
+
+# ---------------------------------------------------------------- 아래: 파티 · 오늘 할 일
+
+func _add_bottom_dock() -> void:
+	var dock := Control.new()
+	dock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(dock, 0.0, 1.0, 1.0, 1.0)
+	dock.offset_top = -92
+	add_child(dock)
+	dock.add_child(_slice("dock_bottom", 40, Color(0.06, 0.15, 0.4, 0.92)))
+
+	var row := Kit.hbox(10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(row, 0.0, 0.0, 1.0, 1.0)
+	row.offset_left = 18
+	row.offset_right = -18
+	row.offset_top = 12
+	row.offset_bottom = -8
+	dock.add_child(row)
+
+	# 출전 파티: 누르면 영웅 화면(파티 편성)
+	var party_button := _art_button(null)
+	party_button.custom_minimum_size = Vector2(420, 0)
+	party_button.pressed.connect(_on_tab.bind("heroes"))
+	row.add_child(party_button)
+	var party_row := Kit.hbox(8)
+	party_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	party_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	party_button.add_child(party_row)
+	party_row.add_child(_lobby_icon("ic_party", 40.0))
+	var title := Kit.vbox(-2)
+	title.alignment = BoxContainer.ALIGNMENT_CENTER
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	party_row.add_child(title)
+	title.add_child(_bold("내 파티", 20, Color.WHITE, Color("0b1f4d"), 4))
+	var english := Kit.label("MY PARTY", 11, Color(1, 1, 1, 0.75))
+	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.add_child(english)
+	var party: Dictionary = app.profile["party"]
+	var categories: Array = []
+	for slot in ["attack", "defense", "support"]:
+		var member: Dictionary = app.character(str(party.get(slot, "")))
+		categories.append(str(member.get("category", "")))
+		var face := Portrait.new()
+		face.custom_minimum_size = Vector2(62, 62)
+		face.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		face.border_width = 3.0
+		face.border = Kit.GRADE_COLORS.get(int(member.get("grade", 1)), Kit.GOLD)
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.show_character(member, Kit.CATEGORY_COLORS.get(member.get("category", ""), Kit.LINE))
+		party_row.add_child(face)
+	var synergy: Dictionary = Game.synergy_of(app.data.get("rules", {}).get("synergy", {}), categories)
+	if not synergy.is_empty():
+		var chip := PanelContainer.new()
+		chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var chip_style := Kit.box(Kit.ACCENT, Color.WHITE, 2, 18, 6)
+		chip_style.content_margin_left = 14
+		chip_style.content_margin_right = 14
+		chip.add_theme_stylebox_override("panel", chip_style)
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_child(_bold(str(synergy.get("name", "")), 18, Color.WHITE, Color("0f5a2c"), 4))
+		party_row.add_child(chip)
+
+	row.add_child(Kit.expand(Control.new()))
+
+	# 오늘 할 일 바: 남은 일 수와 진행 막대, 초록 '가기'
+	var items := _todo_items()
+	var finished := 0
+	for item in items:
+		if bool(item[2]):
+			finished += 1
+	var task := _art_button(_slice("bar_task", 40, Color("17398a")))
+	task.custom_minimum_size = Vector2(600, 0)
+	task.pressed.connect(open_todo)
+	row.add_child(task)
+	var task_row := Kit.hbox(10)
+	task_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(task_row, 0.0, 0.0, 1.0, 1.0)
+	task_row.offset_left = 18
+	task_row.offset_right = -10
+	task_row.offset_top = 6
+	task_row.offset_bottom = -6
+	task.add_child(task_row)
+	var head := Kit.vbox(-2)
+	head.alignment = BoxContainer.ALIGNMENT_CENTER
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	task_row.add_child(head)
+	head.add_child(_bold("오늘 할 일", 20, Color.WHITE, Color("0b1f4d"), 4))
+	var sub := Kit.label("TODAY'S TASK", 11, Color(1, 1, 1, 0.75))
+	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(sub)
+	var progress := Kit.vbox(4)
+	progress.alignment = BoxContainer.ALIGNMENT_CENTER
+	progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	task_row.add_child(Kit.expand(progress))
+	var left := _todo_left()
+	progress.add_child(_bold("남은 일 %d개 · 완료 %d / %d" % [left, finished, items.size()], 16, Color.WHITE, Color("0b1f4d"), 4))
+	progress.add_child(Kit.bar(float(finished) / float(max(items.size(), 1)), Kit.GOLD, 10))
+	var go := Kit.button("가기", Kit.ACCENT, 22, 48)
+	go.custom_minimum_size = Vector2(96, 48)
+	go.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	go.pressed.connect(open_todo)
+	task_row.add_child(go)
+	if left > 0:
+		_red_badge(task)
 
 
 func _on_league() -> void:
 	app.play("click")
 	app.show_league()
-
-
-## 대표 영웅(ATTACK 자리)을 크게, 파티 세 명을 작게 보여 준다. 누르면 영웅 화면.
-## 위 띠: 왼쪽에 얼굴·이름·레벨, 오른쪽에 골드·보석. 누르면 프로필.
-func _top_strip() -> Control:
-	var profile: Dictionary = app.profile
-	var leader_id := str(profile.get("avatar", ""))
-	if leader_id == "" or not Profile.owns(profile, leader_id):
-		leader_id = str(profile["party"].get("attack", ""))
-	var leader: Dictionary = app.character(leader_id)
-	var row := Kit.hbox(10)
-	row.custom_minimum_size = Vector2(0, 60)
-	var who := Button.new()
-	who.custom_minimum_size = Vector2(360, 60)
-	for state in ["normal", "hover", "pressed"]:
-		who.add_theme_stylebox_override(state, Kit.box(Color(0.1, 0.06, 0.3, 0.55), Color(1, 1, 1, 0.35), 2, 30, 4))
-	who.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	who.pressed.connect(app.show_profile)
-	row.add_child(who)
-	var inner := Kit.hbox(10)
-	inner.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	inner.offset_left = 6
-	inner.offset_right = -14
-	inner.offset_top = 4
-	inner.offset_bottom = -4
-	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	who.add_child(inner)
-	var face := Portrait.new()
-	face.custom_minimum_size = Vector2(52, 52)
-	face.border_width = 3.0
-	face.border = Kit.GOLD
-	face.show_character(leader, Kit.CATEGORY_COLORS.get(leader.get("category", ""), Kit.LINE))
-	inner.add_child(face)
-	var names := Kit.vbox(0)
-	names.alignment = BoxContainer.ALIGNMENT_CENTER
-	names.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	inner.add_child(Kit.expand(names))
-	var nick := Kit.label("Lv.%d %s" % [int(profile["level"]), str(profile["nickname"])], 22)
-	nick.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	names.add_child(nick)
-	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
-	var rank := Kit.label("%s · 리그 %d위" % [tier["name"], Profile.league_rank(profile, app.eco)], 16, Kit.GOLD)
-	rank.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	names.add_child(rank)
-	row.add_child(Kit.expand(Control.new()))
-	for spec in [["gold", Kit.GOLD, int(profile["gold"])], ["gem", Kit.GEM, int(profile["gems"])]]:
-		var capsule := PanelContainer.new()
-		capsule.custom_minimum_size = Vector2(190, 44)
-		capsule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		var tint: Color = spec[1]
-		var style := Kit.box(Color(0.08, 0.04, 0.26, 0.7), tint.darkened(0.15), 2, 22, 4)
-		style.content_margin_left = 6
-		style.content_margin_right = 16
-		capsule.add_theme_stylebox_override("panel", style)
-		var chip := Kit.hbox(4)
-		capsule.add_child(chip)
-		chip.add_child(Kit.icon(str(spec[0]), 36.0))
-		var amount := Kit.label(Kit.comma(int(spec[2])), 24, tint, HORIZONTAL_ALIGNMENT_RIGHT)
-		chip.add_child(Kit.expand(amount))
-		row.add_child(capsule)
-	return row
-
-
-## 큰 대표 영웅 카드: 장식 액자 안의 큰 그림, 등급과 이름, 아래에 영웅의 한마디. 누르면 영웅 화면.
-func _hero_card() -> Control:
-	var party: Dictionary = app.profile["party"]
-	var leader_id := str(app.profile.get("avatar", ""))
-	if leader_id == "" or not Profile.owns(app.profile, leader_id):
-		leader_id = str(party.get("attack", ""))
-	var leader: Dictionary = app.character(leader_id)
-	var holder := Kit.vbox(6)
-	holder.custom_minimum_size = Vector2(400, 0)
-	var card := Button.new()
-	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	for state in ["normal", "hover", "pressed", "focus"]:
-		card.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	card.pressed.connect(_on_tab.bind("heroes"))
-	# 대표 영웅 카드를 누르면 한마디 한다.
-	card.pressed.connect(app.say.bind(str(leader.get("id", "")), "idle"))
-	holder.add_child(card)
-	var fancy_path := "res://assets/ui_frames/lobby_frame.png"
-	var has_fancy := ResourceLoader.exists(fancy_path)
-	var big := Portrait.new()
-	big.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# 장식 액자는 테가 두꺼워서 그림을 더 안쪽에 둔다.
-	var inset := Vector2(16, 24)
-	if has_fancy:
-		# 장식 액자의 그림 창은 가로 14.5%~85.5%, 세로 15.5%~84.5% 자리에 있다.
-		big.anchor_left = 0.14
-		big.anchor_right = 0.86
-		big.anchor_top = 0.15
-		big.anchor_bottom = 0.85
-		inset = Vector2.ZERO
-	big.offset_left = inset.x
-	big.offset_top = inset.y
-	big.offset_right = -inset.x
-	big.offset_bottom = -inset.y
-	big.border_width = 0.0
-	big.hd = true
-	big.show_character(leader, Kit.CATEGORY_COLORS.get(leader.get("category", ""), Kit.LINE))
-	card.add_child(big)
-	# 등급 띠: 그림 위쪽에 등급 글자와 이름(모두의 마블의 S+ 띠처럼)
-	var grade := int(leader.get("grade", 1))
-	var plate := Kit.label("%s  %s" % [["B", "A", "S"][clampi(grade - 1, 0, 2)], leader.get("name", "")], 30, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
-	plate.add_theme_constant_override("outline_size", 8)
-	plate.add_theme_color_override("font_outline_color", Color("2a0f5a"))
-	plate.add_theme_stylebox_override("normal", Kit.box(Color(0.42, 0.2, 0.85, 0.9), Color.TRANSPARENT, 0, 0, 4))
-	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plate.anchor_left = 0.14 if has_fancy else 0.0
-	plate.anchor_right = 0.86 if has_fancy else 1.0
-	plate.anchor_top = 0.15 if has_fancy else 0.0
-	plate.anchor_bottom = 0.15 if has_fancy else 0.0
-	plate.offset_left = inset.x
-	plate.offset_right = -inset.x
-	plate.offset_top = inset.y
-	plate.offset_bottom = inset.y + 46
-	card.add_child(plate)
-	var frame_path := fancy_path if has_fancy else "res://assets/ui_frames/hero_frame.png"
-	if ResourceLoader.exists(frame_path):
-		var frame := TextureRect.new()
-		frame.texture = load(frame_path)
-		frame.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		frame.stretch_mode = TextureRect.STRETCH_SCALE
-		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(frame)
-	else:
-		big.border_width = 4.0
-		big.border = Kit.GOLD
-	# 대표 영웅의 한마디: 분류마다 말투가 다르고, 들어올 때마다 바뀐다.
-	var lines: Array = GREETINGS.get(str(leader.get("category", "")), GREETINGS["영웅"])
-	var greeting := Kit.para(str(lines[app.rng.randi_range(0, lines.size() - 1)]), 18, Color("3a1f7a"), HORIZONTAL_ALIGNMENT_CENTER)
-	greeting.remove_theme_color_override("font_shadow_color")
-	greeting.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	greeting.add_theme_stylebox_override("normal", Kit.box(Color(1, 1, 1, 0.94), Color("b79cff"), 3, 18, 6))
-	holder.add_child(greeting)
-	return holder
-
-
-## 소식 배너: 그림 위에 큰 글씨로 지금의 공지가 돌아가며 나온다. 누르면 공지 목록.
-func _banner() -> Control:
-	var band := Button.new()
-	band.custom_minimum_size = Vector2(0, 120)
-	var band_style := Kit.box(Color(0.5, 0.1, 0.12, 0.95), Color("ffcf4d"), 3, 18, 8)
-	for state in ["normal", "hover", "pressed"]:
-		band.add_theme_stylebox_override(state, band_style)
-	band.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	band.pressed.connect(_on_notices)
-	var art := ArtView.new()
-	art.show_art("ui/banner_event")
-	if art.has_art():
-		art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		art.offset_left = 4
-		art.offset_top = 4
-		art.offset_right = -4
-		art.offset_bottom = -4
-		art.focus_y = 0.5
-		art.corner_radius = 14.0
-		band.add_child(art)
-	else:
-		art.free()
-	_notice_label = Kit.label("", 26, Color("ffe37a"))
-	_notice_label.add_theme_constant_override("outline_size", 8)
-	_notice_label.add_theme_color_override("font_outline_color", Color("4a0a0a"))
-	_notice_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_notice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_notice_label.max_lines_visible = 3
-	_notice_label.clip_text = true
-	_notice_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_notice_label.offset_left = 20
-	_notice_label.offset_right = -150
-	_notice_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	band.add_child(_notice_label)
-	_show_notice()
-	return band
 
 
 # ---------------------------------------------------------------- 오늘 할 일
@@ -625,6 +934,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"새 로비: 왼쪽에 대표 영웅, 오른쪽에 큰 타일(랭크전·모험·AI전·친구 대전·오늘의 도전·영웅·상점·미션·시즌 패스)로 로비를 새로 꾸몄어요. 진행 중 이벤트는 랭크전 타일 안에, 출전 파티와 오늘 할 일은 아래 띠에 보여요.",
 	"배경음악이 7곡으로 늘었어요: 타이틀·로비·상점·대전·관문 전투·승리·패배. 화면마다 다른 곡이 나와요.",
 	"영웅 48명이 말을 해요! 도감에서 누르거나 이동·공격·방어·스킬·승패 때 목소리가 나와요. 효과음도 새로 녹음했어요. (설정에서 끌 수 있어요)",
 	"움직이는 영웅(시험): 여포가 3D 모델로 바뀌어 판 위에서 숨 쉬고 걸어 다녀요.",
