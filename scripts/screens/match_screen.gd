@@ -138,11 +138,11 @@ func _play(sound: String) -> void:
 
 ## 판 위 말의 위치를 이 화면 좌표로.
 func _piece_spot(player_index: int) -> Vector2:
-	return _board_view.global_position - global_position + _board_view.piece_point(player_index)
+	return Kit.spot_in(self, _board_view, _board_view.piece_point(player_index))
 
 
 func _board_center() -> Vector2:
-	return _board_view.global_position - global_position + _board_view.size * 0.5
+	return Kit.spot_in(self, _board_view, _board_view.size * 0.5)
 
 
 ## 말이 칸에 내려앉았다: 져서 날아온 것이면 쿵 소리와 흔들림.
@@ -671,9 +671,8 @@ func _show_tile(event: Dictionary) -> void:
 	row.add_child(text)
 	add_child(panel)
 	await get_tree().process_frame
-	var board_rect := _board_view.get_global_rect()
 	panel.size = panel.get_combined_minimum_size()
-	panel.position = board_rect.get_center() - panel.size / 2.0 - global_position
+	panel.position = _board_center() - panel.size / 2.0
 	panel.pivot_offset = panel.size / 2.0
 	panel.scale = Vector2(0.6, 0.6)
 	# 칸 종류마다 소리가 다르다(없으면 좋음/나쁨 소리).

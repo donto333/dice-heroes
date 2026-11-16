@@ -9,6 +9,7 @@ const BoardView := preload("res://scripts/ui/board_view.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const GameData := preload("res://scripts/game_data.gd")
 const Fx := preload("res://scripts/ui/fx.gd")
+const Kit := preload("res://scripts/ui/kit.gd")
 
 const GOLD := Color("ffcf4d")
 const WIN_COLOR := Color("7ee081")
@@ -272,7 +273,7 @@ func _clash(left_face: Control, right_face: Control, attacker_won: bool) -> void
 	var fade := white.create_tween()
 	fade.tween_property(white, "color:a", 0.0, 0.3)
 	fade.tween_callback(white.queue_free)
-	_spark_at((left_face.global_position + left_face.size * 0.5 + right_face.global_position + right_face.size * 0.5) * 0.5 - global_position)
+	_spark_at((Kit.spot_in(self, left_face, left_face.size * 0.5) + Kit.spot_in(self, right_face, right_face.size * 0.5)) * 0.5)
 	# 창 전체가 덜컹
 	var home := position
 	var rattle := create_tween()

@@ -70,7 +70,9 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 			row.add_child(button)
 	# 창이 화면보다 크면(위·아래 장식 포함) 통째로 줄여서 버튼이 화면 밖으로 나가지 않게 한다.
 	var need: Vector2 = _panel.get_combined_minimum_size()
-	var room: Vector2 = get_viewport_rect().size - Vector2(40, 96)
+	# 세로로 든 화면에서는 틀이 돌아가 있으므로, 창 크기가 아니라 틀(부모)의 크기에 맞춘다.
+	var holder := get_parent() as Control
+	var room: Vector2 = (holder.size if holder != null else get_viewport_rect().size) - Vector2(40, 96)
 	var fit := minf(1.0, minf(room.x / maxf(need.x, 1.0), room.y / maxf(need.y, 1.0)))
 	_panel.pivot_offset = need * 0.5
 	_panel.scale = Vector2(0.85, 0.85) * fit

@@ -355,6 +355,17 @@ func _run() -> void:
 	await _shot("19_lobby_after")
 	_close_dialogs()
 	await _play_full_game()
+	# 세로로 든 화면: 게임이 스스로 돌아 가로로 그려지는지 확인한다(로비와 영웅 화면).
+	root.size = Vector2i(720, 1280)
+	_app.go("lobby")
+	await _wait(0.6)
+	await _shot("22_upright_lobby")
+	_app.go("heroes")
+	await _wait(0.6)
+	await _shot("23_upright_heroes")
+	_app.dialog("세로 화면 시험", Label.new(), [["확인"]], 520)
+	await _wait(0.4)
+	await _shot("24_upright_dialog")
 	quit(0)
 
 

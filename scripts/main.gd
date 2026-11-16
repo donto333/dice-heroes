@@ -39,8 +39,7 @@ const SCREEN_MOODS := {
 	"lobby": Color("3b2f9e"), "shop": Color("5a2a9a"), "heroes": Color("1f3a82"), "missions": Color("7a4a22"),
 	"settings": Color("1a6470"), "adventure": Color("2c6a3c"), "pass": Color("7a2a6a"), "help": Color("1a6470"),
 }
-const RotateGuard := preload("res://scripts/ui/rotate_guard.gd")
-const VERSION := "0.21.1"
+const VERSION := "0.22.0"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -85,8 +84,8 @@ func _ready() -> void:
 	add_child(loading)
 	load_profile()
 	music.enabled = bgm_on()
-	# 가로 화면 전용: 세로로 들면 돌려 달라는 안내가 화면을 덮는다.
-	add_child(RotateGuard.new())
+	# 가로 화면 전용: 세로로 들어도 게임이 스스로 돌아 가로로 그려진다.
+	_fit_orientation()
 	_setup_display()
 	go("title")
 
@@ -215,7 +214,42 @@ var _perf_frames := 0
 
 ## 대전 중에 5초 동안 평균 1초 32번도 못 그리면(그래픽카드가 약한 기기) 저사양 모드를 저절로 켠다.
 ## 사용자가 설정에서 직접 켜거나 끈 적이 있으면(settings에 low_gfx가 있으면) 건드리지 않는다.
+## 세로로 든 화면에서도 게임은 언제나 가로로 그린다: 틀 전체를 90도 돌리고, 가로·세로 크기를 바꿔 잡는다.
+## (브라우저는 화면 방향을 강제로 못 바꾸는 경우가 많아서, 게임 쪽에서 돌려 그린다.)
+var _upright := false
+var _fit_view := Vector2.ZERO
+
+
+func _fit_orientation() -> void:
+	var window := get_window()
+	var upright := float(window.size.x) < float(window.size.y) * 0.95
+	var view := get_viewport_rect().size
+	if upright == _upright and view == _fit_view and _fit_view != Vector2.ZERO:
+		return
+	if upright != _upright or _fit_view == Vector2.ZERO:
+		_upright = upright
+		# 세로 화면에서는 기준 크기도 세로(720×1280)로 잡아야 돌린 뒤의 글자·버튼 크기가 가로 화면과 같아진다.
+		window.content_scale_size = Vector2i(720, 1280) if upright else Vector2i(1280, 720)
+		view = get_viewport_rect().size
+	_fit_view = view
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	if upright:
+		rotation = PI * 0.5
+		position = Vector2(view.x, 0)
+		size = Vector2(view.y, view.x)
+	else:
+		rotation = 0.0
+		position = Vector2.ZERO
+		size = view
+
+
+## 화면(창) 좌표의 점을 이 틀(가로로 돌려 그린 좌표)의 점으로 바꾼다.
+func to_app(point: Vector2) -> Vector2:
+	return get_global_transform().affine_inverse() * point
+
+
 func _process(delta: float) -> void:
+	_fit_orientation()
 	if instant or GameData.low_gfx or current_name != "match" or not has_profile() or profile.get("settings", {}).has("low_gfx"):
 		_perf_time = 0.0
 		_perf_frames = 0
@@ -372,7 +406,7 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 	if not instant:
 		# 새 화면이 부드럽게 나타난다.
 		screen.modulate.a = 0.0
-		screen.pivot_offset = get_viewport_rect().size * 0.5
+		screen.pivot_offset = size * 0.5
 		screen.scale = Vector2(1.035, 1.035)
 		var enter: Tween = screen.create_tween().set_parallel(true)
 		enter.tween_property(screen, "modulate:a", 1.0, 0.18)
@@ -486,7 +520,7 @@ func _input(event: InputEvent) -> void:
 			return
 		if click.pressed:
 			_drag_scroll = _scroll_at(click.position)
-			_drag_from = click.position
+			_drag_from = to_app(click.position)
 			_dragging = false
 			if _drag_scroll != null:
 				_drag_scroll_from = _drag_scroll.scroll_vertical
@@ -499,7 +533,7 @@ func _input(event: InputEvent) -> void:
 		if not is_instance_valid(_drag_scroll):
 			_drag_scroll = null
 			return
-		var move := (event as InputEventMouseMotion).position - _drag_from
+		var move := to_app((event as InputEventMouseMotion).position) - _drag_from
 		if not _dragging and absf(move.y) > DRAG_START and absf(move.y) > absf(move.x):
 			_dragging = true
 			# 끌기 시작: 누르고 있던 버튼이 손을 뗄 때 눌리지 않게 한다.
@@ -523,7 +557,7 @@ func _scroll_at(point: Vector2) -> ScrollContainer:
 		if node is ScrollContainer:
 			var scroll := node as ScrollContainer
 			var bar := scroll.get_v_scroll_bar()
-			if scroll.is_visible_in_tree() and scroll.get_global_rect().has_point(point) and bar.max_value > bar.page + 1.0:
+			if scroll.is_visible_in_tree() and Rect2(Vector2.ZERO, scroll.size).has_point(scroll.get_global_transform().affine_inverse() * point) and bar.max_value > bar.page + 1.0:
 				found = scroll
 		# 뒤에 붙은 것(위에 그려진 것)이 나중에 검사되도록 거꾸로 넣는다.
 		var children := node.get_children()
