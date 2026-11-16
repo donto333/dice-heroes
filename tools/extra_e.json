@@ -1,0 +1,9 @@
+{"cands": {
+  "k": {"voice": "hjCvGtSCRPyjYwe2lDf1", "name": "K · Juan(또렷한 남성) · 짧은 대사", "set": "short"},
+  "l": {"voice": "hjCvGtSCRPyjYwe2lDf1", "name": "L · Juan(또렷한 남성) · 문장 대사", "set": "long"},
+  "m": {"voice": "n2fbxG88jqAoaVPUy3IG", "name": "M · Yooni(또렷한 여성) · 짧은 대사", "set": "short"},
+  "n": {"voice": "n2fbxG88jqAoaVPUy3IG", "name": "N · Yooni(또렷한 여성) · 문장 대사", "set": "long"},
+  "o": {"voice": "wzMVIc8FAFmgMxFpN0uM", "name": "O · Deokpal(차분한 남성) · 문장 대사", "set": "long"}},
+ "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게",
+ "short": {"start": "게임 시작!", "turn": "내 차례!", "enemy_turn": "상대 차례!", "battle": "전투!", "double": "더블!", "gate": "관문 전투!", "goal": "골인!", "catchup": "따라잡기 찬스!", "last_turn": "마지막 턴!", "win": "승리!", "lose": "패배..."},
+ "long": {"start": "게임을 시작합니다!", "turn": "당신의 차례입니다!", "enemy_turn": "상대의 차례입니다.", "battle": "전투가 시작됩니다!", "double": "더블입니다!", "gate": "관문 전투입니다!", "goal": "골인입니다!", "catchup": "따라잡기 기회입니다!", "last_turn": "마지막 턴입니다!", "win": "승리했습니다!", "lose": "패배했습니다."}}
