@@ -39,7 +39,7 @@ const SCREEN_MOODS := {
 	"settings": Color("1a6470"), "adventure": Color("2c6a3c"), "pass": Color("7a2a6a"), "help": Color("1a6470"),
 }
 const RotateGuard := preload("res://scripts/ui/rotate_guard.gd")
-const VERSION := "0.20.1"
+const VERSION := "0.20.2"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -61,6 +61,8 @@ var _characters_by_id: Dictionary = {}
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# 화면은 1초에 60번까지만 그린다. 144Hz 같은 빠른 모니터에서 쓸데없이 2배 넘게 그려 느려지는 것을 막는다.
+	Engine.max_fps = 60
 	_setup_font()
 	rng.randomize()
 	data = GameData.load_all()

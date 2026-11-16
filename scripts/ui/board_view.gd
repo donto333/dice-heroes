@@ -130,6 +130,9 @@ var _draw_order_for := -1
 ## 지금 차례인 말은 살짝 통통 튄다.
 var active_player := -1
 var _anim_time := 0.0
+## 가만히 있을 때 다시 그리는 간격(초)과 쌓인 시간
+const IDLE_FRAME_TIME := 1.0 / 30.0
+var _idle_redraw := 0.0
 ## 통통 튀는 이동: 말마다 {"from": 칸 id, "t": 0~1}. 없으면 멈춰 있는 것.
 var _hops: Dictionary = {}
 ## 말이 내려앉은 칸에서 퍼지는 고리: [{"id": 칸, "t": 0~1, "color": 색}]
@@ -256,9 +259,13 @@ func _process(delta: float) -> void:
 	_update_camera(delta)
 	_anim_time += delta
 	if active_player >= 0:
-		queue_redraw()
-		if _glow != null:
-			_glow.queue_redraw()
+		# 가만히 있을 때의 잔움직임(숨쉬기·둥실거림·모형 움직임)은 1초에 30번만 다시 그린다.
+		# 판 전체(칸 약 120개)를 매 화면마다 다시 그리면 무거워서 게임이 느려졌다(특히 144Hz 모니터).
+		# 말이 뛰거나 카메라가 움직일 때는 아래에서 매 화면 다시 그리므로 부드러움은 그대로다.
+		_idle_redraw += delta
+		if _idle_redraw >= IDLE_FRAME_TIME:
+			_idle_redraw = 0.0
+			queue_redraw()
 	for player_index in _hops.keys():
 		var hop: Dictionary = _hops[player_index]
 		var duration: float = FLING_TIME if bool(hop.get("fling", false)) else STEP_TIME * 0.92
@@ -900,6 +907,8 @@ func _center(id: int, layout: Dictionary) -> Vector2:
 
 
 func _draw() -> void:
+	if _glow != null:
+		_glow.queue_redraw()
 	if game == null or game.nodes.is_empty():
 		return
 	var font := get_theme_default_font()
