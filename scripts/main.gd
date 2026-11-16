@@ -7,6 +7,7 @@ const GameData := preload("res://scripts/game_data.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const SaveStore := preload("res://scripts/save_store.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
+const Voice := preload("res://scripts/ui/voice.gd")
 const Dialog := preload("res://scripts/ui/dialog.gd")
 const Toast := preload("res://scripts/ui/toast.gd")
 const Music := preload("res://scripts/ui/music.gd")
@@ -43,6 +44,7 @@ var data: Dictionary = {}
 var eco: Dictionary = {}
 var profile: Dictionary = {}
 var sfx: Node
+var voice: Node
 var music: Node
 var rng := RandomNumberGenerator.new()
 var current_screen: Control
@@ -66,6 +68,8 @@ func _ready() -> void:
 		_characters_by_id[str(character["id"])] = character
 	sfx = Sfx.new()
 	add_child(sfx)
+	voice = Voice.new()
+	add_child(voice)
 	music = Music.new()
 	add_child(music)
 	_layer = Control.new()
@@ -195,6 +199,16 @@ func sfx_on() -> bool:
 
 func bgm_on() -> bool:
 	return not has_profile() or bool(profile.get("settings", {}).get("bgm", true))
+
+
+func voice_on() -> bool:
+	return not has_profile() or bool(profile.get("settings", {}).get("voice", true))
+
+
+## 영웅 음성을 튼다. kind: select·idle·move·attack·defend·skill·win·lose
+func say(hero_id: String, kind: String) -> void:
+	if voice_on() and not instant:
+		voice.say(hero_id, kind)
 
 
 func play(sound: String) -> void:

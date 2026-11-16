@@ -4,7 +4,7 @@ name: Make SFX
 on:
   push:
     branches: ["claude/gen-audio"]
-    paths: ["tools/sfx_prompts.json", "tools/make_sfx.py", ".github/workflows/make-sfx.yml"]
+    paths: ["tools/audio_job.txt"]
 permissions:
   contents: read
 jobs:
@@ -15,8 +15,10 @@ jobs:
       - name: 효과음 만들기
         env:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-        run: python3 tools/make_sfx.py
+        run: |
+          mkdir -p out
+          python3 "tools/$(head -1 tools/audio_job.txt)"
       - uses: actions/upload-artifact@v4
         with:
-          name: sfx
+          name: audio
           path: out/

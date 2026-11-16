@@ -23,6 +23,9 @@ const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 const BigDice := preload("res://scripts/ui/big_dice.gd")
 const AimBar := preload("res://scripts/ui/aim_bar.gd")
 const Cutin := preload("res://scripts/ui/cutin.gd")
+## 이동할 때 음성이 나올 확률
+const MOVE_VOICE_CHANCE := 0.4
+var _voice_rng := RandomNumberGenerator.new()
 const Fx := preload("res://scripts/ui/fx.gd")
 ## 턴 제한이 이만큼 남으면 턴 배너에 남은 턴을 보여 준다.
 const LAST_TURNS_WARNING := 5
@@ -1442,6 +1445,7 @@ func _present_events() -> void:
 				var caster := int(event["player"])
 				_say(caster, "%s!" % event["name"])
 				_play("skill")
+				app.say(str(_character_named(str(event["hero"])).get("id", "")), "skill")
 				_fx.flash(Color(1, 1, 1, 0.7), 0.25)
 				_fx.speed_lines(_board_center(), PLAYER_TEXT_COLORS[caster].lightened(0.4), 1.1)
 				# 영웅 분류마다 효과가 다르다: 영웅은 불꽃, 위인은 별빛, 신화는 얼음 결정, 근현대는 금빛.
@@ -1469,6 +1473,9 @@ func _show_move(event: Dictionary) -> void:
 	var row := _dice_row("이동", event["rolls"], "", PLAYER_TEXT_COLORS[who])
 	_result_box.add_child(row)
 	_trim_results()
+	# 이동 음성: 내 ATTACK 영웅이 가끔 한마디(매번 하면 시끄럽다).
+	if (who == 0 or _is_local()) and _voice_rng.randf() < MOVE_VOICE_CHANCE:
+		app.say(str(game.char_of(who, "attack").get("id", "")), "move")
 	if not event["rolls"].is_empty():
 		# 판 가운데 큰 주사위 연출. 아래 결과 줄의 작은 주사위도 같이 구른다.
 		_play("dice")
@@ -1529,6 +1536,11 @@ func _show_battle(event: Dictionary) -> void:
 	await _wait_for_board()
 	var who := int(event["player"])
 	var other := 1 - who
+	# 전투 음성: 공격하는 영웅이 먼저 외치고, 조금 뒤 막는 영웅이 받아친다(영웅이 아니면 소리 없음).
+	app.say(str(_character_named(str(event.get("attacker", ""))).get("id", "")), "attack")
+	var defender_id := str(_character_named(str(event.get("defender", ""))).get("id", ""))
+	if defender_id != "":
+		get_tree().create_timer(0.9).timeout.connect(app.say.bind(defender_id, "defend"))
 	if str(event.get("target", "")) == "ambush":
 		_hide_log()
 		await _battle_overlay.play(event, {
@@ -1718,6 +1730,10 @@ func _show_game_over() -> void:
 		text = "패배... AI가 먼저 들어갔습니다."
 		color = Color("ff6b6b")
 		outcome = "lose"
+	# 결과 음성: 내 ATTACK 영웅(친구 대전은 이긴 쪽)이 한마디.
+	if outcome != "draw":
+		var speaker := int(game.winner) if _is_local() else 0
+		app.say(str(game.char_of(speaker, "attack").get("id", "")), "win" if (_is_local() or outcome == "win") else "lose")
 	_result_text = text
 	var label := _make_label(34, text)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
