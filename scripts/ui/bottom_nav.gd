@@ -3,6 +3,7 @@ extends PanelContainer
 ## 지금 화면의 탭은 노랗게 솟아 보인다. 받을 보상이 있으면 빨간 점을 붙인다.
 
 const Kit := preload("res://scripts/ui/kit.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 
 signal tab_pressed(screen_name: String)
 
@@ -26,6 +27,10 @@ func setup(active: String, badges: Dictionary) -> void:
 	frame.shadow_size = 6
 	frame.shadow_offset = Vector2(0, 3)
 	add_theme_stylebox_override("panel", Kit.plate(Color("17357f"), Kit.TRIM, 24.0, 10, false))
+	# 그림 부품이 있으면 금테 세로 판(위아래 보석 장식은 그대로, 가운데만 늘림).
+	var rail := MenuArt.style("rail_panel", Vector4(24, 34, 24, 34), Vector4(10, 14, 10, 14))
+	if rail != null:
+		add_theme_stylebox_override("panel", rail)
 	# 가로 화면: 왼쪽에 세로로 선다.
 	var row := Kit.vbox(6)
 	add_child(row)
@@ -38,6 +43,10 @@ func setup(active: String, badges: Dictionary) -> void:
 		var color := Color("ffc62b") if on else Color("2f74d6")
 		var button := Kit.button("", color, 20, 96)
 		button.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		# 그림 부품: 지금 화면은 금색, 나머지는 파란 알약 버튼.
+		var skinned := MenuArt.skin_button(button, "menu_on" if on else "menu_off", Vector4(30, 26, 30, 26), Vector4(4, 4, 4, 4))
+		if skinned:
+			color = Color("e0a000") if on else Color("1f4fb0")
 		button.pressed.connect(_on_pressed.bind(screen_name))
 		row.add_child(button)
 		_buttons[screen_name] = button
