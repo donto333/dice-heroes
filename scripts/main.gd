@@ -40,7 +40,7 @@ const SCREEN_MOODS := {
 	"settings": Color("1a6470"), "adventure": Color("2c6a3c"), "pass": Color("7a2a6a"), "help": Color("1a6470"),
 }
 const RotateGuard := preload("res://scripts/ui/rotate_guard.gd")
-const VERSION := "0.20.3"
+const VERSION := "0.21.0"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
