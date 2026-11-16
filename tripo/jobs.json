@@ -1,0 +1,6 @@
+{
+	"설명": "트리포(Tripo)로 만들 3D 모델 주문서. GitHub Actions(tripo.yml)가 읽는다. model_task·rig_task에 이미 만든 작업 번호를 적어 두면 다시 만들지 않는다(크레딧 절약).",
+	"jobs": [
+		{"name": "lubu", "image": "assets/standees/lubu.png", "rig": true, "animations": ["preset:idle", "preset:walk", "preset:slash"], "model_task": "", "rig_task": "", "anim_task": ""}
+	]
+}

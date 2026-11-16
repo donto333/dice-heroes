@@ -1,0 +1,49 @@
+name: Tripo 3D
+
+# 트리포(Tripo) API로 3D 모델을 만들고 블렌더로 찍는다. claude/tripo로 시작하는 브랜치에서 주문서(tripo/)가 바뀌면 돈다.
+# API 키는 저장소 비밀값에서만 읽고 화면에 찍지 않는다. 결과(모델·그림)는 실행 결과물(artifact)로 남긴다.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/tripo**']
+    paths: ['tripo/**']
+
+permissions:
+  contents: read
+
+jobs:
+  tripo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
+      TRIPO_KEY: ${{ secrets.TRIPO_KEY }}
+      TRIPO: ${{ secrets.TRIPO }}
+      TRIPO_API: ${{ secrets.TRIPO_API }}
+      TRIPO3D_API_KEY: ${{ secrets.TRIPO3D_API_KEY }}
+      TRIPO_TOKEN: ${{ secrets.TRIPO_TOKEN }}
+      TRIPO_SECRET: ${{ secrets.TRIPO_SECRET }}
+      TRIPO_AI_API_KEY: ${{ secrets.TRIPO_AI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 준비
+        run: pip install --quiet requests pillow
+      - name: 트리포로 모델 만들기
+        run: python3 tools/tripo_run.py
+      - name: 블렌더 받기
+        if: always()
+        run: |
+          curl -sL -o /tmp/blender.tar.xz https://download.blender.org/release/Blender4.2/blender-4.2.9-linux-x64.tar.xz
+          mkdir -p /tmp/blender && tar -xf /tmp/blender.tar.xz -C /tmp/blender --strip-components=1
+          sudo apt-get install -y -qq libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libxkbcommon0 libsm6 > /dev/null
+          /tmp/blender/blender --version | head -1
+      - name: 블렌더로 찍기
+        if: always()
+        run: /tmp/blender/blender -b -P tools/tripo_render.py -- out/tripo 256 2>&1 | grep -E "RENDER|Error|error" | head -60
+      - name: 결과물 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tripo-out
+          path: out/tripo
+          retention-days: 14
