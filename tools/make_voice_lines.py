@@ -184,7 +184,7 @@ for character in characters:
         "tags": {kind: pair[0] for kind, pair in zip(KINDS, pairs)},
     }
 assert len(heroes) == len(H) == 48
-json.dump({"_comment": "영웅 음성 대사표. tools/make_voice_lines.py가 만든다. 소리 파일은 assets/audio/voice/<영웅 id>_<상황>.ogg(A 방식), assets/audio/voice_b/(B 방식: 연기 지시 tags를 붙여 만든 것).",
+json.dump({"_comment": "영웅 음성 대사표. tools/make_voice_lines.py가 만든다. 소리 파일은 assets/audio/voice/<영웅 id>_<상황>.ogg(v3 모델에 연기 지시 tags를 붙여 만든 것).",
            "kinds": KINDS, "heroes": heroes}, open("data/voice_lines.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 n = sum(len(t) for h in heroes.values() for t in h["lines"].values())
 print("영웅 %d명, 대사 %d자" % (len(heroes), n))

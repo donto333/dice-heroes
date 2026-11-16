@@ -46,11 +46,6 @@ func setup(main_app, _params: Dictionary) -> void:
 	var voice_toggle := Kit.button("켜짐" if voice_on else "꺼짐", Kit.GOOD if voice_on else Kit.PANEL_LIGHT, 24, 64)
 	voice_toggle.custom_minimum_size = Vector2(150, 64)
 	voice_toggle.pressed.connect(_on_voice)
-	# 음성 방식 고르기: 누르면 A↔B가 바뀌고 출전 영웅 목소리로 바로 들려준다.
-	var style_button := Kit.button("방식 " + app.voice_style().to_upper(), Kit.ACCENT, 24, 64)
-	style_button.custom_minimum_size = Vector2(150, 64)
-	style_button.pressed.connect(_on_voice_style)
-	voice_row.add_child(style_button)
 	voice_row.add_child(voice_toggle)
 	var music_panel := Kit.panel()
 	body.add_child(music_panel)
@@ -272,13 +267,6 @@ func _on_volume(kind: String, step: int) -> void:
 		app.say(str(app.profile.get("party", {}).get("attack", "")), "select")
 	elif kind == "sfx":
 		app.play("good")
-
-
-func _on_voice_style() -> void:
-	app.profile["settings"]["voice_style"] = "a" if app.voice_style() == "b" else "b"
-	app.save()
-	app.go("settings")
-	app.say(str(app.profile.get("party", {}).get("attack", "")), "select")
 
 
 func _on_voice() -> void:

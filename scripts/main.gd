@@ -228,15 +228,8 @@ func voice_on() -> bool:
 ## 영웅 음성을 튼다. kind: select·idle·move·attack·defend·skill·win·lose
 func say(hero_id: String, kind: String) -> void:
 	if voice_on() and not instant:
-		voice.style = voice_style()
 		voice.say(hero_id, kind)
 
-
-## 영웅 음성 방식: "a"(기본) 또는 "b"(연기 지시를 붙여 만든 것). 설정에서 바꾼다.
-func voice_style() -> String:
-	if not has_profile():
-		return "a"
-	return "b" if str(profile.get("settings", {}).get("voice_style", "a")) == "b" else "a"
 
 
 func play(sound: String) -> void:
