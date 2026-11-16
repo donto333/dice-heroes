@@ -91,7 +91,7 @@ func _on_claim(number: int) -> void:
 	if reward.is_empty():
 		return
 	app.save()
-	app.play("win")
+	app.play("reward")
 	app.toast("패스 보상: %s" % Kit.reward_line(reward))
 	app.go("pass")
 
@@ -101,7 +101,7 @@ func _on_claim_all() -> void:
 	if int(total["count"]) == 0:
 		return
 	app.save()
-	app.play("win")
+	app.play("reward")
 	app.toast("패스 보상 %d개: %s" % [int(total["count"]), Kit.reward_line({"gold": int(total["gold"]), "gems": int(total["gems"])})])
 	app.go("pass")
 

@@ -58,6 +58,23 @@ func setup(main_app, _params: Dictionary) -> void:
 	music_toggle.pressed.connect(_on_music)
 	music_row.add_child(music_toggle)
 
+	# 소리 크기: 효과음·영웅 음성·배경음악을 20%씩 조절
+	var volume_panel := Kit.panel()
+	body.add_child(volume_panel)
+	var volume_column := Kit.vbox(8)
+	volume_panel.add_child(volume_column)
+	for spec in [["sfx", "효과음 크기"], ["voice", "음성 크기"], ["bgm", "음악 크기"]]:
+		var volume_row := Kit.hbox(10)
+		volume_column.add_child(volume_row)
+		volume_row.add_child(Kit.expand(Kit.label("%s  %d%%" % [spec[1], app.volume(str(spec[0]))], 24)))
+		var down := Kit.button("작게", Kit.PANEL_LIGHT, 22, 56)
+		down.custom_minimum_size = Vector2(110, 56)
+		down.pressed.connect(_on_volume.bind(str(spec[0]), -20))
+		volume_row.add_child(down)
+		var up := Kit.button("크게", Kit.ACCENT, 22, 56)
+		up.custom_minimum_size = Vector2(110, 56)
+		up.pressed.connect(_on_volume.bind(str(spec[0]), 20))
+		volume_row.add_child(up)
 	var play_panel := Kit.panel()
 	body.add_child(play_panel)
 	var play_column := Kit.vbox(10)
@@ -238,6 +255,18 @@ func _on_hints() -> void:
 	app.save()
 	app.play("good")
 	app.toast("다음 대전에서 안내가 다시 나와요.")
+
+
+func _on_volume(kind: String, step: int) -> void:
+	app.profile["settings"][kind + "_volume"] = clampi(app.volume(kind) + step, 0, 100)
+	app.save()
+	app.apply_volumes()
+	app.go("settings")
+	# 바뀐 크기를 바로 들려준다.
+	if kind == "voice":
+		app.say(str(app.profile.get("party", {}).get("attack", "")), "select")
+	elif kind == "sfx":
+		app.play("good")
 
 
 func _on_voice() -> void:

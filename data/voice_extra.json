@@ -1,0 +1,58 @@
+{
+ "_comment": "영웅이 아닌 음성: 안내 음성(announcer)과 적 음성(enemy_*). 파일은 assets/audio/voice/<id>_<상황>.ogg. tools/make_batch2.py가 만든다.",
+ "heroes": {
+  "announcer": {
+   "voice": "IAETYMYM3nJvjnlkVTKI",
+   "voice_name": "deoksu",
+   "lines": {
+    "start": "게임 시작!",
+    "turn": "내 차례!",
+    "enemy_turn": "상대 차례!",
+    "battle": "전투!",
+    "double": "더블!",
+    "gate": "관문 전투!",
+    "goal": "골인!",
+    "catchup": "따라잡기 찬스!",
+    "last_turn": "마지막 턴!",
+    "win": "승리!",
+    "lose": "패배..."
+   }
+  },
+  "enemy_gate": {
+   "voice": "SOYHLrjzK2X1ezoPC6cr",
+   "voice_name": "harry",
+   "lines": {
+    "appear": "멈춰라! 여기는 못 지나간다!",
+    "win": "돌아가라!",
+    "lose": "크윽... 지나가라."
+   }
+  },
+  "enemy_boss": {
+   "voice": "UmYoqGlufKxhJ6NCx5Mv",
+   "voice_name": "jangho",
+   "lines": {
+    "appear": "잘도 여기까지 왔구나.",
+    "win": "아직 멀었다!",
+    "lose": "훌륭하다... 네가 이겼다."
+   }
+  },
+  "enemy_keeper": {
+   "voice": "N2lVS1w4EtoT3dr4eOWO",
+   "voice_name": "callum",
+   "lines": {
+    "appear": "어디 한번 덤벼 봐라!",
+    "win": "하하하, 약하구나!",
+    "lose": "이런, 졌군."
+   }
+  },
+  "enemy_monster": {
+   "voice": "nPczCjzI2devNBz1zQrb",
+   "voice_name": "brian",
+   "lines": {
+    "appear": "크아아아!",
+    "win": "크하하하!",
+    "lose": "끄으윽..."
+   }
+  }
+ }
+}

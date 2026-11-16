@@ -21,6 +21,11 @@ var _player: AudioStreamPlayer
 var _current := ""
 var _positions: Dictionary = {}
 var enabled := true
+## 설정의 음악 크기를 dB로 바꾼 값
+var gain_db := 0.0
+## 음성이 나오는 동안 줄이는 크기(dB)
+const DUCK_DB := -9.0
+var _duck_tween: Tween
 
 
 func _ready() -> void:
@@ -47,7 +52,7 @@ func play_track(track: String) -> void:
 	_player.volume_db = -40.0
 	_player.play(0.0 if ONE_SHOT.has(track) else float(_positions.get(track, 0.0)))
 	var tween := create_tween()
-	tween.tween_property(_player, "volume_db", VOLUME_DB, 0.8)
+	tween.tween_property(_player, "volume_db", VOLUME_DB + gain_db, 0.8)
 
 
 func set_enabled(value: bool) -> void:
@@ -64,3 +69,22 @@ func _on_finished() -> void:
 	_positions.erase(_current)
 	if enabled and _current != "" and not ONE_SHOT.has(_current):
 		_player.play()
+
+
+## 크기 설정이 바뀌면 바로 반영한다.
+func set_gain(value_db: float) -> void:
+	gain_db = value_db
+	if _player.playing:
+		_player.volume_db = VOLUME_DB + gain_db
+
+
+## 음성이 나오는 동안 음악을 잠깐 줄였다가 되돌린다.
+func duck(seconds: float) -> void:
+	if not _player.playing:
+		return
+	if _duck_tween != null and _duck_tween.is_valid():
+		_duck_tween.kill()
+	_duck_tween = create_tween()
+	_duck_tween.tween_property(_player, "volume_db", VOLUME_DB + gain_db + DUCK_DB, 0.12)
+	_duck_tween.tween_interval(maxf(0.2, seconds))
+	_duck_tween.tween_property(_player, "volume_db", VOLUME_DB + gain_db, 0.35)

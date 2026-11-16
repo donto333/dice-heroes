@@ -71,6 +71,7 @@ func _ready() -> void:
 	add_child(sfx)
 	voice = Voice.new()
 	add_child(voice)
+	voice.spoke.connect(func(seconds: float): music.duck(seconds))
 	music = Music.new()
 	add_child(music)
 	_layer = Control.new()
@@ -202,6 +203,24 @@ func bgm_on() -> bool:
 	return not has_profile() or bool(profile.get("settings", {}).get("bgm", true))
 
 
+## 소리 크기(0~100). kind: sfx·voice·bgm
+func volume(kind: String) -> int:
+	if not has_profile():
+		return 100
+	return clampi(int(profile.get("settings", {}).get(kind + "_volume", 100)), 0, 100)
+
+
+## 설정의 소리 크기를 세 부품에 반영한다.
+func apply_volumes() -> void:
+	sfx.gain_db = _gain_db(volume("sfx"))
+	voice.gain_db = _gain_db(volume("voice"))
+	music.set_gain(_gain_db(volume("bgm")))
+
+
+func _gain_db(percent: int) -> float:
+	return -60.0 if percent <= 0 else linear_to_db(float(percent) / 100.0)
+
+
 func voice_on() -> bool:
 	return not has_profile() or bool(profile.get("settings", {}).get("voice", true))
 
@@ -283,6 +302,7 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 		var enter: Tween = screen.create_tween().set_parallel(true)
 		enter.tween_property(screen, "modulate:a", 1.0, 0.18)
 		enter.tween_property(screen, "scale", Vector2.ONE, 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	apply_volumes()
 	music.play_track(SCREEN_MUSIC.get(screen_name, "lobby"))
 
 
