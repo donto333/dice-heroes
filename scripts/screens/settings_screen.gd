@@ -37,6 +37,16 @@ func setup(main_app, _params: Dictionary) -> void:
 	toggle.custom_minimum_size = Vector2(150, 64)
 	toggle.pressed.connect(_on_sound)
 	sound_row.add_child(toggle)
+	var voice_panel := Kit.panel()
+	body.add_child(voice_panel)
+	var voice_row := Kit.hbox(10)
+	voice_panel.add_child(voice_row)
+	voice_row.add_child(Kit.expand(Kit.label("영웅 음성", 26)))
+	var voice_on: bool = app.voice_on()
+	var voice_toggle := Kit.button("켜짐" if voice_on else "꺼짐", Kit.GOOD if voice_on else Kit.PANEL_LIGHT, 24, 64)
+	voice_toggle.custom_minimum_size = Vector2(150, 64)
+	voice_toggle.pressed.connect(_on_voice)
+	voice_row.add_child(voice_toggle)
 	var music_panel := Kit.panel()
 	body.add_child(music_panel)
 	var music_row := Kit.hbox(10)
@@ -228,6 +238,13 @@ func _on_hints() -> void:
 	app.save()
 	app.play("good")
 	app.toast("다음 대전에서 안내가 다시 나와요.")
+
+
+func _on_voice() -> void:
+	app.profile["settings"]["voice"] = not app.voice_on()
+	app.save()
+	app.play("click")
+	app.go("settings")
 
 
 func _on_sound() -> void:

@@ -30,6 +30,7 @@
 - 화면 모양(2026-11 리뉴얼, 밝고 통통한 캐주얼): 하늘색 바탕(`Kit.sky()`), 파란 판에 흰 글자, 주황=가장 중요한 버튼(`Kit.PRIMARY`), 초록=가기·확인(`Kit.ACCENT`), 연파랑=닫기 같은 보조(`Kit.PANEL_LIGHT`), 빨강=나가기. 색과 모양은 `scripts/ui/kit.gd`에서만 정하고 화면에 어두운 남색을 새로 박지 않는다. 로비는 위 띠 → 랭크 카드 → 대표 영웅(양옆 동그란 바로가기) → 모드 타일 4개(`Kit.tile_button`) → 큰 '랭크전 시작' → 아래 메뉴.
 - 연출 부품(`scripts/ui/`): `big_dice.gd`(굴러가는 주사위), `versus_overlay.gd`(시작 VS), `turn_banner.gd`(내 차례! START!), `battle_overlay.gd`(공격→방어 굴림, WIN·LOSE), `result_overlay.gd`+`confetti.gd`, `roulette_wheel.gd`.
 - 효과음: `scripts/ui/sfx.gd`. `assets/audio/sfx/이름.ogg`가 있으면 그 파일을, 없으면 코드로 합성한 소리를 쓴다(step·land는 합성). 파일은 주문서 `tools/sfx_prompts.json`을 `claude/gen-audio` 브랜치에 올리면 `.github/workflows/make-sfx.yml`이 ElevenLabs(저장소 비밀 값 ELEVENLABS_API_KEY)로 만들어 산출물로 남긴다. 받아서 앞뒤 무음을 자르고 ogg로 바꿔 넣는다.
+- 영웅 음성: `scripts/ui/voice.gd`(`app.say(영웅 id, 상황)`, 설정의 '영웅 음성'). 파일은 `assets/audio/voice/<id>_<상황>.ogg`, 상황은 select(도감 클릭)·idle(로비 대표 영웅 누름)·move·attack·defend·skill·win·lose. 대사와 목소리 배정은 `tools/make_voice_lines.py` → `data/voice_lines.json`. 만들 때는 `claude/gen-audio` 브랜치의 `tools/audio_job.txt`에 돌릴 도구 이름(make_voices.py / make_sfx.py / list_voices.py)을 적어 올리면 `make-sfx.yml`이 ElevenLabs로 만들어 산출물 audio로 남긴다. 계정의 복제 목소리는 쓰지 않고 기본 제공 목소리만 쓴다.
 - 글꼴은 한글 부분집합이라 없는 기호가 있다(예: ◆). 새 기호를 쓰면 tests의 글꼴 검사(`_test_font_coverage`)가 잡는다.
 - 기다림 화면: `scripts/ui/loading_overlay.gd`. 큰 전환(게임 진입, 접속, 대전 준비, 소환)은 `app.go_loading()`·`app.wait_loading()`을 쓰고, 나머지 `app.go()`는 짧게 스르륵 나타난다. 자동 사진 도구는 `app.instant = true`로 모두 건너뛴다.
 - 저장은 `scripts/save_store.gd`(기기 안 user://). 온라인 서버(Nakama)는 아직 없음.

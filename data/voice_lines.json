@@ -1,0 +1,687 @@
+{
+ "_comment": "영웅 음성 대사표. tools/make_voice_lines.py가 만든다. 소리 파일은 assets/audio/voice/<영웅 id>_<상황>.ogg. voice는 ElevenLabs 기본 제공 목소리 id.",
+ "kinds": [
+  "select",
+  "idle",
+  "move",
+  "attack",
+  "defend",
+  "skill",
+  "win",
+  "lose"
+ ],
+ "heroes": {
+  "lubu": {
+   "voice": "cCwaxHZZF7rVaQK2aOys",
+   "voice_name": "mark",
+   "lines": {
+    "select": "천하에 나를 막을 자 없다.",
+    "idle": "몸이 근질거리는군.",
+    "move": "앞으로!",
+    "attack": "받아라!",
+    "defend": "어림없다!",
+    "skill": "천하무쌍!",
+    "win": "승리다!",
+    "lose": "다음엔 지지 않는다."
+   }
+  },
+  "yisunsin": {
+   "voice": "8G6jifm9f1BhHXadvwOt",
+   "voice_name": "kang",
+   "lines": {
+    "select": "신에게는 아직 열두 척의 배가 있소.",
+    "idle": "서두를 것 없소.",
+    "move": "길이 보이오.",
+    "attack": "수는 이미 읽었소.",
+    "defend": "침착하게.",
+    "skill": "학익진을 펼쳐라!",
+    "win": "계산대로요.",
+    "lose": "다시 배워야겠소."
+   }
+  },
+  "alexander": {
+   "voice": "pNInz6obpgDQGcFmaJgB",
+   "voice_name": "adam",
+   "lines": {
+    "select": "세상 끝까지 가 보겠다.",
+    "idle": "적은 어디 있나.",
+    "move": "간다!",
+    "attack": "베어 주마!",
+    "defend": "오너라!",
+    "skill": "정복하라!",
+    "win": "이것이 실력이다.",
+    "lose": "크윽..."
+   }
+  },
+  "machao": {
+   "voice": "IAETYMYM3nJvjnlkVTKI",
+   "voice_name": "deoksu",
+   "lines": {
+    "select": "서량의 마초, 나간다!",
+    "idle": "언제 싸우는가.",
+    "move": "진격!",
+    "attack": "덤벼라!",
+    "defend": "막아 낸다!",
+    "skill": "추격이다!",
+    "win": "적수가 없군!",
+    "lose": "분하다..."
+   }
+  },
+  "eulji": {
+   "voice": "3W5c5BG9zeaCYO9gC4v0",
+   "voice_name": "leesin",
+   "lines": {
+    "select": "살수의 물길은 내가 아오.",
+    "idle": "흐름을 읽어야 하오.",
+    "move": "가 봅시다.",
+    "attack": "허점이 보이오!",
+    "defend": "물러서지 않소.",
+    "skill": "계략에 걸렸소!",
+    "win": "좋은 승부였소.",
+    "lose": "허, 졌구려."
+   }
+  },
+  "leonidas": {
+   "voice": "SOYHLrjzK2X1ezoPC6cr",
+   "voice_name": "harry",
+   "lines": {
+    "select": "여기는 한 발도 못 지나간다.",
+    "idle": "몸이 근질거리는군.",
+    "move": "앞으로!",
+    "attack": "받아라!",
+    "defend": "어림없다!",
+    "skill": "버텨라!",
+    "win": "승리다!",
+    "lose": "다음엔 지지 않는다."
+   }
+  },
+  "hanxin": {
+   "voice": "hjCvGtSCRPyjYwe2lDf1",
+   "voice_name": "juan",
+   "lines": {
+    "select": "병사는 많을수록 좋소.",
+    "idle": "다음 수를 생각하는 중이오.",
+    "move": "한 걸음씩.",
+    "attack": "지금이오!",
+    "defend": "예상한 대로요.",
+    "skill": "예기를 세워라!",
+    "win": "지혜의 승리요.",
+    "lose": "내 수가 얕았소."
+   }
+  },
+  "ganning": {
+   "voice": "N2lVS1w4EtoT3dr4eOWO",
+   "voice_name": "callum",
+   "lines": {
+    "select": "방울 소리 들리나? 내가 왔다.",
+    "idle": "뭐 재밌는 일 없나?",
+    "move": "휙!",
+    "attack": "잡았다!",
+    "defend": "거기 아니야!",
+    "skill": "연달아 간다!",
+    "win": "내가 이겼지!",
+    "lose": "봐준 거야!"
+   }
+  },
+  "choiyoung": {
+   "voice": "UmYoqGlufKxhJ6NCx5Mv",
+   "voice_name": "jangho",
+   "lines": {
+    "select": "황금 보기를 돌같이 하라.",
+    "idle": "적은 어디 있나.",
+    "move": "간다!",
+    "attack": "베어 주마!",
+    "defend": "오너라!",
+    "skill": "철벽이다!",
+    "win": "이것이 실력이다.",
+    "lose": "크윽..."
+   }
+  },
+  "robinhood": {
+   "voice": "RlynaiseqcfHE3bZpqe4",
+   "voice_name": "andy",
+   "lines": {
+    "select": "셔우드의 명궁, 여기 있지.",
+    "idle": "슬슬 움직여 볼까.",
+    "move": "가 볼까!",
+    "attack": "어디 보자!",
+    "defend": "헤헤, 막았다!",
+    "skill": "잠깐 빌려 갈게!",
+    "win": "쉽네, 쉬워!",
+    "lose": "다음엔 두고 봐."
+   }
+  },
+  "mulan": {
+   "voice": "n2fbxG88jqAoaVPUy3IG",
+   "voice_name": "yooni",
+   "lines": {
+    "select": "아버지를 대신해 싸우겠어요.",
+    "idle": "언제 싸우는가.",
+    "move": "진격!",
+    "attack": "덤벼라!",
+    "defend": "막아 낸다!",
+    "skill": "다시 일어선다!",
+    "win": "적수가 없군!",
+    "lose": "분하다..."
+   }
+  },
+  "gyebaek": {
+   "voice": "nPczCjzI2devNBz1zQrb",
+   "voice_name": "brian",
+   "lines": {
+    "select": "돌아갈 곳은 없다.",
+    "idle": "몸이 근질거리는군.",
+    "move": "앞으로!",
+    "attack": "받아라!",
+    "defend": "어림없다!",
+    "skill": "물러서라!",
+    "win": "승리다!",
+    "lose": "다음엔 지지 않는다."
+   }
+  },
+  "sejong": {
+   "voice": "djgqDYFKEhIzR0zpgWY7",
+   "voice_name": "eden",
+   "lines": {
+    "select": "백성을 위한 일이라면 무엇이든.",
+    "idle": "서두를 것 없소.",
+    "move": "길이 보이오.",
+    "attack": "수는 이미 읽었소.",
+    "defend": "침착하게.",
+    "skill": "훈민정음!",
+    "win": "계산대로요.",
+    "lose": "다시 배워야겠소."
+   }
+  },
+  "zhugeliang": {
+   "voice": "FQ3MuLxZh0jHcZmA5vW1",
+   "voice_name": "dohyeon",
+   "lines": {
+    "select": "와룡이 깨어났소.",
+    "idle": "흐름을 읽어야 하오.",
+    "move": "가 봅시다.",
+    "attack": "허점이 보이오!",
+    "defend": "물러서지 않소.",
+    "skill": "팔진도를 펼치겠소.",
+    "win": "좋은 승부였소.",
+    "lose": "허, 졌구려."
+   }
+  },
+  "davinci": {
+   "voice": "JBFqnCBsd6RMkjVDRZzb",
+   "voice_name": "george",
+   "lines": {
+    "select": "세상은 온통 궁금한 것투성이지요.",
+    "idle": "잠깐, 계산 중입니다.",
+    "move": "앞으로 가요!",
+    "attack": "이건 어떻습니까!",
+    "defend": "막을 수 있어요!",
+    "skill": "만능 설계!",
+    "win": "성공입니다!",
+    "lose": "다시 해 보겠습니다."
+   }
+  },
+  "zhouyu": {
+   "voice": "RlynaiseqcfHE3bZpqe4",
+   "voice_name": "andy",
+   "lines": {
+    "select": "동남풍이 불어오는군.",
+    "idle": "다음 수를 생각하는 중이오.",
+    "move": "한 걸음씩.",
+    "attack": "지금이오!",
+    "defend": "예상한 대로요.",
+    "skill": "교란하라!",
+    "win": "지혜의 승리요.",
+    "lose": "내 수가 얕았소."
+   }
+  },
+  "jangyeongsil": {
+   "voice": "IAETYMYM3nJvjnlkVTKI",
+   "voice_name": "deoksu",
+   "lines": {
+    "select": "하늘의 시간을 재어 보겠습니다.",
+    "idle": "흥미롭군요.",
+    "move": "출발합니다!",
+    "attack": "실험 시작!",
+    "defend": "예상 범위입니다.",
+    "skill": "아는 것이 힘이지요!",
+    "win": "실험은 대성공!",
+    "lose": "계산이 틀렸군요."
+   }
+  },
+  "archimedes": {
+   "voice": "pqHfZKP75CvOlQylNhV4",
+   "voice_name": "bill",
+   "lines": {
+    "select": "유레카! 알아냈다!",
+    "idle": "좋은 생각이 날 것 같아요.",
+    "move": "실험 삼아 가 보죠.",
+    "attack": "받아 보시죠!",
+    "defend": "대비해 뒀습니다.",
+    "skill": "철벽의 원리!",
+    "win": "해냈어요!",
+    "lose": "실패도 공부죠."
+   }
+  },
+  "sunwu": {
+   "voice": "3W5c5BG9zeaCYO9gC4v0",
+   "voice_name": "leesin",
+   "lines": {
+    "select": "싸우지 않고 이기는 것이 으뜸이오.",
+    "idle": "서두를 것 없소.",
+    "move": "길이 보이오.",
+    "attack": "수는 이미 읽었소.",
+    "defend": "침착하게.",
+    "skill": "계략이오!",
+    "win": "계산대로요.",
+    "lose": "다시 배워야겠소."
+   }
+  },
+  "choichiwon": {
+   "voice": "hjCvGtSCRPyjYwe2lDf1",
+   "voice_name": "juan",
+   "lines": {
+    "select": "글로 세상을 움직여 보겠소.",
+    "idle": "흐름을 읽어야 하오.",
+    "move": "가 봅시다.",
+    "attack": "허점이 보이오!",
+    "defend": "물러서지 않소.",
+    "skill": "학문의 힘이오.",
+    "win": "좋은 승부였소.",
+    "lose": "허, 졌구려."
+   }
+  },
+  "libai": {
+   "voice": "N2lVS1w4EtoT3dr4eOWO",
+   "voice_name": "callum",
+   "lines": {
+    "select": "달 아래 한 잔, 시 한 수 어떤가.",
+    "idle": "심심한데.",
+    "move": "따라와 봐!",
+    "attack": "한 방 간다!",
+    "defend": "어이쿠, 안 맞지!",
+    "skill": "바람아 불어라!",
+    "win": "한 판 더 할래?",
+    "lose": "에이, 졌네."
+   }
+  },
+  "marcopolo": {
+   "voice": "RlynaiseqcfHE3bZpqe4",
+   "voice_name": "andy",
+   "lines": {
+    "select": "동방에는 놀라운 것이 많답니다.",
+    "idle": "뭐 재밌는 일 없나?",
+    "move": "휙!",
+    "attack": "잡았다!",
+    "defend": "거기 아니야!",
+    "skill": "항해술!",
+    "win": "내가 이겼지!",
+    "lose": "봐준 거야!"
+   }
+  },
+  "hypatia": {
+   "voice": "7kc4OBeoZqw3n2gxf0Bt",
+   "voice_name": "dain",
+   "lines": {
+    "select": "별의 길을 함께 읽어 봐요.",
+    "idle": "다음 수를 생각하는 중이오.",
+    "move": "한 걸음씩.",
+    "attack": "지금이오!",
+    "defend": "예상한 대로요.",
+    "skill": "모두 잊으세요.",
+    "win": "지혜의 승리요.",
+    "lose": "내 수가 얕았소."
+   }
+  },
+  "seohui": {
+   "voice": "djgqDYFKEhIzR0zpgWY7",
+   "voice_name": "eden",
+   "lines": {
+    "select": "말 한마디로 땅을 지키겠소.",
+    "idle": "서두를 것 없소.",
+    "move": "길이 보이오.",
+    "attack": "수는 이미 읽었소.",
+    "defend": "침착하게.",
+    "skill": "힘을 내시오!",
+    "win": "계산대로요.",
+    "lose": "다시 배워야겠소."
+   }
+  },
+  "zeus": {
+   "voice": "pNInz6obpgDQGcFmaJgB",
+   "voice_name": "adam",
+   "lines": {
+    "select": "나는 천둥의 왕 제우스다.",
+    "idle": "기다려 주마.",
+    "move": "따르라.",
+    "attack": "심판을 받아라!",
+    "defend": "감히!",
+    "skill": "번개여, 내려라!",
+    "win": "당연한 결과다.",
+    "lose": "방심했군."
+   }
+  },
+  "wukong": {
+   "voice": "IAETYMYM3nJvjnlkVTKI",
+   "voice_name": "deoksu",
+   "lines": {
+    "select": "제천대성 손오공 납신다!",
+    "idle": "슬슬 움직여 볼까.",
+    "move": "가 볼까!",
+    "attack": "어디 보자!",
+    "defend": "헤헤, 막았다!",
+    "skill": "근두운아, 가자!",
+    "win": "쉽네, 쉬워!",
+    "lose": "다음엔 두고 봐."
+   }
+  },
+  "dangun": {
+   "voice": "8G6jifm9f1BhHXadvwOt",
+   "voice_name": "kang",
+   "lines": {
+    "select": "널리 인간을 이롭게 하라.",
+    "idle": "하늘이 지켜본다.",
+    "move": "길을 열어라.",
+    "attack": "무릎 꿇어라!",
+    "defend": "소용없다.",
+    "skill": "홍익인간!",
+    "win": "하늘의 뜻이다.",
+    "lose": "다음은 없다."
+   }
+  },
+  "athena": {
+   "voice": "JxIGrv4AVuvbo1Dxzryu",
+   "voice_name": "hyunmi",
+   "lines": {
+    "select": "지혜가 승리를 이끕니다.",
+    "idle": "인간의 시간은 느리구나.",
+    "move": "내가 간다.",
+    "attack": "힘을 보여 주마!",
+    "defend": "닿지 못한다.",
+    "skill": "가호를 내리노라.",
+    "win": "잘 싸웠다, 인간.",
+    "lose": "이럴 수가..."
+   }
+  },
+  "heracles": {
+   "voice": "SOYHLrjzK2X1ezoPC6cr",
+   "voice_name": "harry",
+   "lines": {
+    "select": "열두 과업도 해냈다!",
+    "idle": "적은 어디 있나.",
+    "move": "간다!",
+    "attack": "베어 주마!",
+    "defend": "오너라!",
+    "skill": "맹공이다!",
+    "win": "이것이 실력이다.",
+    "lose": "크윽..."
+   }
+  },
+  "gumiho": {
+   "voice": "vJ170fCwESgE1tjW39So",
+   "voice_name": "sena",
+   "lines": {
+    "select": "어머, 나한테 반했어?",
+    "idle": "심심한데.",
+    "move": "따라와 봐!",
+    "attack": "한 방 간다!",
+    "defend": "어이쿠, 안 맞지!",
+    "skill": "뒤를 조심해.",
+    "win": "한 판 더 할래?",
+    "lose": "에이, 졌네."
+   }
+  },
+  "anubis": {
+   "voice": "FQ3MuLxZh0jHcZmA5vW1",
+   "voice_name": "dohyeon",
+   "lines": {
+    "select": "저승의 저울이 기다린다.",
+    "idle": "기다려 주마.",
+    "move": "따르라.",
+    "attack": "심판을 받아라!",
+    "defend": "감히!",
+    "skill": "두려워하라.",
+    "win": "당연한 결과다.",
+    "lose": "방심했군."
+   }
+  },
+  "dokkaebi": {
+   "voice": "N2lVS1w4EtoT3dr4eOWO",
+   "voice_name": "callum",
+   "lines": {
+    "select": "금 나와라 뚝딱!",
+    "idle": "뭐 재밌는 일 없나?",
+    "move": "휙!",
+    "attack": "잡았다!",
+    "defend": "거기 아니야!",
+    "skill": "되돌려 주마, 뚝딱!",
+    "win": "내가 이겼지!",
+    "lose": "봐준 거야!"
+   }
+  },
+  "haetae": {
+   "voice": "UmYoqGlufKxhJ6NCx5Mv",
+   "voice_name": "jangho",
+   "lines": {
+    "select": "불과 재앙은 내가 막는다.",
+    "idle": "하늘이 지켜본다.",
+    "move": "길을 열어라.",
+    "attack": "무릎 꿇어라!",
+    "defend": "소용없다.",
+    "skill": "버틴다!",
+    "win": "하늘의 뜻이다.",
+    "lose": "다음은 없다."
+   }
+  },
+  "perseus": {
+   "voice": "RlynaiseqcfHE3bZpqe4",
+   "voice_name": "andy",
+   "lines": {
+    "select": "메두사도 내가 베었다.",
+    "idle": "언제 싸우는가.",
+    "move": "진격!",
+    "attack": "덤벼라!",
+    "defend": "막아 낸다!",
+    "skill": "칼날을 받아라!",
+    "win": "적수가 없군!",
+    "lose": "분하다..."
+   }
+  },
+  "tengu": {
+   "voice": "nPczCjzI2devNBz1zQrb",
+   "voice_name": "brian",
+   "lines": {
+    "select": "산의 바람은 내 것이다.",
+    "idle": "슬슬 움직여 볼까.",
+    "move": "가 볼까!",
+    "attack": "어디 보자!",
+    "defend": "헤헤, 막았다!",
+    "skill": "돌격!",
+    "win": "쉽네, 쉬워!",
+    "lose": "다음엔 두고 봐."
+   }
+  },
+  "isis": {
+   "voice": "Ss1VfT7ri4lqnvTDWII0",
+   "voice_name": "luna",
+   "lines": {
+    "select": "생명의 숨결을 드릴게요.",
+    "idle": "기다리고 있을게요.",
+    "move": "조심히 가요.",
+    "attack": "물러서지 않아요!",
+    "defend": "괜찮아요, 막을게요.",
+    "skill": "치유의 손길을.",
+    "win": "우리가 해냈어요!",
+    "lose": "괜찮아요, 다시 해요."
+   }
+  },
+  "tesla": {
+   "voice": "cCwaxHZZF7rVaQK2aOys",
+   "voice_name": "mark",
+   "lines": {
+    "select": "미래는 나의 것입니다.",
+    "idle": "잠깐, 계산 중입니다.",
+    "move": "앞으로 가요!",
+    "attack": "이건 어떻습니까!",
+    "defend": "막을 수 있어요!",
+    "skill": "번개 코일, 가동!",
+    "win": "성공입니다!",
+    "lose": "다시 해 보겠습니다."
+   }
+  },
+  "nightingale": {
+   "voice": "9cino9hfS3ougiPeFvp1",
+   "voice_name": "sujin",
+   "lines": {
+    "select": "등불은 꺼지지 않아요.",
+    "idle": "마음을 가다듬어요.",
+    "move": "갈게요.",
+    "attack": "미안하지만, 갑니다!",
+    "defend": "버텨요!",
+    "skill": "모두 일어나세요!",
+    "win": "모두 덕분이에요.",
+    "lose": "아쉬워요..."
+   }
+  },
+  "edison": {
+   "voice": "pqHfZKP75CvOlQylNhV4",
+   "voice_name": "bill",
+   "lines": {
+    "select": "천 번 실패해도 한 번 성공하면 됩니다.",
+    "idle": "흥미롭군요.",
+    "move": "출발합니다!",
+    "attack": "실험 시작!",
+    "defend": "예상 범위입니다.",
+    "skill": "발명 완성!",
+    "win": "실험은 대성공!",
+    "lose": "계산이 틀렸군요."
+   }
+  },
+  "wright": {
+   "voice": "IAETYMYM3nJvjnlkVTKI",
+   "voice_name": "deoksu",
+   "lines": {
+    "select": "오늘은 하늘을 날 겁니다!",
+    "idle": "좋은 생각이 날 것 같아요.",
+    "move": "실험 삼아 가 보죠.",
+    "attack": "받아 보시죠!",
+    "defend": "대비해 뒀습니다.",
+    "skill": "탐험 비행!",
+    "win": "해냈어요!",
+    "lose": "실패도 공부죠."
+   }
+  },
+  "amundsen": {
+   "voice": "hjCvGtSCRPyjYwe2lDf1",
+   "voice_name": "juan",
+   "lines": {
+    "select": "남극의 추위도 견뎠습니다.",
+    "idle": "몸이 근질거리는군.",
+    "move": "앞으로!",
+    "attack": "받아라!",
+    "defend": "어림없다!",
+    "skill": "항로를 잡아라!",
+    "win": "승리다!",
+    "lose": "다음엔 지지 않는다."
+   }
+  },
+  "verne": {
+   "voice": "JBFqnCBsd6RMkjVDRZzb",
+   "voice_name": "george",
+   "lines": {
+    "select": "상상한 것은 이루어집니다.",
+    "idle": "잠깐, 계산 중입니다.",
+    "move": "앞으로 가요!",
+    "attack": "이건 어떻습니까!",
+    "defend": "막을 수 있어요!",
+    "skill": "책에서 읽었지요!",
+    "win": "성공입니다!",
+    "lose": "다시 해 보겠습니다."
+   }
+  },
+  "pasteur": {
+   "voice": "djgqDYFKEhIzR0zpgWY7",
+   "voice_name": "eden",
+   "lines": {
+    "select": "보이지 않는 적과 싸웁니다.",
+    "idle": "천천히 해요.",
+    "move": "함께 가요.",
+    "attack": "용기를 내요!",
+    "defend": "지켜 낼게요.",
+    "skill": "축복이 있기를.",
+    "win": "잘 됐어요!",
+    "lose": "다음엔 더 잘할게요."
+   }
+  },
+  "houdini": {
+   "voice": "N2lVS1w4EtoT3dr4eOWO",
+   "voice_name": "callum",
+   "lines": {
+    "select": "어떤 자물쇠도 나를 못 가두지!",
+    "idle": "심심한데.",
+    "move": "따라와 봐!",
+    "attack": "한 방 간다!",
+    "defend": "어이쿠, 안 맞지!",
+    "skill": "짜잔, 응급 처치!",
+    "win": "한 판 더 할래?",
+    "lose": "에이, 졌네."
+   }
+  },
+  "earhart": {
+   "voice": "n2fbxG88jqAoaVPUy3IG",
+   "voice_name": "yooni",
+   "lines": {
+    "select": "하늘에는 한계가 없어요.",
+    "idle": "흥미롭군요.",
+    "move": "출발합니다!",
+    "attack": "실험 시작!",
+    "defend": "예상 범위입니다.",
+    "skill": "전속력 질주!",
+    "win": "실험은 대성공!",
+    "lose": "계산이 틀렸군요."
+   }
+  },
+  "twain": {
+   "voice": "pqHfZKP75CvOlQylNhV4",
+   "voice_name": "bill",
+   "lines": {
+    "select": "이야기 하나 들려줄까?",
+    "idle": "뭐 재밌는 일 없나?",
+    "move": "휙!",
+    "attack": "잡았다!",
+    "defend": "거기 아니야!",
+    "skill": "다시 시작해 볼까!",
+    "win": "내가 이겼지!",
+    "lose": "봐준 거야!"
+   }
+  },
+  "fabre": {
+   "voice": "JBFqnCBsd6RMkjVDRZzb",
+   "voice_name": "george",
+   "lines": {
+    "select": "작은 것들을 가만히 들여다봐요.",
+    "idle": "기다리고 있을게요.",
+    "move": "조심히 가요.",
+    "attack": "물러서지 않아요!",
+    "defend": "괜찮아요, 막을게요.",
+    "skill": "단단히 지켜요.",
+    "win": "우리가 해냈어요!",
+    "lose": "괜찮아요, 다시 해요."
+   }
+  },
+  "bangjeonghwan": {
+   "voice": "IAETYMYM3nJvjnlkVTKI",
+   "voice_name": "deoksu",
+   "lines": {
+    "select": "어린이는 내일의 희망이에요.",
+    "idle": "마음을 가다듬어요.",
+    "move": "갈게요.",
+    "attack": "미안하지만, 갑니다!",
+    "defend": "버텨요!",
+    "skill": "모두 힘내요!",
+    "win": "모두 덕분이에요.",
+    "lose": "아쉬워요..."
+   }
+  }
+ }
+}

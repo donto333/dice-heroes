@@ -159,6 +159,7 @@ func _card(character: Dictionary, owned: bool) -> Control:
 
 func _on_hero(id: String) -> void:
 	app.play("click")
+	app.say(id, "select")
 	show_hero(id)
 
 
