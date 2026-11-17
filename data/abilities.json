@@ -75,15 +75,10 @@
     },
     "skill_machao": {
       "name": "서량 돌격",
-      "text": "이번 이동 +2칸, 이번 턴 전투에서 이기면 3칸 더 전진, 공격 주사위 6마다 +1",
+      "text": "이번 턴 전투에서 이기면 3칸 더 전진, 공격 주사위 6마다 +1",
       "effect": {
         "type": "multi",
         "effects": [
-          {
-            "type": "move_plus",
-            "amount": 2,
-            "turns": 1
-          },
           {
             "type": "chase",
             "amount": 1,
@@ -464,13 +459,13 @@
     },
     "unique_wukong": {
       "name": "근두운",
-      "text": "이번 이동 +4칸, 이번 턴 공격 주사위 +1개, 공격 주사위 눈 최소 3",
+      "text": "이번 이동 +2칸, 이번 턴 공격 주사위 +1개, 공격 주사위 눈 최소 3",
       "effect": {
         "type": "multi",
         "effects": [
           {
             "type": "move_plus",
-            "amount": 4,
+            "amount": 2,
             "turns": 1
           },
           {
@@ -691,7 +686,7 @@
     },
     "unique_tesla": {
       "name": "번개 코일",
-      "text": "상대 1턴 쉬기, 상대 게이지 30%를 빼앗음",
+      "text": "상대 1턴 쉬기, 상대 게이지 10%를 빼앗음",
       "effect": {
         "type": "multi",
         "effects": [
@@ -701,7 +696,7 @@
           },
           {
             "type": "steal_gauge",
-            "amount": 30
+            "amount": 10
           }
         ]
       }

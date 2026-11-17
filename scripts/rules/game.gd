@@ -1364,7 +1364,9 @@ func _gain_turn_gauge(player_index: int, amount: int) -> void:
 	var spilled := 0
 	for slot in SLOTS:
 		# 영웅 레벨이 높은 자리는 게이지가 조금 더 빨리 찬다(강화 효과).
-		var gain := amount + int(amount * level_gauge_percent(player_index, slot) / 100.0)
+		# 영웅마다 어빌리티 충전 속도가 조금씩 다르다(characters.json의 charge, %).
+		var percent := level_gauge_percent(player_index, slot) + int(char_of(player_index, slot).get("charge", 0))
+		var gain := maxi(0, amount + int(amount * percent / 100.0))
 		spilled += maxi(0, int(gauge[slot]) + gain - 100)
 		gauge[slot] = clamp(int(gauge[slot]) + gain, 0, 100)
 	player["overflow"] = int(player["overflow"]) + int(float(spilled) / float(SLOTS.size()))
