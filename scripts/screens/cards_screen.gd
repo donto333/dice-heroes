@@ -54,8 +54,11 @@ func _build_deck(column: VBoxContainer) -> void:
 
 	var head := Kit.hbox(10)
 	column.add_child(head)
-	head.add_child(Kit.expand(Kit.label("내 덱 %d / %d" % [deck.size(), int(rule.get("size", 10))], 28, Kit.GOLD)))
-	head.add_child(MenuArt.capsule("★★★ %d / %d장" % [legends, int(rule.get("max_grade3", 2))], "star", 18))
+	head.add_child(Kit.label("내 덱 %d / %d" % [deck.size(), int(rule.get("size", 10))], 28, Kit.GOLD))
+	var hint := Kit.para("카드를 누르면 덱에 넣거나 빼요. 판에서는 덱에 넣은 카드만 나와요.", 15, Kit.MUTED)
+	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(Kit.expand(hint))
+	head.add_child(MenuArt.capsule("★★★ %d / %d장" % [legends, int(rule.get("max_grade3", 2))], "", 18))
 	head.add_child(MenuArt.capsule("최소 %d장" % int(rule.get("min", 6)), "", 18))
 
 	# 덱에 든 카드: 작은 이름표 10칸(빈칸은 흐리게)
@@ -70,11 +73,10 @@ func _build_deck(column: VBoxContainer) -> void:
 	var filters := Kit.hbox(6)
 	column.add_child(filters)
 	for spec in [[0, "전체"], [3, "★★★ 전설"], [2, "★★ 희귀"], [1, "★ 일반"]]:
-		var tab := Kit.button(str(spec[1]), Kit.PANEL, 18, 46)
+		var tab := Kit.button(str(spec[1]), Kit.PANEL, 17, 40)
 		MenuArt.tab(tab, int(spec[0]) == _filter)
 		tab.pressed.connect(_on_filter.bind(int(spec[0])))
 		filters.add_child(Kit.expand(tab))
-	column.add_child(Kit.para("카드를 누르면 덱에 넣거나 빼요. 판에서는 덱에 넣은 카드만 나와요.", 17, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -88,27 +90,27 @@ func _build_deck(column: VBoxContainer) -> void:
 	scroll.add_child(grid)
 	# 높은 등급부터, 가진 카드부터
 	var ids: Array = cards.keys()
+	var rank := func(id) -> int:
+		if deck.has(id):
+			return 0
+		return 1 if Profile.owns_card(app.profile, str(id)) else 2
 	ids.sort_custom(func(a, b) -> bool:
-		var ga := Profile.card_grade(cards, str(a))
-		var gb := Profile.card_grade(cards, str(b))
-		if ga != gb:
-			return ga > gb
-		var oa := Profile.owns_card(app.profile, str(a))
-		var ob := Profile.owns_card(app.profile, str(b))
-		if oa != ob:
-			return oa
-		return false)
+		var ra: int = rank.call(a)
+		var rb: int = rank.call(b)
+		if ra != rb:
+			return ra < rb
+		return Profile.card_grade(cards, str(a)) > Profile.card_grade(cards, str(b)))
 	for id in ids:
 		if _filter != 0 and Profile.card_grade(cards, str(id)) != _filter:
 			continue
-		var tile := card_tile(cards, str(id), Profile.owns_card(app.profile, str(id)), deck.has(id))
+		var tile := card_tile(cards, str(id), Profile.owns_card(app.profile, str(id)), deck.has(id), 210.0)
 		tile.pressed.connect(_on_card.bind(str(id)))
 		grid.add_child(tile)
 
 
 func _deck_chip(id: String) -> Control:
 	var chip := PanelContainer.new()
-	chip.custom_minimum_size = Vector2(0, 40)
+	chip.custom_minimum_size = Vector2(0, 32)
 	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if id == "":
 		chip.add_theme_stylebox_override("panel", Kit.box(Color(0, 0, 0, 0.25), Color(1, 1, 1, 0.15), 2, 10, 4))
@@ -125,7 +127,7 @@ func _deck_chip(id: String) -> Control:
 
 ## 카드 한 장 모양(카드 덱 화면과 뽑기 결과가 함께 씀): 그림(없으면 등급색 바탕), 등급 별, 이름, 효과.
 ## owned가 false면 어둡게, in_deck이면 초록 띠 '덱'.
-static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool, height: float = 236.0) -> Button:
+static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool, height: float = 236.0, show_text: bool = true) -> Button:
 	var card: Dictionary = cards.get(id, {})
 	var grade := Profile.card_grade(cards, id)
 	var tile := Button.new()
@@ -145,7 +147,7 @@ static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool,
 	body.add_child(column)
 	var picture := ArtView.new()
 	picture.show_art("cards/" + id)
-	picture.custom_minimum_size = Vector2(0, height * 0.42)
+	picture.custom_minimum_size = Vector2(0, height * (0.42 if show_text else 0.6))
 	picture.focus_y = 0.5
 	picture.corner_radius = 8.0
 	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -153,7 +155,7 @@ static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool,
 		# 그림이 아직 없는 카드: 등급색 판 위에 카드 아이콘
 		picture.free()
 		var holder := CenterContainer.new()
-		holder.custom_minimum_size = Vector2(0, height * 0.42)
+		holder.custom_minimum_size = Vector2(0, height * (0.42 if show_text else 0.6))
 		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var back := PanelContainer.new()
 		back.add_theme_stylebox_override("panel", Kit.box(Kit.GRADE_COLORS[grade].darkened(0.45), Kit.GRADE_COLORS[grade], 2, 8, 6))
@@ -171,6 +173,7 @@ static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool,
 	var text := Kit.para(str(card.get("text", "")), 14, Color(0.9, 0.93, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
 	text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	text.visible = show_text
 	column.add_child(text)
 	for child in [stars, name_label, text]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -185,8 +188,11 @@ static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool,
 		tile.add_child(badge)
 	if not owned:
 		body.modulate = Color(0.45, 0.45, 0.5, 1.0)
+		# 자물쇠는 그림 자리 한가운데(글자를 가리지 않게)
 		var lock_holder := CenterContainer.new()
-		lock_holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		lock_holder.anchor_right = 1.0
+		lock_holder.offset_top = 6.0
+		lock_holder.offset_bottom = 6.0 + height * 0.42
 		lock_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		lock_holder.add_child(Kit.icon("m_lock", 44.0))
 		tile.add_child(lock_holder)
@@ -252,7 +258,7 @@ func _build_gacha(column: VBoxContainer) -> void:
 	var caps := Kit.hbox(8)
 	caps.alignment = BoxContainer.ALIGNMENT_CENTER
 	inner.add_child(caps)
-	caps.add_child(MenuArt.capsule("★★★ %s%%  ·  ★★ %s%%  ·  ★ %s%%" % [str(rates.get("3", 0)), str(rates.get("2", 0)), str(rates.get("1", 0))], "star", 18))
+	caps.add_child(MenuArt.capsule("★★★ %d%%  ·  ★★ %d%%  ·  ★ %d%%" % [int(rates.get("3", 0)), int(rates.get("2", 0)), int(rates.get("1", 0))], "", 18))
 	caps.add_child(MenuArt.capsule("10회는 ★★ 이상 보장 · ★★★ 확정까지 %d회" % pity_left, "", 18))
 	var dupe: Dictionary = table.get("dupe_gold", {})
 	inner.add_child(Kit.para("이미 가진 카드가 나오면 골드로 바뀌어요. (★ %s · ★★ %s · ★★★ %s)" % [Kit.money_text("gold", int(dupe.get("1", 0))), Kit.money_text("gold", int(dupe.get("2", 0))), Kit.money_text("gold", int(dupe.get("3", 0)))], 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
@@ -312,7 +318,7 @@ func _pull(count: int) -> void:
 	for entry in results:
 		var holder := Kit.vbox(4)
 		holder.custom_minimum_size = Vector2(150, 0)
-		var tile := card_tile(cards, str(entry["id"]), true, false, 200.0)
+		var tile := card_tile(cards, str(entry["id"]), true, false, 160.0, false)
 		tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		holder.add_child(tile)
 		var note := "NEW!" if bool(entry["new"]) else "+%s" % Kit.money_text("gold", int(entry["gold"]))
