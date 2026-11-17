@@ -79,31 +79,9 @@ func _attendance_panel() -> Control:
 	for day in table.size():
 		var done := day < today_index or (day == today_index and not can)
 		var now := day == today_index and can
-		# 7칸 금테 칸: 오늘 칸은 금빛, 받은 칸은 어둡고 도장
-		var cell: PanelContainer = MenuArt.art_box("day_today" if now else ("day_done" if done else "day_cell"), 26.0, 6)
-		if cell == null:
-			cell = PanelContainer.new()
-			cell.add_theme_stylebox_override("panel", Kit.box(Kit.PANEL_LIGHT if now else (Color("13458f") if done else Kit.PANEL), Kit.GOLD, 2, 10, 4))
+		# 7칸 금테 칸: 오늘 칸은 금빛, 받은 칸은 어둡고 오른쪽 위에 작은 도장(MenuArt.day_cell)
+		var cell: PanelContainer = MenuArt.day_cell(day + 1, Kit.reward_line(table[day]), now, done)
 		cell.custom_minimum_size = Vector2(0, 118)
-		var text := Kit.label("%d일\n%s" % [day + 1, Kit.reward_line(table[day]).replace("  ", "\n")], 18,
-			Color("5a3200") if now else (Kit.MUTED if done else Color.WHITE), HORIZONTAL_ALIGNMENT_CENTER)
-		text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		if now:
-			text.add_theme_constant_override("outline_size", 0)
-			text.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0))
-		else:
-			TextStyle.menu(text, Color(0, 0.05, 0.2), 4)
-		cell.add_child(text)
-		if done:
-			var stamp_tex: Texture2D = MenuArt.tex("stamp")
-			var stamp: TextureRect = Kit.icon("check", 46.0)
-			if stamp_tex != null:
-				stamp.texture = stamp_tex
-			# 글자가 보이게 오른쪽 아래 귀퉁이에 찍는다.
-			stamp.size_flags_horizontal = Control.SIZE_SHRINK_END
-			stamp.size_flags_vertical = Control.SIZE_SHRINK_END
-			stamp.modulate = Color(1, 1, 1, 0.9)
-			cell.add_child(stamp)
 		row.add_child(Kit.expand(cell))
 	var claim := MenuArt.pill_button("오늘 출석 보상 받기" if can else "오늘 출석 완료 · 내일 또 오세요", "gold" if can else "gray", "l")
 	claim.disabled = not can

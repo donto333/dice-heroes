@@ -4,6 +4,7 @@ extends Control
 ## 버튼을 누르면 콜백을 부르고 창이 닫힌다. 콜백이 없으면 그냥 닫힌다.
 
 const Kit := preload("res://scripts/ui/kit.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 
 signal closed
 
@@ -63,11 +64,16 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 		var row := Kit.hbox(10)
 		_column.add_child(row)
 		for spec in buttons:
-			var button := Kit.button(str(spec[0]), spec[1] if spec.size() > 1 else Kit.ACCENT, 26, 72)
+			var color: Color = spec[1] if spec.size() > 1 else Kit.ACCENT
+			var button := Kit.button(str(spec[0]), color, 26, 72)
+			# UI 개편 2단계: 창 아래 버튼도 금테 알약(색으로 뜻을 나눔).
+			MenuArt.pill(button, MenuArt.pill_name(color))
 			Kit.expand(button)
 			var callback: Callable = spec[2] if spec.size() > 2 else Callable()
 			button.pressed.connect(_on_button.bind(callback))
 			row.add_child(button)
+	# 창 안의 광택 버튼도 같은 색의 금테 알약으로 맞춘다(그림이 없으면 그대로).
+	MenuArt.skin_buttons(_column)
 	# 창이 화면보다 크면(위·아래 장식 포함) 통째로 줄여서 버튼이 화면 밖으로 나가지 않게 한다.
 	var need: Vector2 = _panel.get_combined_minimum_size()
 	# 세로로 든 화면에서는 틀이 돌아가 있으므로, 창 크기가 아니라 틀(부모)의 크기에 맞춘다.
