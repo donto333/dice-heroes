@@ -723,7 +723,7 @@ static func day_cell(day_number: int, reward_text: String, now: bool, done: bool
 		if art_style != null:
 			art_style.content_margin_top = 16
 			art_style.content_margin_left = 10
-			art_style.content_margin_right = 8
+			art_style.content_margin_right = 10
 	var ink: Color = Color("5a3200") if now else (Kit.MUTED if done else Color.WHITE)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 2)
@@ -734,18 +734,24 @@ static func day_cell(day_number: int, reward_text: String, now: bool, done: bool
 	top.custom_minimum_size = Vector2(0, 30)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(top)
-	var day_label: Label = Kit.label("%d일" % day_number, 18, ink, HORIZONTAL_ALIGNMENT_LEFT if done else HORIZONTAL_ALIGNMENT_CENTER)
+	# 날짜는 어느 칸이든 가운데. 받은 칸의 도장은 자리를 차지하지 않게 너비 0인 칸에 걸어
+	# 오른쪽 위 모서리에 겹쳐 그린다(날짜 글자가 한쪽으로 밀리지 않도록).
+	var day_label: Label = Kit.label("%d일" % day_number, 18, ink, HORIZONTAL_ALIGNMENT_CENTER)
 	day_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	day_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	top.add_child(day_label)
 	if done:
-		var stamp: TextureRect = Kit.icon("check", 30.0)
+		var corner := Control.new()
+		corner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		top.add_child(corner)
+		var stamp: TextureRect = Kit.icon("check", 28.0)
 		var stamp_tex := tex("stamp")
 		if stamp_tex != null:
 			stamp.texture = stamp_tex
-		stamp.custom_minimum_size = Vector2(30, 30)
-		stamp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		top.add_child(stamp)
+		stamp.custom_minimum_size = Vector2(28, 28)
+		stamp.size = Vector2(28, 28)
+		stamp.position = Vector2(-30, 1)
+		corner.add_child(stamp)
 	var reward: Label = Kit.label(reward_text.replace("  ", "\n"), 18, ink, HORIZONTAL_ALIGNMENT_CENTER)
 	reward.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	reward.size_flags_vertical = Control.SIZE_EXPAND_FILL

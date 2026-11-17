@@ -1191,22 +1191,24 @@ func _maybe_attendance() -> void:
 		return
 	var table: Array = app.eco.get("attendance", [])
 	var today_index := Profile.attendance_day(app.profile, app.eco)
-	var grid := GridContainer.new()
-	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 10)
-	grid.add_theme_constant_override("v_separation", 10)
+	# 칸은 모두 같은 크기, 줄마다 가운데 맞춤(7일이면 4칸 + 3칸).
+	var grid := Kit.vbox(10)
+	var row: HBoxContainer = null
 	for day in table.size():
+		if day % 4 == 0:
+			row = Kit.hbox(10)
+			row.alignment = BoxContainer.ALIGNMENT_CENTER
+			grid.add_child(row)
 		var reward: Dictionary = table[day]
 		var done := day < today_index
 		var now := day == today_index
 		var cell: PanelContainer = MenuArt.day_cell(day + 1, Kit.reward_line(reward), now, done)
 		cell.custom_minimum_size = Vector2(150, 116)
-		grid.add_child(cell)
+		cell.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		row.add_child(cell)
 	var body := Kit.vbox(12)
 	body.add_child(Kit.para("매일 접속하면 보상을 받아요. 7일마다 다시 시작합니다.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	var center := CenterContainer.new()
-	center.add_child(grid)
-	body.add_child(center)
+	body.add_child(grid)
 	app.dialog("출석 보상", body, [["받기", Color("f39a1c"), _claim_attendance]])
 
 
