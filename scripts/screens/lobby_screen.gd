@@ -493,7 +493,8 @@ func _rank_tile() -> Button:
 	stack.add_child(strip)
 	var chip := _bold("EVENT" if not events.is_empty() else "GO", 14, Color.WHITE, Color("7a0f0f"), 3, HORIZONTAL_ALIGNMENT_CENTER)
 	chip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_anchor(chip, 0.04, 0.12, 0.21, 0.82)
+	# 띠 그림의 빨간 딱지 자리(가로 6.5~26%, 세로 19~76%)에 맞춘다.
+	_anchor(chip, 0.065, 0.19, 0.26, 0.76)
 	strip.add_child(chip)
 	var event_text := str(events[0]["name"]) if not events.is_empty() else "지금 바로 대전 시작!"
 	var line := Kit.label(event_text, 17, Color("b5450c"))
@@ -501,7 +502,7 @@ func _rank_tile() -> Button:
 	line.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	line.clip_text = true
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anchor(line, 0.28, 0.0, 0.86, 1.0)
+	_anchor(line, 0.29, 0.0, 0.86, 1.0)
 	strip.add_child(line)
 	return tile
 
