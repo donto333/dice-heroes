@@ -264,8 +264,8 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 	await get_tree().process_frame
 	if not is_instance_valid(_panel):
 		return
-	# 창 위·아래 장식(약 34)까지 화면 안에 들어오고 위아래 여백이 12 이상 남게 줄인다.
-	var room: float = size.y - 2.0 * (34.0 + 12.0)
+	# 창 위·아래 장식(판 밖으로 약 54 튀어나옴)까지 화면 안에 들어오고 위아래 여백이 12 이상 남게 줄인다.
+	var room: float = size.y - 2.0 * (54.0 + 12.0)
 	var fit: float = minf(1.0, room / maxf(_panel.size.y, 1.0))
 	_panel.pivot_offset = _panel.size * 0.5
 	_panel.scale = Vector2(0.8, 0.8) * fit

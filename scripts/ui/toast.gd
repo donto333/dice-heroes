@@ -80,9 +80,13 @@ func _place() -> void:
 	var max_height := 96.0
 	var spot := _top_spot(app)
 	var window := _open_window(app)
+	var window_left := 0.0
+	var window_right := 0.0
 	if window != null:
 		var bottom: Vector2 = Kit.spot_in(app, window, Vector2(window.size.x * 0.5, window.size.y))
-		center = Vector2(bottom.x, bottom.y + 30.0)
+		center = Vector2(bottom.x, bottom.y + 40.0)
+		window_left = Kit.spot_in(app, window, Vector2.ZERO).x
+		window_right = Kit.spot_in(app, window, window.size).x
 	elif spot != null:
 		var left: Vector2 = Kit.spot_in(app, spot, Vector2.ZERO)
 		var right: Vector2 = Kit.spot_in(app, spot, spot.size)
@@ -114,7 +118,17 @@ func _place() -> void:
 		box.y = minf(HEIGHT + float(lines - 1) * (font_size + 6.0), max_height)
 	size = box
 	if window != null:
-		position = Vector2(center.x - box.x * 0.5, minf(center.y, area.y - box.y - 6.0))
+		position = Vector2(center.x - box.x * 0.5, center.y)
+		if center.y + box.y > area.y - 6.0:
+			# 창 아래에 자리가 없으면(키 큰 창) 창 옆 바깥 아래쪽에 띄운다. 양옆도 좁으면 화면 아래 끝에 붙인다.
+			position.y = area.y - box.y - 12.0
+			var side_room := area.x - window_right - 20.0
+			if side_room >= box.x:
+				position.x = window_right + 14.0 + (side_room - box.x) * 0.5
+			elif window_left - 20.0 >= box.x:
+				position.x = (window_left - 6.0 - box.x) * 0.5
+			else:
+				position.y = area.y - box.y - 6.0
 	elif spot != null:
 		position = center - box * 0.5
 	else:

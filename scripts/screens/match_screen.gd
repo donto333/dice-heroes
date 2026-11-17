@@ -891,6 +891,9 @@ func _turn_hints() -> void:
 func _hint(key: String, text: String) -> bool:
 	if not app.has_profile():
 		return false
+	# 판이 끝나 결과 창이 떠 있으면 안내를 띄우지 않는다.
+	if _result_overlay != null and _result_overlay.visible:
+		return false
 	if not app.profile.has("tutorial"):
 		app.profile["tutorial"] = {}
 	if bool(app.profile["tutorial"].get(key, false)):
@@ -920,6 +923,9 @@ func _hint(key: String, text: String) -> bool:
 	ok.pressed.connect(func(): bubble.queue_free())
 	row.add_child(ok)
 	add_child(bubble)
+	# 전투·결과 같은 큰 연출 층보다 아래에 둔다(결과 창 위에 안내가 겹치지 않게).
+	if _battle_overlay != null and is_instance_valid(_battle_overlay):
+		move_child(bubble, _battle_overlay.get_index())
 	bubble.anchor_left = 0.0
 	bubble.anchor_right = 1.0
 	bubble.anchor_top = 1.0
@@ -2171,6 +2177,8 @@ func _add_battle_result(event: Dictionary) -> void:
 
 func _show_game_over() -> void:
 	_clear_results()
+	# 처음 안내 상자가 결과 창을 가리지 않게 닫는다.
+	_close_hint()
 	var text := "무승부!"
 	var color := Color.WHITE
 	var outcome := "draw"
