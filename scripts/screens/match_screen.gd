@@ -938,8 +938,7 @@ func _hint(key: String, text: String) -> bool:
 	bubble.offset_bottom = -118
 	bubble.offset_top = -118
 	_hint_bubble = bubble
-	# 그냥 두어도 잠시 뒤 사라진다.
-	get_tree().create_timer(12.0).timeout.connect(_close_hint_if.bind(bubble.get_instance_id()))
+	# '알겠어요'를 누를 때까지 그대로 둔다(저절로 사라지지 않는다).
 	return true
 
 
@@ -1767,6 +1766,7 @@ func _show_path_choice() -> void:
 		row.add_child(button)
 	_result_box.add_child(row)
 	_trim_results()
+	_flash_log()
 
 
 func _on_path_chosen(index: int) -> void:
@@ -1775,6 +1775,7 @@ func _on_path_chosen(index: int) -> void:
 	_choosing_path = false
 	_board_view.highlight = []
 	_clear_results()
+	_flash_log()
 	_add_result_header(_turn_title(game.current), PLAYER_TEXT_COLORS[game.current])
 	if game.choice_kind() == "fight":
 		_add_result_text("싸웁니다!" if index == 0 else "그냥 지나갑니다.", Color.WHITE)
@@ -2081,6 +2082,9 @@ func _flash_log() -> void:
 	if _log_tween != null and _log_tween.is_valid():
 		_log_tween.kill()
 	_result_panel.modulate.a = 1.0
+	# 갈림길·싸울지 같은 선택지가 떠 있으면 고를 때까지 흐려지지 않는다.
+	if _choosing_path:
+		return
 	_log_tween = _result_panel.create_tween()
 	_log_tween.tween_interval(5.0)
 	_log_tween.tween_property(_result_panel, "modulate:a", 0.0, 0.8)
@@ -2090,7 +2094,7 @@ func _flash_log() -> void:
 func _hide_log() -> void:
 	if _log_tween != null and _log_tween.is_valid():
 		_log_tween.kill()
-	if _result_panel != null:
+	if _result_panel != null and not _choosing_path:
 		_result_panel.modulate.a = 0.0
 
 
