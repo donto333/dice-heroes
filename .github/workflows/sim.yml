@@ -35,7 +35,7 @@ jobs:
           SHARDS: 16
         run: |
           source tools/sim_job.txt
-          export LIMIT GAMES
+          export LIMIT GAMES MODE
           mkdir -p out
           OUT="${GITHUB_WORKSPACE}/out/sim_${SHARD}.json" godot --headless --script res://tools/sim_winrate.gd 2>&1 | grep -v "^$" | tail -40
           test -s "out/sim_${SHARD}.json"
