@@ -591,7 +591,7 @@ func _white_tile(spec: Array) -> Button:
 	text.alignment = BoxContainer.ALIGNMENT_CENTER
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(Kit.expand(text))
-	var title := Kit.label(str(spec[0]), 28, Color("12264d"))
+	var title := Kit.label(str(spec[0]), 25, Color("12264d"))
 	title.remove_theme_color_override("font_shadow_color")
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.add_child(title)
@@ -626,7 +626,7 @@ func _navy_tile(spec: Array) -> Button:
 	text.alignment = BoxContainer.ALIGNMENT_CENTER
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(text)
-	text.add_child(_bold(str(spec[0]), 24, Color.WHITE, Color("0b1f4d"), 5))
+	text.add_child(_bold(str(spec[0]), 22, Color.WHITE, Color("0b1f4d"), 5))
 	var english := Kit.label(str(spec[1]), 11, Color(1, 1, 1, 0.8))
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.add_child(english)

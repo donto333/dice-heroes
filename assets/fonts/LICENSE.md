@@ -1,6 +1,6 @@
 # 글꼴 라이선스
 
-`Jua-Regular.ttf`(주아체, 우아한형제들)는 SIL Open Font License 1.1로 배포된다. 전문은 `Jua-OFL.txt`.
+`DiceHeroes-Black.ttf`는 Noto Sans Black(라틴·베트남어)과 Noto Sans KR Black(한글·기호)에서 게임에 쓰는 글자만 골라 합친 파일이다(`tools/build_font.py`, 바탕 파일은 npm의 @fontsource/noto-sans·@fontsource/noto-sans-kr). 두 원본 모두 SIL Open Font License 1.1이고, 고친 파일이므로 이름을 DiceHeroes로 바꿨다. 담긴 글자 목록은 `DiceHeroes-Black.chars.txt`.
 
 `NotoSansKR-Regular-subset.otf`는 Noto Sans CJK KR Regular에서 한글 음절, 기본 라틴 문자, 일부 기호만 남긴 파일이다.
 원본은 SIL Open Font License 1.1로 배포된다. 아래는 원본 패키지의 저작권 고지다.

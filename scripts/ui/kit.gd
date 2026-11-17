@@ -66,6 +66,9 @@ static func label(text: String, font_size: int = 22, color: Color = TEXT, align:
 	result.add_theme_color_override("font_shadow_color", Color(0, 0.08, 0.25, 0.45))
 	result.add_theme_constant_override("shadow_offset_x", 0)
 	result.add_theme_constant_override("shadow_offset_y", 2)
+	# 큰 금색 글자는 시안처럼 금색 그라데이션 제목으로(text_style.gd).
+	if color == GOLD and font_size >= 28:
+		TextStyle.gold(result, 8)
 	return result
 
 
@@ -79,8 +82,7 @@ static func para(text: String, font_size: int = 20, color: Color = MUTED, align:
 
 static func title(text: String, font_size: int = 44) -> Label:
 	var result := label(text, font_size, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	result.add_theme_constant_override("outline_size", 10)
-	result.add_theme_color_override("font_outline_color", Color("4a2f00"))
+	TextStyle.gold(result, 10)
 	return result
 
 
@@ -118,8 +120,7 @@ static func paint(target: Button, color: Color, border: Color = Color.TRANSPAREN
 		target.add_child(gloss)
 		target.move_child(gloss, 0)
 	gloss.paint(color, edge)
-	target.add_theme_constant_override("outline_size", 6)
-	target.add_theme_color_override("font_outline_color", color.darkened(0.65))
+	TextStyle.menu(target, color.darkened(0.65), 6)
 
 
 static func _chunky(fill: Color, edge: Color, bottom: int) -> StyleBoxFlat:

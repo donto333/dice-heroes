@@ -138,9 +138,10 @@ func set_fullscreen(on: bool) -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED)
 
 
-## 기본 글꼴(둥글고 굵은 주아체)에 없는 글자·기호는 노토 산스로 메운다.
+## 기본 글꼴(시안 글자에 맞춘 굵은 DiceHeroes Black, tools/build_font.py로 만듦)에
+## 없는 글자·기호는 노토 산스로 메운다.
 func _setup_font() -> void:
-	var main_font: FontFile = load("res://assets/fonts/Jua-Regular.ttf")
+	var main_font: FontFile = load("res://assets/fonts/DiceHeroes-Black.ttf")
 	var backup: FontFile = load("res://assets/fonts/NotoSansKR-Regular-subset.otf")
 	if main_font != null and backup != null:
 		var extra: Array[Font] = [backup]

@@ -94,8 +94,7 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 	label.text = text
 	label.add_theme_font_size_override("font_size", 30)
 	label.add_theme_color_override("font_color", Color.WHITE)
-	label.add_theme_constant_override("outline_size", 6)
-	label.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
+	TextStyle.menu(label, Color(0, 0.05, 0.2), 7)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	label.offset_left = 70
@@ -210,8 +209,10 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable) -> Button:
 	var ink := Color("5a3200") if on else Color.WHITE
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		button.add_theme_color_override(state, ink)
-	button.add_theme_constant_override("outline_size", 0 if on else 6)
-	button.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.25))
+	if on:
+		button.add_theme_constant_override("outline_size", 0)
+	else:
+		TextStyle.menu(button, Color(0, 0.05, 0.25), 7)
 	if entry.size() > 2:
 		var picture: TextureRect = Kit.icon(str(entry[2]), 46.0)
 		if picture.texture != null:
@@ -235,8 +236,7 @@ static func _money_chip(icon_name: String, amount: int, color: Color) -> Control
 	capsule.add_child(row)
 	row.add_child(Kit.icon(icon_name, 34.0))
 	var label: Label = Kit.label(Kit.comma(amount), 26, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
-	label.add_theme_constant_override("outline_size", 5)
-	label.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
+	TextStyle.number(label, 5)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
 	var plus := tex("plus_btn")
