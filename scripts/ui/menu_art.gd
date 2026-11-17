@@ -277,6 +277,8 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool =
 	const HEIGHT := 76.0
 	const FONT := 26
 	const FONT_MIN := 15
+	const TWO_LINE_FONT := 20
+	const ONE_LINE_MIN := 18
 	var button := Button.new()
 	button.text = str(entry[1])
 	button.custom_minimum_size = Vector2(0, HEIGHT)
@@ -337,8 +339,23 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool =
 		var outline := float(button.get_theme_constant("outline_size"))
 		var shown := button.tr(button.text)
 		var px := FONT
-		while px > FONT_MIN and font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + outline > room:
+		while px > ONE_LINE_MIN and font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + outline > room:
 			px -= 1
+		# 가장 작은 크기로도 한 줄에 안 들어가면 두 줄로 나눈다(긴 번역 글). 낱말 하나가 칸에 들어가는 크기를 찾는다.
+		var two_lines := font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + outline > room
+		if two_lines:
+			px = TWO_LINE_FONT
+			var longest := 0.0
+			for word in shown.split(" ", false):
+				longest = maxf(longest, font.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+			while px > FONT_MIN and (longest + outline > room or font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + outline > room * 1.8):
+				px -= 1
+				longest = 0.0
+				for word in shown.split(" ", false):
+					longest = maxf(longest, font.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+		var wrap := TextServer.AUTOWRAP_WORD_SMART if two_lines else TextServer.AUTOWRAP_OFF
+		if button.autowrap_mode != wrap:
+			button.autowrap_mode = wrap
 		if button.get_theme_font_size("font_size") != px:
 			button.add_theme_font_size_override("font_size", px)
 	button.resized.connect(fit)
