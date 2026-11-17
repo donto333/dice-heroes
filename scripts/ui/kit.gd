@@ -41,7 +41,7 @@ const GRADE_COLORS := {1: Color("9aa4b8"), 2: Color("6fd3ff"), 3: Color("ffcf4d"
 ## 광택 아이콘이 없을 때 대신 쓸 도트 아이콘 이름
 const ICON_FALLBACK := {"pass": "goal", "todo": "start", "help": "hidden", "attend": "treasure", "missions": "checkpoint",
 	"roulette": "fate", "deals": "luck", "swords": "battle", "chat": "start", "adventure": "goal", "friend": "pawn"}
-const GOLD_ICON := "●"
+const GOLD_ICON := "골드"
 ## 글꼴(한글 부분집합)에 마름모 기호가 없어서 웹에서 깨진다. 글자로 쓴다.
 const GEM_ICON := "보석"
 
