@@ -340,8 +340,9 @@ func _upgrade(id: String) -> void:
 
 ## 수집 앨범: 분류마다 모은 수와 단계 보상
 ## 수집 앨범 창(UI 개편 2단계: 너비 780, 본문 18~24, 받기는 금테 알약). 분류 4개를 2×2 카드로.
-func _open_album() -> void:
-	app.play("click")
+func _open_album(quiet := false) -> void:
+	if not quiet:
+		app.play("click")
 	var body := Kit.vbox(10)
 	body.add_child(Kit.para("분류마다 영웅을 모으면 보상을 받아요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var steps: Array = app.eco["album"]["steps"]
@@ -414,6 +415,8 @@ func _claim_album(category: String, window_id: int) -> void:
 		window.call("close")
 	MenuArt.fly_reward(app, null, reward)
 	app.go("heroes", {"filter": _filter})
+	# 받은 뒤에도 앨범 창을 그대로 띄워 둔다(다른 분류도 이어서 받을 수 있게).
+	app.current_screen.call("_open_album", true)
 	app.toast("앨범 보상: %s" % Kit.reward_line(reward))
 
 
