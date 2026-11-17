@@ -92,8 +92,8 @@ func _draw() -> void:
 		var text := str(slots[index]["text"])
 		var font_size := 24
 		var width := radius * 0.62
-		draw_string_outline(font, Vector2(radius * 0.34, font_size * 0.36), text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size, 6, Color(0, 0, 0, 0.75))
-		draw_string(font, Vector2(radius * 0.34, font_size * 0.36), text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size, Color.WHITE)
+		draw_string_outline(font, Vector2(radius * 0.34, font_size * 0.36), tr(text), HORIZONTAL_ALIGNMENT_CENTER, width, font_size, 6, Color(0, 0, 0, 0.75))
+		draw_string(font, Vector2(radius * 0.34, font_size * 0.36), tr(text), HORIZONTAL_ALIGNMENT_CENTER, width, font_size, Color.WHITE)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# 테두리 전구
 	for bulb in 16:
@@ -125,7 +125,7 @@ func _draw_art(center: Vector2, radius: float, step: float, font: Font) -> void:
 		draw_line(center, center + Vector2(cos(from), sin(from)) * wedge, Color(1, 0.92, 0.6, 0.85), 3.0)
 		var mid := from + step / 2.0
 		draw_set_transform(center, mid, Vector2.ONE)
-		var text := str(slots[index]["text"])
+		var text := tr(str(slots[index]["text"]))
 		var font_size := 24
 		var inner := outer * RING_HOLE
 		var width := inner * 0.66

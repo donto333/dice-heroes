@@ -1093,9 +1093,9 @@ func _draw() -> void:
 				draw_texture_rect(topper, Rect2(topper_foot.x - topper_wide / 2.0, topper_foot.y - topper_tall, topper_wide, topper_tall), false)
 			_draw_tile_fx(str(tile.get("type", "")), rect.get_center(), cell, int(id))
 		if label != "":
-			draw_string_outline(font, rect.position + Vector2(0, rect.size.y * 0.74), label,
+			draw_string_outline(font, rect.position + Vector2(0, rect.size.y * 0.74), tr(label),
 				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, small, 5, Color(0, 0, 0, 0.8))
-			draw_string(font, rect.position + Vector2(0, rect.size.y * 0.74), label,
+			draw_string(font, rect.position + Vector2(0, rect.size.y * 0.74), tr(label),
 				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, small, Color.WHITE)
 
 	# 골 칸은 반짝이는 테와 수호자 이름으로 눈에 띄게
@@ -1112,8 +1112,8 @@ func _draw() -> void:
 		var boss := "수호자 %s" % str(game.nodes[id].get("name", ""))
 		var boss_size := int(cell * 0.2)
 		var boss_pos := goal_center + Vector2(-cell * 1.5, -cell * 0.62)
-		draw_string_outline(font, boss_pos, boss, HORIZONTAL_ALIGNMENT_CENTER, cell * 3.0, boss_size, 6, Color.BLACK)
-		draw_string(font, boss_pos, boss, HORIZONTAL_ALIGNMENT_CENTER, cell * 3.0, boss_size, Color("ffcf4d"))
+		draw_string_outline(font, boss_pos, tr(boss), HORIZONTAL_ALIGNMENT_CENTER, cell * 3.0, boss_size, 6, Color.BLACK)
+		draw_string(font, boss_pos, tr(boss), HORIZONTAL_ALIGNMENT_CENTER, cell * 3.0, boss_size, Color("ffcf4d"))
 	_draw_waves(layout)
 	# 내려앉은 칸에서 퍼지는 고리
 	for ring in _rings:
