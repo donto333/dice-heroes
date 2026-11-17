@@ -1532,6 +1532,8 @@ func _start_game() -> void:
 	# 내 파티(0번)에는 장착한 유물의 시작 보너스가 붙는다. 친구 대전은 공평하게 쓰지 않는다.
 	if _mode != "local" and not _parties.is_empty():
 		_parties[0]["relic"] = Profile.current_relic(app.profile, app.eco).get("effect", {})
+		# 내 카드 덱: 판에서는 덱에 넣은 카드만 뽑힌다. 상대(AI)는 모든 카드에서 뽑는다.
+		_parties[0]["deck"] = Profile.battle_deck(app.profile, _data.get("cards", {}), app.eco)
 	# 랭크전은 트로피가 높을수록 상대가 강해진다.
 	if _mode == "rank" and _parties.size() > 1:
 		_parties[1]["relic"] = Profile.rank_boost(app.eco, int(app.profile.get("trophies", 0)))

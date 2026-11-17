@@ -1,5 +1,5 @@
 {
-  "_comment": "아이템 카드 20종. effect.type은 scripts/rules/game.gd의 _apply_effect()에서 처리한다.",
+  "_comment": "아이템 카드 33종. grade: 1=★ 일반, 2=★★ 희귀, 3=★★★ 전설(카드 뽑기 확률·덱 제한에 씀). effect.type은 scripts/rules/game.gd의 _apply_effect()에서 처리한다.",
   "cards": {
     "swift_horse": {
       "name": "천리마",
@@ -7,7 +7,8 @@
       "effect": {
         "type": "move_fixed",
         "amount": 6
-      }
+      },
+      "grade": 2
     },
     "tailwind": {
       "name": "순풍",
@@ -16,7 +17,8 @@
         "type": "move_dice",
         "amount": 1,
         "turns": 1
-      }
+      },
+      "grade": 1
     },
     "banner": {
       "name": "필승의 깃발",
@@ -25,7 +27,8 @@
         "type": "atk_dice",
         "amount": 1,
         "turns": 1
-      }
+      },
+      "grade": 1
     },
     "fortress": {
       "name": "철옹성",
@@ -34,7 +37,8 @@
         "type": "def_dice",
         "amount": 1,
         "turns": 1
-      }
+      },
+      "grade": 1
     },
     "inspiration": {
       "name": "영감",
@@ -42,7 +46,8 @@
       "effect": {
         "type": "gauge_team",
         "amount": 50
-      }
+      },
+      "grade": 2
     },
     "shackle": {
       "name": "족쇄",
@@ -50,21 +55,24 @@
       "effect": {
         "type": "skip_enemy",
         "amount": 1
-      }
+      },
+      "grade": 3
     },
     "charm": {
       "name": "부적",
       "text": "저주·감옥·판정·족쇄를 한 번 무효",
       "effect": {
         "type": "charm"
-      }
+      },
+      "grade": 1
     },
     "attr_wind": {
       "name": "속성의 바람",
       "text": "맵 속성을 내 ATTACK 캐릭터의 분류로 변경",
       "effect": {
         "type": "set_attr"
-      }
+      },
+      "grade": 2
     },
     "shrink_road": {
       "name": "축지법",
@@ -73,7 +81,8 @@
         "type": "move_plus",
         "amount": 3,
         "turns": 1
-      }
+      },
+      "grade": 1
     },
     "guide_star": {
       "name": "길잡이 별",
@@ -82,7 +91,8 @@
         "type": "move_best",
         "amount": 1,
         "turns": 1
-      }
+      },
+      "grade": 2
     },
     "mirror_shield": {
       "name": "거울 방패",
@@ -91,7 +101,8 @@
         "type": "def_bonus",
         "amount": 3,
         "turns": 1
-      }
+      },
+      "grade": 1
     },
     "second_try": {
       "name": "재도전",
@@ -100,7 +111,8 @@
         "type": "retry",
         "amount": 1,
         "turns": 1
-      }
+      },
+      "grade": 2
     },
     "sandstorm": {
       "name": "모래폭풍",
@@ -108,14 +120,16 @@
       "effect": {
         "type": "enemy_move_dice",
         "amount": -1
-      }
+      },
+      "grade": 1
     },
     "snare": {
       "name": "덫",
       "text": "지금 칸에 덫. 상대가 멈추면 1턴 쉬기",
       "effect": {
         "type": "trap"
-      }
+      },
+      "grade": 1
     },
     "gatekeeper": {
       "name": "수문장",
@@ -124,7 +138,8 @@
         "type": "def_dice",
         "amount": 2,
         "turns": 1
-      }
+      },
+      "grade": 2
     },
     "comeback_step": {
       "name": "역전의 첫걸음",
@@ -133,7 +148,8 @@
         "type": "comeback",
         "gap": 10,
         "amount": 5
-      }
+      },
+      "grade": 3
     },
     "oblivion": {
       "name": "망각",
@@ -141,14 +157,16 @@
       "effect": {
         "type": "gauge_enemy",
         "amount": -30
-      }
+      },
+      "grade": 2
     },
     "deep_oblivion": {
       "name": "깊은 망각",
       "text": "상대 카드 1장을 없앰",
       "effect": {
         "type": "discard_enemy"
-      }
+      },
+      "grade": 3
     },
     "sage_ring": {
       "name": "현자의 반지",
@@ -156,13 +174,154 @@
       "effect": {
         "type": "draw_card",
         "amount": 2
-      }
+      },
+      "grade": 2
     },
     "magpie": {
       "name": "도둑 까치",
       "text": "상대 카드 1장을 훔침",
       "effect": {
         "type": "steal_card"
+      },
+      "grade": 3
+    },
+    "war_drum": {
+      "name": "전고",
+      "text": "이번 턴 공격 합계 +2",
+      "grade": 1,
+      "effect": {
+        "type": "atk_bonus",
+        "amount": 2,
+        "turns": 1
+      }
+    },
+    "herb": {
+      "name": "약초",
+      "text": "저주와 쉬기를 풀어 줌",
+      "grade": 1,
+      "effect": {
+        "type": "cure"
+      }
+    },
+    "scout": {
+      "name": "척후병",
+      "text": "이번 이동 주사위 눈이 최소 3",
+      "grade": 1,
+      "effect": {
+        "type": "move_floor",
+        "amount": 3,
+        "turns": 1
+      }
+    },
+    "prayer": {
+      "name": "기도",
+      "text": "우리 팀 게이지 +25%",
+      "grade": 1,
+      "effect": {
+        "type": "gauge_team",
+        "amount": 25
+      }
+    },
+    "spear_wall": {
+      "name": "창벽",
+      "text": "다음 내 차례까지 방어 주사위 눈이 최소 3",
+      "grade": 2,
+      "effect": {
+        "type": "def_floor",
+        "amount": 3,
+        "turns": 1
+      }
+    },
+    "whirlwind": {
+      "name": "회오리",
+      "text": "상대를 4칸 뒤로 밀어냄",
+      "grade": 2,
+      "effect": {
+        "type": "push_enemy",
+        "amount": 4
+      }
+    },
+    "gale_step": {
+      "name": "질풍보",
+      "text": "지금 바로 4칸 앞으로",
+      "grade": 2,
+      "effect": {
+        "type": "advance",
+        "amount": 4
+      }
+    },
+    "keen_blade": {
+      "name": "명검",
+      "text": "이번 턴 공격 주사위에 6이 나오면 하나마다 +2",
+      "grade": 2,
+      "effect": {
+        "type": "crit",
+        "amount": 2,
+        "turns": 1
+      }
+    },
+    "seal_scroll": {
+      "name": "봉인 두루마리",
+      "text": "상대는 다음 차례에 어빌리티를 쓸 수 없음",
+      "grade": 2,
+      "effect": {
+        "type": "enemy_seal"
+      }
+    },
+    "war_god": {
+      "name": "군신의 가호",
+      "text": "이번 턴 공격 주사위 +1개, 공격 합계 +2",
+      "grade": 3,
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "atk_dice",
+            "amount": 1,
+            "turns": 1
+          },
+          {
+            "type": "atk_bonus",
+            "amount": 2,
+            "turns": 1
+          }
+        ]
+      }
+    },
+    "silence_bell": {
+      "name": "침묵의 종",
+      "text": "상대는 다음 차례에 카드를 쓸 수 없고, 상대 팀 게이지 -20%",
+      "grade": 3,
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "enemy_card_seal"
+          },
+          {
+            "type": "gauge_enemy",
+            "amount": -20
+          }
+        ]
+      }
+    },
+    "spirit_drain": {
+      "name": "기운 흡수",
+      "text": "상대 팀 게이지를 30% 빼앗음",
+      "grade": 3,
+      "effect": {
+        "type": "steal_gauge",
+        "amount": 30
+      }
+    },
+    "iron_will": {
+      "name": "불굴",
+      "text": "앞으로 내 3턴 동안 거점으로 돌아갈 일을 한 번 막음",
+      "grade": 3,
+      "effect": {
+        "type": "stand_ground",
+        "amount": 1,
+        "turns": 3
       }
     }
   }

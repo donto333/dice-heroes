@@ -26,7 +26,7 @@ func setup(main_app, params: Dictionary) -> void:
 	app = main_app
 	_filter = str(params.get("filter", ""))
 	# 시안식 틀: 왼쪽 세로 판에 영웅 목록·앨범·파티 편성, 오른쪽 큰 금테 판.
-	var rail := [["list", "영웅 목록", "heroes"], ["album", "영웅 앨범", "album"], ["party", "파티 편성", "swords"]]
+	var rail := [["list", "영웅 목록", "heroes"], ["album", "영웅 앨범", "album"], ["party", "파티 편성", "swords"], ["cards", "카드 덱", "card"]]
 	var column := MenuArt.frame(self, app, "ui/bg_heroes", rail, "list", _on_rail, _summary_card())
 
 	var header := Kit.hbox(10)
@@ -456,6 +456,9 @@ func _on_rail(id: String) -> void:
 			_open_album()
 		"party":
 			_on_edit_party()
+		"cards":
+			app.play("click")
+			app.go("cards")
 
 
 func _on_tab(screen_name: String) -> void:

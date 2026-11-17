@@ -75,6 +75,8 @@ static func card_useful(game, card: Dictionary) -> bool:
 			return not other_hand.is_empty() and game.players[me]["hand"].size() < game.HAND_LIMIT
 		"draw_card":
 			return game.players[me]["hand"].size() < game.HAND_LIMIT
+		"cure":
+			return bool(game.players[me]["cursed"])
 	return true
 
 

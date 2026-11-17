@@ -26,7 +26,7 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"owned": owned,
 		"party": (start.get("party", {}) as Dictionary).duplicate(),
 		"stats": {"played": 0, "wins": 0, "losses": 0, "draws": 0, "rank_wins": 0,
-			"battle_wins_total": 0, "cards_total": 0, "summons_total": 0, "upgrades_total": 0},
+			"battle_wins_total": 0, "cards_total": 0, "summons_total": 0, "upgrades_total": 0, "card_draws_total": 0},
 		## 받은 업적 id
 		"achievements": [],
 		## 첫 판 안내를 본 것 {"roll": true, ...}
@@ -50,13 +50,18 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		## 영웅별 전적 {id: {"played": n, "wins": n}}
 		"hero_stats": {},
 		"pity": 0,
-		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false, "sweeps": 0},
+		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false, "sweeps": 0, "free_card_draws": 0},
 		"attendance": {"last_date": "", "count": 0},
 		"settings": {"sfx": true, "bgm": true, "fast": false, "vibrate": true},
 		## 마지막으로 새 소식을 본 버전
 		"seen_version": "",
 		## 모험 진행: {스테이지 id: 얻은 별 수(0~3)}
 		"adventure": {},
+		## 가진 아이템 카드 id와 판에 들고 가는 카드 덱(data/cards.json, economy.json의 card_deck)
+		"cards": (start.get("cards", []) as Array).duplicate(),
+		"deck": (start.get("deck", []) as Array).duplicate(),
+		## 카드 뽑기 ★★★ 보장까지 센 횟수
+		"card_pity": 0,
 	}
 
 
@@ -482,7 +487,7 @@ static func _add_stat(profile: Dictionary, key: String, amount: int) -> void:
 static func ensure_daily(profile: Dictionary, today: String) -> bool:
 	if str(profile["daily"].get("date", "")) == today:
 		return false
-	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false, "sweeps": 0}
+	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false, "sweeps": 0, "free_card_draws": 0}
 	return true
 
 
@@ -1562,3 +1567,137 @@ static func claim_mileage(profile: Dictionary, eco: Dictionary) -> Dictionary:
 			total[key] = int(total.get(key, 0)) + int(reward[key])
 	profile["mileage_claimed"] = claimed
 	return total
+
+
+
+# ---------------------------------------------------------------- 아이템 카드(뽑기·덱)
+## 카드는 등급(1=★ 일반, 2=★★ 희귀, 3=★★★ 전설)이 있고, 카드 뽑기로 모은다.
+## 판에서는 덱에 넣은 카드만 뽑힌다(game.gd의 setup이 party["deck"]을 받는다).
+## cards: data/cards.json의 cards 사전. 수치는 economy.json의 card_gacha·card_deck.
+
+static func owns_card(profile: Dictionary, id: String) -> bool:
+	return (profile.get("cards", []) as Array).has(id)
+
+
+static func card_grade(cards: Dictionary, id: String) -> int:
+	return int((cards.get(id, {}) as Dictionary).get("grade", 1))
+
+
+static func free_card_draws_left(profile: Dictionary, eco: Dictionary) -> int:
+	var per_day := int(eco.get("card_gacha", {}).get("free_per_day", 0))
+	return max(0, per_day - int(profile["daily"].get("free_card_draws", 0)))
+
+
+## 무료 카드 뽑기 1회를 쓴다. 남은 것이 없으면 false.
+static func use_free_card_draw(profile: Dictionary, eco: Dictionary) -> bool:
+	if free_card_draws_left(profile, eco) <= 0:
+		return false
+	profile["daily"]["free_card_draws"] = int(profile["daily"].get("free_card_draws", 0)) + 1
+	return true
+
+
+## 카드 뽑기 한 번의 등급. 보장이 차면 ★★★, guarantee_two면 ★★ 이상.
+static func roll_card_grade(profile: Dictionary, eco: Dictionary, rng: RandomNumberGenerator, guarantee_two: bool) -> int:
+	var table: Dictionary = eco.get("card_gacha", {})
+	var pity_limit := int(table.get("pity_3", 0))
+	if pity_limit > 0 and int(profile.get("card_pity", 0)) + 1 >= pity_limit:
+		return 3
+	var rates: Dictionary = table.get("rates", {"1": 100})
+	var roll := rng.randf() * 100.0
+	var grade := 1
+	var acc := 0.0
+	for key in ["3", "2", "1"]:
+		acc += float(rates.get(key, 0))
+		if roll < acc:
+			grade = int(key)
+			break
+	if guarantee_two and grade < 2:
+		grade = 2
+	return grade
+
+
+## 카드를 count장 뽑는다. 비용은 먼저 치러야 한다(pay 또는 무료 뽑기).
+## 돌려주는 값: [{"id", "grade", "new": 처음 얻었는지, "gold": 중복이라 바뀐 골드}]
+static func draw_cards(profile: Dictionary, cards: Dictionary, eco: Dictionary, count: int, rng: RandomNumberGenerator) -> Array:
+	var dupe_gold: Dictionary = eco.get("card_gacha", {}).get("dupe_gold", {})
+	if not profile.has("cards"):
+		profile["cards"] = []
+	var results: Array = []
+	for index in count:
+		var guarantee_two := count >= 10 and index == count - 1 and not _has_grade_at_least(results, 2)
+		var grade := roll_card_grade(profile, eco, rng, guarantee_two)
+		if grade == 3:
+			profile["card_pity"] = 0
+		else:
+			profile["card_pity"] = int(profile.get("card_pity", 0)) + 1
+		var pool: Array = []
+		for key in cards:
+			if card_grade(cards, str(key)) == grade:
+				pool.append(str(key))
+		if pool.is_empty():
+			continue
+		var id: String = pool[rng.randi_range(0, pool.size() - 1)]
+		var entry := {"id": id, "grade": grade, "new": false, "gold": 0}
+		if owns_card(profile, id):
+			var gold := int(dupe_gold.get(str(grade), 100))
+			grant(profile, {"gold": gold})
+			entry["gold"] = gold
+		else:
+			profile["cards"].append(id)
+			entry["new"] = true
+		results.append(entry)
+	_add_stat(profile, "card_draws_total", count)
+	return results
+
+
+## 덱이 규칙에 맞는지. 맞으면 "", 아니면 이유.
+static func deck_error(profile: Dictionary, cards: Dictionary, eco: Dictionary, deck: Array) -> String:
+	var rule: Dictionary = eco.get("card_deck", {})
+	var seen := {}
+	var legend := 0
+	for id in deck:
+		if not cards.has(str(id)):
+			return "없는 카드가 있어요."
+		if not owns_card(profile, str(id)):
+			return "가지지 않은 카드가 있어요."
+		if seen.has(str(id)):
+			return "같은 카드는 한 장만 넣을 수 있어요."
+		seen[str(id)] = true
+		if card_grade(cards, str(id)) >= 3:
+			legend += 1
+	if deck.size() > int(rule.get("size", 10)):
+		return "덱에는 %d장까지 넣을 수 있어요." % int(rule.get("size", 10))
+	if deck.size() < int(rule.get("min", 1)):
+		return "덱에는 %d장 이상 있어야 해요." % int(rule.get("min", 1))
+	if legend > int(rule.get("max_grade3", 99)):
+		return "★★★ 카드는 %d장까지 넣을 수 있어요." % int(rule.get("max_grade3", 99))
+	return ""
+
+
+## 카드 한 장을 덱에 넣거나 뺀다. 되면 "", 안 되면 이유.
+static func toggle_deck(profile: Dictionary, cards: Dictionary, eco: Dictionary, id: String) -> String:
+	var deck: Array = (profile.get("deck", []) as Array).duplicate()
+	if deck.has(id):
+		deck.erase(id)
+	else:
+		deck.append(id)
+	var problem := deck_error(profile, cards, eco, deck)
+	if problem != "":
+		return problem
+	profile["deck"] = deck
+	return ""
+
+
+## 판에 들고 갈 덱. 저장된 덱이 규칙에 안 맞으면(예전 저장 등) 처음 덱으로 되돌린다.
+static func battle_deck(profile: Dictionary, cards: Dictionary, eco: Dictionary) -> Array:
+	var deck: Array = profile.get("deck", [])
+	if deck_error(profile, cards, eco, deck) == "":
+		return deck.duplicate()
+	var fallback: Array = []
+	for id in eco.get("start", {}).get("deck", []):
+		if cards.has(str(id)):
+			fallback.append(str(id))
+			if not owns_card(profile, str(id)):
+				profile["cards"].append(str(id))
+	profile["deck"] = fallback.duplicate()
+	return fallback

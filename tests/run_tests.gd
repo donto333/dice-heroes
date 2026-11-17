@@ -67,6 +67,7 @@ func _init() -> void:
 	_test_branch_fog()
 	_test_checkpoints()
 	_test_cards()
+	_test_card_deck()
 	_test_pass_by_fight()
 	_test_balance()
 	_test_full_games()
@@ -462,13 +463,14 @@ func _test_checkpoints() -> void:
 	_check(int(game.players[0]["pos"]) == 12, "험한 길에서 4칸 물러나면 12번이어야 함")
 
 
-## 카드 20종이 모두 알려진 효과를 쓰고, 써도 판이 깨지지 않는지 확인한다.
+## 카드 33종이 모두 알려진 효과를 쓰고, 써도 판이 깨지지 않는지 확인한다.
 func _test_cards() -> void:
 	var known := EFFECT_TYPES
 	var cards: Dictionary = _data["cards"]
-	_check(cards.size() == 20, "카드가 20종이 아님: %d" % cards.size())
+	_check(cards.size() == 33, "카드가 33종이 아님: %d" % cards.size())
 	for card_id in cards:
 		var card: Dictionary = cards[card_id]
+		_check(int(card.get("grade", 0)) in [1, 2, 3], "카드 등급이 1~3이 아님: " + card_id)
 		_check(str(card.get("name", "")) != "" and str(card.get("text", "")) != "", "카드 이름이나 설명이 없음: " + card_id)
 		_check(str(card.get("effect", {}).get("type", "")) in known, "모르는 카드 효과: " + card_id)
 		var game = _new_game(40)
@@ -1812,7 +1814,7 @@ func _test_every_ability_and_card() -> void:
 		checked += 1
 	_check(checked == characters.size(), "어빌리티를 다 검사하지 못함 (%d/%d)" % [checked, characters.size()])
 
-	# 2) 카드 20장을 하나씩 써 본다(역전의 첫걸음은 _test_cards에서 따로 본다).
+	# 2) 카드를 모두 하나씩 써 본다(역전의 첫걸음은 _test_cards에서 따로 본다).
 	for card_id in _data["cards"]:
 		var card: Dictionary = _data["cards"][card_id]
 		if str(card["effect"].get("type", "")) == "comeback":
@@ -2032,3 +2034,74 @@ func _check_effect_lengths() -> void:
 	_place(game, 1, [0, 1, 2, 3, 4, 5])
 	game._resolve_tile(0)
 	_check(int(game.players[1]["skip"]) >= 1 or game.winner >= 0, "덫을 밟았는데 쉬지 않음")
+
+
+## 카드 뽑기·덱(2026-11-18): 처음 카드와 덱, 뽑기 보장, 덱 규칙, 판에서는 덱의 카드만 뽑힘.
+func _test_card_deck() -> void:
+	var eco: Dictionary = _data["economy"]
+	var cards: Dictionary = _data["cards"]
+	var profile := Profile.new_profile("카드", eco)
+	_check(Profile.deck_error(profile, cards, eco, profile["deck"]) == "", "처음 덱이 규칙에 안 맞음: " + Profile.deck_error(profile, cards, eco, profile["deck"]))
+	for id in profile["cards"]:
+		_check(cards.has(str(id)), "처음 카드에 없는 카드: " + str(id))
+	# 뽑기: 10장 중 ★★ 이상 1장 보장, 중복은 골드로
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	for round_index in 30:
+		var results := Profile.draw_cards(profile, cards, eco, 10, rng)
+		_check(results.size() == 10, "카드 10장 뽑기가 10장이 아님")
+		var best := 0
+		for entry in results:
+			best = maxi(best, int(entry["grade"]))
+			_check(Profile.owns_card(profile, str(entry["id"])), "뽑은 카드를 가지지 않음")
+			_check(bool(entry["new"]) or int(entry["gold"]) > 0, "중복 카드가 골드로 안 바뀜")
+		_check(best >= 2, "카드 10장 뽑기에 ★★ 이상이 없음")
+	# 보장: pity_3번째에는 ★★★
+	var pity_profile := Profile.new_profile("보장", eco)
+	pity_profile["card_pity"] = int(eco["card_gacha"]["pity_3"]) - 1
+	_check(int(Profile.draw_cards(pity_profile, cards, eco, 1, rng)[0]["grade"]) == 3, "카드 뽑기 보장이 ★★★이 아님")
+	# 무료 뽑기 하루 1회
+	_check(Profile.use_free_card_draw(profile, eco) and not Profile.use_free_card_draw(profile, eco), "무료 카드 뽑기가 하루 1회가 아님")
+	# 덱 규칙: 최대 장수, ★★★ 장수, 최소 장수, 같은 카드 한 장
+	var rule: Dictionary = eco["card_deck"]
+	var legends: Array = []
+	for id in cards:
+		if int(cards[id]["grade"]) == 3:
+			legends.append(id)
+			if not Profile.owns_card(profile, id):
+				profile["cards"].append(id)
+	var deck: Array = (profile["deck"] as Array).duplicate()
+	while deck.size() > int(rule["size"]) - 3:
+		deck.pop_back()
+	for i in int(rule["max_grade3"]) + 1:
+		deck.append(legends[i])
+	_check(Profile.deck_error(profile, cards, eco, deck) != "", "★★★ 카드 제한이 안 걸림")
+	_check(Profile.deck_error(profile, cards, eco, ["tailwind", "tailwind", "banner", "fortress", "charm", "scout"]) != "", "같은 카드 두 장이 덱에 들어감")
+	_check(Profile.deck_error(profile, cards, eco, ["tailwind"]) != "", "최소 장수보다 적은 덱이 통과함")
+	var full: Array = (profile["deck"] as Array).duplicate()
+	for id in profile["cards"]:
+		if not full.has(id) and int(cards[id]["grade"]) < 3:
+			full.append(id)
+		if full.size() > int(rule["size"]):
+			break
+	_check(Profile.deck_error(profile, cards, eco, full) != "", "덱 최대 장수를 넘어도 통과함")
+	# 넣고 빼기
+	var before: int = profile["deck"].size()
+	_check(Profile.toggle_deck(profile, cards, eco, str(profile["deck"][0])) == "" and profile["deck"].size() == before - 1, "덱에서 카드 빼기가 안 됨")
+	# 판: 덱의 카드만 뽑힌다
+	var deck_only: Array = ["war_drum", "herb", "scout", "prayer", "tailwind", "banner"]
+	var parties: Array = []
+	for party in PARTIES:
+		parties.append((party as Dictionary).duplicate())
+	parties[0]["deck"] = deck_only
+	var game = _new_game(11, parties)
+	for i in 40:
+		game.players[0]["hand"] = []
+		game._draw_card(0, false)
+		_check(deck_only.has(str(game.players[0]["hand"][0])), "덱에 없는 카드가 뽑힘")
+	# 덱이 없으면(상대 AI) 모든 카드에서 뽑는다
+	_check(game.players[1]["deck"].is_empty(), "덱을 안 준 플레이어에게 덱이 생김")
+	# 망가진 저장 덱은 처음 덱으로 되돌린다
+	var broken := Profile.new_profile("망가짐", eco)
+	broken["deck"] = ["없는카드"]
+	_check(Profile.deck_error(broken, cards, eco, Profile.battle_deck(broken, cards, eco)) == "", "망가진 덱을 되돌리지 못함")
