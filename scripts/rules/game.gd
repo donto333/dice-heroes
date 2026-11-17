@@ -81,15 +81,6 @@ var goal_min_dice := 3
 var second_player_gauge := 0
 ## 더블(이동 주사위 2개 이상이 모두 같은 눈)이면 차는 어빌리티 게이지(%)
 var double_gauge := 0
-## 더블이면 한 번 더 굴린다(data/rules.json의 double_reroll). 한 차례에 이어서 double_reroll_max번까지.
-## 더 굴리는 동안에는 어빌리티(스킬)와 카드를 쓸 수 없고, 턴 게이지도 차지 않는다.
-var double_reroll := false
-var double_reroll_max := 1
-## 이번 이동에서 더블이 나와 한 번 더 굴릴 차례가 남았는지.
-var bonus_roll := false
-## 지금이 더블로 얻은 추가 굴림인지.
-var bonus_turn := false
-var bonus_chain := 0
 ## 게이지 수치. data/rules.json에서 읽는다.
 var gauge_base := 10
 var gauge_per_intellect := 5
@@ -126,11 +117,6 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	var rules: Dictionary = data.get("rules", {})
 	second_player_gauge = int(rules.get("second_player_gauge", 0))
 	double_gauge = int(rules.get("double_gauge", 0))
-	double_reroll = bool(rules.get("double_reroll", false))
-	double_reroll_max = int(rules.get("double_reroll_max", 1))
-	bonus_roll = false
-	bonus_turn = false
-	bonus_chain = 0
 	gate_weaken = int(rules.get("gate_weaken", 1))
 	branch_fog = bool(rules.get("branch_fog", true))
 	goal_min_dice = int(rules.get("goal_min_dice", 3))
@@ -488,12 +474,6 @@ func begin_turn() -> bool:
 	moved = false
 	pending_choice = {}
 	var player: Dictionary = players[current]
-	if bonus_turn:
-		# 더블로 얻은 추가 굴림: 스킬·카드는 못 쓰고, 효과 남은 턴과 게이지는 그대로 둔다.
-		card_played = true
-		ability_used = true
-		say("%s: 더블! 한 번 더 굴립니다. (스킬·카드 사용 불가)" % player["name"])
-		return true
 
 	var remaining: Array = []
 	for effect in player["effects"]:
@@ -620,13 +600,8 @@ func roll_move(aim: String = "") -> void:
 	if doubled:
 		_add_gauge(current, double_gauge)
 		say("  더블! 어빌리티 게이지 +%d%%" % double_gauge)
-	# 더블이면 이동을 마친 뒤 한 번 더 굴린다(이어서 double_reroll_max번까지).
-	var reroll := double_reroll and is_double(rolls) and bonus_chain < double_reroll_max
-	bonus_roll = reroll
-	if reroll:
-		say("  더블! 이동이 끝나면 한 번 더 굴립니다.")
 	_event({"kind": "move", "player": current, "rolls": rolls, "total": total, "bonus": bonus, "catchup": catching_up,
-		"aim": aim if not rolls.is_empty() else "", "controlled": controlled, "double": doubled or reroll, "reroll": reroll})
+		"aim": aim if not rolls.is_empty() else "", "controlled": controlled, "double": doubled})
 
 	_continue_walk(total)
 
@@ -691,15 +666,6 @@ func best_option(options: Array) -> int:
 func end_turn() -> void:
 	if winner >= 0 or awaiting_choice():
 		return
-	# 더블: 차례를 넘기지 않고 같은 플레이어가 한 번 더 굴린다. 쉬는 턴이 걸렸으면 없던 일이 된다.
-	if bonus_roll and int(players[current]["skip"]) <= 0:
-		bonus_roll = false
-		bonus_turn = true
-		bonus_chain += 1
-		return
-	bonus_roll = false
-	bonus_turn = false
-	bonus_chain = 0
 	current = 1 - current
 	if current == 0:
 		round_number += 1

@@ -129,6 +129,7 @@
  "시너지": "Synergy",
  "파티 세 명이 모두 같은 분류면 '결속'(시작 게이지 +15%), 모두 다른 분류면 '조화'(부적 1개)가 붙어요. 파티를 고를 때 아래에 보여요.": "If all three party members share a class you get 'Bond' (starting gauge +15%); if all differ you get 'Harmony' (1 talisman). Shown below when picking a party.",
  "더블": "Double",
+ "이동 주사위가 2개인 영웅이 같은 눈 두 개를 굴리면 '더블!' 우리 팀 어빌리티 게이지가 12% 더 차요.": "When a hero with 2 move dice rolls a pair, it's a 'Double!' Your team's ability gauge fills 12% more.",
  "모험 소탕": "Adventure Sweep",
  "별 3개로 깬 모험 스테이지는 '소탕'으로 대전 없이 승리 보상을 받을 수 있어요. 하루 5번까지예요.": "Adventure stages cleared with 3 stars can be 'Swept' for win rewards without a match. Up to 5 times a day.",
  "따라잡기": "Catch-up",
@@ -1499,8 +1500,5 @@
  "경험 +%d": "EXP +%d",
  "얻은": "Earned",
  "보상": "Rewards",
- "화면 연출 새 단장: 메뉴 화면이 부드럽게 나타나고, 보상을 받으면 금화와 보석이 위쪽 재화 칸으로 날아가요. 알림은 내용을 가리지 않게 위 줄이나 화면 아래에 떠요.": "Smoother screens: menus now slide in gently, and coins and gems fly up to your currency when you claim rewards. Notices now appear in the top bar or at the bottom so they don't cover anything.",
- "이동 주사위가 2개인 영웅이 같은 눈 두 개를 굴리면 '더블!' 우리 팀 어빌리티 게이지가 12% 더 차고, 주사위를 한 번 더 굴려요. 더 굴릴 때는 스킬과 카드를 쓸 수 없어요.": "When a hero with 2 move dice rolls a pair, it's a 'Double!' Your team's ability gauge fills 12% more and you roll again. Skills and cards can't be used on the extra roll.",
- "더블! 한 번 더!": "Double! Roll again!",
- "더블 다시 굴리기: 더블이 나오면 주사위를 한 번 더 굴려요. 더 굴릴 때는 스킬과 카드를 쓸 수 없어요.": "Double re-roll: roll a double to roll again. Skills and cards can't be used on the extra roll."
+ "화면 연출 새 단장: 메뉴 화면이 부드럽게 나타나고, 보상을 받으면 금화와 보석이 위쪽 재화 칸으로 날아가요. 알림은 내용을 가리지 않게 위 줄이나 화면 아래에 떠요.": "Smoother screens: menus now slide in gently, and coins and gems fly up to your currency when you claim rewards. Notices now appear in the top bar or at the bottom so they don't cover anything."
 }
