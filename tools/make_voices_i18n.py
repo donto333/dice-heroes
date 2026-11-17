@@ -1,6 +1,6 @@
 """영웅·안내·적 음성을 영어·베트남어로 만든다(GitHub Actions에서만 돌린다). 키는 찍지 않는다.
 대사는 data/voice_i18n.json, 목소리는 한국어 음성과 같은 것(data/voice_lines.json·voice_extra.json).
-결과: out/<언어>/<id>_<상황>.mp3. v3 + 연기 지시 + 언어 고정, 안정도 0.5. ONLY=언어 하나만(en/vi)."""
+결과: out/<언어>/<id>_<상황>.mp3. v3 + 연기 지시 + 언어 고정, 안정도 0.5. ONLY=언어 하나만(en/vi), PICK=일부만."""
 import json, os, sys, time, threading, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
@@ -11,6 +11,8 @@ tr = json.load(open("data/voice_i18n.json", encoding="utf-8"))
 voices = {h: v["voice"] for h, v in json.load(open("data/voice_lines.json", encoding="utf-8"))["heroes"].items()}
 voices.update({h: v["voice"] for h, v in json.load(open("data/voice_extra.json", encoding="utf-8"))["heroes"].items()})
 ENEMY_TAGS = {"enemy_gate": "stern, booming", "enemy_boss": "low, imposing", "enemy_keeper": "rough, cocky", "enemy_monster": "monstrous roar"}
+## PICK=en:lubu_select,vi:announcer_n_lose 처럼 적으면 그것만 다시 만든다.
+pick = set(x for x in os.environ.get("PICK", "").split(",") if x)
 langs = [x for x in os.environ.get("ONLY", "en,vi").split(",") if x]
 lock = threading.Lock()
 count = {"made": 0, "failed": 0}
@@ -50,6 +52,8 @@ for lang in langs:
     os.makedirs("out/" + lang, exist_ok=True)
     for who, table in tr[lang].items():
         for kind, text in table.items():
+            if pick and "%s:%s_%s" % (lang, who, kind) not in pick:
+                continue
             jobs.append((lang, who, kind, text))
 with ThreadPoolExecutor(max_workers=4) as pool:
     list(pool.map(speak, jobs))
