@@ -1592,5 +1592,7 @@
  "이번 이동 +1칸, 이번 턴 전투에서 지면 한 번 다시 굴림": "Lần đi này +1 ô, thua trận lượt này được tung lại một lần",
  "곤충기": "Ký sự côn trùng",
  "지금 칸과 바로 뒤 칸에 덫 2개": "Đặt 2 bẫy: ô này và ô ngay phía sau",
- "어린이날 선물": "Quà Ngày Thiếu nhi"
+ "어린이날 선물": "Quà Ngày Thiếu nhi",
+ "레벨 %d / %d   ·   전투 +%d   ·   스킬 충전 +%d%%": "Cấp %d / %d   ·   Chiến đấu +%d   ·   Nạp kỹ năng +%d%%",
+ "다음 레벨: 전투 +%d · 스킬 충전 +%d%%  (전투는 공격·방어 자리에서 주사위 합에 더해져요)": "Cấp sau: Chiến đấu +%d · Nạp kỹ năng +%d%%  (thưởng chiến đấu cộng vào xúc xắc ở ô Tấn công/Phòng thủ)"
 }

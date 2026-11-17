@@ -1592,5 +1592,7 @@
  "이번 이동 +1칸, 이번 턴 전투에서 지면 한 번 다시 굴림": "+1 space this move; if you lose a battle this turn, roll once more",
  "곤충기": "Souvenirs Entomologiques",
  "지금 칸과 바로 뒤 칸에 덫 2개": "2 traps: on this space and the one behind",
- "어린이날 선물": "Children's Day Gift"
+ "어린이날 선물": "Children's Day Gift",
+ "레벨 %d / %d   ·   전투 +%d   ·   스킬 충전 +%d%%": "Level %d / %d   ·   Battle +%d   ·   Skill charge +%d%%",
+ "다음 레벨: 전투 +%d · 스킬 충전 +%d%%  (전투는 공격·방어 자리에서 주사위 합에 더해져요)": "Next level: Battle +%d · Skill charge +%d%%  (battle bonus is added to dice in Attack/Defense slots)"
 }

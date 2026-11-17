@@ -101,6 +101,8 @@ var board_feature := ""
 var board_theme: Dictionary = {}
 ## 영웅 레벨에 따른 전투 합계 보너스. 칸 순번 = 레벨 - 1. data/rules.json의 level_battle_bonus.
 var level_battle_bonus: Array = []
+## 영웅 레벨에 따른 스킬 충전 속도 보너스(%). 그 영웅 자리의 게이지만 더 빨리 찬다. data/rules.json의 level_gauge_bonus.
+var level_gauge_bonus: Array = []
 ## 턴 제한
 var max_rounds := MAX_ROUNDS
 
@@ -132,6 +134,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	gauge_per_intellect = int(rules.get("gauge_per_intellect", 5))
 	start_gauge_per_intellect = int(rules.get("start_gauge_per_intellect", 0))
 	level_battle_bonus = rules.get("level_battle_bonus", [])
+	level_gauge_bonus = rules.get("level_gauge_bonus", [])
 	max_rounds = int(rules.get("max_rounds", MAX_ROUNDS))
 	characters = {}
 	for character in data.get("characters", []):
@@ -1026,13 +1029,21 @@ func _defense_dice(player_index: int) -> int:
 	return count
 
 
-## 자리의 영웅 레벨 보너스. 레벨 3이면 +1처럼 전투 합계에 더한다.
+## 자리의 영웅 레벨 보너스. 레벨 2면 +1처럼 전투 합계에 더한다.
 func level_bonus(player_index: int, slot: String) -> int:
 	var level := int(players[player_index].get("levels", {}).get(slot, 1))
 	if level_battle_bonus.is_empty():
 		return 0
 	var index := clampi(level - 1, 0, level_battle_bonus.size() - 1)
 	return int(level_battle_bonus[index])
+
+
+## 자리의 영웅 레벨에 따른 스킬 충전 속도 보너스(%). 레벨 3이면 +20%처럼 턴마다 차는 양에 곱해 더한다.
+func level_gauge_percent(player_index: int, slot: String) -> int:
+	if level_gauge_bonus.is_empty():
+		return 0
+	var level := int(players[player_index].get("levels", {}).get(slot, 1))
+	return int(level_gauge_bonus[clampi(level - 1, 0, level_gauge_bonus.size() - 1)])
 
 
 func _attack_bonus(player_index: int) -> int:
@@ -1339,8 +1350,10 @@ func _gain_turn_gauge(player_index: int, amount: int) -> void:
 	var gauge: Dictionary = player["gauge"]
 	var spilled := 0
 	for slot in SLOTS:
-		spilled += maxi(0, int(gauge[slot]) + amount - 100)
-	_add_gauge(player_index, amount)
+		# 영웅 레벨이 높은 자리는 게이지가 조금 더 빨리 찬다(강화 효과).
+		var gain := amount + int(amount * level_gauge_percent(player_index, slot) / 100.0)
+		spilled += maxi(0, int(gauge[slot]) + gain - 100)
+		gauge[slot] = clamp(int(gauge[slot]) + gain, 0, 100)
 	player["overflow"] = int(player["overflow"]) + int(float(spilled) / float(SLOTS.size()))
 	if int(player["overflow"]) >= 100 and player["hand"].size() < HAND_LIMIT:
 		player["overflow"] = int(player["overflow"]) - 100
