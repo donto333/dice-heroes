@@ -63,6 +63,8 @@ func _init() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	# 메뉴 화면의 위로 올려 그리는 것(왼쪽 판 아이콘 등)보다도 위에 온다.
+	z_index = 100
 
 
 ## 연출을 보여 주고, 닫힐 때 '한 번 더'를 눌렀는지 돌려준다. again_cost가 0이면 '한 번 더' 버튼이 없다.
@@ -225,9 +227,10 @@ func _sprite(name: String, center: Vector2, wide: float, tint: Color, turn: floa
 	if texture == null or wide <= 0.0:
 		return
 	var tall := wide * float(texture.get_height()) / maxf(float(texture.get_width()), 1.0)
-	_glow.draw_set_transform(center, turn, Vector2(1.0, squash))
+	# 먼저 돌리고 그다음 세로로 눌러야 바닥에 누운 원판이 제자리에서 도는 것처럼 보인다.
+	_glow.draw_set_transform_matrix(Transform2D(0.0, Vector2(1.0, squash), 0.0, center) * Transform2D(turn, Vector2.ZERO))
 	_glow.draw_texture_rect(texture, Rect2(-wide / 2.0, -tall / 2.0, wide, tall), false, tint)
-	_glow.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_glow.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
 func _draw_glow() -> void:
@@ -391,8 +394,10 @@ func _finish() -> void:
 		return
 	_finished = true
 	_skip = true
-	_backdrop.modulate.a = 1.0
-	_circle_open = 1.0
+	# 결과 장면에서는 카드가 잘 보이게 바탕을 조금 어둡게 한다.
+	_backdrop.modulate = Color(0.7, 0.7, 0.78, 1.0)
+	# 결과 장면에서는 카드가 주인공이라 바닥 마법진을 끈다.
+	_circle_open = 0.0
 	_pillar = 0.0
 	_rays = 0.0
 	_die.visible = false
@@ -491,7 +496,7 @@ func _make_cards() -> void:
 		name_label.anchor_left = 0.1
 		name_label.anchor_right = 0.9
 		name_label.anchor_top = float(window[3]) + 0.02
-		name_label.anchor_bottom = 0.965
+		name_label.anchor_bottom = 0.94
 		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		front.add_child(name_label)
 		Kit.squeeze_text(name_label, 15 if small else 22, 10)

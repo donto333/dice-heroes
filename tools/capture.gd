@@ -157,6 +157,29 @@ func _run() -> void:
 			child._close(false)
 	await _wait(0.4)
 	_close_dialogs()
+	# 소환 연출을 처음부터 끝까지(★★★ 등장 컷 포함): 정해 둔 결과로 연출만 돌려 장면마다 찍는다.
+	var summon_show = load("res://scripts/ui/summon_show.gd").new()
+	_app.add_child(summon_show)
+	_app.instant = false
+	summon_show.play(_app, [
+		{"id": "lubu", "grade": 3, "new": true, "shards": 0},
+		{"id": "machao", "grade": 2, "new": false, "shards": 5},
+		{"id": "earhart", "grade": 1, "new": true, "shards": 0},
+	], 300)
+	await _wait(1.6)
+	await _shot("09a_summon_die")
+	await _wait(2.7)
+	await _shot("09b_summon_gold")
+	await _wait(1.2)
+	await _shot("09c_summon_cards")
+	await _wait(1.5)
+	await _shot("09d_summon_hero")
+	summon_show._on_skip()
+	await _wait(1.0)
+	await _shot("09e_summon_result")
+	_app.instant = true
+	summon_show._close(false)
+	await _wait(0.3)
 
 	_app.go("missions")
 	await _wait(0.4)
