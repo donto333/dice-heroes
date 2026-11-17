@@ -1596,6 +1596,6 @@
  "곤충기": "Souvenirs Entomologiques",
  "지금 칸과 바로 뒤 칸에 덫 2개": "2 traps: on this space and the one behind",
  "어린이날 선물": "Children's Day Gift",
- "%s: 더블! 한 번 더 굴립니다. (스킬·카드 사용 불가)": "",
- "더블! 이동이 끝나면 한 번 더 굴립니다.": ""
+ "%s: 더블! 한 번 더 굴립니다. (스킬·카드 사용 불가)": "%s: Double! Roll once more. (No skills or cards)",
+ "더블! 이동이 끝나면 한 번 더 굴립니다.": "Double! Roll again after this move."
 }
