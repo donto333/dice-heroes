@@ -195,14 +195,12 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 		list.add_theme_constant_override("separation", 10)
 		rail.add_child(list)
 		for entry in tabs:
-			var item := _rail_button(entry, str(entry[0]) == active, on_tab)
+			var item := _rail_button(entry, str(entry[0]) == active, on_tab, tabs.size() > 5)
 			if tabs.size() > 5:
 				# 항목이 많으면(모험 장 목록 등) 낮고 작은 글자로 다 들어가게 한다.
 				list.add_theme_constant_override("separation", 6)
 				item.custom_minimum_size = Vector2(0, 50)
 				item.add_theme_font_size_override("font_size", 19)
-				item.add_theme_constant_override("icon_max_width", 32)
-				item.add_theme_constant_override("h_separation", 6)
 				item.clip_text = true
 			list.add_child(item)
 		if summary_card != null:
@@ -272,12 +270,31 @@ static func _enter(screen: Control, app, head: Control, rail_holder: Control, bo
 
 
 ## 세로 판의 항목 버튼: 고른 것은 금색, 나머지는 파란 알약. 왼쪽에 아이콘, 오른쪽에 글자.
-static func _rail_button(entry: Array, on: bool, on_tab: Callable) -> Button:
+static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool = false) -> Button:
 	var button := Button.new()
 	button.text = str(entry[1])
 	button.custom_minimum_size = Vector2(0, 76)
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.add_theme_font_size_override("font_size", 26)
+	# 아이콘은 버튼 왼쪽의 같은 크기 칸에 두고, 글자는 그 칸 바로 뒤 같은 자리에서 시작한다
+	# (아이콘마다 생김새·너비가 달라도 글자 시작 위치가 줄마다 같게).
+	var box := 32.0 if small else 46.0
+	var text_left := 16.0
+	if entry.size() > 2:
+		var picture: TextureRect = Kit.icon(str(entry[2]), box)
+		if picture.texture != null:
+			picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			picture.anchor_top = 0.5
+			picture.anchor_bottom = 0.5
+			picture.offset_left = 14
+			picture.offset_right = 14 + box
+			picture.offset_top = -box / 2.0 - 1
+			picture.offset_bottom = box / 2.0 - 1
+			picture.z_index = 1
+			button.add_child(picture)
+			text_left = 14 + box + (6 if small else 10)
 	var art := tex("menu_on" if on else "menu_off")
 	if art != null:
 		# 높이가 달라도 금 장식이 찌그러지지 않게 높이에 맞춰 줄여 그린다(pill_skin.gd).
@@ -287,7 +304,7 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable) -> Button:
 		button.add_child(skin)
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 			var space := StyleBoxEmpty.new()
-			space.content_margin_left = 16
+			space.content_margin_left = text_left
 			space.content_margin_right = 12
 			space.content_margin_top = 4
 			space.content_margin_bottom = 6
@@ -301,13 +318,6 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable) -> Button:
 		button.add_theme_constant_override("outline_size", 0)
 	else:
 		TextStyle.menu(button, Color(0, 0.05, 0.25), 7)
-	if entry.size() > 2:
-		var picture: TextureRect = Kit.icon(str(entry[2]), 46.0)
-		if picture.texture != null:
-			button.icon = picture.texture
-			button.expand_icon = false
-			button.add_theme_constant_override("icon_max_width", 46)
-			button.add_theme_constant_override("h_separation", 10)
 	button.pressed.connect(func() -> void: on_tab.call(str(entry[0])))
 	return button
 

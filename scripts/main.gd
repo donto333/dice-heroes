@@ -177,12 +177,12 @@ func _coin_font() -> FontFile:
 	font.set_cache_descent(0, SIZE, SIZE * 0.22)
 	font.set_texture_image(0, cache, 0, image)
 	var glyph := Kit.GOLD_CODE
-	var drawn := SIZE * 0.92
+	var drawn := SIZE * 1.05
 	font.set_glyph_texture_idx(0, cache, glyph, 0)
 	font.set_glyph_uv_rect(0, cache, glyph, Rect2(0, 0, SIZE, SIZE))
 	font.set_glyph_size(0, cache, glyph, Vector2(drawn, drawn))
-	font.set_glyph_offset(0, cache, glyph, Vector2(SIZE * 0.04, -SIZE * 0.76))
-	font.set_glyph_advance(0, SIZE, glyph, Vector2(SIZE, 0))
+	font.set_glyph_offset(0, cache, glyph, Vector2(SIZE * 0.05, -SIZE * 0.88))
+	font.set_glyph_advance(0, SIZE, glyph, Vector2(SIZE * 1.12, 0))
 	return font
 
 
