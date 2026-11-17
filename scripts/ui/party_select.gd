@@ -303,12 +303,17 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	var grade_text := "★".repeat(int(character["grade"]))
 	if levels.has(character["id"]):
 		grade_text += "  Lv%d" % int(levels[character["id"]])
-	var grade := _band_label(grade_text, 16, 0.6, 0.7)
+	var grade := _band_label(grade_text, 16, 0.6, 0.69)
 	grade.add_theme_color_override("font_color", GOLD)
 	button.add_child(grade)
-	var stats := _band_label("이동%d 공%d 방%d 지%d" % [int(character["move"]), int(character["attack"]), int(character["defense"]), int(character["intellect"])], 16, 0.7, 0.81)
+	var stats := _band_label("이동%d 공%d 방%d 지%d" % [int(character["move"]), int(character["attack"]), int(character["defense"]), int(character["intellect"])], 16, 0.69, 0.775)
 	button.add_child(stats)
-	var name_label := _band_label(str(character["name"]), 18, 0.82, 0.95)
+	# 이름은 틀 아래쪽 남색 이름 칸(그림 높이의 78.5%~91%) 가운데에. 영웅 화면과 같은 자리.
+	var name_label := _band_label(str(character["name"]), 18, 0.785, 0.91)
+	name_label.offset_left = 0
+	name_label.offset_right = 0
+	name_label.anchor_left = 0.1
+	name_label.anchor_right = 0.9
 	button.add_child(name_label)
 	# 분류는 왼쪽 위 작은 동그란 표식으로만
 	var dot := Panel.new()
