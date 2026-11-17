@@ -1,14 +1,14 @@
-"""손오공 새 목소리 후보 2차 4개: v3 + 연기 지시, 한국어 고정, 대사마다 두 번 만들어 짧은 쪽."""
+"""손오공 새 목소리 후보 3차 남성 4개: v3 + 연기 지시, 한국어 고정, 대사마다 두 번 만들어 짧은 쪽."""
 import json, os, time, urllib.request
 key = os.environ["ELEVENLABS_API_KEY"]
 table = json.load(open("data/voice_lines.json", encoding="utf-8"))
 hero = table["heroes"]["wukong"]
-CANDS = {"mark": "cCwaxHZZF7rVaQK2aOys", "dohyeon": "FQ3MuLxZh0jHcZmA5vW1", "sena": "vJ170fCwESgE1tjW39So", "luna": "Ss1VfT7ri4lqnvTDWII0"}
+CANDS = {"gunju3": "7DefdtnPMJMn3TdLwgxE", "eden": "djgqDYFKEhIzR0zpgWY7", "hisc": "ykrB0QErM0FyPTtrQZFt", "kang": "8G6jifm9f1BhHXadvwOt"}
 os.makedirs("out/b", exist_ok=True)
 made = 0
 for name, voice in CANDS.items():
     for kind in table["kinds"]:
-        body = json.dumps({"text": "[높고 경쾌한 목소리로, 장난꾸러기 원숭이처럼 까불까불 신나게, %s] %s" % (hero["tags"][kind], hero["lines"][kind]), "model_id": "eleven_v3",
+        body = json.dumps({"text": "[젊은 남자 목소리로, 높고 경쾌하게, 장난꾸러기 원숭이처럼 까불까불 신나게, %s] %s" % (hero["tags"][kind], hero["lines"][kind]), "model_id": "eleven_v3",
                            "language_code": "ko", "voice_settings": {"stability": 0.5}}).encode()
         best = None
         for take in range(2):
