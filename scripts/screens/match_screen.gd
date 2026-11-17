@@ -716,7 +716,7 @@ func _notify(character: Dictionary, title: String, text: String, color: Color) -
 	strip.position = Vector2(-strip.size.x - 20.0, 150.0)
 	var slide := strip.create_tween()
 	slide.tween_property(strip, "position:x", 118.0, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	slide.tween_interval(3.0)
+	slide.tween_interval(_read_time(text, 3.5, 6.0))
 	slide.tween_property(strip, "position:x", -strip.size.x - 20.0, 0.25).set_ease(Tween.EASE_IN)
 	slide.tween_callback(strip.queue_free)
 
@@ -864,7 +864,8 @@ func _show_tile(event: Dictionary) -> void:
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(panel, "scale", Vector2.ONE, 0.22)
-	tween.tween_interval(0.75)
+	# 다 읽을 수 있게 글자 수에 맞춰 띄워 둔다(짧으면 1.8초, 긴 설명은 최대 4.5초).
+	tween.tween_interval(_read_time(str(event.get("text", "")), 1.8, 4.5))
 	tween.set_ease(Tween.EASE_IN)
 	tween.tween_property(panel, "modulate:a", 0.0, 0.25)
 	await tween.finished
@@ -1151,6 +1152,11 @@ func _on_emote(text: String) -> void:
 	_say(_viewer(), text)
 
 
+## 알림을 읽는 데 필요한 시간(초): 기본 shortest초에 글자당 0.06초를 더하고 longest초에서 멈춘다.
+func _read_time(text: String, shortest: float, longest: float) -> float:
+	return clampf(shortest + 0.06 * maxf(0.0, float(text.length()) - 8.0), shortest, longest)
+
+
 ## 플레이어 정보판 옆에 잠깐 뜨는 말풍선. index 0은 아래(나), 1은 위(상대).
 func _say(index: int, text: String) -> void:
 	if _board_area == null or game == null:
@@ -1168,7 +1174,7 @@ func _say(index: int, text: String) -> void:
 	bubble.scale = Vector2(0.3, 0.3)
 	var tween := bubble.create_tween()
 	tween.tween_property(bubble, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_interval(1.7)
+	tween.tween_interval(_read_time(text, 2.4, 4.0))
 	tween.tween_property(bubble, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(bubble.queue_free)
 
@@ -2076,7 +2082,7 @@ func _flash_log() -> void:
 		_log_tween.kill()
 	_result_panel.modulate.a = 1.0
 	_log_tween = _result_panel.create_tween()
-	_log_tween.tween_interval(3.2)
+	_log_tween.tween_interval(5.0)
 	_log_tween.tween_property(_result_panel, "modulate:a", 0.0, 0.8)
 
 
