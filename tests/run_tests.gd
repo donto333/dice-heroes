@@ -1901,11 +1901,12 @@ func _attack_trial(seed_value: int, effects: Array) -> Dictionary:
 
 
 ## 상대가 나를 공격하는 판(상대 차례). 막아 낸 판 수를 센다.
-func _defense_trial(seed_value: int, effects: Array) -> Dictionary:
+## trail: 두 말이 서 있는 길. 반격을 볼 때는 뒤에 거점(10번)이 있는 12번 칸에 세운다.
+func _defense_trial(seed_value: int, effects: Array, trail: Array = [0, 1, 2, 3, 4, 5]) -> Dictionary:
 	var game = _skill_table(seed_value, "hanxin")
 	game.players[0]["cursed"] = false
-	_place(game, 0, [0, 1, 2, 3, 4, 5])
-	_place(game, 1, [0, 1, 2, 3, 4, 5])
+	_place(game, 0, trail)
+	_place(game, 1, trail)
 	for effect in effects:
 		game._apply_effect(effect, 0)
 	game.end_turn()
@@ -1962,9 +1963,10 @@ func _check_battle_effects() -> void:
 	_check(chased, "추격: 이겼는데 더 전진하지 않음")
 	_check(drained, "흡수: 이겼는데 상대 게이지를 빼앗지 않음")
 	var countered := false
+	var far := range(0, 13)
 	for seed_value in range(1, 60):
-		var plain := _defense_trial(seed_value, [{"type": "def_dice", "amount": 3, "turns": 1}])
-		var trial := _defense_trial(seed_value, [{"type": "def_dice", "amount": 3, "turns": 1}, {"type": "counter", "amount": 1, "turns": 1}])
+		var plain := _defense_trial(seed_value, [{"type": "def_dice", "amount": 3, "turns": 1}], far)
+		var trial := _defense_trial(seed_value, [{"type": "def_dice", "amount": 3, "turns": 1}, {"type": "counter", "amount": 1, "turns": 1}], far)
 		if trial["held"] and plain["held"]:
 			countered = countered or int(trial["game"].players[1]["trail"].size()) < int(plain["game"].players[1]["trail"].size())
 	_check(countered, "반격: 막아 냈는데 상대가 더 물러나지 않음")

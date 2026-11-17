@@ -528,7 +528,6 @@ func use_ability(slot: String) -> bool:
 	if not can_use_ability(slot):
 		return false
 	var ability: Dictionary = ability_of(current, slot)
-	players[current]["gauge"][slot] = 0
 	ability_used = true
 	say("%s: %s의 어빌리티 [%s] 발동" % [
 		players[current]["name"], char_of(current, slot)["name"], ability["name"]])
@@ -536,6 +535,9 @@ func use_ability(slot: String) -> bool:
 	_event({"kind": "ability", "player": current, "slot": slot, "hero": str(char_of(current, slot)["name"]),
 		"name": str(ability["name"]), "text": str(ability.get("text", ""))})
 	_apply_effect(ability["effect"], current)
+	# 효과를 먼저 걸고 나서 쓴 자리 게이지를 비운다. 우리 팀 게이지를 채우거나 빼앗는 어빌리티가
+	# 방금 쓴 자기 게이지까지 다시 채우지 않게(2026-11-18 전수 검사에서 찾음).
+	players[current]["gauge"][slot] = 0
 	return true
 
 
