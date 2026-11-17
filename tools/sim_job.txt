@@ -1,0 +1,2 @@
+LIMIT=6
+GAMES=150
