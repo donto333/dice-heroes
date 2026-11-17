@@ -32,3 +32,10 @@ theme/custom_font="res://assets/fonts/DiceHeroes-Black.ttf"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/canvas_textures/default_texture_filter=0
+
+[importer_defaults]
+
+texture={
+"compress/lossy_quality": 0.85,
+"compress/mode": 1
+}
