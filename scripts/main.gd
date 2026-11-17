@@ -39,7 +39,7 @@ const SCREEN_MOODS := {
 	"lobby": Color("3b2f9e"), "shop": Color("1f3a82"), "heroes": Color("1f3a82"), "missions": Color("1f3a82"),
 	"settings": Color("1f3a82"), "adventure": Color("1f3a82"), "pass": Color("1f3a82"), "help": Color("1f3a82"),
 }
-const VERSION := "0.23.6"
+const VERSION := "0.23.7"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -55,6 +55,8 @@ var _layer: Control
 var loading: Control
 ## true면 기다림·화면 전환 효과를 모두 건너뛴다(자동 사진 도구용).
 var instant := false
+## 지금 go()가 같은 화면을 다시 그리는 중인지(MenuArt.frame이 연출을 고를 때 본다).
+var redraw := false
 var _busy := false
 var _characters_by_id: Dictionary = {}
 
@@ -397,6 +399,8 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 		push_error("없는 화면: " + screen_name)
 		return
 	refresh_day()
+	# 같은 화면을 다시 그리는 것(왼쪽 항목 전환, 보상을 받은 뒤 새로 그림)인지. 메뉴 틀은 이때 큰 판만 살짝 페이드한다.
+	redraw = current_screen != null and screen_name == current_name
 	if current_screen != null:
 		current_screen.queue_free()
 	Kit.panel_tint = SCREEN_MOODS.get(screen_name, Kit.PANEL)
@@ -405,7 +409,8 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 	current_screen = screen
 	_layer.add_child(screen)
 	screen.setup(self, params)
-	if not instant:
+	# 메뉴 틀(MenuArt.frame) 화면은 스스로 등장 연출을 하므로 여기서는 건너뛴다.
+	if not instant and not screen.has_meta("own_entrance") and not redraw:
 		# 새 화면이 부드럽게 나타난다.
 		screen.modulate.a = 0.0
 		screen.pivot_offset = size * 0.5

@@ -42,6 +42,8 @@ var _spin_info: Label
 func setup(main_app, params: Dictionary) -> void:
 	app = main_app
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# 알림 띠(toast.gd)는 화면 맨 아래 가운데, 아래 띠(높이 92) 바로 위에 뜬다.
+	set_meta("toast_bottom", 100.0)
 	# 새 로비(2026-11-16, 밝은 캐주얼 + 명일방주식 배치):
 	# 왼쪽 절반은 대표 영웅, 오른쪽 절반은 큰 기능 타일 묶음, 위는 프로필·시스템 버튼·재화, 아래는 파티와 오늘 할 일.
 	# 그림 부품은 assets/ui_lobby/(Codex 주문서 job16, tools/import_lobby.py). 그림이 없으면 단색 상자로 대신한다.
@@ -939,6 +941,7 @@ func _on_mail_claim(id: String) -> void:
 		return
 	app.save()
 	app.play("reward")
+	MenuArt.fly_reward(app, null, reward)
 	_close_all_dialogs()
 	app.go("lobby")
 	app.toast("우편 선물: %s" % Kit.reward_line(reward))
@@ -950,6 +953,7 @@ func _on_mail_claim_all() -> void:
 		return
 	app.save()
 	app.play("win")
+	MenuArt.fly_reward(app, null, {"gold": int(total["gold"]), "gems": int(total["gems"])})
 	app.go("lobby")
 	app.toast("우편 선물 %d개: %s" % [int(total["count"]), Kit.reward_line({"gold": int(total["gold"]), "gems": int(total["gems"])})])
 
@@ -1017,6 +1021,7 @@ func _on_spin() -> void:
 		return
 	app.play("reward")
 	app.toast("룰렛 보상: %s" % Kit.reward_line(result["reward"]))
+	MenuArt.fly_reward(app, _spin_button, result["reward"])
 	_refresh_roulette()
 
 
@@ -1042,6 +1047,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"화면 연출 새 단장: 메뉴 화면이 부드럽게 나타나고, 보상을 받으면 금화와 보석이 위쪽 재화 칸으로 날아가요. 알림은 내용을 가리지 않게 위 줄이나 화면 아래에 떠요.",
 	"창과 결과 화면 새 단장: 창 글자가 커지고 버튼이 금테 알약으로 바뀌었어요. AI 난이도는 카드 3장, 룰렛은 금테 바퀴, 대전 결과는 MVP 카드와 보상 칸, 상대를 찾을 때는 금빛 주사위 문양이 돌아요.",
 	"메뉴 화면 버튼을 금테 알약 하나로 맞추고, 상점·미션·설정·모험·패스·파티 화면 안쪽을 새 목록 줄로 바꿨어요.",
 	"게임 방법·파티 편성 화면도 새 틀로 바뀌었어요.",
@@ -1211,6 +1217,7 @@ func _claim_attendance() -> void:
 	app.save()
 	app.play("win")
 	app.toast("출석 보상: %s" % Kit.reward_line(reward))
+	MenuArt.fly_reward(app, null, reward)
 	app.go("lobby")
 
 

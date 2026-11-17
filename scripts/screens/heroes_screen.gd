@@ -140,7 +140,7 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	column.offset_bottom = -inset
 	button.add_child(column)
 	var face := Portrait.new()
-	face.custom_minimum_size = Vector2(0, 138)
+	face.custom_minimum_size = Vector2(0, 138 if frame_tex == null else 126)
 	face.border_width = 0.0
 	face.show_character(character, Kit.CATEGORY_COLORS.get(character["category"], Kit.LINE))
 	face.locked = not owned
@@ -171,7 +171,22 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	var text := Kit.label(caption, 18, Color.WHITE if owned else Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	text.clip_text = true
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(text)
+	if frame_tex != null:
+		# 금테 카드: 이름은 틀 아래쪽 남색 이름 칸(그림 높이의 78.5%~91%) 안 가운데에 둔다.
+		# 세로 상자 맨 아래에 두면 아래 금테에 걸려 글자 아래가 잘려 보였다.
+		text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		text.anchor_left = 0.1
+		text.anchor_right = 0.9
+		text.anchor_top = 0.785
+		text.anchor_bottom = 0.91
+		text.offset_left = 0
+		text.offset_right = 0
+		text.offset_top = 0
+		text.offset_bottom = 0
+		text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		button.add_child(text)
+	else:
+		column.add_child(text)
 	if not owned:
 		# 없는 영웅: 어둡게 + 가운데 자물쇠
 		var lock: TextureRect = Kit.icon("m_lock", 44.0)
@@ -375,6 +390,7 @@ func _claim_album(category: String, window_id: int) -> void:
 	var window := instance_from_id(window_id)
 	if is_instance_valid(window):
 		window.call("close")
+	MenuArt.fly_reward(app, null, reward)
 	app.go("heroes", {"filter": _filter})
 	app.toast("앨범 보상: %s" % Kit.reward_line(reward))
 

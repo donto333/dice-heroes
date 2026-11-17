@@ -16,6 +16,7 @@ const Sfx := preload("res://scripts/ui/sfx.gd")
 
 const Profile := preload("res://scripts/rules/profile.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const ABILITY_PORTRAIT_WIDTH := 76.0
 ## 대전 화면 그림 부품(ChatGPT가 그린 것, 2026-11-16). 없으면 예전 모양으로 그린다.
@@ -57,6 +58,9 @@ var _waiting_for_player := false
 var _choosing_path := false
 
 var _status_label: Label
+## 오른쪽 위 버튼 줄(자동·빠르기·나가기)과, 그 줄 너비에 맞춰 오른쪽 여백을 정하는 가운데 위 부품들 [노드, 더 들일 여백]
+var _status_row: HBoxContainer
+var _top_center: Array = []
 var _map_label: Label = null
 var _board_view: Control
 var _result_box: VBoxContainer
@@ -136,6 +140,8 @@ func setup(main_app, params: Dictionary) -> void:
 	_parties = params.get("parties", [])
 	_humans = params.get("humans", [true, false])
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# 알림 띠(toast.gd)는 화면 맨 아래 가운데, 아래 스킬 카드 줄(높이 약 112) 바로 위에 뜬다.
+	set_meta("toast_bottom", 122.0)
 	_build_ui()
 	_start_game()
 
@@ -194,25 +200,26 @@ func _build_ui() -> void:
 	add_child(column)
 
 	var status_row := HBoxContainer.new()
-	status_row.add_theme_constant_override("separation", 8)
+	status_row.add_theme_constant_override("separation", 6)
+	_status_row = status_row
 	_status_label = _make_label(18)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_status_label.add_theme_constant_override("outline_size", 6)
 	_status_label.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
 	_auto_button = Kit.button("자동 꺼짐", Color("6f9bd6"), 18, 50)
-	_auto_button.custom_minimum_size = Vector2(104, 50)
+	_auto_button.custom_minimum_size = Vector2(110, 50)
 	_auto_button.pressed.connect(_on_auto_pressed)
 	_paint_pill(_auto_button, "blue", Color("6f9bd6"))
 	status_row.add_child(_auto_button)
 	_speed_button = Kit.button("", Color("27a35a"), 18, 50)
-	_speed_button.custom_minimum_size = Vector2(112, 50)
+	_speed_button.custom_minimum_size = Vector2(124, 50)
 	_speed_button.pressed.connect(_on_speed_pressed)
 	_pill_icon(_speed_button, "ic_fast")
 	status_row.add_child(_speed_button)
 	_apply_speed()
 	var quit_button := Kit.button("나가기", Color("e0532b"), 18, 50)
-	quit_button.custom_minimum_size = Vector2(104, 50)
+	quit_button.custom_minimum_size = Vector2(108, 50)
 	quit_button.pressed.connect(_on_quit_pressed)
 	_paint_pill(quit_button, "red", Color("e0532b"))
 	_pill_icon(quit_button, "ic_exit")
@@ -289,6 +296,7 @@ func _build_ui() -> void:
 		banner.anchor_bottom = 0.0
 		banner.offset_left = 416
 		banner.offset_right = -352
+		_top_center.append([banner, 0.0])
 		banner.offset_top = 4
 		banner.offset_bottom = 54
 		var capsule := _patch("map_capsule", Vector4(34, 0, 34, 0), 30.0 / 50.0)
@@ -299,6 +307,7 @@ func _build_ui() -> void:
 		capsule.anchor_bottom = 0.0
 		capsule.offset_left = 416 + 70
 		capsule.offset_right = -352 - 70
+		_top_center.append([capsule, 70.0])
 		capsule.offset_top = 54
 		capsule.offset_bottom = 84
 		_map_label = _make_label(15)
@@ -320,6 +329,7 @@ func _build_ui() -> void:
 	_status_label.anchor_right = 1.0
 	_status_label.offset_left = 416 + (60 if banner != null else 0)
 	_status_label.offset_right = -352 - (60 if banner != null else 0)
+	_top_center.append([_status_label, 60.0 if banner != null else 0.0])
 	_status_label.offset_top = 6
 	_status_label.offset_bottom = 54 if banner == null else 50
 	_status_label.clip_text = banner != null
@@ -327,7 +337,9 @@ func _build_ui() -> void:
 	board_area.add_child(status_row)
 	status_row.anchor_left = 1.0
 	status_row.anchor_right = 1.0
-	status_row.offset_left = -344
+	# 글이 길어져도 오른쪽 끝(-8)은 그대로 두고 왼쪽으로 늘어난다(화면 밖으로 잘리지 않게).
+	status_row.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	status_row.offset_left = -362
 	status_row.offset_right = -8
 	status_row.offset_top = 8
 	status_row.offset_bottom = 58
@@ -350,6 +362,7 @@ func _build_ui() -> void:
 	result_panel.anchor_right = 1.0
 	result_panel.offset_left = 416
 	result_panel.offset_right = -352
+	_top_center.append([result_panel, 0.0])
 	result_panel.offset_top = 56 if _map_label == null else 88
 	result_panel.offset_bottom = 140 if _map_label == null else 168
 	_result_scroll = ScrollContainer.new()
@@ -509,6 +522,22 @@ func _build_ui() -> void:
 	add_child(_fx)
 	_board_view.landed.connect(_on_piece_landed)
 	_board_view.flung_away.connect(_on_piece_flung)
+	_fit_top_row()
+
+
+## 오른쪽 위 버튼 줄이 1280 너비 안에 다 들어오게 줄 너비를 재고, 가운데 위 턴 띠·맵 캡슐·기록 칸의
+## 오른쪽 여백을 그 줄 왼쪽 끝 + 12로 맞춰 서로 겹치지 않게 한다(글이 바뀌면 다시 잰다).
+func _fit_top_row() -> void:
+	await get_tree().process_frame
+	if not is_instance_valid(_status_row):
+		return
+	var width: float = _status_row.get_combined_minimum_size().x
+	_status_row.offset_left = -8.0 - width
+	var margin: float = width + 8.0 + 12.0
+	for entry in _top_center:
+		var node: Control = entry[0]
+		if is_instance_valid(node):
+			node.offset_right = -margin - float(entry[1])
 
 
 ## 플레이어 정보판 하나. _player_cards[index]에 부품을 담아 _refresh에서 고친다.
@@ -524,7 +553,7 @@ func _player_card(index: int) -> Control:
 		face_art.size = Vector2(50, 50)
 		card.add_child(face_art)
 		var lines := VBoxContainer.new()
-		lines.add_theme_constant_override("separation", 3)
+		lines.add_theme_constant_override("separation", 1)
 		lines.alignment = BoxContainer.ALIGNMENT_CENTER
 		lines.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		lines.offset_left = 80
@@ -532,7 +561,7 @@ func _player_card(index: int) -> Control:
 		lines.offset_top = 8
 		lines.offset_bottom = -10
 		card.add_child(lines)
-		var art_name := _make_label(18)
+		var art_name := _make_label(20)
 		art_name.add_theme_color_override("font_color", PLAYER_TEXT_COLORS[index])
 		art_name.add_theme_constant_override("outline_size", 5)
 		art_name.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
@@ -540,7 +569,7 @@ func _player_card(index: int) -> Control:
 		lines.add_child(art_name)
 		var art_bar := Kit.bar(0.0, PLAYER_TEXT_COLORS[index], 10)
 		lines.add_child(art_bar)
-		var art_detail := _make_label(14)
+		var art_detail := _make_label(16)
 		art_detail.add_theme_color_override("font_color", Color(1, 1, 1, 0.88))
 		art_detail.clip_text = true
 		lines.add_child(art_detail)
@@ -559,13 +588,13 @@ func _player_card(index: int) -> Control:
 	info.add_theme_constant_override("separation", 2)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(info)
-	var name_label := _make_label(18)
+	var name_label := _make_label(20)
 	name_label.add_theme_color_override("font_color", PLAYER_TEXT_COLORS[index])
 	name_label.clip_text = true
 	info.add_child(name_label)
 	var bar := Kit.bar(0.0, PLAYER_TEXT_COLORS[index], 12)
 	info.add_child(bar)
-	var detail := _make_label(15)
+	var detail := _make_label(16)
 	detail.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
 	detail.clip_text = true
 	info.add_child(detail)
@@ -871,29 +900,36 @@ func _hint(key: String, text: String) -> bool:
 	if _hint_bubble != null and is_instance_valid(_hint_bubble):
 		_hint_bubble.queue_free()
 	var bubble := PanelContainer.new()
-	bubble.add_theme_stylebox_override("panel", Kit.plate(Color(0.12, 0.16, 0.5, 0.97), Kit.TRIM, 20.0, 14))
+	# UI 개편 3단계: 판 가운데를 가리지 않게 아래 스킬 카드 줄 바로 위에, 낮고 넓게 띄운다.
+	var plate = Kit.plate(Color(0.12, 0.16, 0.5, 0.97), Kit.TRIM, 18.0, 10)
+	plate.content_margin_left = 18
+	plate.content_margin_right = 12
+	bubble.add_theme_stylebox_override("panel", plate)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 12)
 	bubble.add_child(row)
-	var label := _make_label(20, text)
+	var label := _make_label(18, text)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.custom_minimum_size = Vector2(420, 0)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_constant_override("line_spacing", -2)
 	row.add_child(label)
-	var ok := Kit.button("알겠어요", Color("f39a1c"), 20, 60)
-	ok.custom_minimum_size = Vector2(130, 60)
+	var ok := MenuArt.pill_button("알겠어요", "green", "s")
+	ok.custom_minimum_size = Vector2(124, 46)
 	ok.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	ok.pressed.connect(func(): bubble.queue_free())
 	row.add_child(ok)
 	add_child(bubble)
-	bubble.anchor_left = 0.18
-	bubble.anchor_right = 0.82
-	# 판 가운데를 가리지 않게 아래쪽에 띄운다.
-	bubble.anchor_top = 0.6
-	bubble.anchor_bottom = 0.6
-	bubble.offset_left = 0
-	bubble.offset_right = 0
-	bubble.offset_top = 0
+	bubble.anchor_left = 0.0
+	bubble.anchor_right = 1.0
+	bubble.anchor_top = 1.0
+	bubble.anchor_bottom = 1.0
+	bubble.offset_left = 410
+	bubble.offset_right = -180
+	# 아래 스킬 카드 줄(높이 112) 바로 위에 붙이고, 내용만큼 위로 자란다.
+	bubble.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	bubble.offset_bottom = -118
+	bubble.offset_top = -118
 	_hint_bubble = bubble
 	# 그냥 두어도 잠시 뒤 사라진다.
 	get_tree().create_timer(12.0).timeout.connect(_close_hint_if.bind(bubble.get_instance_id()))
@@ -1079,8 +1115,10 @@ func _build_emotes(board_area: Control) -> void:
 	grid.add_theme_constant_override("v_separation", 8)
 	panel.add_child(grid)
 	for text in EMOTES:
-		var button := Kit.button(text, Color("5a3d99"), 20, 56)
+		# 한마디 버튼: 보라 금테 알약(특별)
+		var button := MenuArt.pill_button(text, "purple", "m")
 		button.custom_minimum_size = Vector2(150, 56)
+		button.add_theme_font_size_override("font_size", 20)
 		button.pressed.connect(_on_emote.bind(text))
 		grid.add_child(button)
 	board_area.add_child(panel)
@@ -1445,11 +1483,13 @@ func _make_skill_button(slot: String) -> Button:
 	for state in ["normal", "hover", "pressed", "disabled"]:
 		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	_skin_button(button, _stretch(SKILL_ART[slot]))
-	var title := _art_label("", 15, Rect2(0.15, 0.0, 0.7, 0.24))
+	# 글자: 스킬 이름 17, 자리 이름·게이지 숫자 16(넘치면 잘라 낸다).
+	var title := _art_label("", 17, Rect2(0.13, 0.0, 0.74, 0.25))
 	title.clip_text = true
 	button.add_child(title)
-	var body := _art_label("", 14, Rect2(0.4, 0.31, 0.55, 0.42))
-	body.add_theme_constant_override("line_spacing", -2)
+	var body := _art_label("", 16, Rect2(0.38, 0.29, 0.58, 0.46))
+	body.add_theme_constant_override("line_spacing", -4)
+	body.clip_text = true
 	button.add_child(body)
 	var portrait := Portrait.new()
 	portrait.border_width = 0.0
@@ -1703,11 +1743,14 @@ func _show_path_choice() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	for index in options.size():
-		var color := Color("1ba39c")
+		# 갈 길 고르기 버튼도 금테 알약: 갈림길은 초록, 싸운다는 빨강, 지나간다는 파랑.
+		var pill_color := "green"
 		if fighting:
-			color = Color("c0392b") if index == 0 else Color("5d6d7e")
-		var button := _make_button(18, 72, color)
-		button.text = game.choice_label(index)
+			pill_color = "red" if index == 0 else "blue"
+		var button := MenuArt.pill_button(game.choice_label(index), pill_color, "m")
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size", 18)
+		button.clip_text = true
 		button.pressed.connect(_on_path_chosen.bind(index))
 		row.add_child(button)
 	_result_box.add_child(row)

@@ -33,7 +33,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	if waiting > 0:
 		var all := MenuArt.pill_button("보상 %d개 모두 받기" % waiting, "gold", "m")
 		all.custom_minimum_size = Vector2(240, 56)
-		all.pressed.connect(_on_claim_all)
+		all.pressed.connect(_on_claim_all.bind(all))
 		Kit.shimmer(all)
 		title_row.add_child(all)
 	head_column.add_child(Kit.bar(Profile.pass_progress(app.profile, app.eco), Kit.GOLD, 16))
@@ -74,30 +74,32 @@ func _level_row(number: int, entry: Dictionary, level: int) -> Control:
 	free.custom_minimum_size = Vector2(0, 60)
 	free.disabled = claimed or not reached
 	free.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.6) if claimed else Color(1, 1, 1, 0.9))
-	free.pressed.connect(_on_claim.bind(number))
+	free.pressed.connect(_on_claim.bind(number, free))
 	row.add_child(Kit.expand(free))
 	# 프리미엄 보상: 회색 금테 줄 + 자물쇠 + 준비 중(보여 주기만)
 	row.add_child(Kit.expand(MenuArt.locked_row(Kit.reward_line(entry.get("premium", {})), "준비 중", 60.0)))
 	return row
 
 
-func _on_claim(number: int) -> void:
+func _on_claim(number: int, from: Control = null) -> void:
 	var reward := Profile.claim_pass(app.profile, app.eco, number)
 	if reward.is_empty():
 		return
 	app.save()
 	app.play("reward")
 	app.toast("패스 보상: %s" % Kit.reward_line(reward))
+	MenuArt.fly_reward(app, from, reward)
 	app.go("pass")
 
 
-func _on_claim_all() -> void:
+func _on_claim_all(from: Control = null) -> void:
 	var total := Profile.claim_all_pass(app.profile, app.eco)
 	if int(total["count"]) == 0:
 		return
 	app.save()
 	app.play("reward")
 	app.toast("패스 보상 %d개: %s" % [int(total["count"]), Kit.reward_line({"gold": int(total["gold"]), "gems": int(total["gems"])})])
+	MenuArt.fly_reward(app, from, {"gold": int(total["gold"]), "gems": int(total["gems"])})
 	app.go("pass")
 
 

@@ -285,6 +285,7 @@ func _on_coupon() -> void:
 	if bool(result["ok"]):
 		app.save()
 		app.play("win")
+		MenuArt.fly_reward(app, null, result["reward"])
 		app.go("settings")
 		app.toast("%s: %s" % [result["text"], Kit.reward_line(result["reward"])])
 	elif str(result["reason"]) == "used":

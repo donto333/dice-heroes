@@ -54,7 +54,7 @@ static func profile_body(app) -> Control:
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var column := Kit.vbox(2)
 		cell.add_child(column)
-		column.add_child(Kit.label(pair[0], 17, Kit.MUTED))
+		column.add_child(Kit.label(pair[0], 18, Kit.MUTED))
 		column.add_child(Kit.label(pair[1], 24))
 		grid.add_child(cell)
 
