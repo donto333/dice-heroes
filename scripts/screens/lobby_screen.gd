@@ -344,14 +344,15 @@ func _add_top_bar() -> void:
 	# 메달 안쪽 둥근 판은 그림의 가로 3.7%~19.6%, 세로 9.2%~83.3% 자리에 있다(그림에서 잰 값).
 	_anchor(medal, 0.037, 0.092, 0.196, 0.833)
 	who.add_child(medal)
-	var names := Kit.vbox(-2)
+	# 닉네임과 등급 줄을 바짝 붙인다(등급 줄이 띠 아래 가장자리에 너무 붙지 않게).
+	var names := Kit.vbox(-7)
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	names.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anchor(names, 0.0, 0.0, 1.0, 1.0)
 	names.offset_left = 70
 	names.offset_right = -16
-	names.offset_top = 7
-	names.offset_bottom = -7
+	names.offset_top = 5
+	names.offset_bottom = -9
 	who.add_child(names)
 	names.add_child(_bold(str(profile["nickname"]), 19, Color.WHITE, Color("0b1f4d"), 5))
 	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
