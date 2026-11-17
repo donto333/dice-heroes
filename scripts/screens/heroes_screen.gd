@@ -145,16 +145,29 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	face.show_character(character, Kit.CATEGORY_COLORS.get(character["category"], Kit.LINE))
 	face.locked = not owned
 	column.add_child(face)
-	var stars := Kit.label("★".repeat(grade), 16, Kit.GRADE_COLORS[grade], HORIZONTAL_ALIGNMENT_CENTER)
-	TextStyle.number(stars, 4)
-	stars.add_theme_color_override("font_color", Kit.GRADE_COLORS[grade])
+	# 별·레벨 줄(2단계: 18, 흰 글자 + 굵은 외곽선, 어두운 띠 위에 올려 또렷하게)
+	var stars := Kit.label("★".repeat(grade), 18, Kit.GRADE_COLORS[grade].lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
+	stars.add_theme_constant_override("outline_size", 6)
+	stars.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.12))
 	stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(stars)
 	var caption: String = "%s\nLv.%d" % [character["name"], Profile.level_of(app.profile, id)] if owned else "%s\n미보유" % character["name"]
+	var star_band := PanelContainer.new()
+	star_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	star_band.add_theme_stylebox_override("panel", Kit.box(Color(0.0, 0.03, 0.14, 0.72), Color.TRANSPARENT, 0, 8, 1))
+	var star_line := Kit.hbox(6)
+	star_line.alignment = BoxContainer.ALIGNMENT_CENTER
+	star_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	star_band.add_child(star_line)
+	star_line.add_child(stars)
 	if frame_tex != null:
 		# 금테 카드: 아래 이름 띠에는 이름만, 레벨은 별 줄에 함께.
-		stars.text = "%s  %s" % ["★".repeat(grade), ("Lv.%d" % Profile.level_of(app.profile, id)) if owned else "미보유"]
+		var level := Kit.label(("Lv.%d" % Profile.level_of(app.profile, id)) if owned else "미보유", 18, Color.WHITE if owned else Color("d8dce8"))
+		level.add_theme_constant_override("outline_size", 6)
+		level.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.12))
+		level.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		star_line.add_child(level)
 		caption = str(character["name"])
+	column.add_child(star_band)
 	var text := Kit.label(caption, 18, Color.WHITE if owned else Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	text.clip_text = true
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -289,39 +302,66 @@ func _upgrade(id: String) -> void:
 
 
 ## 수집 앨범: 분류마다 모은 수와 단계 보상
+## 수집 앨범 창(UI 개편 2단계: 너비 780, 본문 18~24, 받기는 금테 알약). 분류 4개를 2×2 카드로.
 func _open_album() -> void:
 	app.play("click")
 	var body := Kit.vbox(10)
-	body.add_child(Kit.para("분류마다 영웅을 모으면 보상을 받아요.", 18, Kit.MUTED))
+	body.add_child(Kit.para("분류마다 영웅을 모으면 보상을 받아요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var steps: Array = app.eco["album"]["steps"]
 	var rewards: Array = app.eco["album"]["rewards"]
 	var characters: Array = app.data["characters"]
 	var window: Control = null
 	var claims: Array = []
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 12)
+	body.add_child(grid)
+	var attr_icons := {"영웅": "attr_hero", "위인": "attr_great", "신화": "attr_myth", "근현대": "attr_modern"}
 	for category in ["영웅", "위인", "신화", "근현대"]:
 		var owned := Profile.album_count(app.profile, characters, category)
+		var goal := int(steps[steps.size() - 1])
 		var color: Color = Kit.CATEGORY_COLORS.get(category, Kit.LINE)
-		var card := Kit.panel(Kit.INSET, color, 10)
+		var card := MenuArt.row(10)
+		card.custom_minimum_size = Vector2(344, 0)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var column := Kit.vbox(6)
 		card.add_child(column)
-		var top := Kit.hbox(10)
+		var top := Kit.hbox(8)
 		column.add_child(top)
-		top.add_child(Kit.expand(Kit.label("%s  %d / %d" % [category, owned, int(steps[steps.size() - 1])], 24, Color.WHITE)))
+		var mark: TextureRect = Kit.icon(str(attr_icons.get(category, "heroes")), 40.0)
+		mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		top.add_child(mark)
+		top.add_child(Kit.label(category, 24, Color.WHITE))
+		var count := Kit.label("%d / %d" % [owned, goal], 22, Kit.GOLD)
+		TextStyle.number(count, 5)
+		top.add_child(Kit.expand(count))
 		var ready: Array = Profile.album_claimable(app.profile, app.eco, characters, category)
-		var claim := Kit.button("받기" if not ready.is_empty() else "모으는 중", Kit.PRIMARY if not ready.is_empty() else Kit.PANEL_LIGHT, 18, 48)
-		claim.custom_minimum_size = Vector2(120, 48)
+		var claim := MenuArt.pill_button("받기" if not ready.is_empty() else "모으는 중", "gold" if not ready.is_empty() else "gray", "s")
+		claim.custom_minimum_size = Vector2(112, 44)
 		claim.disabled = ready.is_empty()
+		claim.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		claims.append([claim, category])
 		top.add_child(claim)
-		column.add_child(Kit.bar(float(owned) / float(int(steps[steps.size() - 1])), color, 10))
-		var marks := Kit.hbox(6)
+		column.add_child(Kit.bar(float(owned) / float(goal), color, 12))
+		var marks := GridContainer.new()
+		marks.columns = 2
+		marks.add_theme_constant_override("h_separation", 6)
+		marks.add_theme_constant_override("v_separation", 4)
 		column.add_child(marks)
 		for index in steps.size():
 			var got := Profile.album_claimed(app.profile, category, index)
-			var text := "%d명 %s%s" % [int(steps[index]), Kit.reward_line(rewards[index]), " (받음)" if got else ""]
-			marks.add_child(Kit.expand(Kit.label(text, 14, Kit.MUTED if got else Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER)))
-		body.add_child(card)
-	window = app.dialog("수집 앨범", body, [["닫기", Kit.PANEL_LIGHT]], 680)
+			var step := Kit.hbox(4)
+			step.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var tick: TextureRect = Kit.icon("m_check" if got else "star", 22.0)
+			tick.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			if not got and owned < int(steps[index]):
+				tick.modulate = Color(0.6, 0.65, 0.8)
+			step.add_child(tick)
+			step.add_child(Kit.label("%d명 %s" % [int(steps[index]), Kit.reward_line(rewards[index])], 18, Kit.MUTED if got else Kit.GOLD))
+			marks.add_child(step)
+		grid.add_child(card)
+	window = app.dialog("수집 앨범", body, [["닫기", Kit.PANEL_LIGHT]], 780)
 	for pair in claims:
 		(pair[0] as Button).pressed.connect(_claim_album.bind(str(pair[1]), window.get_instance_id()))
 

@@ -648,8 +648,8 @@ func _show_skill_info(focus: String) -> void:
 		var gauge_label := Kit.label("사용 가능!" if is_ready else "게이지 %d%%" % int(me["gauge"][slot]), 18, Kit.GOLD if is_ready else Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
 		head.add_child(Kit.expand(gauge_label))
 		words.add_child(Kit.label(str(ability.get("name", "-")), 26, Kit.GOLD))
-		words.add_child(Kit.para(str(ability.get("text", "")), 19))
-	body.add_child(Kit.para("게이지가 100%가 되면 내 차례에 버튼이 금빛으로 빛나고, 누르면 스킬을 써요.", 16, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		words.add_child(Kit.para(str(ability.get("text", "")), 20))
+	body.add_child(Kit.para("게이지가 100%가 되면 내 차례에 버튼이 금빛으로 빛나고, 누르면 스킬을 써요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	app.dialog("스킬 설명", body, [["닫기", Kit.PANEL_LIGHT]], 760)
 
 
@@ -2174,14 +2174,39 @@ func _show_game_over() -> void:
 		details.insert(3, "카드 %d장 · 어빌리티 %d번 사용" % [_cards_used, _abilities_used])
 	if not _is_local():
 		details.append("뚫은 관문: %d / %d" % [(game.gates_cleared[0] as Dictionary).size(), _gate_count()])
-	details.append_array(_record(outcome))
+	var record_lines := _record(outcome)
+	details.append_array(record_lines)
 	var shown_outcome := outcome
 	if _is_local() and outcome != "draw":
 		shown_outcome = "win"
+	# 결과 화면(UI 개편 2단계): 결과 줄 · 알림 띠 · 파티 이름 · 보상 칸으로 나눠 보낸다.
+	var extras := _result_extras()
+	var rows: Array = [
+		["hourglass", "진행한 턴", "%d턴" % min(game.round_number, game.max_rounds)],
+		["flag", "골까지 남은 거리", "%s %d칸 · %s %d칸" % [game.players[0]["name"], game.distance_of(0), game.players[1]["name"], game.distance_of(1)]],
+	]
+	var notes: Array = []
+	if _is_local():
+		rows.append(["swords", "%s 파티" % game.players[0]["name"], _party_names(0)])
+		rows.append(["swords", "%s 파티" % game.players[1]["name"], _party_names(1)])
+	else:
+		rows.append(["sword", "내 전투", "%d승 %d패 · 최고 합 %d" % [_my_battles[0], _my_battles[1], _best_roll]])
+		rows.append(["t_gate", "뚫은 관문", "%d / %d" % [(game.gates_cleared[0] as Dictionary).size(), _gate_count()]])
+		rows.append(["card", "카드 · 어빌리티", "카드 %d장 · %d번 사용" % [_cards_used, _abilities_used]])
+		if _mode == "rank" and _last_reward.has("trophies"):
+			rows.append(["trophy", "트로피", "%+d → %d (%s)" % [int(_last_reward["trophies"]), int(app.profile["trophies"]), str(_last_reward.get("tier_after", ""))]])
+		extras["parties"] = ["내 파티: %s" % _party_names(0), "상대 파티: %s" % _party_names(1)]
+	for line in record_lines:
+		# 트로피 줄은 결과 줄에 이미 있으니 띠에서는 뺀다.
+		if _mode == "rank" and str(line).begins_with("트로피 "):
+			continue
+		notes.append(str(line))
+	extras["rows"] = rows
+	extras["notes"] = notes
 	# 칸 알림·말풍선이 결과 창을 가리지 않게 맨 앞으로
 	_close_hint()
 	move_child(_result_overlay, get_child_count() - 1)
-	_result_overlay.show_result(shown_outcome, subtitle, details, _result_extras())
+	_result_overlay.show_result(shown_outcome, subtitle, details, extras)
 
 
 ## 결과 화면의 MVP 영웅과 보상 칩.
@@ -2194,6 +2219,19 @@ func _result_extras() -> Dictionary:
 			slot = "attack"
 		extras["mvp"] = game.char_of(0, slot)
 		extras["mvp_note"] = "%s · %s" % [SLOT_NAMES.get(slot, slot), note]
+	# 얻은 보상 칸: [아이콘, 글]
+	var rewards: Array = []
+	if int(_last_reward.get("gold", 0)) > 0:
+		rewards.append(["gold", "+%s" % Kit.comma(int(_last_reward["gold"]))])
+	if int(_last_reward.get("gems", 0)) > 0:
+		rewards.append(["gem", "+%s" % Kit.comma(int(_last_reward["gems"]))])
+	if int(_last_reward.get("exp", 0)) > 0:
+		rewards.append(["upgrade", "경험 +%d" % int(_last_reward["exp"])])
+	if int(_last_reward.get("trophies", 0)) != 0:
+		rewards.append(["trophy", "%+d" % int(_last_reward["trophies"])])
+	if int(_last_reward.get("pass_exp", 0)) > 0:
+		rewards.append(["pass", "패스 +%d" % int(_last_reward["pass_exp"])])
+	extras["rewards"] = rewards
 	var chips: Array = []
 	if int(_last_reward.get("gold", 0)) > 0:
 		chips.append([Kit.money_text("gold", int(_last_reward["gold"])), Kit.GOLD])

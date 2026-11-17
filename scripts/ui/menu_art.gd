@@ -238,8 +238,12 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable) -> Button:
 	return button
 
 
-## 위 줄 재화 캡슐(아이콘 + 오른쪽 정렬 숫자).
-static func _money_chip(icon_name: String, amount: int, color: Color) -> Control:
+## 위 줄 재화 캡슐(아이콘 + 오른쪽 정렬 숫자). on_plus가 있으면 오른쪽 초록 더하기를 누를 수 있다(로비에서 상점으로).
+static func money_chip(icon_name: String, amount: int, color: Color, on_plus: Callable = Callable()) -> Control:
+	return _money_chip(icon_name, amount, color, on_plus)
+
+
+static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: Callable = Callable()) -> Control:
 	var capsule := PanelContainer.new()
 	capsule.custom_minimum_size = Vector2(230, 50)
 	capsule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -264,6 +268,22 @@ static func _money_chip(icon_name: String, amount: int, color: Color) -> Control
 		mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(mark)
+		if on_plus.is_valid():
+			var press := Button.new()
+			press.flat = true
+			press.focus_mode = Control.FOCUS_NONE
+			press.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+				press.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+			press.pressed.connect(on_plus)
+			mark.mouse_filter = Control.MOUSE_FILTER_STOP
+			mark.add_child(press)
+	elif on_plus.is_valid():
+		var plus_button := Kit.button("+", Kit.ACCENT, 22, 34)
+		plus_button.custom_minimum_size = Vector2(38, 34)
+		plus_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		plus_button.pressed.connect(on_plus)
+		row.add_child(plus_button)
 	return capsule
 
 
@@ -611,3 +631,116 @@ static func art_box(name: String, corner: float, padding: int = 8) -> PanelConta
 	var box := PanelContainer.new()
 	box.add_theme_stylebox_override("panel", art)
 	return box
+
+
+## 출석 칸 한 개(UI 개편 2단계): 금테 칸(오늘은 금빛, 받은 칸은 어둡게) 안에 위쪽 "N일"과 그 오른쪽 작은 도장,
+## 아래에 보상 글. 도장이 보상 글을 가리지 않게 모서리에 작게 찍는다. 그림이 없으면 단색 칸.
+static func day_cell(day_number: int, reward_text: String, now: bool, done: bool) -> PanelContainer:
+	var cell: PanelContainer = art_box("day_today" if now else ("day_done" if done else "day_cell"), 26.0, 6)
+	if cell == null:
+		cell = PanelContainer.new()
+		cell.add_theme_stylebox_override("panel", Kit.box(Kit.PANEL_LIGHT if now else (Color("13458f") if done else Kit.PANEL), Kit.GOLD, 2, 10, 4))
+	else:
+		# 칸 위 가운데 보석 장식 아래로 글자를 내린다.
+		var art_style := cell.get_theme_stylebox("panel") as StyleBoxTexture
+		if art_style != null:
+			art_style.content_margin_top = 16
+			art_style.content_margin_left = 10
+			art_style.content_margin_right = 8
+	var ink: Color = Color("5a3200") if now else (Kit.MUTED if done else Color.WHITE)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 2)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cell.add_child(column)
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 0)
+	top.custom_minimum_size = Vector2(0, 30)
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(top)
+	var day_label: Label = Kit.label("%d일" % day_number, 18, ink, HORIZONTAL_ALIGNMENT_LEFT if done else HORIZONTAL_ALIGNMENT_CENTER)
+	day_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	day_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	top.add_child(day_label)
+	if done:
+		var stamp: TextureRect = Kit.icon("check", 30.0)
+		var stamp_tex := tex("stamp")
+		if stamp_tex != null:
+			stamp.texture = stamp_tex
+		stamp.custom_minimum_size = Vector2(30, 30)
+		stamp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		top.add_child(stamp)
+	var reward: Label = Kit.label(reward_text.replace("  ", "\n"), 18, ink, HORIZONTAL_ALIGNMENT_CENTER)
+	reward.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	reward.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(reward)
+	for label in [day_label, reward]:
+		if now:
+			label.add_theme_constant_override("outline_size", 0)
+			label.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0))
+		else:
+			TextStyle.menu(label, Color(0, 0.05, 0.2), 4)
+	return cell
+
+
+## 결과 줄(UI 개편 2단계, result_row): 왼쪽 동그란 금테 자리에 아이콘, 이름(왼쪽), 값(오른쪽, 금색).
+## 그림이 없으면 단색 줄.
+static func result_row(icon_name: String, title: String, value: String, height: float = 58.0) -> Control:
+	var art := tex("result_row")
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(0, height)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if art != null:
+		holder.resized.connect(holder.queue_redraw)
+		holder.draw.connect(func() -> void:
+			PillSkin.draw_slices(holder, art, Rect2(Vector2.ZERO, holder.size), 0.95, Color.WHITE, 0.3))
+	else:
+		var back := Panel.new()
+		back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		back.add_theme_stylebox_override("panel", Kit.box(Color("13458f"), Kit.TRIM, 2, int(height / 2.0), 4))
+		holder.add_child(back)
+	var picture: TextureRect = Kit.icon(icon_name if icon_name != "" else "star", height * 0.62)
+	picture.position = Vector2(height * 0.19, height * 0.19)
+	picture.size = Vector2(height * 0.62, height * 0.62)
+	holder.add_child(picture)
+	var line := HBoxContainer.new()
+	line.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	line.offset_left = height * 1.12
+	line.offset_right = -height * 0.42
+	line.add_theme_constant_override("separation", 10)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(line)
+	var name_label: Label = Kit.label(title, 20, Color.WHITE)
+	TextStyle.menu(name_label, Color(0, 0.05, 0.2), 5)
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_label.size_flags_vertical = Control.SIZE_FILL
+	line.add_child(name_label)
+	var value_label: Label = Kit.label(value, 21, Kit.GOLD, HORIZONTAL_ALIGNMENT_RIGHT)
+	TextStyle.number(value_label, 5)
+	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value_label.size_flags_vertical = Control.SIZE_FILL
+	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value_label.clip_text = true
+	line.add_child(value_label)
+	return holder
+
+
+## 얻은 보상 칸(reward_cell): 금테 정사각 칸에 큰 아이콘과 아래 숫자. 그림이 없으면 단색 칸.
+static func reward_cell(icon_name: String, text: String, side: float = 96.0) -> Control:
+	var cell: PanelContainer = art_box("reward_cell", 30.0, 6)
+	if cell == null:
+		cell = PanelContainer.new()
+		cell.add_theme_stylebox_override("panel", Kit.box(Color("13458f"), Kit.TRIM, 3, 12, 6))
+	cell.custom_minimum_size = Vector2(side, side)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cell.add_child(column)
+	var picture: TextureRect = Kit.icon(icon_name, side * 0.48)
+	picture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(picture)
+	var label: Label = Kit.label(text, 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	TextStyle.number(label, 5)
+	column.add_child(label)
+	return cell

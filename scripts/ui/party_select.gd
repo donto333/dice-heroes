@@ -259,9 +259,12 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	button.add_child(frame)
 	var role := _band_label(SLOT_LABELS[slot], 16, 0.0, 0.15)
 	button.add_child(role)
-	var stat := _band_label("", 16, 0.66, 0.84)
-	stat.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	# 능력 한 줄(2단계): 초상화 아래쪽에 어두운 띠를 깔고 그 위에 또렷하게.
+	var stat := _band_label("", 18, 0.74, 0.85)
+	stat.offset_left = 8
+	stat.offset_right = -8
 	stat.add_theme_color_override("font_color", GOLD)
+	stat.add_theme_stylebox_override("normal", KitStyle.box(Color(0.0, 0.03, 0.14, 0.78), Color.TRANSPARENT, 0, 6, 0))
 	button.add_child(stat)
 	var text := _band_label("", 16, 0.85, 1.0)
 	button.add_child(text)

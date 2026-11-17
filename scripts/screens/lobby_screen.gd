@@ -11,6 +11,7 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const RouletteWheel := preload("res://scripts/ui/roulette_wheel.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const LOBBY_ART := "res://assets/ui_lobby/"
 ## 로비 그림이 화면보다 몇 배로 저장됐나의 거꾸로(2배 → 0.5)
@@ -382,9 +383,9 @@ func _add_top_bar() -> void:
 		glyph.offset_top = 4
 		glyph.offset_bottom = 36
 		button.add_child(glyph)
-		var caption := _bold(str(spec[0]), 13, Color.WHITE, Color("0b1f4d"), 4, HORIZONTAL_ALIGNMENT_CENTER)
+		var caption := _bold(str(spec[0]), 14, Color.WHITE, Color("0b1f4d"), 4, HORIZONTAL_ALIGNMENT_CENTER)
 		_anchor(caption, 0.0, 1.0, 1.0, 1.0)
-		caption.offset_top = -22
+		caption.offset_top = -23
 		caption.offset_bottom = -3
 		button.add_child(caption)
 		Kit.fit_text(caption, button, 4.0, 13, 9)
@@ -394,37 +395,11 @@ func _add_top_bar() -> void:
 
 	bar.add_child(Kit.expand(Control.new()))
 
-	# 재화: 골드 · 보석. + 버튼은 상점으로.
+	# 재화: 골드 · 보석. 메뉴 화면과 같은 캡슐(currency + 초록 더하기), 더하기는 상점으로.
 	for spec in [["gold", Kit.GOLD, int(profile["gold"]), "grow"], ["gem", Kit.GEM, int(profile["gems"]), "gems"]]:
-		var holder := Control.new()
-		holder.custom_minimum_size = Vector2(224, 44)
-		holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		holder.add_child(_slice("plate_currency", 40, Color("1a3f8f")))
-		var coin := Kit.icon(str(spec[0]), 38.0)
-		_anchor(coin, 0.0, 0.5, 0.0, 0.5)
-		coin.offset_left = 4
-		coin.offset_right = 42
-		coin.offset_top = -19
-		coin.offset_bottom = 19
-		holder.add_child(coin)
-		var amount := _bold(Kit.comma(int(spec[2])), 21, Color.WHITE, Color("0b1f4d"), 5, HORIZONTAL_ALIGNMENT_RIGHT)
-		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		_anchor(amount, 0.0, 0.0, 1.0, 1.0)
-		amount.offset_left = 46
-		amount.offset_right = -50
-		holder.add_child(amount)
-		var plus := _art_button(_picture("btn_plus"))
-		if plus.get_child_count() == 0:
-			plus.add_child(Kit.label("+", 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-		_anchor(plus, 1.0, 0.5, 1.0, 0.5)
-		plus.offset_left = -42
-		plus.offset_right = -4
-		plus.offset_top = -19
-		plus.offset_bottom = 19
-		plus.pressed.connect(_on_shop_tab.bind(str(spec[3])))
-		holder.add_child(plus)
-		bar.add_child(holder)
+		var chip: Control = MenuArt.money_chip(str(spec[0]), int(spec[2]), spec[1], _on_shop_tab.bind(str(spec[3])))
+		chip.custom_minimum_size = Vector2(212, 50)
+		bar.add_child(chip)
 
 
 func _on_shop_tab(tab: String) -> void:
@@ -849,20 +824,26 @@ func open_todo() -> void:
 	var rows: Array = []
 	for item in _todo_items():
 		var done := bool(item[2])
-		var line := Kit.panel(Color("13458f") if not done else Color("0f3d85"), Kit.LINE, 10)
+		var line := MenuArt.row(10)
 		var row := Kit.hbox(10)
 		line.add_child(row)
 		var text := Kit.vbox(0)
 		text.add_child(Kit.label(str(item[0]), 24, Color.WHITE if not done else Kit.MUTED))
-		text.add_child(Kit.label(str(item[1]), 17, Kit.MUTED))
+		text.add_child(Kit.label(str(item[1]), 18, Kit.MUTED))
 		row.add_child(Kit.expand(text))
 		if done:
-			var mark := Kit.label("완료", 22, Color("6fd08c"), HORIZONTAL_ALIGNMENT_CENTER)
+			var mark := Kit.hbox(4)
 			mark.custom_minimum_size = Vector2(120, 0)
+			mark.alignment = BoxContainer.ALIGNMENT_CENTER
+			var check: TextureRect = Kit.icon("m_check", 34.0)
+			check.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			mark.add_child(check)
+			mark.add_child(Kit.label("완료", 22, Color("6fd08c")))
 			row.add_child(mark)
 		else:
-			var go := Kit.button("가기", Kit.ACCENT, 22, 56)
+			var go := MenuArt.pill_button("가기", "green", "m")
 			go.custom_minimum_size = Vector2(120, 56)
+			go.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			rows.append([go, item[3]])
 			row.add_child(go)
 		body.add_child(line)
@@ -924,16 +905,22 @@ func open_mailbox() -> void:
 	for index in range(mails.size() - 1, -1, -1):
 		var entry: Dictionary = mails[index]
 		var claimed := bool(entry.get("claimed", false))
-		var card := Kit.panel(Color("13458f"), Kit.LINE if claimed else Kit.GOLD, 12)
-		var row := Kit.hbox(10)
+		# 목록 줄(남색 + 얇은 금테): 왼쪽 우편 아이콘 · 제목(24)·내용(20)·선물 캡슐 · 오른쪽 받기 알약
+		var card := MenuArt.row(12)
+		var row := Kit.hbox(12)
 		card.add_child(row)
+		var mail_icon: TextureRect = Kit.icon("mail", 52.0)
+		mail_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		if claimed:
+			mail_icon.modulate = Color(0.6, 0.6, 0.7)
+		row.add_child(mail_icon)
 		var info := Kit.vbox(4)
 		row.add_child(Kit.expand(info))
 		info.add_child(Kit.label(str(entry["title"]), 24, Kit.MUTED if claimed else Color.WHITE))
-		info.add_child(Kit.para(str(entry["text"]), 18, Kit.MUTED))
-		info.add_child(Kit.label("선물 %s" % Kit.reward_line(entry["reward"]), 20, Kit.GOLD))
-		var take := Kit.button("받음" if claimed else "받기", Kit.PANEL_LIGHT if claimed else Color("e8890c"), 22, 64)
-		take.custom_minimum_size = Vector2(120, 64)
+		info.add_child(Kit.para(str(entry["text"]), 20, Kit.MUTED))
+		info.add_child(MenuArt.reward_capsules(entry["reward"]))
+		var take := MenuArt.pill_button("받음" if claimed else "받기", "gray" if claimed else "gold", "m")
+		take.custom_minimum_size = Vector2(130, 56)
 		take.disabled = claimed
 		take.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		take.pressed.connect(_on_mail_claim.bind(str(entry["id"])))
@@ -943,7 +930,7 @@ func open_mailbox() -> void:
 	if Profile.unclaimed_mail_count(app.profile) > 1:
 		buttons.append(["모두 받기", Color("e8890c"), _on_mail_claim_all])
 	buttons.append(["닫기", Kit.PANEL_LIGHT, _close_roulette])
-	app.dialog("우편함", body, buttons, 660)
+	app.dialog("우편함", body, buttons, 720)
 
 
 func _on_mail_claim(id: String) -> void:
@@ -991,7 +978,7 @@ func open_roulette() -> void:
 	body.add_child(center)
 	_spin_info = Kit.para("", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	body.add_child(_spin_info)
-	_spin_button = Kit.button("", Color("e8890c"), 30, 92)
+	_spin_button = Kit.button("", Color("e8890c"), 28, 72)
 	_spin_button.pressed.connect(_on_spin)
 	body.add_child(_spin_button)
 	_refresh_roulette()
@@ -1055,6 +1042,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"창과 결과 화면 새 단장: 창 글자가 커지고 버튼이 금테 알약으로 바뀌었어요. AI 난이도는 카드 3장, 룰렛은 금테 바퀴, 대전 결과는 MVP 카드와 보상 칸, 상대를 찾을 때는 금빛 주사위 문양이 돌아요.",
 	"메뉴 화면 버튼을 금테 알약 하나로 맞추고, 상점·미션·설정·모험·패스·파티 화면 안쪽을 새 목록 줄로 바꿨어요.",
 	"게임 방법·파티 편성 화면도 새 틀로 바뀌었어요.",
 	"타이틀 화면 새 단장: 금빛 로고와 리본 부제가 생겼어요.",
@@ -1199,19 +1187,14 @@ func _maybe_attendance() -> void:
 	var today_index := Profile.attendance_day(app.profile, app.eco)
 	var grid := GridContainer.new()
 	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 8)
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
 	for day in table.size():
 		var reward: Dictionary = table[day]
 		var done := day < today_index
 		var now := day == today_index
-		var fill: Color = Kit.PANEL_LIGHT if now else (Color("13458f") if done else Kit.PANEL)
-		var border: Color = Kit.GOLD if now else Kit.LINE
-		var cell := Kit.label("%d일차\n%s%s" % [day + 1, Kit.reward_line(reward), "\n받음" if done else ""], 18,
-			Kit.GOLD if now else (Kit.MUTED if done else Color.WHITE), HORIZONTAL_ALIGNMENT_CENTER)
-		cell.custom_minimum_size = Vector2(140, 104)
-		cell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		cell.add_theme_stylebox_override("normal", Kit.box(fill, border, 3 if now else 1, 12, 6))
+		var cell: PanelContainer = MenuArt.day_cell(day + 1, Kit.reward_line(reward), now, done)
+		cell.custom_minimum_size = Vector2(150, 116)
 		grid.add_child(cell)
 	var body := Kit.vbox(12)
 	body.add_child(Kit.para("매일 접속하면 보상을 받아요. 7일마다 다시 시작합니다.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
@@ -1241,20 +1224,64 @@ func _on_help() -> void:
 	app.go("help", {"back": "lobby"})
 
 
-## AI 연습전 난이도 고르기
+## AI 연습전 난이도 고르기: 쉬움·보통·어려움을 가로 카드 3장(이름, 상대 레벨, 보상 배수)으로.
 func _choose_difficulty() -> void:
 	app.play("click")
-	var body := Kit.vbox(12)
-	body.add_child(Kit.para("어려울수록 상대 영웅 레벨이 높고 조합을 잘 짜요. 보상도 많아져요.", 20, Kit.MUTED))
-	var buttons: Array = []
-	var colors := [Color("2f8f4e"), Color("f39a1c"), Color("b8323a")]
+	var body := Kit.vbox(14)
+	body.add_child(Kit.para("어려울수록 상대 영웅 레벨이 높고 조합을 잘 짜요. 보상도 많아져요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var cards := Kit.hbox(18)
+	cards.alignment = BoxContainer.ALIGNMENT_CENTER
+	body.add_child(cards)
+	var looks := [["green", Color("2f8f4e")], ["blue", Color("2f74d6")], ["red", Color("b8323a")]]
 	var list: Array = app.eco.get("ai_difficulty", [])
 	for index in list.size():
-		var entry: Dictionary = list[index]
-		body.add_child(Kit.para("%s  ·  상대 레벨 %d  ·  보상 ×%s" % [entry["name"], int(entry["level"]), str(entry["reward_scale"])], 21))
-		buttons.append([str(entry["name"]), colors[index % colors.size()], _start_ai.bind(str(entry["id"]))])
-	buttons.append(["닫기", Kit.PANEL_LIGHT])
-	app.dialog("AI 연습전 난이도", body, buttons, 660)
+		var look: Array = looks[index % looks.size()]
+		cards.add_child(_difficulty_card(list[index], str(look[0]), look[1]))
+	app.dialog("AI 연습전 난이도", body, [["닫기", Kit.PANEL_LIGHT]], 700)
+
+
+## 난이도 카드 한 장: 위 띠에 이름, 가운데 상대 레벨·보상 배수, 아래 시작 알약. 그림(ai_card_색)이 없으면 단색 판.
+func _difficulty_card(entry: Dictionary, color_name: String, color: Color) -> Control:
+	var card := Control.new()
+	card.custom_minimum_size = Vector2(196, 262)
+	var art := MenuArt.tex("ai_card_" + color_name)
+	if art != null:
+		var back := TextureRect.new()
+		back.texture = art
+		back.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		back.stretch_mode = TextureRect.STRETCH_SCALE
+		back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(back)
+	else:
+		var plain := Panel.new()
+		plain.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		plain.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		plain.add_theme_stylebox_override("panel", Kit.box(Color("13458f"), color, 4, 16, 6))
+		card.add_child(plain)
+	# 위 띠(그림 높이의 9%~18%)에 이름
+	var name_label := _bold(str(entry["name"]), 24, Color.WHITE, color.darkened(0.55), 6, HORIZONTAL_ALIGNMENT_CENTER)
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_anchor(name_label, 0.0, 0.075, 1.0, 0.195)
+	card.add_child(name_label)
+	var middle := Kit.vbox(4)
+	middle.alignment = BoxContainer.ALIGNMENT_CENTER
+	middle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(middle, 0.06, 0.22, 0.94, 0.72)
+	card.add_child(middle)
+	var face: TextureRect = _lobby_icon("ic_ai", 56.0)
+	face.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	middle.add_child(face)
+	middle.add_child(_bold("상대 레벨 %d" % int(entry["level"]), 20, Color.WHITE, Color("0b1f4d"), 5, HORIZONTAL_ALIGNMENT_CENTER))
+	middle.add_child(_bold("보상 ×%s" % str(entry["reward_scale"]), 20, Kit.GOLD, Color("3a2400"), 5, HORIZONTAL_ALIGNMENT_CENTER))
+	var start := MenuArt.pill_button("시작", "green" if color_name == "green" else ("blue" if color_name == "blue" else "red"), "s")
+	_anchor(start, 0.12, 0.74, 0.88, 0.74)
+	start.offset_bottom = 46
+	start.pressed.connect(func() -> void:
+		_close_all_dialogs()
+		_start_ai(str(entry["id"])))
+	card.add_child(start)
+	return card
 
 
 func _start_ai(id: String) -> void:

@@ -1,6 +1,7 @@
 extends Control
-## 한 판이 끝났을 때 보여 주는 결과 화면.
-## 승패, 걸린 턴, 전투 기록, 두 파티를 보여 주고 "다시 하기"와 "파티 바꾸기"를 고르게 한다.
+## 한 판이 끝났을 때 보여 주는 결과 화면(UI 개편 2단계, docs/UI개편기획.md 4장 '대전 결과').
+## 왼쪽 40%: VICTORY/DEFEAT 로고 → 한 줄 설명 → MVP 금테 카드(초상화, 이름, 자리) → 두 파티 이름.
+## 오른쪽 60%: 결과 줄(아이콘 + 이름 + 값) → 알림 띠(레벨 업·미션 완료 등) → 얻은 보상 칸 → 로비로 · 다시 하기.
 
 signal retry_pressed
 ## 왼쪽 버튼(로비로)
@@ -11,22 +12,28 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const Confetti := preload("res://scripts/ui/confetti.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const GameData := preload("res://scripts/game_data.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 
 const GOLD := Color("ffcf4d")
 const WIN_COLOR := Color("7ee081")
 const LOSE_COLOR := Color("ff6b6b")
+## MVP 카드 틀(mvp_frame) 안쪽 그림 자리(그림에서 잰 비율: 왼, 위, 오른, 아래)
+const MVP_HOLE := [0.17, 0.205, 0.83, 0.84]
 
 var _title: Label
 var _subtitle: Label
-var _details: Label
 var _panel: PanelContainer
 var _confetti: Control
 var _again: Button
-var _mvp_row: HBoxContainer
+var _mvp_box: Control
 var _mvp_face: Control
 var _mvp_name: Label
 var _mvp_note: Label
-var _chips: HFlowContainer
+var _parties: VBoxContainer
+var _rows: VBoxContainer
+var _notes: HFlowContainer
+var _reward_title: Label
+var _rewards: HBoxContainer
 ## 승리·패배 그림(assets/art/ui/victory.jpg, defeat.jpg)
 var _logo: TextureRect = null
 var _banner: Control
@@ -52,90 +59,119 @@ func _ready() -> void:
 	add_child(center)
 
 	_panel = PanelContainer.new()
-	_panel.custom_minimum_size = Vector2(1080, 0)
-	var frame = Kit.plate(Color("2a2f9c"), Kit.TRIM, 28.0, 30)
+	_panel.custom_minimum_size = Vector2(1160, 0)
+	var frame = Kit.plate(Color("2a2f9c"), Kit.TRIM, 28.0, 22)
 	frame.grand = true
+	if Kit.UiSkin.has("win_navy"):
+		frame.set_content_margin_all(26)
+		frame.content_margin_top = 34
 	_panel.add_theme_stylebox_override("panel", frame)
 	center.add_child(_panel)
 
-	# 가로 화면: 왼쪽에 결과·MVP·보상, 오른쪽에 자세한 기록과 버튼.
 	var halves := HBoxContainer.new()
-	halves.add_theme_constant_override("separation", 24)
+	halves.add_theme_constant_override("separation", 22)
 	_panel.add_child(halves)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
-	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	halves.add_child(column)
-	var right := VBoxContainer.new()
-	right.add_theme_constant_override("separation", 12)
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.alignment = BoxContainer.ALIGNMENT_END
-	halves.add_child(right)
 
+	# ---------------- 왼쪽: 로고 · 설명 · MVP 카드 · 파티
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 6)
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.size_flags_stretch_ratio = 0.68
+	halves.add_child(left)
 	_banner = ArtView.new()
-	_banner.custom_minimum_size = Vector2(0, 150)
+	_banner.custom_minimum_size = Vector2(0, 108)
 	_banner.focus_y = 0.45
 	_banner.fade_bottom = 0.35
 	_banner.visible = false
-	column.add_child(_banner)
-	_title = _label(60)
+	left.add_child(_banner)
+	_title = _label(54)
 	_title.add_theme_constant_override("outline_size", 12)
 	_title.add_theme_color_override("font_outline_color", Color.BLACK)
-	column.add_child(_title)
-	_subtitle = _label(26)
-	column.add_child(_subtitle)
+	left.add_child(_title)
+	_subtitle = _label(19)
+	_subtitle.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
+	_subtitle.add_theme_constant_override("outline_size", 4)
+	_subtitle.add_theme_color_override("font_outline_color", Color(0, 0.04, 0.18))
+	left.add_child(_subtitle)
 
-	var line := ColorRect.new()
-	line.color = Color(1, 1, 1, 0.15)
-	line.custom_minimum_size = Vector2(0, 2)
-	column.add_child(line)
-
-	# MVP 영웅: 큰 초상화와 이름
-	_mvp_row = HBoxContainer.new()
-	_mvp_row.add_theme_constant_override("separation", 16)
-	_mvp_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_child(_mvp_row)
+	_mvp_box = VBoxContainer.new()
+	_mvp_box.add_theme_constant_override("separation", 0)
+	left.add_child(_mvp_box)
+	var card := Control.new()
+	card.custom_minimum_size = Vector2(176, 221)
+	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mvp_box.add_child(card)
 	_mvp_face = Portrait.new()
-	_mvp_face.custom_minimum_size = Vector2(104, 104)
-	_mvp_face.border = GOLD
-	_mvp_face.border_width = 4.0
-	_mvp_row.add_child(_mvp_face)
-	var mvp_text := VBoxContainer.new()
-	mvp_text.alignment = BoxContainer.ALIGNMENT_CENTER
-	mvp_text.add_theme_constant_override("separation", 2)
-	_mvp_row.add_child(mvp_text)
-	var ribbon := Kit.label(" MVP ", 26, Color("3a2408"))
-	ribbon.add_theme_stylebox_override("normal", Kit.box(GOLD, Color("7a4a12"), 3, 10, 6))
-	ribbon.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	mvp_text.add_child(ribbon)
-	_mvp_name = Kit.label("", 34)
-	mvp_text.add_child(_mvp_name)
-	_mvp_note = Kit.label("", 20, Color(1, 1, 1, 0.8))
-	mvp_text.add_child(_mvp_note)
+	_mvp_face.border_width = 0.0
+	var frame_tex := MenuArt.tex("mvp_frame")
+	if frame_tex != null:
+		_mvp_face.anchor_left = MVP_HOLE[0]
+		_mvp_face.anchor_top = MVP_HOLE[1]
+		_mvp_face.anchor_right = MVP_HOLE[2]
+		_mvp_face.anchor_bottom = MVP_HOLE[3]
+		card.add_child(_mvp_face)
+		var picture := TextureRect.new()
+		picture.texture = frame_tex
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		picture.stretch_mode = TextureRect.STRETCH_SCALE
+		picture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(picture)
+	else:
+		_mvp_face.border = GOLD
+		_mvp_face.border_width = 4.0
+		_mvp_face.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		card.add_child(_mvp_face)
+	# 카드 아래 가운데: MVP 띠 + 이름 + 자리
+	var ribbon := Kit.label(" MVP ", 20, Color("3a2408"), HORIZONTAL_ALIGNMENT_CENTER)
+	ribbon.add_theme_stylebox_override("normal", Kit.box(GOLD, Color("7a4a12"), 3, 10, 4))
+	ribbon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_mvp_box.add_child(ribbon)
+	_mvp_name = Kit.label("", 28, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	TextStyle.menu(_mvp_name, Color(0, 0.04, 0.2), 7)
+	_mvp_box.add_child(_mvp_name)
+	_mvp_note = Kit.label("", 18, Color(1, 1, 1, 0.85), HORIZONTAL_ALIGNMENT_CENTER)
+	_mvp_box.add_child(_mvp_note)
 
-	# 받은 보상 칩
-	_chips = HFlowContainer.new()
-	_chips.alignment = FlowContainer.ALIGNMENT_CENTER
-	_chips.add_theme_constant_override("h_separation", 10)
-	_chips.add_theme_constant_override("v_separation", 8)
-	column.add_child(_chips)
+	_parties = VBoxContainer.new()
+	_parties.add_theme_constant_override("separation", 2)
+	left.add_child(_parties)
 
-	_details = _label(20)
-	_details.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_details.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
-	_details.add_theme_constant_override("line_spacing", 6)
-	_details.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_details.add_theme_stylebox_override("normal", Kit.plate(Color(0.05, 0.06, 0.28, 0.7), Color("8fa6d8"), 14.0, 14, false))
-	right.add_child(_details)
+	# ---------------- 오른쪽: 결과 줄 · 알림 띠 · 얻은 보상 · 버튼
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 10)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	halves.add_child(right)
+	_rows = VBoxContainer.new()
+	_rows.add_theme_constant_override("separation", 5)
+	right.add_child(_rows)
+	_notes = HFlowContainer.new()
+	_notes.add_theme_constant_override("h_separation", 8)
+	_notes.add_theme_constant_override("v_separation", 6)
+	right.add_child(_notes)
+	# 얻은 보상: 왼쪽에 제목, 오른쪽에 금테 칸들
+	var reward_line := HBoxContainer.new()
+	reward_line.add_theme_constant_override("separation", 12)
+	right.add_child(reward_line)
+	_reward_title = Kit.label("얻은\n보상", 22, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	TextStyle.gold(_reward_title, 6)
+	_reward_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_reward_title.size_flags_vertical = Control.SIZE_FILL
+	reward_line.add_child(_reward_title)
+	_rewards = HBoxContainer.new()
+	_rewards.add_theme_constant_override("separation", 10)
+	reward_line.add_child(_rewards)
+	right.add_child(Kit.spacer())
 
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
 	right.add_child(buttons)
-	var change := Kit.button("로비로", Color("6f9bd6"), 26, 76)
+	var change := MenuArt.pill_button("로비로", "blue", "l")
 	change.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	change.pressed.connect(_on_change_pressed)
 	buttons.add_child(change)
-	var again := Kit.button("다시 하기", Color("e8890c"), 28, 76)
+	var again := MenuArt.pill_button("다시 하기", "gold", "l")
 	_again = again
 	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.size_flags_stretch_ratio = 1.5
@@ -151,47 +187,36 @@ func _label(font_size: int) -> Label:
 	return label
 
 
-func _button(text: String, color: Color) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(0, 70)
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", 28)
-	button.add_theme_color_override("font_color", Color.WHITE)
-	button.add_theme_color_override("font_hover_color", Color.WHITE)
-	button.add_theme_color_override("font_pressed_color", Color.WHITE)
-	for state in ["normal", "hover", "pressed"]:
-		var box := StyleBoxFlat.new()
-		box.bg_color = color if state == "normal" else (color.lightened(0.15) if state == "hover" else color.darkened(0.2))
-		box.border_color = color.lightened(0.35)
-		box.set_border_width_all(2)
-		box.set_corner_radius_all(10)
-		button.add_theme_stylebox_override(state, box)
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	return button
-
-
 ## 결과를 보여 준다. outcome은 "win", "lose", "draw".
-## details는 아래에 줄마다 보여 줄 글이다.
-## extras: {"mvp": 캐릭터, "mvp_note": "ATTACK · 전투 3승", "chips": [["● 150", 색], ...]} (없어도 됨)
+## details: 결과 줄을 따로 주지 않았을 때 대신 보여 줄 글 줄.
+## extras(없어도 됨):
+##   "rows": [[아이콘, 이름, 값], ...]  결과 줄
+##   "notes": [글, ...]  결과 줄 아래 작은 알림 띠(레벨 업·미션 완료 등)
+##   "parties": [글, ...]  왼쪽 아래 파티 이름 줄
+##   "rewards": [[아이콘, 글], ...]  얻은 보상 칸
+##   "mvp": 캐릭터, "mvp_note": "ATTACK · 전투 3승", "again_text": 오른쪽 버튼 글
 func show_result(outcome: String, subtitle: String, details: PackedStringArray, extras: Dictionary = {}) -> void:
 	_again.text = str(extras.get("again_text", "다시 하기"))
 	var mvp: Dictionary = extras.get("mvp", {})
-	_mvp_row.visible = not mvp.is_empty()
+	_mvp_box.visible = not mvp.is_empty()
 	if not mvp.is_empty():
 		_mvp_face.show_character(mvp, Color("8fd0ff"))
 		_mvp_name.text = str(mvp.get("name", ""))
 		_mvp_note.text = str(extras.get("mvp_note", ""))
-	for child in _chips.get_children():
+	_fill_rows(extras.get("rows", []), details)
+	_fill_notes(extras.get("notes", []))
+	for child in _parties.get_children():
 		child.queue_free()
-	for chip in extras.get("chips", []):
-		var color: Color = chip[1]
-		var label := Kit.label(" %s " % chip[0], 24, Color.WHITE)
-		label.add_theme_constant_override("outline_size", 5)
-		label.add_theme_color_override("font_outline_color", color.darkened(0.7))
-		label.add_theme_stylebox_override("normal", Kit.box(color.darkened(0.45), color, 3, 22, 8))
-		_chips.add_child(label)
-	_chips.visible = not extras.get("chips", []).is_empty()
+	for line in extras.get("parties", []):
+		var party_label: Label = Kit.para(str(line), 18, Color(1, 1, 1, 0.85), HORIZONTAL_ALIGNMENT_CENTER)
+		_parties.add_child(party_label)
+	for child in _rewards.get_children():
+		child.queue_free()
+	var rewards: Array = extras.get("rewards", [])
+	for entry in rewards:
+		_rewards.add_child(MenuArt.reward_cell(str(entry[0]), str(entry[1]), 94.0))
+	_rewards.visible = not rewards.is_empty()
+	_reward_title.visible = not rewards.is_empty()
 	if outcome == "win":
 		_confetti.start()
 	else:
@@ -208,8 +233,8 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 		_logo.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		_logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_logo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_logo.offset_top = 14
-		_logo.offset_bottom = -14
+		_logo.offset_top = 8
+		_logo.offset_bottom = -8
 		_banner.add_child(_logo)
 	_logo.texture = logo_texture
 	if logo_texture != null and _banner.visible:
@@ -226,8 +251,12 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 		_:
 			_title.text = "무승부"
 			_title.add_theme_color_override("font_color", GOLD)
+	# 로고 그림이 있으면 큰 글자 제목은 숨긴다(같은 말을 두 번 하지 않게). 친구 대전처럼 설명이 이긴 사람을 알려 준다.
+	_title.visible = not (_banner.visible and logo_texture != null)
 	_subtitle.text = subtitle
-	_details.text = "\n".join(details)
+	# 이미 떠 있으면(같은 판의 결과를 다시 채울 때) 튀어나오는 연출을 다시 하지 않는다.
+	if visible and _panel.modulate.a > 0.0:
+		return
 	visible = true
 	_panel.pivot_offset = _panel.size * 0.5
 	_panel.scale = Vector2(0.8, 0.8)
@@ -236,6 +265,39 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(_panel, "scale", Vector2.ONE, 0.35)
 	tween.parallel().tween_property(_panel, "modulate:a", 1.0, 0.25)
+	# 내용이 바뀌어 판 크기가 달라지므로 다음 프레임에 가운데를 다시 잡는다.
+	await get_tree().process_frame
+	if is_instance_valid(_panel):
+		_panel.pivot_offset = _panel.size * 0.5
+
+
+## 결과 줄을 채운다. rows가 비면 details 글 줄을 "이름: 값" 모양으로 나눠 결과 줄로 보여 준다.
+func _fill_rows(rows: Array, details: PackedStringArray) -> void:
+	for child in _rows.get_children():
+		child.queue_free()
+	var list: Array = rows
+	if list.is_empty():
+		for line in details:
+			var parts := str(line).split(": ", true, 1)
+			if parts.size() == 2:
+				list.append(["star", parts[0], parts[1]])
+			else:
+				list.append(["star", str(line), ""])
+	for entry in list:
+		_rows.add_child(MenuArt.result_row(str(entry[0]), str(entry[1]), str(entry[2]), 46.0))
+
+
+## 알림 띠: 작은 어두운 캡슐에 글을 하나씩.
+func _fill_notes(notes: Array) -> void:
+	for child in _notes.get_children():
+		child.queue_free()
+	for line in notes:
+		var band := PanelContainer.new()
+		band.add_theme_stylebox_override("panel", Kit.box(Color(0.02, 0.08, 0.3, 0.85), Color("f2c14e"), 2, 14, 6))
+		var label: Label = Kit.label(str(line), 17, Color("fff1c2"))
+		band.add_child(label)
+		_notes.add_child(band)
+	_notes.visible = not notes.is_empty()
 
 
 func _on_change_pressed() -> void:

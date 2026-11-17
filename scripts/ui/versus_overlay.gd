@@ -4,6 +4,8 @@ extends Control
 
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const GameData := preload("res://scripts/game_data.gd")
+const WaitBackdrop := preload("res://scripts/ui/wait_backdrop.gd")
+const LoadingOverlay := preload("res://scripts/ui/loading_overlay.gd")
 
 const HOLD_TIME := 2.4
 ## 대전 시작 때 영웅이 하는 한마디(분류마다 말투가 다르다)
@@ -139,17 +141,28 @@ func play(sides: Array, map_text: String, goal_text: String, searching: bool = f
 	visible = false
 
 
-## 상대를 찾는 연출: 점이 하나씩 늘어나는 글자. 누르면 넘어간다.
+## 상대를 찾는 연출(UI 개편 2단계): 대전 준비와 같은 바탕 그림 + 가운데 돌아가는 금테 주사위 문양
+## + 점이 하나씩 늘어나는 글자 + 아래 도움말 한 줄. 누르면 넘어간다.
 func _search() -> void:
-	var shade := ColorRect.new()
-	shade.color = Color(0.04, 0.2, 0.5, 0.96)
-	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(shade)
-	var label := _text("상대를 찾는 중", 44, Color("ffcf4d"), 10)
-	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var backdrop = WaitBackdrop.new()
+	add_child(backdrop)
+	var label := _text("상대를 찾는 중", 40, Color("ffcf4d"), 10)
+	label.anchor_left = 0.0
+	label.anchor_right = 1.0
+	label.anchor_top = 0.46
+	label.anchor_bottom = 0.46
+	label.offset_top = 100
+	label.offset_bottom = 156
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(label)
+	var tips: Array = LoadingOverlay.TIPS
+	var tip := _text("도움말 · %s" % str(tips[randi() % tips.size()]), 22, Color(1, 1, 1, 0.9), 6)
+	tip.anchor_left = 0.08
+	tip.anchor_right = 0.92
+	tip.anchor_top = 0.82
+	tip.anchor_bottom = 0.82
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(tip)
 	modulate.a = 1.0
 	visible = true
 	var waited := 0.0

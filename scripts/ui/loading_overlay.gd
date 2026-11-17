@@ -5,6 +5,7 @@ extends Control
 
 const Kit := preload("res://scripts/ui/kit.gd")
 const GameData := preload("res://scripts/game_data.gd")
+const WaitBackdrop := preload("res://scripts/ui/wait_backdrop.gd")
 
 const TIPS := [
 	"주사위 1개짜리 영웅은 큰 눈이, 2개짜리 영웅은 작은 눈이 잘 나와요.",
@@ -23,11 +24,10 @@ const TIPS := [
 
 var _message: Label
 var _tip: Label
-var _time := 0.0
 var _rng := RandomNumberGenerator.new()
 var _shows := 0
-## 바탕 그림(assets/art/ui/loading_bg.jpg). 없으면 파란 바탕만.
-var _background: Texture2D = null
+## 바탕 그림과 가운데 돌아가는 금테 주사위 문양(wait_backdrop.gd).
+var _backdrop
 
 
 func _ready() -> void:
@@ -35,8 +35,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_rng.randomize()
-	_background = GameData.art("ui/loading_bg")
-	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_backdrop = WaitBackdrop.new()
+	add_child(_backdrop)
 	_message = Kit.label("", 34, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	_message.add_theme_constant_override("outline_size", 8)
 	_message.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -44,8 +44,8 @@ func _ready() -> void:
 	_message.anchor_right = 1.0
 	_message.anchor_top = 0.5
 	_message.anchor_bottom = 0.5
-	_message.offset_top = 70
-	_message.offset_bottom = 120
+	_message.offset_top = 92
+	_message.offset_bottom = 142
 	_message.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_message)
 	_tip = Kit.para("", 22, Color(1, 1, 1, 0.85), HORIZONTAL_ALIGNMENT_CENTER)
@@ -67,6 +67,7 @@ func show_for(message: String, seconds: float, with_tip: bool = false) -> void:
 	get_parent().move_child(self, get_parent().get_child_count() - 1)
 	modulate.a = 0.0
 	visible = true
+	_backdrop.restart()
 	var fade_in := create_tween()
 	fade_in.tween_property(self, "modulate:a", 1.0, 0.12)
 	await get_tree().create_timer(max(seconds, 0.05)).timeout
@@ -78,39 +79,3 @@ func show_for(message: String, seconds: float, with_tip: bool = false) -> void:
 	await fade_out.finished
 	if ticket == _shows:
 		visible = false
-
-
-func _process(delta: float) -> void:
-	if visible:
-		_time += delta
-		queue_redraw()
-
-
-func _draw() -> void:
-	if _background != null:
-		# 바탕 그림을 꽉 차게, 아주 천천히 확대하며 그리고 위에 살짝 어둡게 덮는다.
-		var texture_size := _background.get_size()
-		var ratio := size.x / maxf(size.y, 1.0)
-		var source := Rect2(Vector2.ZERO, texture_size)
-		if ratio < texture_size.x / texture_size.y:
-			source.size.x = texture_size.y * ratio
-			source.position.x = (texture_size.x - source.size.x) / 2.0
-		else:
-			source.size.y = texture_size.x / ratio
-			source.position.y = (texture_size.y - source.size.y) / 2.0
-		var zoom := 1.0 + minf(_time, 3.0) * 0.015
-		var shrink := source.size / zoom
-		source = Rect2(source.position + (source.size - shrink) / 2.0, shrink)
-		draw_texture_rect_region(_background, Rect2(Vector2.ZERO, size), source)
-		draw_rect(Rect2(Vector2.ZERO, size), Color(0.03, 0.12, 0.3, 0.45))
-	else:
-		draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.32, 0.72, 0.97))
-	# 돌아가는 점 8개: 앞선 점일수록 크고 밝다.
-	var center := Vector2(size.x * 0.5, size.y * 0.5 - 10.0)
-	var head := int(_time * 10.0) % 8
-	for index in 8:
-		var age := (head - index + 8) % 8
-		var strength := 1.0 - age / 8.0
-		var angle := TAU * index / 8.0 - PI / 2.0
-		var color := Color(1.0, 0.81, 0.3, 0.25 + 0.75 * strength)
-		draw_circle(center + Vector2(cos(angle), sin(angle)) * 46.0, 6.0 + 7.0 * strength, color)
