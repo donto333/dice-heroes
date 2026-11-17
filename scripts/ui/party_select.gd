@@ -100,26 +100,26 @@ func _build() -> void:
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	halves.add_child(right)
 
-	var title := _label(str(_options.get("title", "파티 편성")), 38, GOLD)
+	var title := _label(str(_options.get("title", "파티 편성")), 30 if framed else 38, GOLD)
 	title.add_theme_constant_override("outline_size", 10)
 	title.add_theme_color_override("font_outline_color", Color("5a3a00"))
 	column.add_child(title)
-	column.add_child(_label(str(_options.get("subtitle", "자리를 누른 뒤 아래 영웅을 고르면 그 자리에 앉습니다.")), 19, Color(1, 1, 1, 0.75)))
+	column.add_child(_label(str(_options.get("subtitle", "자리를 누른 뒤 아래 영웅을 고르면 그 자리에 앉습니다.")), 16 if framed else 19, Color(1, 1, 1, 0.75)))
 
 	var slot_row := HBoxContainer.new()
 	slot_row.add_theme_constant_override("separation", 8)
 	column.add_child(slot_row)
 	for slot in SLOTS:
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0, 216)
+		button.custom_minimum_size = Vector2(0, 176 if framed else 216)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		button.pressed.connect(_on_slot_pressed.bind(slot))
 		slot_row.add_child(button)
 		_slot_buttons[slot] = button
-		_slot_parts[slot] = _fill_card(button, 112.0, 16)
+		_slot_parts[slot] = _fill_card(button, 86.0 if framed else 112.0, 15 if framed else 16)
 
-	_points_label = _label("", 24, Color.WHITE)
+	_points_label = _label("", 20 if framed else 24, Color.WHITE)
 	column.add_child(_points_label)
 
 	# 저장 칸: 자주 쓰는 파티를 넣어 두고 한 번에 불러온다.
@@ -146,7 +146,7 @@ func _build() -> void:
 
 	# 고른 캐릭터의 어빌리티 설명
 	_info_label = _label("캐릭터를 누르면 어빌리티 설명이 여기 나옵니다.", 19, Color(1, 1, 1, 0.8))
-	_info_label.custom_minimum_size = Vector2(0, 56)
+	_info_label.custom_minimum_size = Vector2(0, 40 if framed else 56)
 	_info_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_info_label.add_theme_stylebox_override("normal", KitStyle.plate(Color(0.06, 0.08, 0.3, 0.72), Color("8fa6d8"), 14.0, 10, false))
