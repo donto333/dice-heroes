@@ -3,6 +3,7 @@ extends Control
 ## 온라인 계정(구글·애플)은 서버(Nakama)를 붙인 뒤 연다.
 
 const Kit := preload("res://scripts/ui/kit.gd")
+const GameData := preload("res://scripts/game_data.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 
@@ -27,7 +28,19 @@ func setup(main_app, _params: Dictionary) -> void:
 	left.alignment = BoxContainer.ALIGNMENT_CENTER
 	left.custom_minimum_size = Vector2(540, 0)
 	row.add_child(left)
-	left.add_child(Kit.title("주사위 영웅전", 68))
+	var logo_art := GameData.logo("title")
+	if logo_art != null:
+		# 타이틀과 같은 금빛 로고(주사위 엠블럼·월계수·보석).
+		var logo := TextureRect.new()
+		logo.texture = logo_art
+		logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		logo.custom_minimum_size = Vector2(500, 237)
+		logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		left.add_child(logo)
+	else:
+		left.add_child(Kit.title("주사위 영웅전", 68))
 	left.add_child(Kit.para("영웅을 모으고, 주사위를 굴려 골을 향해 달리세요.", 22, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var heroes := Kit.hbox(10)
 	heroes.alignment = BoxContainer.ALIGNMENT_CENTER
