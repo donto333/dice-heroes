@@ -113,34 +113,49 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.pressed.connect(_on_hero.bind(id))
 	var frame_tex := MenuArt.tex("hero_card")
+	var frame: TextureRect = null
 	if frame_tex != null:
 		# 금테 카드 틀(위 보석 장식). 등급 색 테두리 대신 틀을 덮고, 없는 영웅은 어둡게.
 		for state in ["normal", "hover", "pressed"]:
 			var fill := Kit.box(Color("0f3d85") if state != "hover" else Color("1a4fa0"), Color.TRANSPARENT, 0, 10, 0)
-			fill.expand_margin_left = -6
-			fill.expand_margin_right = -6
-			fill.expand_margin_top = -10
-			fill.expand_margin_bottom = -8
+			# 바탕 칠은 틀 안쪽에만(틀 위 투명한 여백으로 남색이 비치지 않게)
+			fill.expand_margin_left = -10
+			fill.expand_margin_right = -10
+			fill.expand_margin_top = -20
+			fill.expand_margin_bottom = -10
 			button.add_theme_stylebox_override(state, fill)
-		var frame := TextureRect.new()
+		frame = TextureRect.new()
 		frame.texture = frame_tex
 		frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		frame.stretch_mode = TextureRect.STRETCH_SCALE
 		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		frame.modulate = Color.WHITE if owned else Color(0.6, 0.62, 0.72)
-		button.add_child(frame)
 	var column := Kit.vbox(2)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var inset := 4 if frame_tex == null else 9
-	column.offset_left = inset
-	column.offset_right = -inset
-	column.offset_top = inset + (6 if frame_tex != null else 0)
-	column.offset_bottom = -inset
+	if frame != null:
+		# 초상화·별 줄은 틀의 안쪽 창(그림에서 잰 자리: 가로 9.2%~89.8%, 세로 14.8%~77.7%)에만 둔다.
+		# 틀은 그 위에 덮어 모서리 장식이 그림을 가리게 한다(전에는 그림이 틀 위로 삐져나왔다).
+		column.anchor_left = 0.092
+		column.anchor_right = 0.898
+		column.anchor_top = 0.148
+		column.anchor_bottom = 0.777
+		column.offset_left = 0
+		column.offset_right = 0
+		column.offset_top = 0
+		column.offset_bottom = 0
+		column.add_theme_constant_override("separation", 0)
+	else:
+		column.offset_left = 4
+		column.offset_right = -4
+		column.offset_top = 4
+		column.offset_bottom = -4
 	button.add_child(column)
 	var face := Portrait.new()
-	face.custom_minimum_size = Vector2(0, 138 if frame_tex == null else 126)
+	face.custom_minimum_size = Vector2(0, 138 if frame_tex == null else 60)
+	if frame_tex != null:
+		face.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	face.border_width = 0.0
 	face.show_character(character, Kit.CATEGORY_COLORS.get(character["category"], Kit.LINE))
 	face.locked = not owned
@@ -168,6 +183,8 @@ func _card(character: Dictionary, owned: bool) -> Control:
 		star_line.add_child(level)
 		caption = str(character["name"])
 	column.add_child(star_band)
+	if frame != null:
+		button.add_child(frame)
 	var text := Kit.label(caption, 18, Color.WHITE if owned else Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	text.clip_text = true
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
