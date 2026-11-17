@@ -39,7 +39,7 @@ const SCREEN_MOODS := {
 	"lobby": Color("3b2f9e"), "shop": Color("1f3a82"), "heroes": Color("1f3a82"), "missions": Color("1f3a82"),
 	"settings": Color("1f3a82"), "adventure": Color("1f3a82"), "pass": Color("1f3a82"), "help": Color("1f3a82"),
 }
-const VERSION := "0.25.0"
+const VERSION := "0.26.0"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
