@@ -41,4 +41,6 @@ jobs:
           fi
           gh pr merge "$pr" -R "$REPO" --merge --delete-branch
           gh workflow run build.yml -R "$REPO" --ref main
+          # 안드로이드 앱(APK)도 새로 만들어 릴리스에 올린다(android.yml).
+          gh workflow run android.yml -R "$REPO" --ref main || echo "안드로이드 빌드를 시작하지 못했습니다."
           echo "PR #$pr 을 합치고 배포를 시작했습니다."
