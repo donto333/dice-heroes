@@ -88,6 +88,10 @@ jobs:
           mkdir -p build/web
           godot --headless --export-release "Web" build/web/index.html
           test -f build/web/index.html
+          # 휴대폰 홈 화면에 앱처럼 추가할 수 있게 앱 정보(manifest)와 아이콘을 함께 넣는다.
+          cp web/manifest.webmanifest build/web/
+          cp assets/app_icon/icon_192.png build/web/app-icon-192.png
+          cp assets/app_icon/icon_512.png build/web/app-icon-512.png
 
       - name: 새 버전이 바로 보이게 파일 이름 바꾸기
         # 브라우저가 예전 게임 파일(index.pck)을 기억해 두는 문제를 막는다.
