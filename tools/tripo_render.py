@@ -17,15 +17,81 @@ SOURCE = Path(ARGS[0]) if ARGS else Path("out/tripo")
 CELL = int(ARGS[1]) if len(ARGS) > 1 else 256
 FRAMES = 12
 VIEWS = {}
+TURN_FIX = {}
 try:
 	import json
 	for job in json.loads((Path(__file__).resolve().parent.parent / "tripo" / "jobs.json").read_text())["jobs"]:
 		VIEWS[job["name"]] = job.get("view", 90.0)
+		TURN_FIX[job["name"]] = job.get("turn_fix", 0.0)
 except Exception as error:
 	print("RENDER 주문서를 못 읽음", error)
 ELEVATION = math.radians(16.0)
 ## 카메라를 돌리는 각도. 90도가 정면이고, 55도는 오른쪽을 보는 비스듬한 앞모습.
 FACING = 55.0
+
+
+## 캐릭터 앞이 카메라에서 화면 오른쪽으로 몇 도 돌아가 보이게 찍을지(0이면 정면, 90이면 옆모습).
+TURN_RIGHT = 40.0
+
+
+def _tokens(name: str) -> list:
+	import re
+	name = name.split(":")[-1]
+	return [token.lower() for token in re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\d+", name)]
+
+
+def skeleton_forward(rigs: list):
+	"""뼈대에서 캐릭터가 보는 쪽(바닥 위 방향 벡터)을 잰다. 왼쪽·오른쪽 짝 뼈(어깨·팔·허벅지)를 이은 선에 수직이고,
+	발끝 뼈가 있으면 발끝 쪽을 앞으로 본다. 못 찾으면 None."""
+	bones = {}
+	for rig in rigs:
+		for pose_bone in rig.pose.bones:
+			bones[pose_bone.name] = (rig.matrix_world @ pose_bone.head, rig.matrix_world @ pose_bone.tail)
+	if not bones:
+		return None
+	print("RENDER 뼈 이름:", ", ".join(list(bones.keys())[:40]))
+	def side(name):
+		tokens = _tokens(name)
+		if "left" in tokens or "l" in tokens:
+			return "L"
+		if "right" in tokens or "r" in tokens:
+			return "R"
+		return ""
+	right = Vector((0.0, 0.0, 0.0))
+	pairs = 0
+	for key in ("shoulder", "clavicle", "upperarm", "arm", "thigh", "upleg", "hip", "leg"):
+		lefts = [n for n in bones if key in "".join(_tokens(n)) and side(n) == "L"]
+		rights = [n for n in bones if key in "".join(_tokens(n)) and side(n) == "R"]
+		if lefts and rights:
+			lefts.sort(key=len)
+			rights.sort(key=len)
+			delta = bones[rights[0]][0] - bones[lefts[0]][0]
+			delta.z = 0.0
+			if delta.length > 1e-6:
+				right += delta.normalized()
+				pairs += 1
+	forward = None
+	if pairs:
+		forward = Vector((-right.y, right.x, 0.0))
+	# 발끝: 발목에서 발끝 쪽(뼈의 꼬리 방향)
+	toes = Vector((0.0, 0.0, 0.0))
+	for name, (head, tail) in bones.items():
+		joined = "".join(_tokens(name))
+		if "toe" in joined or ("foot" in joined and "ik" not in joined):
+			delta = tail - head
+			delta.z = 0.0
+			if delta.length > 1e-6:
+				toes += delta.normalized()
+	if forward is None and toes.length > 1e-6:
+		forward = toes
+	elif forward is not None and toes.length > 1e-6 and forward.dot(toes) < 0:
+		print("RENDER 발끝이 반대라 앞뒤를 뒤집음")
+		forward = -forward
+	if forward is None or forward.length < 1e-6:
+		return None
+	forward.normalize()
+	print("RENDER 뼈대 짝 %d개, 앞 방향 %.0f도" % (pairs, math.degrees(math.atan2(forward.y, forward.x))))
+	return forward
 
 
 def reset() -> None:
@@ -303,7 +369,17 @@ def render_folder(folder: Path) -> None:
 		print("RENDER", folder.name, "동작 모델 크기", [round(v, 3) for v in (high - low)])
 		pivot = make_camera(low, high)
 		# 정면에서 35도 돌린 방향으로 놓고, 가만히 선 자세로 카메라를 맞춘다. 한 번은 대충, 한 번은 정확히.
-		pivot.rotation_euler = (0, 0, view_angle + front_angle(rigs, original) - math.radians(90.0))
+		# 뼈대로 앞 방향을 재서, 모든 영웅이 같은 각도(앞이 화면 오른쪽으로 TURN_RIGHT도)로 보이게 카메라를 돌린다.
+		# 카메라 각도 θ에서 화면 쪽은 (sin θ, -cos θ), 화면 오른쪽은 (cos θ, sin θ)라서 θ = 앞 각도 + 90 - TURN_RIGHT.
+		forward = skeleton_forward(rigs)
+		if forward is not None:
+			extra = float(TURN_FIX.get(folder.name, 0.0))
+			angle = math.atan2(forward.y, forward.x) + math.radians(90.0 - TURN_RIGHT + extra)
+			print("RENDER", folder.name, "카메라 각도 %.0f도 (보정 %+.0f)" % (math.degrees(angle), extra))
+			pivot.rotation_euler = (0, 0, angle)
+		else:
+			print("RENDER", folder.name, "뼈대로 방향을 못 재서 주문서 각도를 씀")
+			pivot.rotation_euler = (0, 0, view_angle + front_angle(rigs, original) - math.radians(90.0))
 		scene.camera.data.ortho_scale *= 1.5
 		calibrate(scene.camera, out)
 		calibrate(scene.camera, out)
@@ -315,8 +391,17 @@ def render_folder(folder: Path) -> None:
 					track.mute = True
 				rig.animation_data.action = action
 			start, end = action.frame_range
+			# 동작마다 뿌리 뼈가 돌아가 있을 수 있어, 첫 장면에서 앞 방향을 다시 재서 맞춘다.
+			scene.frame_set(int(start))
+			moved = skeleton_forward(rigs)
+			if moved is not None and forward is not None and moved.angle(forward) > math.radians(20.0):
+				print("RENDER", action.name, "동작의 앞 방향이 %.0f도 달라 다시 맞춤" % math.degrees(moved.angle(forward)))
+				extra = float(TURN_FIX.get(folder.name, 0.0))
+				pivot.rotation_euler = (0, 0, math.atan2(moved.y, moved.x) + math.radians(90.0 - TURN_RIGHT + extra))
 			label = "".join(ch if ch.isalnum() else "_" for ch in action.name.lower())[:24]
 			kind = action.name.split("_")[0].lower()
+			if kind not in ("idle", "walk"):
+				continue
 			# 정면에서 35도 돌린 비스듬한 앞모습 한 방향만 찍는다(반대 방향은 게임이 뒤집어 그린다).
 			shots = []
 			for index in range(FRAMES):
