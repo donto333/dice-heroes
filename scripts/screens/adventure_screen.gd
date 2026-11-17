@@ -79,7 +79,7 @@ func _chapter_card(chapter: Dictionary, adventure: Dictionary) -> Control:
 	var open := _chapter_open(chapter, adventure)
 	var column := Kit.vbox(10)
 	# 장 그림 띠(assets/art/chapters/<장 id>.jpg). 잠긴 장은 어둡게.
-	var cover := _cover(str(chapter["id"]), 170.0)
+	var cover := _cover(str(chapter["id"]), 200.0)
 	if cover != null:
 		cover.modulate = Color.WHITE if open else Color(0.35, 0.35, 0.42)
 		column.add_child(cover)
@@ -123,8 +123,8 @@ func _stage_button(stage: Dictionary, adventure: Dictionary, is_next: bool) -> B
 	if unlocked:
 		color_name = "gold" if is_next else ("green" if stars > 0 else "blue")
 	var button := MenuArt.pill_button(label, color_name, "l")
-	button.custom_minimum_size = Vector2(0, 96)
-	button.add_theme_font_size_override("font_size", 20)
+	button.custom_minimum_size = Vector2(0, 104)
+	button.add_theme_font_size_override("font_size", 22)
 	button.disabled = not unlocked
 	if not unlocked:
 		var lock: TextureRect = Kit.icon("m_lock", 30.0)

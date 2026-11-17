@@ -652,8 +652,9 @@ func _refresh() -> void:
 			var member := _character(str(preset.get(slot, "")))
 			if not member.is_empty():
 				names.append(str(member["name"]))
-		preset_button.text = "%d번  %s" % [index + 1, " · ".join(names)] if names.size() == 3 else "%d번  비어 있음" % (index + 1)
-		preset_button.tooltip_text = preset_button.text
+		# 버튼이 좁아서 짧게: 채운 칸은 첫 영웅 이름 + 외, 빈 칸은 "빈 칸"
+		preset_button.text = "%d번 %s 외" % [index + 1, names[0]] if names.size() == 3 else "%d번 빈 칸" % (index + 1)
+		preset_button.tooltip_text = "%d번  %s" % [index + 1, " · ".join(names)] if names.size() == 3 else preset_button.text
 		var preset_color := "gold" if _saving else ("green" if names.size() == 3 else "blue")
 		if not MenuArt.pill(preset_button, preset_color):
 			var preset_fill := Color("f39a1c") if _saving else (Color("19a8c9") if names.size() == 3 else Color("2f74d6"))

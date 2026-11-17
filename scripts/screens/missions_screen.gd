@@ -26,7 +26,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	for mission in mission_list:
 		if Profile.mission_done(app.profile, mission):
 			done_count += 1
-	var summary := MenuArt.summary("missions", "오늘 완료 %d / %d" % [done_count, mission_list.size()], "매일 자정에 새로 시작")
+	var summary := MenuArt.summary("missions", "오늘 완료 %d / %d" % [done_count, mission_list.size()], "자정에 새로 시작")
 	var column := MenuArt.frame(self, app, "ui/bg_missions", rail, _tab, _on_mission_tab, summary)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -96,11 +96,12 @@ func _attendance_panel() -> Control:
 		cell.add_child(text)
 		if done:
 			var stamp_tex: Texture2D = MenuArt.tex("stamp")
-			var stamp: TextureRect = Kit.icon("check", 56.0)
+			var stamp: TextureRect = Kit.icon("check", 46.0)
 			if stamp_tex != null:
 				stamp.texture = stamp_tex
-			stamp.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			stamp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			# 글자가 보이게 오른쪽 아래 귀퉁이에 찍는다.
+			stamp.size_flags_horizontal = Control.SIZE_SHRINK_END
+			stamp.size_flags_vertical = Control.SIZE_SHRINK_END
 			stamp.modulate = Color(1, 1, 1, 0.9)
 			cell.add_child(stamp)
 		row.add_child(Kit.expand(cell))

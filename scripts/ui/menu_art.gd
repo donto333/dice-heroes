@@ -387,7 +387,7 @@ static func _fallback_color(color_name: String) -> Color:
 
 ## 칠한 색으로 알약 색 이름을 고른다(Kit.button에 준 색을 그대로 옮길 때).
 static func pill_name(color: Color) -> String:
-	if color.s < 0.25:
+	if color.s < 0.4:
 		return "gray"
 	var hue := color.h
 	if hue < 0.04 or hue > 0.93:
@@ -539,24 +539,24 @@ static func reward_capsules(reward: Dictionary) -> HBoxContainer:
 ## extra: 두 줄 글 아래에 덧붙일 것(작은 초상화 줄 등).
 static func summary(icon_name: String, first: String, second: String = "", extra: Control = null) -> PanelContainer:
 	var card := PanelContainer.new()
-	var art = style("summary_card", Vector4(30, 30, 30, 30), Vector4(14, 12, 12, 12))
+	var art = style("summary_card", Vector4(30, 30, 30, 30), Vector4(16, 14, 14, 14))
 	card.add_theme_stylebox_override("panel", art if art != null else Kit.plate(Color("13458f"), Kit.TRIM, 14.0, 12, false))
-	var line := HBoxContainer.new()
-	line.add_theme_constant_override("separation", 8)
-	card.add_child(line)
-	if icon_name != "":
-		var picture: TextureRect = Kit.icon(icon_name, 44.0)
-		picture.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		line.add_child(picture)
+	# 위: 아이콘 + 첫 줄, 아래: 둘째 줄(판 너비 전체), 그 아래 덧붙일 것
 	var words := VBoxContainer.new()
-	words.add_theme_constant_override("separation", 0)
-	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	words.alignment = BoxContainer.ALIGNMENT_CENTER
-	line.add_child(words)
-	words.add_child(Kit.para(first, 18, Color.WHITE))
+	words.add_theme_constant_override("separation", 2)
+	card.add_child(words)
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 6)
+	words.add_child(top)
+	if icon_name != "":
+		var picture: TextureRect = Kit.icon(icon_name, 34.0)
+		picture.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		top.add_child(picture)
+	var head: Label = Kit.para(first, 18, Color.WHITE)
+	head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(head)
 	if second != "":
-		var low: Label = Kit.para(second, 16, Kit.GOLD)
-		words.add_child(low)
+		words.add_child(Kit.para(second, 16, Kit.GOLD))
 	if extra != null:
 		words.add_child(extra)
 	return card
