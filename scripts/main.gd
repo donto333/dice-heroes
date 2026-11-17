@@ -37,9 +37,9 @@ const SCREENS := {
 ## 화면마다 다른 판 색(분위기). 시안식 틀을 쓰는 메뉴 화면(영웅·상점·미션·설정·모험·패스)은 시안처럼 모두 남색(2026-11-17).
 const SCREEN_MOODS := {
 	"lobby": Color("3b2f9e"), "shop": Color("1f3a82"), "heroes": Color("1f3a82"), "missions": Color("1f3a82"),
-	"settings": Color("1f3a82"), "adventure": Color("1f3a82"), "pass": Color("1f3a82"), "help": Color("1a6470"),
+	"settings": Color("1f3a82"), "adventure": Color("1f3a82"), "pass": Color("1f3a82"), "help": Color("1f3a82"),
 }
-const VERSION := "0.23.3"
+const VERSION := "0.23.4"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}

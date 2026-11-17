@@ -30,6 +30,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	body.add_child(sound)
 	var sound_row := Kit.hbox(10)
 	sound.add_child(sound_row)
+	sound_row.add_child(Kit.icon("sound", 44.0))
 	sound_row.add_child(Kit.expand(Kit.label("효과음", 26)))
 	var on: bool = app.sfx_on()
 	var toggle := Kit.button("켜짐" if on else "꺼짐", Kit.GOOD if on else Kit.PANEL_LIGHT, 24, 64)
@@ -40,6 +41,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	body.add_child(voice_panel)
 	var voice_row := Kit.hbox(10)
 	voice_panel.add_child(voice_row)
+	voice_row.add_child(Kit.icon("heroes", 44.0))
 	voice_row.add_child(Kit.expand(Kit.label("영웅 음성", 26)))
 	var voice_on: bool = app.voice_on()
 	var voice_toggle := Kit.button("켜짐" if voice_on else "꺼짐", Kit.GOOD if voice_on else Kit.PANEL_LIGHT, 24, 64)
@@ -51,6 +53,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	body.add_child(announcer_panel)
 	var announcer_row := Kit.hbox(10)
 	announcer_panel.add_child(announcer_row)
+	announcer_row.add_child(Kit.icon("chat", 44.0))
 	announcer_row.add_child(Kit.expand(Kit.label("안내 음성", 26)))
 	var announcer_label := "없음"
 	for entry in app.announcers():
@@ -64,6 +67,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	body.add_child(music_panel)
 	var music_row := Kit.hbox(10)
 	music_panel.add_child(music_row)
+	music_row.add_child(Kit.icon("music", 44.0))
 	music_row.add_child(Kit.expand(Kit.label("배경음악", 26)))
 	var music_on: bool = app.bgm_on()
 	var music_toggle := Kit.button("켜짐" if music_on else "꺼짐", Kit.GOOD if music_on else Kit.PANEL_LIGHT, 24, 64)
@@ -79,6 +83,7 @@ func setup(main_app, _params: Dictionary) -> void:
 	for spec in [["sfx", "효과음 크기"], ["voice", "음성 크기"], ["bgm", "음악 크기"]]:
 		var volume_row := Kit.hbox(10)
 		volume_column.add_child(volume_row)
+		volume_row.add_child(Kit.icon({"sfx": "sound", "voice": "chat", "bgm": "music"}.get(str(spec[0]), "sound"), 40.0))
 		volume_row.add_child(Kit.expand(Kit.label("%s  %d%%" % [spec[1], app.volume(str(spec[0]))], 24)))
 		var down := Kit.button("작게", Kit.PANEL_LIGHT, 22, 56)
 		down.custom_minimum_size = Vector2(110, 56)

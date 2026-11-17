@@ -3,6 +3,7 @@ extends Control
 ##   edit  : 영웅 화면의 파티 편성. 가진 영웅만 고를 수 있고, 정하면 저장.
 ##   match : 대전 직전. 랭크전·AI 연습은 가진 영웅만, 친구 대전은 두 사람 모두 48명 전부에서 고른다.
 
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const PartySelect := preload("res://scripts/ui/party_select.gd")
@@ -35,14 +36,20 @@ func setup(main_app, params: Dictionary) -> void:
 	var purpose := str(params.get("purpose", "edit"))
 	var mode := str(params.get("mode", ""))
 	var player := int(params.get("player", 1))
+	# 시안식 틀: 파티 편성은 영웅 화면과 같은 왼쪽 항목 판, 대전 전 파티 확인은 큰 판만.
+	var rail: Array = []
+	if purpose == "edit":
+		rail = [["list", "영웅 목록", "heroes"], ["album", "영웅 앨범", "album"], ["party", "파티 편성", "swords"]]
+	var holder := MenuArt.frame(self, app, "ui/bg_party", rail, "party", _on_rail)
 	var select := PartySelect.new()
-	add_child(select)
+	select.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	holder.add_child(select)
 	var characters: Array = app.owned_characters()
 	var initial: Dictionary = app.profile["party"]
 	_limit = app.point_limit()
 	if mode == "local":
 		_limit = int(app.data["rules"].get("local_point_limit", _limit))
-	var options := {"cancel_text": "뒤로", "levels": app.owned_levels(), "point_limit": _limit}
+	var options := {"cancel_text": "뒤로", "levels": app.owned_levels(), "point_limit": _limit, "framed": true, "narrow": purpose == "edit"}
 	if purpose == "edit":
 		options["title"] = "파티 편성"
 		options["subtitle"] = "가진 영웅 %d명 중에서 골라요. 소환 포인트(★ 합계)는 %d까지.%s" % [characters.size(), _limit, _next_limit_text()]
@@ -67,6 +74,13 @@ func setup(main_app, params: Dictionary) -> void:
 	select.setup(characters, app.data["abilities"], initial, options)
 	select.confirmed.connect(_on_confirmed)
 	select.cancelled.connect(_on_cancelled)
+
+
+func _on_rail(id: String) -> void:
+	if id == "party":
+		return
+	app.play("click")
+	app.go("heroes")
 
 
 func _on_preset_saved(index: int, party: Dictionary) -> void:

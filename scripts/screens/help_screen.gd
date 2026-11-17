@@ -3,6 +3,7 @@ extends Control
 ## 로비와 설정에서 들어온다. params.back으로 돌아갈 화면을 정한다.
 
 const Kit := preload("res://scripts/ui/kit.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 
 const SECTIONS := [
 	["목표", "주사위를 굴려 보드를 달리고, 골(분홍 칸)을 지키는 수호자를 전투로 이기면 승리! 50턴 안에 아무도 못 들어가면 골에 더 가까운 쪽이 이겨요."],
@@ -47,12 +48,29 @@ var app
 var _back := "lobby"
 
 
+## 왼쪽 세로 판 항목: [id, 글자, 아이콘, 넣을 SECTIONS 제목들]
+const GROUPS := [
+	["basic", "기본 규칙", "help", ["목표", "맵", "파티", "이동", "전투"]],
+	["dice", "주사위", "dice", ["주사위 컨트롤", "더블", "따라잡기", "시너지"]],
+	["play", "카드·성장", "card", ["카드와 어빌리티", "성장", "랭크"]],
+	["content", "콘텐츠", "adventure", ["모험", "모험 소탕", "AI 연습전", "매일 할 것", "업적"]],
+	["tiles", "칸 종류", "flag", []],
+]
+
+var _group := "basic"
+
+
 func setup(main_app, params: Dictionary) -> void:
 	app = main_app
 	_back = str(params.get("back", "lobby"))
-	var column := Kit.screen_frame(self, 18)
-	move_child(Kit.backdrop(self, "ui/bg_settings", 0.5), 1)
-	column.add_child(Kit.title("게임 방법", 48))
+	_group = str(params.get("group", "basic"))
+	# 시안식 틀: 왼쪽 세로 판에 설명 묶음, 오른쪽 큰 금테 판.
+	var rail: Array = []
+	for group in GROUPS:
+		rail.append([group[0], group[1], group[2]])
+	if _back != "lobby":
+		rail.append(["back", "돌아가기", "exit"])
+	var column := MenuArt.frame(self, app, "ui/bg_settings", rail, _group, _on_rail)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -60,17 +78,29 @@ func setup(main_app, params: Dictionary) -> void:
 	var body := Kit.vbox(12)
 	Kit.expand(body)
 	scroll.add_child(body)
+	if _group == "tiles":
+		_add_tiles(body)
+		return
+	var wanted: Array = []
+	for group in GROUPS:
+		if group[0] == _group:
+			wanted = group[3]
 	for section in SECTIONS:
+		if not wanted.has(section[0]):
+			continue
 		var card := Kit.panel()
 		var inside := Kit.vbox(6)
 		card.add_child(inside)
-		inside.add_child(Kit.label(section[0], 28, Kit.GOLD))
-		inside.add_child(Kit.para(section[1], 21, Color.WHITE))
+		inside.add_child(Kit.label(section[0], 30, Kit.GOLD))
+		inside.add_child(Kit.para(section[1], 22, Color.WHITE))
 		body.add_child(card)
+
+
+func _add_tiles(body: VBoxContainer) -> void:
 	var tiles := Kit.panel()
 	var tile_column := Kit.vbox(8)
 	tiles.add_child(tile_column)
-	tile_column.add_child(Kit.label("칸 종류", 28, Kit.GOLD))
+	tile_column.add_child(Kit.label("칸 종류", 30, Kit.GOLD))
 	for spec in TILES:
 		var row := Kit.hbox(12)
 		var icon := TextureRect.new()
@@ -86,9 +116,14 @@ func setup(main_app, params: Dictionary) -> void:
 		row.add_child(Kit.expand(Kit.para(spec[2], 20, Kit.MUTED)))
 		tile_column.add_child(row)
 	body.add_child(tiles)
-	var back := Kit.button("돌아가기", Kit.ACCENT, 28, 88)
-	back.pressed.connect(_on_back)
-	column.add_child(back)
+
+
+func _on_rail(id: String) -> void:
+	if id == "back":
+		_on_back()
+		return
+	app.play("click")
+	app.go("help", {"back": _back, "group": id})
 
 
 func _on_back() -> void:
