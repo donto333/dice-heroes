@@ -72,16 +72,19 @@ func _build() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
-	var background := ColorRect.new()
-	background.color = Color("2a8be6")
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
-	KitStyle.backdrop(self, "ui/bg_party", 0.5)
+	# framed: 시안식 메뉴 틀(MenuArt.frame)의 큰 판 안에 들어갈 때는 바탕과 큰 여백 없이 그린다.
+	var framed := bool(_options.get("framed", false))
+	if not framed:
+		var background := ColorRect.new()
+		background.color = Color("2a8be6")
+		background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		add_child(background)
+		KitStyle.backdrop(self, "ui/bg_party", 0.5)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 18)
+		margin.add_theme_constant_override("margin_" + side, 0 if framed else 18)
 	add_child(margin)
 
 	# 가로 화면: 왼쪽에 내 파티 세 자리와 버튼, 오른쪽에 영웅 목록.
@@ -90,7 +93,7 @@ func _build() -> void:
 	margin.add_child(halves)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
-	column.custom_minimum_size = Vector2(520, 0)
+	column.custom_minimum_size = Vector2(440 if framed else 520, 0)
 	halves.add_child(column)
 	var right := VBoxContainer.new()
 	right.add_theme_constant_override("separation", 8)
@@ -172,7 +175,7 @@ func _build() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	right.add_child(scroll)
 	var grid := GridContainer.new()
-	grid.columns = 4
+	grid.columns = 3 if bool(_options.get("framed", false)) and bool(_options.get("narrow", false)) else 4
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
