@@ -53,7 +53,7 @@ jobs:
           /tmp/blender/blender --version | head -1
       - name: 블렌더로 찍기
         if: always()
-        run: /tmp/blender/blender -b -P tools/tripo_render.py -- out/tripo 384 2>&1 | grep -E "RENDER|Error|error" | head -300
+        run: /tmp/blender/blender -b -P tools/tripo_render.py -- out/tripo 384 2>&1 | grep -E "RENDER|Error|error" | head -3000
       - name: 결과물 올리기
         if: always()
         uses: actions/upload-artifact@v4

@@ -49,7 +49,7 @@ def skeleton_forward(rigs: list):
 			bones[pose_bone.name] = (rig.matrix_world @ pose_bone.head, rig.matrix_world @ pose_bone.tail)
 	if not bones:
 		return None
-	print("RENDER 뼈 이름:", ", ".join(list(bones.keys())[:40]))
+	pass
 	def side(name):
 		tokens = _tokens(name)
 		if "left" in tokens or "l" in tokens:
