@@ -75,7 +75,19 @@ func _rebuild() -> void:
 	for category in _tabs:
 		var on: bool = category == _filter
 		var color: Color = Kit.CATEGORY_COLORS.get(category, Kit.PANEL_LIGHT)
-		Kit.paint(_tabs[category], color if on else color.darkened(0.55), Color.WHITE if on else color.darkened(0.2))
+		# 시안처럼 고른 분류는 노란 알약, 나머지는 분류 색 알약.
+		var tab: Button = _tabs[category]
+		if on and MenuArt.skin_button(tab, "tab_on", Vector4(30, 0, 30, 0), Vector4(10, 2, 10, 4)):
+			for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+				tab.add_theme_color_override(state, Color("5a3200"))
+			tab.add_theme_constant_override("outline_size", 0)
+		else:
+			Kit.paint(tab, color if category != "" else Color("2f74d6"), Color.WHITE)
+			var gloss = tab.get_node_or_null("Gloss")
+			if gloss != null:
+				gloss.visible = true
+			for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+				tab.add_theme_color_override(state, Color.WHITE)
 	# 가진 영웅 먼저, 그 안에서는 등급이 높은 순, 같으면 레벨이 높은 순
 	var shown: Array = []
 	for character in app.data["characters"]:
