@@ -260,13 +260,20 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	var role := _band_label(SLOT_LABELS[slot], 16, 0.0, 0.15)
 	button.add_child(role)
 	# 능력 한 줄(2단계): 초상화 아래쪽에 어두운 띠를 깔고 그 위에 또렷하게.
-	var stat := _band_label("", 18, 0.74, 0.85)
+	var stat := _band_label("", 18, 0.70, 0.81)
 	stat.offset_left = 8
 	stat.offset_right = -8
 	stat.add_theme_color_override("font_color", GOLD)
 	stat.add_theme_stylebox_override("normal", KitStyle.box(Color(0.0, 0.03, 0.14, 0.78), Color.TRANSPARENT, 0, 6, 0))
 	button.add_child(stat)
-	var text := _band_label("", 16, 0.85, 1.0)
+	# 아래 남색 띠(그림의 세로 82~97%, 가로 양 끝 보석 안쪽)에 맞춰 ★이름을 놓는다.
+	# 이름이 길면 글자를 줄여서라도 띠 안에 다 들어가게 한다.
+	var text := _band_label("", 16, 0.82, 0.975)
+	text.anchor_left = 0.1
+	text.anchor_right = 0.9
+	text.offset_left = 0
+	text.offset_right = 0
+	text.resized.connect(_fit_label.bind(text, 16, 10))
 	button.add_child(text)
 	return {"portrait": portrait, "text": text, "stat": stat, "frame": frame}
 
@@ -334,6 +341,17 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 
 
 ## 카드 안 가로 띠 글자(위·아래 비율 사이에 가운데 정렬).
+## 글자가 칸 너비를 넘으면 글자 크기를 줄여 한 줄에 다 보이게 한다(가장 작게 smallest까지).
+func _fit_label(label: Label, largest: int, smallest: int) -> void:
+	var font := label.get_theme_font("font")
+	var room := label.size.x - 4.0
+	var font_size := largest
+	if font != null and room > 0.0:
+		while font_size > smallest and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > room:
+			font_size -= 1
+	label.add_theme_font_size_override("font_size", font_size)
+
+
 func _band_label(text: String, font_size: int, top: float, bottom: float) -> Label:
 	var label := _label(text, font_size, Color.WHITE)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -610,6 +628,7 @@ func _refresh() -> void:
 		if parts.has("frame"):
 			# 금테 자리 카드: 고른 자리는 테가 밝게 빛난다.
 			parts["text"].text = "비어 있음" if character.is_empty() else "%s %s" % ["★".repeat(int(character["grade"])), character["name"]]
+			_fit_label(parts["text"], 16, 10)
 			parts["stat"].text = SLOT_HINTS[slot] if character.is_empty() else "%s %d" % [STAT_NAMES[stat], int(character[stat])]
 			parts["frame"].modulate = Color(1.3, 1.25, 1.0) if slot == _active_slot else Color(0.82, 0.82, 0.9)
 			button.pivot_offset = button.size * 0.5
