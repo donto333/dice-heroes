@@ -151,6 +151,11 @@ func _run() -> void:
 	_app.current_screen._on_paid(10)
 	await _wait(2.0)
 	await _shot("09_summon")
+	# 소환 연출(전체 화면)을 닫는다.
+	for child in _app.get_children():
+		if child.has_method("_hero_cut"):
+			child._close(false)
+	await _wait(0.4)
 	_close_dialogs()
 
 	_app.go("missions")
