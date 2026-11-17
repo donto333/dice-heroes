@@ -45,7 +45,8 @@ const ICON_FALLBACK := {"pass": "goal", "todo": "start", "help": "hidden", "atte
 const GOLD_CODE := 0xE000
 static var GOLD_ICON := String.chr(GOLD_CODE) if ResourceLoader.exists("res://assets/ui_icons/gold.png") else "골드"
 ## 글꼴(한글 부분집합)에 마름모 기호가 없어서 웹에서 깨진다. 글자로 쓴다.
-const GEM_ICON := "보석"
+const GEM_CODE := 0xE001
+static var GEM_ICON := String.chr(GEM_CODE) if ResourceLoader.exists("res://assets/ui_icons/gem.png") else "보석"
 
 
 static func box(fill: Color, border: Color = Color.TRANSPARENT, width: int = 0, radius: int = 12, padding: int = 10) -> StyleBoxFlat:
