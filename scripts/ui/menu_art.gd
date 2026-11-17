@@ -93,8 +93,10 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 		picture.texture = icon
 		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		picture.position = Vector2(12, 12)
-		picture.size = Vector2(40, 40)
+		# 명판 그림(178×64)의 동그란 구멍은 가운데 (29.5, 31.5), 지름 약 36픽셀이다.
+		# 아이콘이 금테를 덮지 않게 구멍보다 조금 작게(34) 정확히 가운데에 둔다.
+		picture.position = Vector2(29.5 - 17.0, 31.5 - 17.0)
+		picture.size = Vector2(34, 34)
 		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		plate.add_child(picture)
 	var label := Label.new()
@@ -155,7 +157,9 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	var spec: Array = TITLES.get(str(app.current_name), ["", ""])
 	var plate := title_plate(str(spec[0]), Kit.icon(str(spec[1]), 40.0).texture)
 	if plate != null:
-		plate.custom_minimum_size = Vector2(300, 70)
+		# 높이를 그림 원래 높이(64)로 둬서 동그란 자리가 세로로 늘어나 타원이 되지 않게 한다.
+		plate.custom_minimum_size = Vector2(300, 64)
+		plate.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		head.add_child(plate)
 	else:
 		head.add_child(Kit.label(str(spec[0]), 32))
