@@ -92,7 +92,7 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 		plate.add_child(picture)
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 25)
+	label.add_theme_font_size_override("font_size", 30)
 	label.add_theme_color_override("font_color", Color.WHITE)
 	label.add_theme_constant_override("outline_size", 6)
 	label.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
@@ -137,10 +137,10 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	# 위 줄
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 10)
-	head.custom_minimum_size = Vector2(0, 62)
+	head.custom_minimum_size = Vector2(0, 70)
 	outer.add_child(head)
 	var home := Button.new()
-	home.custom_minimum_size = Vector2(78, 58)
+	home.custom_minimum_size = Vector2(72, 64)
 	home.tooltip_text = "로비로"
 	if not skin_button(home, "menu_off", Vector4(30, 26, 30, 26), Vector4(4, 4, 4, 4)):
 		Kit.paint(home, Kit.PANEL_LIGHT)
@@ -161,7 +161,7 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	var spec: Array = TITLES.get(str(app.current_name), ["", ""])
 	var plate := title_plate(str(spec[0]), Kit.icon(str(spec[1]), 40.0).texture)
 	if plate != null:
-		plate.custom_minimum_size = Vector2(250, 62)
+		plate.custom_minimum_size = Vector2(300, 70)
 		head.add_child(plate)
 	else:
 		head.add_child(Kit.label(str(spec[0]), 32))
@@ -178,7 +178,7 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	outer.add_child(body)
 	if not tabs.is_empty():
 		var rail := PanelContainer.new()
-		rail.custom_minimum_size = Vector2(212, 0)
+		rail.custom_minimum_size = Vector2(238, 0)
 		var rail_style = style("rail_panel", Vector4(24, 34, 24, 34), Vector4(12, 18, 12, 18))
 		rail.add_theme_stylebox_override("panel", rail_style if rail_style != null else Kit.plate(Color("17357f"), Kit.TRIM, 20.0, 12, false))
 		body.add_child(rail)
@@ -202,9 +202,9 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 static func _rail_button(entry: Array, on: bool, on_tab: Callable) -> Button:
 	var button := Button.new()
 	button.text = str(entry[1])
-	button.custom_minimum_size = Vector2(0, 62)
+	button.custom_minimum_size = Vector2(0, 76)
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.add_theme_font_size_override("font_size", 22)
+	button.add_theme_font_size_override("font_size", 26)
 	if not skin_button(button, "menu_on" if on else "menu_off", Vector4(30, 26, 30, 26), Vector4(16, 4, 12, 6)):
 		Kit.paint(button, Color("ffc62b") if on else Color("2f74d6"))
 	var ink := Color("5a3200") if on else Color.WHITE
@@ -213,11 +213,11 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable) -> Button:
 	button.add_theme_constant_override("outline_size", 0 if on else 6)
 	button.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.25))
 	if entry.size() > 2:
-		var picture: TextureRect = Kit.icon(str(entry[2]), 36.0)
+		var picture: TextureRect = Kit.icon(str(entry[2]), 46.0)
 		if picture.texture != null:
 			button.icon = picture.texture
 			button.expand_icon = false
-			button.add_theme_constant_override("icon_max_width", 36)
+			button.add_theme_constant_override("icon_max_width", 46)
 			button.add_theme_constant_override("h_separation", 10)
 	button.pressed.connect(func() -> void: on_tab.call(str(entry[0])))
 	return button
@@ -226,15 +226,28 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable) -> Button:
 ## 위 줄 재화 캡슐(아이콘 + 오른쪽 정렬 숫자).
 static func _money_chip(icon_name: String, amount: int, color: Color) -> Control:
 	var capsule := PanelContainer.new()
-	capsule.custom_minimum_size = Vector2(190, 46)
+	capsule.custom_minimum_size = Vector2(230, 50)
 	capsule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var art = style("currency", Vector4(24, 0, 24, 0), Vector4(8, 3, 18, 3))
+	var art = style("currency", Vector4(24, 0, 24, 0), Vector4(8, 2, 6, 2))
 	capsule.add_theme_stylebox_override("panel", art if art != null else Kit.box(Color(0, 0.06, 0.22, 0.72), color.darkened(0.2), 2, 20, 4))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
 	capsule.add_child(row)
 	row.add_child(Kit.icon(icon_name, 34.0))
-	var label: Label = Kit.label(Kit.comma(amount), 23, color, HORIZONTAL_ALIGNMENT_RIGHT)
+	var label: Label = Kit.label(Kit.comma(amount), 26, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
+	label.add_theme_constant_override("outline_size", 5)
+	label.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
+	var plus := tex("plus_btn")
+	if plus != null:
+		# 시안처럼 오른쪽 끝에 초록 더하기(꾸밈).
+		var mark := TextureRect.new()
+		mark.texture = plus
+		mark.custom_minimum_size = Vector2(42, 34)
+		mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(mark)
 	return capsule
