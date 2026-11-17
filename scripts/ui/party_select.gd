@@ -14,6 +14,11 @@ signal cancelled
 signal preset_saved(index: int, party: Dictionary)
 
 const Portrait := preload("res://scripts/ui/portrait.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
+## 분류 → 알약 색(영웅 화면과 같은 탭)
+const CATEGORY_PILLS := {"": "blue", "영웅": "red", "위인": "blue", "신화": "purple", "근현대": "green"}
+## 자리 → 자리 카드 틀 그림(assets/ui_menu/slot_*.png, 위 띠 빨강·보라·초록)
+const SLOT_FRAMES := {"attack": "slot_attack", "defense": "slot_defense", "support": "slot_support"}
 
 const SLOTS := ["attack", "defense", "support"]
 const SLOT_LABELS := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
@@ -46,6 +51,9 @@ var _styles: Dictionary = {}
 var _filter := ""
 var _filter_buttons: Dictionary = {}
 var _info_label: Label
+var _synergy_label: Label
+## 그림 부품(assets/ui_menu)이 있으면 금테 카드·알약으로 그린다(UI 개편 1단계).
+var _art := false
 ## {"title", "subtitle", "confirm_text", "cancel_text", "levels": {id: 레벨}}
 var _options: Dictionary = {}
 ## 저장 칸(파티 3개까지). options["presets"]가 있을 때만 보인다.
@@ -87,40 +95,57 @@ func _build() -> void:
 		margin.add_theme_constant_override("margin_" + side, 0 if framed else 18)
 	add_child(margin)
 
-	# 가로 화면: 왼쪽에 내 파티 세 자리와 버튼, 오른쪽에 영웅 목록.
+	# 가로 화면: 왼쪽(42%)에 내 파티 세 자리와 버튼, 오른쪽(58%)에 영웅 목록.
+	_art = MenuArt.tex("slot_attack") != null and MenuArt.tex("hero_card") != null
 	var halves := HBoxContainer.new()
 	halves.add_theme_constant_override("separation", 16)
 	margin.add_child(halves)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
-	column.custom_minimum_size = Vector2(440 if framed else 520, 0)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.size_flags_stretch_ratio = 42.0
+	column.custom_minimum_size = Vector2(380 if framed else 520, 0)
 	halves.add_child(column)
 	var right := VBoxContainer.new()
 	right.add_theme_constant_override("separation", 8)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.size_flags_stretch_ratio = 58.0
 	halves.add_child(right)
 
-	var title := _label(str(_options.get("title", "파티 편성")), 30 if framed else 38, GOLD)
-	title.add_theme_constant_override("outline_size", 10)
-	title.add_theme_color_override("font_outline_color", Color("5a3a00"))
+	var title := _label(str(_options.get("title", "파티 편성")), 28 if framed else 38, GOLD)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	TextStyle.gold(title, 8)
 	column.add_child(title)
-	column.add_child(_label(str(_options.get("subtitle", "자리를 누른 뒤 아래 영웅을 고르면 그 자리에 앉습니다.")), 16 if framed else 19, Color(1, 1, 1, 0.75)))
+	var subtitle := _label(str(_options.get("subtitle", "자리를 누른 뒤 아래 영웅을 고르면 그 자리에 앉습니다.")), 16 if framed else 19, Color(1, 1, 1, 0.85))
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	column.add_child(subtitle)
 
 	var slot_row := HBoxContainer.new()
 	slot_row.add_theme_constant_override("separation", 8)
 	column.add_child(slot_row)
 	for slot in SLOTS:
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0, 176 if framed else 216)
+		button.custom_minimum_size = Vector2(0, 186 if framed else 216)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		button.pressed.connect(_on_slot_pressed.bind(slot))
 		slot_row.add_child(button)
 		_slot_buttons[slot] = button
-		_slot_parts[slot] = _fill_card(button, 86.0 if framed else 112.0, 15 if framed else 16)
+		_slot_parts[slot] = _slot_card(button, slot) if _art else _fill_card(button, 86.0 if framed else 112.0, 16)
 
-	_points_label = _label("", 20 if framed else 24, Color.WHITE)
-	column.add_child(_points_label)
+	# 소환 포인트와 시너지: 캡슐 두 개
+	var caps := HBoxContainer.new()
+	caps.add_theme_constant_override("separation", 6)
+	column.add_child(caps)
+	var point_cap: Control = MenuArt.capsule("", "star", 18)
+	caps.add_child(point_cap)
+	_points_label = _capsule_label(point_cap)
+	var synergy_cap: Control = MenuArt.capsule("", "", 16)
+	synergy_cap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	caps.add_child(synergy_cap)
+	_synergy_label = _capsule_label(synergy_cap)
+	_synergy_label.clip_text = true
+	_synergy_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	# 저장 칸: 자주 쓰는 파티를 넣어 두고 한 번에 불러온다.
 	_preset_buttons = []
@@ -130,14 +155,14 @@ func _build() -> void:
 		preset_row.add_theme_constant_override("separation", 6)
 		column.add_child(preset_row)
 		_save_button = _plain_button("칸에 저장", Color("7a5a1c"))
-		_save_button.custom_minimum_size = Vector2(120, 56)
+		_save_button.custom_minimum_size = Vector2(124, 50)
 		_save_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		_save_button.add_theme_font_size_override("font_size", 20)
+		_save_button.add_theme_font_size_override("font_size", 18)
 		_save_button.pressed.connect(_on_save_mode_pressed)
 		preset_row.add_child(_save_button)
 		for index in 3:
 			var preset := _plain_button("", Color("2f74d6"))
-			preset.custom_minimum_size = Vector2(0, 56)
+			preset.custom_minimum_size = Vector2(0, 50)
 			preset.add_theme_font_size_override("font_size", 16)
 			preset.clip_text = true
 			preset.pressed.connect(_on_preset_pressed.bind(index))
@@ -145,27 +170,22 @@ func _build() -> void:
 			_preset_buttons.append(preset)
 
 	# 고른 캐릭터의 어빌리티 설명
-	_info_label = _label("캐릭터를 누르면 어빌리티 설명이 여기 나옵니다.", 19, Color(1, 1, 1, 0.8))
-	_info_label.custom_minimum_size = Vector2(0, 40 if framed else 56)
+	_info_label = _label("캐릭터를 누르면 어빌리티 설명이 여기 나옵니다.", 18, Color(1, 1, 1, 0.9))
+	_info_label.custom_minimum_size = Vector2(0, 44 if framed else 56)
 	_info_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_info_label.add_theme_stylebox_override("normal", KitStyle.plate(Color(0.06, 0.08, 0.3, 0.72), Color("8fa6d8"), 14.0, 10, false))
+	var info_style = MenuArt.style("list_row", Vector4(22, 22, 22, 22), Vector4(16, 8, 16, 8))
+	_info_label.add_theme_stylebox_override("normal", info_style if info_style != null else KitStyle.plate(Color(0.06, 0.08, 0.3, 0.72), Color("8fa6d8"), 14.0, 10, false))
 	column.add_child(_info_label)
 
-	# 분류 탭
+	# 분류 탭(영웅 화면과 같은 알약)
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 6)
 	right.add_child(tabs)
 	for category in ["", "영웅", "위인", "신화", "근현대"]:
-		var tab := Button.new()
-		tab.text = "전체" if category == "" else category
-		tab.custom_minimum_size = Vector2(0, 56)
-		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var tab := _plain_button("전체" if category == "" else category, CATEGORY_COLORS.get(category, Color("2f74d6")))
+		tab.custom_minimum_size = Vector2(0, 50)
 		tab.add_theme_font_size_override("font_size", 20)
-		tab.add_theme_color_override("font_color", Color.WHITE)
-		tab.add_theme_color_override("font_hover_color", Color.WHITE)
-		tab.add_theme_color_override("font_pressed_color", Color.WHITE)
-		tab.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		tab.pressed.connect(_on_filter_pressed.bind(category))
 		tabs.add_child(tab)
 		_filter_buttons[category] = tab
@@ -188,8 +208,9 @@ func _build() -> void:
 		button.pressed.connect(_on_character_pressed.bind(character["id"]))
 		grid.add_child(button)
 		_card_buttons[character["id"]] = button
-		var parts := _fill_card(button, 138.0, 15)
-		parts["text"].text = _card_text(character)
+		var parts := _hero_card(button, character) if _art else _fill_card(button, 138.0, 16)
+		if not _art:
+			parts["text"].text = _card_text(character)
 		parts["portrait"].show_character(character, CATEGORY_COLORS.get(character["category"], Color("8fd0ff")))
 		_card_parts[character["id"]] = parts
 
@@ -204,9 +225,127 @@ func _build() -> void:
 	auto_button.pressed.connect(_on_auto_pressed)
 	bottom.add_child(auto_button)
 	_start_button = _plain_button(str(_options.get("confirm_text", "결정")), Color("2fb457"))
-	_start_button.size_flags_stretch_ratio = 2.0
+	_start_button.size_flags_stretch_ratio = 1.6
 	_start_button.pressed.connect(_on_start_pressed)
 	bottom.add_child(_start_button)
+
+
+func _capsule_label(capsule: Control) -> Label:
+	var line: Node = capsule.get_child(0)
+	return line.get_child(line.get_child_count() - 1) as Label
+
+
+## 금테 자리 카드: 위 색 띠에 자리 이름, 가운데 초상화와 능력 한 줄, 아래 남색 띠에 ★이름.
+func _slot_card(button: Button, slot: String) -> Dictionary:
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	var portrait := Portrait.new()
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.anchor_top = 0.14
+	portrait.anchor_bottom = 0.85
+	portrait.offset_left = 8
+	portrait.offset_right = -8
+	portrait.offset_top = 0
+	portrait.offset_bottom = 0
+	portrait.border_width = 0.0
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(portrait)
+	var frame := TextureRect.new()
+	frame.texture = MenuArt.tex(SLOT_FRAMES[slot])
+	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame.stretch_mode = TextureRect.STRETCH_SCALE
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(frame)
+	var role := _band_label(SLOT_LABELS[slot], 16, 0.0, 0.15)
+	button.add_child(role)
+	var stat := _band_label("", 16, 0.66, 0.84)
+	stat.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	stat.add_theme_color_override("font_color", GOLD)
+	button.add_child(stat)
+	var text := _band_label("", 16, 0.85, 1.0)
+	button.add_child(text)
+	return {"portrait": portrait, "text": text, "stat": stat, "frame": frame}
+
+
+## 금테 영웅 카드(영웅 화면과 같은 hero_card 틀): 초상화, ★·레벨, 능력 줄, 아래 띠에 이름.
+func _hero_card(button: Button, character: Dictionary) -> Dictionary:
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var fill := StyleBoxFlat.new()
+		fill.bg_color = Color("0f3d85") if state != "hover" else Color("1a4fa0")
+		fill.set_corner_radius_all(10)
+		fill.expand_margin_left = -6
+		fill.expand_margin_right = -6
+		fill.expand_margin_top = -10
+		fill.expand_margin_bottom = -8
+		button.add_theme_stylebox_override(state, fill)
+	var portrait := Portrait.new()
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.anchor_bottom = 0.6
+	portrait.offset_left = 10
+	portrait.offset_right = -10
+	portrait.offset_top = 16
+	portrait.offset_bottom = 0
+	portrait.border_width = 0.0
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(portrait)
+	var frame := TextureRect.new()
+	frame.texture = MenuArt.tex("hero_card")
+	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame.stretch_mode = TextureRect.STRETCH_SCALE
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(frame)
+	var levels: Dictionary = _options.get("levels", {})
+	var grade_text := "★".repeat(int(character["grade"]))
+	if levels.has(character["id"]):
+		grade_text += "  Lv%d" % int(levels[character["id"]])
+	var grade := _band_label(grade_text, 16, 0.6, 0.7)
+	grade.add_theme_color_override("font_color", GOLD)
+	button.add_child(grade)
+	var stats := _band_label("이동%d 공%d 방%d 지%d" % [int(character["move"]), int(character["attack"]), int(character["defense"]), int(character["intellect"])], 16, 0.7, 0.81)
+	button.add_child(stats)
+	var name_label := _band_label(str(character["name"]), 18, 0.82, 0.95)
+	button.add_child(name_label)
+	# 분류는 왼쪽 위 작은 동그란 표식으로만
+	var dot := Panel.new()
+	var dot_style := StyleBoxFlat.new()
+	dot_style.bg_color = CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
+	dot_style.border_color = Color.WHITE
+	dot_style.set_border_width_all(2)
+	dot_style.set_corner_radius_all(9)
+	dot.add_theme_stylebox_override("panel", dot_style)
+	dot.position = Vector2(12, 18)
+	dot.size = Vector2(18, 18)
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(dot)
+	var check := KitStyle.icon("m_check", 34.0)
+	check.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	check.offset_left = -46
+	check.offset_right = -10
+	check.offset_top = 14
+	check.offset_bottom = 48
+	check.visible = false
+	button.add_child(check)
+	return {"portrait": portrait, "text": name_label, "frame": frame, "check": check}
+
+
+## 카드 안 가로 띠 글자(위·아래 비율 사이에 가운데 정렬).
+func _band_label(text: String, font_size: int, top: float, bottom: float) -> Label:
+	var label := _label(text, font_size, Color.WHITE)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.clip_text = true
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.anchor_top = top
+	label.anchor_bottom = bottom
+	label.offset_left = 10
+	label.offset_right = -10
+	label.offset_top = 0
+	label.offset_bottom = 0
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	TextStyle.menu(label, Color(0, 0.05, 0.2), 5)
+	return label
 
 
 ## 버튼 안을 위쪽 초상화 + 아래쪽 글자로 채운다. 버튼 자체 글자는 쓰지 않는다.
@@ -262,16 +401,17 @@ func _box(fill: Color, border: Color, width: int) -> StyleBoxFlat:
 func _plain_button(text: String, color: Color) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(0, 72)
+	button.custom_minimum_size = Vector2(0, 64)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", 24)
+	button.add_theme_font_size_override("font_size", 22)
 	button.add_theme_color_override("font_color", Color.WHITE)
 	button.add_theme_color_override("font_hover_color", Color.WHITE)
 	button.add_theme_color_override("font_pressed_color", Color.WHITE)
 	button.add_theme_color_override("font_focus_color", Color.WHITE)
 	button.add_theme_color_override("font_disabled_color", Color("e3ebf7"))
-	# 다른 화면과 같은 통통한 버튼 모양
+	# 다른 화면과 같은 통통한 버튼 모양. 그림 부품이 있으면 금테 알약.
 	KitStyle.paint(button, color)
+	MenuArt.pill(button, MenuArt.pill_name(color))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	return button
 
@@ -447,12 +587,13 @@ func _refresh() -> void:
 		return
 	for category in _filter_buttons:
 		var tab: Button = _filter_buttons[category]
-		var tab_color: Color = CATEGORY_COLORS.get(category, Color("8fd0ff"))
 		var on: bool = category == _filter
-		var tab_fill: Color = tab_color if on else tab_color.darkened(0.55)
-		var tab_border: Color = Color.WHITE if on else tab_color.darkened(0.2)
-		for state in ["normal", "hover", "pressed"]:
-			tab.add_theme_stylebox_override(state, _box(tab_fill, tab_border, 2))
+		if on:
+			MenuArt.tab(tab, true)
+		elif not MenuArt.pill(tab, CATEGORY_PILLS.get(category, "blue")):
+			var tab_color: Color = CATEGORY_COLORS.get(category, Color("8fd0ff"))
+			for state in ["normal", "hover", "pressed"]:
+				tab.add_theme_stylebox_override(state, _box(tab_color.darkened(0.55), tab_color.darkened(0.2), 2))
 	for id in _card_buttons:
 		var card: Button = _card_buttons[id]
 		card.visible = _filter == "" or _character(id).get("category", "") == _filter
@@ -461,14 +602,21 @@ func _refresh() -> void:
 		var character := _character(party[slot])
 		var stat: String = SLOT_STAT[slot]
 		var parts: Dictionary = _slot_parts[slot]
+		var fill: Color = Color("6f86a8") if character.is_empty() else CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
+		parts["portrait"].show_character(character, fill)
+		if parts.has("frame"):
+			# 금테 자리 카드: 고른 자리는 테가 밝게 빛난다.
+			parts["text"].text = "비어 있음" if character.is_empty() else "%s %s" % ["★".repeat(int(character["grade"])), character["name"]]
+			parts["stat"].text = SLOT_HINTS[slot] if character.is_empty() else "%s %d" % [STAT_NAMES[stat], int(character[stat])]
+			parts["frame"].modulate = Color(1.3, 1.25, 1.0) if slot == _active_slot else Color(0.82, 0.82, 0.9)
+			button.pivot_offset = button.size * 0.5
+			continue
 		if character.is_empty():
 			parts["text"].text = "%s\n(%s)\n비어 있음" % [SLOT_LABELS[slot], SLOT_HINTS[slot]]
 		else:
 			parts["text"].text = "%s\n%s %s\n%s %d" % [
 				SLOT_LABELS[slot], "★".repeat(int(character["grade"])), character["name"],
 				STAT_NAMES[stat], int(character[stat])]
-		var fill: Color = Color("6f86a8") if character.is_empty() else CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
-		parts["portrait"].show_character(character, fill)
 		var border: Color = Color.WHITE if slot == _active_slot else fill.lightened(0.3)
 		var width := 4 if slot == _active_slot else 2
 		for state in ["normal", "hover", "pressed"]:
@@ -477,13 +625,19 @@ func _refresh() -> void:
 	for id in _card_buttons:
 		var button: Button = _card_buttons[id]
 		var character := _character(id)
-		var fill: Color = CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
 		var chosen := false
 		for slot in SLOTS:
 			if party[slot] == id:
 				chosen = true
-		_card_parts[id]["portrait"].dim = chosen
-		_card_parts[id]["portrait"].queue_redraw()
+		var card_parts: Dictionary = _card_parts[id]
+		if card_parts.has("frame"):
+			# 고른 영웅은 금테가 밝아지고 체크 표시
+			card_parts["frame"].modulate = Color(1.35, 1.3, 1.0) if chosen else Color.WHITE
+			card_parts["check"].visible = chosen
+			continue
+		var fill: Color = CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
+		card_parts["portrait"].dim = chosen
+		card_parts["portrait"].queue_redraw()
 		if chosen:
 			fill = fill.darkened(0.45)
 		var border := GOLD if chosen else fill.lightened(0.3)
@@ -499,22 +653,29 @@ func _refresh() -> void:
 			if not member.is_empty():
 				names.append(str(member["name"]))
 		preset_button.text = "%d번  %s" % [index + 1, " · ".join(names)] if names.size() == 3 else "%d번  비어 있음" % (index + 1)
-		var preset_fill := Color("f39a1c") if _saving else (Color("19a8c9") if names.size() == 3 else Color("2f74d6"))
-		for state in ["normal", "hover", "pressed"]:
-			preset_button.add_theme_stylebox_override(state, _box(preset_fill, GOLD if _saving else preset_fill.lightened(0.3), 2))
+		preset_button.tooltip_text = preset_button.text
+		var preset_color := "gold" if _saving else ("green" if names.size() == 3 else "blue")
+		if not MenuArt.pill(preset_button, preset_color):
+			var preset_fill := Color("f39a1c") if _saving else (Color("19a8c9") if names.size() == 3 else Color("2f74d6"))
+			for state in ["normal", "hover", "pressed"]:
+				preset_button.add_theme_stylebox_override(state, _box(preset_fill, GOLD if _saving else preset_fill.lightened(0.3), 2))
 	if _save_button != null:
 		_save_button.text = "칸 고르기..." if _saving else "칸에 저장"
+		MenuArt.pill(_save_button, "gold" if _saving else "purple")
 
 	var total := points()
 	_points_label.text = "소환 포인트 %d / %d" % [total, point_limit]
 	_points_label.add_theme_color_override("font_color", Color("ff6b6b") if total > point_limit else Color.WHITE)
 	if total > point_limit:
-		_points_label.text += "  (★가 너무 많아요)"
+		_synergy_label.text = "★가 너무 많아요"
+		_synergy_label.add_theme_color_override("font_color", Color("ff9a8a"))
 	else:
 		# 시너지: 세 명이 같은 분류면 결속, 모두 다르면 조화
 		var categories: Array = []
 		for slot in SLOTS:
 			categories.append(str(_character(party[slot]).get("category", "")))
 		var bonus: Dictionary = GameRules.synergy_of(_synergy_table, categories)
-		_points_label.text += "  ·  시너지: %s" % ("%s (%s)" % [bonus.get("name", ""), bonus.get("text", "")] if not bonus.is_empty() else "없음")
+		_synergy_label.text = "시너지: %s" % ("%s (%s)" % [bonus.get("name", ""), bonus.get("text", "")] if not bonus.is_empty() else "없음")
+		_synergy_label.add_theme_color_override("font_color", GOLD if not bonus.is_empty() else Color.WHITE)
+	_synergy_label.tooltip_text = _synergy_label.text
 	_start_button.disabled = not can_start()

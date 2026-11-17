@@ -19,22 +19,26 @@ func setup(main_app, _params: Dictionary) -> void:
 	var level := Profile.pass_level(app.profile, app.eco)
 	var per := int(table.get("exp_per_level", 100))
 
-	var head := Kit.panel(Color("6a3fd0"), Kit.GOLD, 14)
+	# 위: 시즌 이름 + 패스 레벨 막대 + 보상 모두 받기
+	var head := MenuArt.row(12)
 	column.add_child(head)
 	var head_column := Kit.vbox(6)
 	head.add_child(head_column)
 	var title_row := Kit.hbox(10)
 	head_column.add_child(title_row)
-	title_row.add_child(Kit.expand(Kit.label(str(table.get("name", "시즌 패스")), 32, Kit.GOLD)))
-	title_row.add_child(Kit.label("패스 레벨 %d / %d" % [level, levels.size()], 24))
+	title_row.add_child(Kit.icon("pass", 48.0))
+	title_row.add_child(Kit.expand(Kit.label(str(table.get("name", "시즌 패스")), 30, Kit.GOLD)))
+	title_row.add_child(MenuArt.capsule("패스 레벨 %d / %d" % [level, levels.size()], "star", 20))
+	var waiting := Profile.pass_claimable_count(app.profile, app.eco)
+	if waiting > 0:
+		var all := MenuArt.pill_button("보상 %d개 모두 받기" % waiting, "gold", "m")
+		all.custom_minimum_size = Vector2(240, 56)
+		all.pressed.connect(_on_claim_all)
+		Kit.shimmer(all)
+		title_row.add_child(all)
 	head_column.add_child(Kit.bar(Profile.pass_progress(app.profile, app.eco), Kit.GOLD, 16))
 	var gains: Dictionary = table.get("exp", {})
 	head_column.add_child(Kit.para("레벨마다 경험치 %d  ·  승리 +%d, 패배 +%d, 미션 보상 +%d" % [per, int(gains.get("win", 0)), int(gains.get("lose", 0)), int(gains.get("mission", 0))], 18, Kit.MUTED))
-	var waiting := Profile.pass_claimable_count(app.profile, app.eco)
-	if waiting > 0:
-		var all := Kit.button("보상 %d개 모두 받기" % waiting, Color("e8890c"), 26, 76)
-		all.pressed.connect(_on_claim_all)
-		head_column.add_child(all)
 
 	var names := Kit.hbox(8)
 	column.add_child(names)
@@ -63,21 +67,17 @@ func _level_row(number: int, entry: Dictionary, level: int) -> Control:
 	var badge := Kit.label(str(number), 28, Kit.GOLD if reached else Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	badge.custom_minimum_size = Vector2(70, 0)
 	row.add_child(badge)
-	# 무료 보상: 도달했으면 받기 버튼
+	# 무료 보상: 도달했으면 받기 버튼(알약)
 	var free_text := Kit.reward_line(entry.get("free", {}))
-	var free := Kit.button("받음  %s" % free_text if claimed else ("받기  %s" % free_text if reached else free_text),
-		Kit.PANEL_LIGHT if claimed or not reached else Color("2f8f4e"), 21, 66)
+	var free := MenuArt.pill_button("받음  %s" % free_text if claimed else ("받기  %s" % free_text if reached else free_text),
+		"gold" if reached and not claimed else "blue", "m")
+	free.custom_minimum_size = Vector2(0, 60)
 	free.disabled = claimed or not reached
-	free.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.45) if claimed else Color(1, 1, 1, 0.78))
+	free.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.6) if claimed else Color(1, 1, 1, 0.9))
 	free.pressed.connect(_on_claim.bind(number))
 	row.add_child(Kit.expand(free))
-	# 프리미엄 보상: 보여 주기만 한다.
-	var premium := Kit.button("잠김  %s" % Kit.reward_line(entry.get("premium", {})), Color("5a4a1c"), 21, 66)
-	premium.disabled = true
-	premium.add_theme_color_override("font_disabled_color", Color("fff1c2"))
-	premium.add_theme_constant_override("outline_size", 0)
-	premium.add_theme_stylebox_override("disabled", Kit.box(Color("8f7b3c"), Color("d9b85a"), 2, 16, 8))
-	row.add_child(Kit.expand(premium))
+	# 프리미엄 보상: 회색 금테 줄 + 자물쇠 + 준비 중(보여 주기만)
+	row.add_child(Kit.expand(MenuArt.locked_row(Kit.reward_line(entry.get("premium", {})), "준비 중", 60.0)))
 	return row
 
 

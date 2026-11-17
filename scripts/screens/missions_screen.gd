@@ -21,7 +21,13 @@ func setup(main_app, _params: Dictionary) -> void:
 	# 시안식 틀: 왼쪽 세로 판에 오늘·업적, 오른쪽 큰 금테 판.
 	var ready_achievements: int = Profile.claimable_achievement_count(app.profile, app.data)
 	var rail := [["today", "오늘 미션", "missions"], ["achievements", "업적%s" % (" (%d)" % ready_achievements if ready_achievements > 0 else ""), "trophy"]]
-	var column := MenuArt.frame(self, app, "ui/bg_missions", rail, _tab, _on_mission_tab)
+	var done_count := 0
+	var mission_list: Array = Profile.active_missions(app.profile, app.eco)
+	for mission in mission_list:
+		if Profile.mission_done(app.profile, mission):
+			done_count += 1
+	var summary := MenuArt.summary("missions", "오늘 완료 %d / %d" % [done_count, mission_list.size()], "매일 자정에 새로 시작")
+	var column := MenuArt.frame(self, app, "ui/bg_missions", rail, _tab, _on_mission_tab, summary)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -31,8 +37,20 @@ func setup(main_app, _params: Dictionary) -> void:
 	scroll.add_child(body)
 	var waiting := Profile.claimable_mission_count(app.profile, app.eco) + Profile.claimable_achievement_count(app.profile, app.data)
 	if waiting > 0:
-		var all := Kit.button("보상 %d개 모두 받기" % waiting, Color("e8890c"), 28, 84)
+		# 금색 큰 버튼, 양끝에 선물 상자
+		var all := MenuArt.pill_button("보상 %d개 모두 받기" % waiting, "gold", "l")
+		all.custom_minimum_size = Vector2(0, 76)
+		all.add_theme_font_size_override("font_size", 28)
 		all.pressed.connect(_on_claim_everything)
+		for side in [0, 1]:
+			var gift: TextureRect = Kit.icon("m_gift", 54.0)
+			gift.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT if side == 0 else Control.PRESET_CENTER_RIGHT)
+			gift.offset_top = -27
+			gift.offset_bottom = 27
+			gift.offset_left = 40 if side == 0 else -94
+			gift.offset_right = 94 if side == 0 else -40
+			all.add_child(gift)
+		Kit.shimmer(all)
 		body.add_child(all)
 	if _tab == "achievements":
 		body.add_child(_achievements_panel())
@@ -51,78 +69,104 @@ func _on_mission_tab(id: String) -> void:
 
 
 func _attendance_panel() -> Control:
-	var card := Kit.panel()
-	var column := Kit.vbox(10)
-	card.add_child(column)
-	column.add_child(Kit.label("출석 보상", 30, Kit.GOLD))
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("출석 보상", "attend", "7일 동안 매일 받아요"))
 	var table: Array = app.eco.get("attendance", [])
 	var today_index := Profile.attendance_day(app.profile, app.eco)
 	var can := Profile.can_check_in(app.profile, app.today())
-	var row := Kit.hbox(6)
-	column.add_child(row)
+	var row := Kit.hbox(8)
+	group.add_child(row)
 	for day in table.size():
 		var done := day < today_index or (day == today_index and not can)
 		var now := day == today_index and can
-		var fill: Color = Kit.PANEL_LIGHT if now else (Color("13458f") if done else Kit.PANEL)
-		var cell := Kit.label("%d일\n%s%s" % [day + 1, Kit.reward_line(table[day]).replace("  ", "\n"), "\n✓" if done else ""], 20,
-			Kit.GOLD if now else (Kit.MUTED if done else Color.WHITE), HORIZONTAL_ALIGNMENT_CENTER)
-		cell.custom_minimum_size = Vector2(0, 110)
-		cell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		cell.add_theme_stylebox_override("normal", Kit.box(fill, Kit.GOLD if now else Color("c9a24a"), 3 if now else 2, 10, 4))
-		cell.add_theme_constant_override("outline_size", 4)
-		cell.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
+		# 7칸 금테 칸: 오늘 칸은 금빛, 받은 칸은 어둡고 도장
+		var cell: PanelContainer = MenuArt.art_box("day_today" if now else ("day_done" if done else "day_cell"), 26.0, 6)
+		if cell == null:
+			cell = PanelContainer.new()
+			cell.add_theme_stylebox_override("panel", Kit.box(Kit.PANEL_LIGHT if now else (Color("13458f") if done else Kit.PANEL), Kit.GOLD, 2, 10, 4))
+		cell.custom_minimum_size = Vector2(0, 118)
+		var text := Kit.label("%d일\n%s" % [day + 1, Kit.reward_line(table[day]).replace("  ", "\n")], 18,
+			Color("5a3200") if now else (Kit.MUTED if done else Color.WHITE), HORIZONTAL_ALIGNMENT_CENTER)
+		text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		if now:
+			text.add_theme_constant_override("outline_size", 0)
+			text.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0))
+		else:
+			TextStyle.menu(text, Color(0, 0.05, 0.2), 4)
+		cell.add_child(text)
+		if done:
+			var stamp_tex: Texture2D = MenuArt.tex("stamp")
+			var stamp: TextureRect = Kit.icon("check", 56.0)
+			if stamp_tex != null:
+				stamp.texture = stamp_tex
+			stamp.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			stamp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			stamp.modulate = Color(1, 1, 1, 0.9)
+			cell.add_child(stamp)
 		row.add_child(Kit.expand(cell))
-	var claim := Kit.button("오늘 출석 보상 받기" if can else "오늘 출석 완료 · 내일 또 오세요", Color("f39a1c"), 24, 76)
+	var claim := MenuArt.pill_button("오늘 출석 보상 받기" if can else "오늘 출석 완료 · 내일 또 오세요", "gold" if can else "gray", "l")
 	claim.disabled = not can
 	claim.pressed.connect(_on_check_in)
-	column.add_child(claim)
-	return card
+	group.add_child(claim)
+	return group
 
 
 func _missions_panel() -> Control:
-	var card := Kit.panel()
-	var column := Kit.vbox(10)
-	card.add_child(column)
-	column.add_child(Kit.label("오늘의 미션", 30, Kit.GOLD))
-	column.add_child(Kit.label("매일 새로 바뀌어요.", 18, Kit.MUTED))
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("오늘의 미션", "missions", "매일 새로 바뀌어요"))
 	for mission in Profile.active_missions(app.profile, app.eco):
-		column.add_child(_mission_row(mission))
+		group.add_child(_mission_row(mission))
 	var all_reward: Dictionary = app.eco.get("missions_all_clear", {})
 	var all_done := Profile.all_missions_done(app.profile, app.eco)
 	var all_claimed := bool(app.profile["daily"].get("all_claimed", false))
-	var all_row := Kit.hbox(10)
-	column.add_child(all_row)
-	all_row.add_child(Kit.expand(Kit.para("모든 미션 완료 보너스  %s" % Kit.reward_line(all_reward), 22, Kit.GOLD)))
-	var button := Kit.button("받음" if all_claimed else "받기", Color("f39a1c"), 22, 64)
-	button.custom_minimum_size = Vector2(130, 64)
+	var button := MenuArt.pill_button("받음" if all_claimed else "받기", "gold" if all_done and not all_claimed else "gray", "m")
+	button.custom_minimum_size = Vector2(130, 56)
 	button.disabled = all_claimed or not all_done
 	button.pressed.connect(_on_all_clear)
-	all_row.add_child(button)
-	return card
+	var words := MenuArt.list_row(group, "m_gift", "모든 미션 완료 보너스", "", _reward_and(all_reward, button))
+	words.get_child(0).add_theme_color_override("font_color", Kit.GOLD)
+	return group
+
+
+## 보상 캡슐 + 버튼을 한 줄로(목록 줄 오른쪽에 붙인다).
+func _reward_and(reward: Dictionary, button: Button) -> HBoxContainer:
+	var side := Kit.hbox(8)
+	side.add_child(MenuArt.reward_capsules(reward))
+	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	side.add_child(button)
+	return side
 
 
 ## 업적: 받을 수 있는 것 → 진행 중 → 받은 것 순서로 보여 준다.
 func _achievements_panel() -> Control:
-	var card := Kit.panel()
-	var column := Kit.vbox(10)
-	card.add_child(column)
+	var group := Kit.vbox(8)
 	var list: Array = app.data.get("achievements", {}).get("achievements", [])
 	var claimed_count := 0
 	for achievement in list:
 		if Profile.achievement_claimed(app.profile, achievement):
 			claimed_count += 1
-	column.add_child(Kit.label("업적  %d / %d" % [claimed_count, list.size()], 30, Kit.GOLD))
+	group.add_child(MenuArt.section("업적  %d / %d" % [claimed_count, list.size()], "trophy", "이루면 한 번씩 큰 보상"))
+	# 맨 위 달성도 막대
+	var rate := MenuArt.row(10)
+	group.add_child(rate)
+	var rate_line := Kit.hbox(10)
+	rate.add_child(rate_line)
+	rate_line.add_child(Kit.label("달성도", 20, Color.WHITE))
+	var bar := Kit.bar(float(claimed_count) / float(maxi(list.size(), 1)), Kit.GOLD, 14)
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rate_line.add_child(Kit.expand(bar))
+	rate_line.add_child(Kit.label("%d%%" % int(100.0 * claimed_count / maxi(list.size(), 1)), 20, Kit.GOLD))
 	var ordered: Array = []
-	for group in [0, 1, 2]:
+	for bucket_index in [0, 1, 2]:
 		for achievement in list:
 			var claimed := Profile.achievement_claimed(app.profile, achievement)
 			var done := Profile.achievement_done(app.profile, app.data, achievement)
 			var bucket: int = 2 if claimed else (0 if done else 1)
-			if bucket == group:
+			if bucket == bucket_index:
 				ordered.append(achievement)
 	for achievement in ordered:
-		column.add_child(_achievement_row(achievement))
-	return card
+		group.add_child(_achievement_row(achievement))
+	return group
 
 
 ## 초보자 길잡이: 순서대로 하나씩 하는 과제. 모두 끝내면 사라진다.
@@ -130,31 +174,28 @@ func _guide_panel() -> Control:
 	var step: Dictionary = Profile.guide_current(app.profile, app.data)
 	var total: int = (app.data.get("guide", {}).get("steps", []) as Array).size()
 	var index := int(app.profile.get("guide_step", 0))
-	var card := Kit.panel(Color("1e9a5a"), Color("b6ffd0"), 14)
-	var column := Kit.vbox(8)
-	card.add_child(column)
-	column.add_child(Kit.label("길잡이 과제  %d / %d" % [index + 1, total], 30, Color("eaffef")))
-	var row := Kit.hbox(10)
-	column.add_child(row)
-	var info := Kit.vbox(4)
-	row.add_child(Kit.expand(info))
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("길잡이 과제  %d / %d" % [index + 1, total], "flag", "차례대로 하나씩"))
 	var value: int = Profile.achievement_value(app.profile, app.data, str(step["stat"]))
 	var goal := int(step["goal"])
 	var done := value >= goal
-	info.add_child(Kit.label(str(step["text"]), 23))
-	var line := Kit.hbox(8)
-	info.add_child(line)
-	var bar := Kit.bar(float(min(value, goal)) / float(max(goal, 1)), Kit.GOLD if done else Color("6fd08c"), 10)
-	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	line.add_child(Kit.expand(bar))
-	line.add_child(Kit.label("%d/%d" % [min(value, goal), goal], 16, Kit.MUTED))
-	info.add_child(Kit.label("보상 %s" % Kit.reward_line(step["reward"]), 16, Kit.GOLD))
-	var button := Kit.button("받기" if done else "진행 중", Color("f39a1c") if done else Kit.PANEL_LIGHT, 20, 60)
-	button.custom_minimum_size = Vector2(120, 60)
+	var button := MenuArt.pill_button("받기" if done else "진행 중", "gold" if done else "gray", "m")
+	button.custom_minimum_size = Vector2(120, 56)
 	button.disabled = not done
 	button.pressed.connect(_on_guide)
-	row.add_child(button)
-	return card
+	var words := MenuArt.list_row(group, "m_castle", str(step["text"]), "", _reward_and(step["reward"], button))
+	words.add_child(_progress(value, goal, done))
+	return group
+
+
+## 진행 막대 + 숫자 한 줄
+func _progress(value: int, goal: int, done: bool) -> HBoxContainer:
+	var line := Kit.hbox(8)
+	var bar := Kit.bar(float(min(value, goal)) / float(max(goal, 1)), Kit.GOLD if done else Kit.GOOD, 12)
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(Kit.expand(bar))
+	line.add_child(Kit.label("%d/%d" % [min(value, goal), goal], 18, Kit.MUTED))
+	return line
 
 
 func _on_guide() -> void:
@@ -168,29 +209,18 @@ func _on_guide() -> void:
 
 
 func _achievement_row(achievement: Dictionary) -> Control:
-	var box := Kit.panel(Color("13458f"), Kit.LINE, 10)
-	var row := Kit.hbox(10)
-	box.add_child(row)
-	var info := Kit.vbox(4)
-	row.add_child(Kit.expand(info))
+	var holder := Kit.vbox(0)
 	var value: int = Profile.achievement_value(app.profile, app.data, str(achievement["stat"]))
 	var goal := int(achievement["goal"])
 	var claimed := Profile.achievement_claimed(app.profile, achievement)
 	var done := value >= goal
-	info.add_child(Kit.label(str(achievement["text"]), 21, Kit.MUTED if claimed else Color.WHITE))
-	var line := Kit.hbox(8)
-	info.add_child(line)
-	var bar := Kit.bar(float(min(value, goal)) / float(max(goal, 1)), Kit.GOLD if done else Kit.ACCENT, 10)
-	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	line.add_child(Kit.expand(bar))
-	line.add_child(Kit.label("%d/%d" % [min(value, goal), goal], 16, Kit.MUTED))
-	info.add_child(Kit.label("보상 %s" % Kit.reward_line(achievement["reward"]), 16, Kit.GOLD))
-	var button := Kit.button("받음" if claimed else ("받기" if done else "진행 중"), Color("f39a1c") if done and not claimed else Kit.PANEL_LIGHT, 20, 60)
-	button.custom_minimum_size = Vector2(120, 60)
+	var button := MenuArt.pill_button("받음" if claimed else ("받기" if done else "진행 중"), "gold" if done and not claimed else "gray", "m")
+	button.custom_minimum_size = Vector2(120, 56)
 	button.disabled = claimed or not done
 	button.pressed.connect(_on_achievement.bind(str(achievement["id"])))
-	row.add_child(button)
-	return box
+	var words := MenuArt.list_row(holder, "trophy", str(achievement["text"]), "", _reward_and(achievement["reward"], button), claimed)
+	words.add_child(_progress(value, goal, done))
+	return holder
 
 
 func _on_achievement(id: String) -> void:
@@ -204,29 +234,18 @@ func _on_achievement(id: String) -> void:
 
 
 func _mission_row(mission: Dictionary) -> Control:
-	var box := Kit.panel(Color("13458f"), Kit.LINE, 12)
-	var row := Kit.hbox(10)
-	box.add_child(row)
-	var info := Kit.vbox(6)
-	row.add_child(Kit.expand(info))
+	var holder := Kit.vbox(0)
 	var progress := Profile.mission_progress(app.profile, mission)
 	var goal := int(mission["goal"])
-	info.add_child(Kit.label(str(mission["text"]), 22))
-	var line := Kit.hbox(8)
-	info.add_child(line)
-	var bar := Kit.bar(float(progress) / float(max(goal, 1)), Kit.GOOD, 12)
-	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	line.add_child(Kit.expand(bar))
-	line.add_child(Kit.label("%d/%d" % [progress, goal], 18, Kit.MUTED))
-	info.add_child(Kit.label("보상 %s" % Kit.reward_line(mission["reward"]), 18, Kit.GOLD))
 	var claimed := Profile.mission_claimed(app.profile, mission)
 	var done := Profile.mission_done(app.profile, mission)
-	var button := Kit.button("받음" if claimed else ("받기" if done else "진행 중"), Kit.GOOD if done and not claimed else Kit.PANEL_LIGHT, 22, 64)
-	button.custom_minimum_size = Vector2(130, 64)
+	var button := MenuArt.pill_button("받음" if claimed else ("받기" if done else "진행 중"), "gold" if done and not claimed else "gray", "m")
+	button.custom_minimum_size = Vector2(120, 56)
 	button.disabled = claimed or not done
 	button.pressed.connect(_on_claim.bind(str(mission["id"])))
-	row.add_child(button)
-	return box
+	var words := MenuArt.list_row(holder, "check" if done else "missions", str(mission["text"]), "", _reward_and(mission["reward"], button), claimed)
+	words.add_child(_progress(progress, goal, done))
+	return holder
 
 
 func _on_check_in() -> void:

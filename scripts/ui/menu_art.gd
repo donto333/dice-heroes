@@ -2,8 +2,11 @@ extends RefCounted
 ## 메뉴 화면 공통 그림 부품(ChatGPT가 그린 것, 2026-11-17) `assets/ui_menu/`.
 ## 왼쪽 세로 메뉴 판·버튼, 위 띠, 제목 명판, 재화 캡슐, 더하기 버튼, 영웅 카드 테두리, 목록 줄, 탭, 큰 판.
 ## 그림이 없으면 null을 돌려주고, 부르는 쪽은 예전 모양으로 그린다.
+## UI 개편 1단계(2026-11-17, docs/UI개편기획.md): 금테 알약 버튼(pill), 구역 머리띠(section), 목록 줄(row),
+## 요약 카드(summary), 보상 캡슐(capsule), 잠긴 줄(locked_row), 탭(tab), 동그란 홈 버튼을 더했다.
 
 const Kit := preload("res://scripts/ui/kit.gd")
+const PillSkin := preload("res://scripts/ui/pill_skin.gd")
 
 const ART := "res://assets/ui_menu/"
 
@@ -114,13 +117,14 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 ## 위: 홈 버튼 · 제목 명판 · (빈칸) · 골드·보석 캡슐
 ## 아래: 왼쪽 세로 판에 이 화면 안의 항목(tabs: [[id, 글자, 아이콘], ...]), 오른쪽 큰 금테 판.
 ## 큰 판 안쪽 세로 상자를 돌려준다. 항목을 누르면 on_tab(id)를 부른다. 항목이 없으면 세로 판도 없다.
-static func frame(screen: Control, app, backdrop_art: String, tabs: Array, active: String, on_tab: Callable) -> VBoxContainer:
+## summary: 왼쪽 판 항목 아래 빈 곳에 넣을 요약 카드(summary()로 만든 것). 없으면 null.
+static func frame(screen: Control, app, backdrop_art: String, tabs: Array, active: String, on_tab: Callable, summary_card: Control = null) -> VBoxContainer:
 	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	screen.add_child(Kit.sky())
 	if backdrop_art != "":
 		Kit.backdrop(screen, backdrop_art, 1.0)
 	var shade := ColorRect.new()
-	shade.color = Color(0.0, 0.03, 0.14, 0.38)
+	shade.color = Color(0.0, 0.03, 0.14, 0.3)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	screen.add_child(shade)
@@ -140,25 +144,7 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	head.add_theme_constant_override("separation", 10)
 	head.custom_minimum_size = Vector2(0, 70)
 	outer.add_child(head)
-	var home := Button.new()
-	home.custom_minimum_size = Vector2(72, 64)
-	home.tooltip_text = "로비로"
-	if not skin_button(home, "menu_off", Vector4(30, 26, 30, 26), Vector4(4, 4, 4, 4)):
-		Kit.paint(home, Kit.PANEL_LIGHT)
-	var home_icon: TextureRect = Kit.icon("home", 40.0)
-	home_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	home_icon.offset_left = 18
-	home_icon.offset_right = -18
-	home_icon.offset_top = 8
-	home_icon.offset_bottom = -10
-	home_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	home_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	home_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	home.add_child(home_icon)
-	home.pressed.connect(func() -> void:
-		app.play("click")
-		app.go("lobby"))
-	head.add_child(home)
+	head.add_child(_home_button(app))
 	var spec: Array = TITLES.get(str(app.current_name), ["", ""])
 	var plate := title_plate(str(spec[0]), Kit.icon(str(spec[1]), 40.0).texture)
 	if plate != null:
@@ -187,7 +173,19 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 		list.add_theme_constant_override("separation", 10)
 		rail.add_child(list)
 		for entry in tabs:
-			list.add_child(_rail_button(entry, str(entry[0]) == active, on_tab))
+			var item := _rail_button(entry, str(entry[0]) == active, on_tab)
+			if tabs.size() > 5:
+				# 항목이 많으면(모험 장 목록 등) 낮고 작은 글자로 다 들어가게 한다.
+				list.add_theme_constant_override("separation", 6)
+				item.custom_minimum_size = Vector2(0, 50)
+				item.add_theme_font_size_override("font_size", 19)
+				item.add_theme_constant_override("icon_max_width", 32)
+				item.add_theme_constant_override("h_separation", 6)
+				item.clip_text = true
+			list.add_child(item)
+		if summary_card != null:
+			list.add_child(Kit.spacer())
+			list.add_child(summary_card)
 	var board := PanelContainer.new()
 	board.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var board_style = style("content_panel", Vector4(30, 30, 30, 30), Vector4(24, 22, 24, 22))
@@ -206,7 +204,21 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable) -> Button:
 	button.custom_minimum_size = Vector2(0, 76)
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.add_theme_font_size_override("font_size", 26)
-	if not skin_button(button, "menu_on" if on else "menu_off", Vector4(30, 26, 30, 26), Vector4(16, 4, 12, 6)):
+	var art := tex("menu_on" if on else "menu_off")
+	if art != null:
+		# 높이가 달라도 금 장식이 찌그러지지 않게 높이에 맞춰 줄여 그린다(pill_skin.gd).
+		var skin := PillSkin.new()
+		skin.texture = art
+		skin.cap = 0.47
+		button.add_child(skin)
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			var space := StyleBoxEmpty.new()
+			space.content_margin_left = 16
+			space.content_margin_right = 12
+			space.content_margin_top = 4
+			space.content_margin_bottom = 6
+			button.add_theme_stylebox_override(state, space)
+	else:
 		Kit.paint(button, Color("ffc62b") if on else Color("2f74d6"))
 	var ink := Color("5a3200") if on else Color.WHITE
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
@@ -253,3 +265,349 @@ static func _money_chip(icon_name: String, amount: int, color: Color) -> Control
 		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(mark)
 	return capsule
+
+
+## 위 줄 왼쪽 동그란 홈 버튼(파란 구슬 금테 + 흰 집, home_btn). 그림이 없으면 예전 모양.
+static func _home_button(app) -> Button:
+	var home := Button.new()
+	home.custom_minimum_size = Vector2(70, 70)
+	home.tooltip_text = "로비로"
+	home.pressed.connect(func() -> void:
+		app.play("click")
+		app.go("lobby"))
+	var round_tex := tex("home_btn")
+	if round_tex != null:
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			home.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		var skin := PillSkin.new()
+		skin.texture = round_tex
+		skin.cap = 0.5
+		home.add_child(skin)
+		return home
+	if not skin_button(home, "menu_off", Vector4(30, 26, 30, 26), Vector4(4, 4, 4, 4)):
+		Kit.paint(home, Kit.PANEL_LIGHT)
+	var home_icon: TextureRect = Kit.icon("home", 40.0)
+	home_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	home_icon.offset_left = 18
+	home_icon.offset_right = -18
+	home_icon.offset_top = 8
+	home_icon.offset_bottom = -10
+	home_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	home.add_child(home_icon)
+	return home
+
+
+# ---------------------------------------------------------------- 금테 알약 버튼(1단계)
+
+## 알약 색 이름 → 글자 외곽선 색. gold=가장 중요한 것, green=가기·확인·켜짐, blue=보조, red=나가기·삭제,
+## gray=못 누름·꺼짐, purple=특별.
+const PILL_EDGES := {
+	"gold": Color("7a3a00"), "green": Color("0c4a1c"), "blue": Color("0a2a6a"),
+	"red": Color("5a0a0a"), "gray": Color("2a2f3a"), "purple": Color("3a0a6a"),
+	"tab_on": Color("5a3200"), "tab_off": Color("0a2a6a"),
+}
+## 크기 세 가지: [높이, 글자]
+const PILL_SIZES := {"l": [72.0, 26], "m": [56.0, 22], "s": [44.0, 18]}
+
+
+## 버튼에 금테 알약 몸통을 입힌다(가운데만 늘어남, 눌림·꺼짐 표시 포함). 광택 몸통(Gloss)은 숨긴다.
+## color_name: gold·green·blue·red·gray·purple 또는 tab_on·tab_off. 그림이 없으면 false(예전 모양 그대로).
+static func pill(button: Button, color_name: String) -> bool:
+	var picture := tex("pill_" + color_name)
+	if picture == null:
+		picture = tex(color_name)
+	if picture == null:
+		return false
+	var gloss = button.get_node_or_null("Gloss")
+	if gloss != null:
+		gloss.visible = false
+	var skin = button.get_node_or_null("Pill")
+	if skin == null:
+		skin = PillSkin.new()
+		button.add_child(skin)
+		button.move_child(skin, 0)
+	skin.texture = picture
+	skin.off_texture = null if color_name.begins_with("tab_") else tex("pill_gray")
+	skin.cap = 0.5
+	skin.queue_redraw()
+	var height := maxf(button.custom_minimum_size.y, 40.0)
+	var side := clampf(height * 0.36, 14.0, 34.0)
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var space := StyleBoxEmpty.new()
+		space.content_margin_left = side
+		space.content_margin_right = side
+		space.content_margin_top = 4
+		space.content_margin_bottom = 7
+		if state == "pressed":
+			space.content_margin_top = 6
+			space.content_margin_bottom = 5
+		button.add_theme_stylebox_override(state, space)
+	var edge: Color = PILL_EDGES.get(color_name, Color(0, 0.05, 0.2))
+	var ink := Color("5a3200") if color_name == "tab_on" else Color.WHITE
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
+		button.add_theme_color_override(state, ink)
+	button.add_theme_color_override("font_disabled_color", Color("e6e9f0"))
+	if color_name == "tab_on":
+		button.add_theme_constant_override("outline_size", 0)
+		button.add_theme_constant_override("shadow_outline_size", 0)
+		button.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.0))
+	else:
+		TextStyle.menu(button, edge, 6)
+	return true
+
+
+## 새 알약 버튼. size는 "l"(72)·"m"(56)·"s"(44). 그림이 없으면 Kit.button 모양.
+static func pill_button(text: String, color_name: String, size: String = "m") -> Button:
+	var spec: Array = PILL_SIZES.get(size, PILL_SIZES["m"])
+	var result: Button = Kit.button(text, _fallback_color(color_name), int(spec[1]), float(spec[0]))
+	pill(result, color_name)
+	return result
+
+
+## 탭 알약: 고른 것은 노란 tab_on, 나머지는 파란 tab_off.
+static func tab(target: Button, on: bool) -> void:
+	if not pill(target, "tab_on" if on else "tab_off"):
+		Kit.paint(target, Color("ffc62b") if on else Color("2f74d6"))
+
+
+static func _fallback_color(color_name: String) -> Color:
+	match color_name:
+		"gold":
+			return Kit.PRIMARY
+		"green":
+			return Kit.ACCENT
+		"red":
+			return Kit.BAD
+		"gray":
+			return Kit.DISABLED
+		"purple":
+			return Color("7d4fc0")
+	return Kit.PANEL_LIGHT
+
+
+## 칠한 색으로 알약 색 이름을 고른다(Kit.button에 준 색을 그대로 옮길 때).
+static func pill_name(color: Color) -> String:
+	if color.s < 0.25:
+		return "gray"
+	var hue := color.h
+	if hue < 0.04 or hue > 0.93:
+		return "red"
+	if hue < 0.17:
+		return "gold"
+	if hue < 0.47:
+		return "green"
+	if hue < 0.74:
+		return "blue"
+	return "purple"
+
+
+## root 아래에서 광택 몸통(Gloss)으로 그린 버튼을 모두 같은 색의 금테 알약으로 바꾼다.
+## 이미 알약이거나 메타 "keep_look"이 있는 버튼은 건너뛴다.
+static func skin_buttons(root: Node) -> void:
+	for child in root.get_children():
+		if child is Button and not child.has_meta("keep_look") and child.get_node_or_null("Pill") == null:
+			var gloss = child.get_node_or_null("Gloss")
+			if gloss != null and gloss.visible:
+				pill(child, pill_name(gloss.color))
+		skin_buttons(child)
+
+
+# ---------------------------------------------------------------- 큰 판 안쪽(1단계)
+
+## 구역 머리띠: 왼쪽 동그란 금테 자리에 아이콘, 금색 제목, 오른쪽 작은 설명. 그림이 없으면 글자 줄.
+static func section(title: String, icon_name: String = "", note: String = "") -> Control:
+	var band := tex("section_head")
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(0, 64)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if band != null:
+		holder.resized.connect(holder.queue_redraw)
+		holder.draw.connect(func() -> void:
+			PillSkin.draw_slices(holder, band, Rect2(Vector2.ZERO, holder.size), 1.08, Color.WHITE, 0.5))
+	var strip := HBoxContainer.new()
+	strip.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	strip.offset_left = 8 if band != null else 0
+	strip.offset_right = -30 if band != null else 0
+	strip.add_theme_constant_override("separation", 12)
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(strip)
+	var picture: TextureRect = Kit.icon(icon_name if icon_name != "" else "star", 44.0)
+	picture.custom_minimum_size = Vector2(50, 46)
+	picture.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	strip.add_child(picture)
+	var label: Label = Kit.label(title, 26, Kit.GOLD)
+	TextStyle.gold(label, 7)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_vertical = Control.SIZE_FILL
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.clip_text = true
+	strip.add_child(label)
+	if note != "":
+		var small: Label = Kit.label(note, 16, Color(1, 1, 1, 0.85), HORIZONTAL_ALIGNMENT_RIGHT)
+		small.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		small.size_flags_vertical = Control.SIZE_FILL
+		strip.add_child(small)
+	return holder
+
+
+## 목록 줄 판(남색 + 얇은 금테, list_row). 안에 HBox 등을 넣어 쓴다. 그림이 없으면 Kit.panel.
+static func row(padding: int = 12) -> PanelContainer:
+	var line := PanelContainer.new()
+	var art = style("list_row", Vector4(22, 22, 22, 22), Vector4(padding + 8, padding, padding + 8, padding))
+	line.add_theme_stylebox_override("panel", art if art != null else Kit.plate(Color("13458f"), Kit.TRIM, 16.0, padding, false))
+	return line
+
+
+## 목록 줄 한 개를 한 번에: 왼쪽 아이콘(48) · 제목(24)·설명(18) · 오른쪽 덧붙일 것(extra, 없으면 null).
+## 제목·설명 세로 상자를 돌려준다(진행 막대 등을 더 넣을 수 있게). 줄은 parent에 붙는다.
+static func list_row(parent: Control, icon_name: String, title: String, note: String = "", extra: Control = null, dim: bool = false) -> VBoxContainer:
+	var line := row(10)
+	parent.add_child(line)
+	var inside := HBoxContainer.new()
+	inside.add_theme_constant_override("separation", 12)
+	line.add_child(inside)
+	if icon_name != "":
+		var picture: TextureRect = Kit.icon(icon_name, 48.0)
+		picture.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		if dim:
+			picture.modulate = Color(0.6, 0.6, 0.7)
+		inside.add_child(picture)
+	var words := VBoxContainer.new()
+	words.add_theme_constant_override("separation", 2)
+	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	words.alignment = BoxContainer.ALIGNMENT_CENTER
+	inside.add_child(words)
+	words.add_child(Kit.para(title, 24, Kit.MUTED if dim else Color.WHITE))
+	if note != "":
+		words.add_child(Kit.para(note, 18, Kit.MUTED))
+	if extra != null:
+		extra.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		inside.add_child(extra)
+	return words
+
+
+## 보상 캡슐: 작은 어두운 알약에 아이콘과 글. 그림이 없으면 단색 캡슐.
+static func capsule(text: String, icon_name: String = "", font_size: int = 18) -> Control:
+	var art := tex("reward_capsule")
+	var box := PanelContainer.new()
+	box.custom_minimum_size = Vector2(0, 38)
+	box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var space := StyleBoxEmpty.new()
+	space.content_margin_left = 16
+	space.content_margin_right = 16
+	space.content_margin_top = 2
+	space.content_margin_bottom = 3
+	if art != null:
+		box.add_theme_stylebox_override("panel", space)
+		box.resized.connect(box.queue_redraw)
+		box.draw.connect(func() -> void:
+			PillSkin.draw_slices(box, art, Rect2(Vector2.ZERO, box.size), 0.5))
+	else:
+		box.add_theme_stylebox_override("panel", Kit.box(Color(0.02, 0.08, 0.25, 0.85), Kit.TRIM, 2, 18, 6))
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 4)
+	line.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(line)
+	if icon_name != "":
+		line.add_child(Kit.icon(icon_name, 26.0))
+	var label: Label = Kit.label(text, font_size, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	TextStyle.number(label, 4)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	line.add_child(label)
+	return box
+
+
+## 보상 글(Kit.reward_line과 같은 내용)을 골드·보석 아이콘 캡슐 줄로.
+static func reward_capsules(reward: Dictionary) -> HBoxContainer:
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 6)
+	if int(reward.get("gold", 0)) > 0:
+		line.add_child(capsule(Kit.comma(int(reward["gold"])), "gold"))
+	if int(reward.get("gems", 0)) > 0:
+		line.add_child(capsule(Kit.comma(int(reward["gems"])), "gem"))
+	var rest: Dictionary = reward.duplicate()
+	rest.erase("gold")
+	rest.erase("gems")
+	if not rest.is_empty():
+		var other := Kit.reward_line(rest)
+		if other != "":
+			line.add_child(capsule(other))
+	return line
+
+
+## 왼쪽 세로 판 아래 요약 카드: 작은 금테 판에 아이콘 + 두 줄 글. 그림이 없으면 Kit.plate.
+## extra: 두 줄 글 아래에 덧붙일 것(작은 초상화 줄 등).
+static func summary(icon_name: String, first: String, second: String = "", extra: Control = null) -> PanelContainer:
+	var card := PanelContainer.new()
+	var art = style("summary_card", Vector4(30, 30, 30, 30), Vector4(14, 12, 12, 12))
+	card.add_theme_stylebox_override("panel", art if art != null else Kit.plate(Color("13458f"), Kit.TRIM, 14.0, 12, false))
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 8)
+	card.add_child(line)
+	if icon_name != "":
+		var picture: TextureRect = Kit.icon(icon_name, 44.0)
+		picture.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		line.add_child(picture)
+	var words := VBoxContainer.new()
+	words.add_theme_constant_override("separation", 0)
+	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	words.alignment = BoxContainer.ALIGNMENT_CENTER
+	line.add_child(words)
+	words.add_child(Kit.para(first, 18, Color.WHITE))
+	if second != "":
+		var low: Label = Kit.para(second, 16, Kit.GOLD)
+		words.add_child(low)
+	if extra != null:
+		words.add_child(extra)
+	return card
+
+
+## 잠긴 줄(회색 판 + 금테, 왼쪽 동그란 자리에 자물쇠). 프리미엄 보상처럼 볼 수만 있는 것. 그림이 없으면 회색 판.
+static func locked_row(text: String, note: String = "준비 중", height: float = 60.0) -> Control:
+	var art := tex("locked_row")
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(0, height)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if art != null:
+		holder.resized.connect(holder.queue_redraw)
+		holder.draw.connect(func() -> void:
+			PillSkin.draw_slices(holder, art, Rect2(Vector2.ZERO, holder.size), 1.1, Color.WHITE, 0.5))
+	else:
+		var back := Panel.new()
+		back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		back.add_theme_stylebox_override("panel", Kit.box(Color("5d6578"), Kit.TRIM, 2, 20, 4))
+		holder.add_child(back)
+	var line := HBoxContainer.new()
+	line.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	line.offset_left = height * 0.18
+	line.offset_right = -height * 0.5
+	line.add_theme_constant_override("separation", 10)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(line)
+	var lock: TextureRect = Kit.icon("m_lock", height * 0.62)
+	lock.custom_minimum_size = Vector2(height * 0.75, height * 0.62)
+	lock.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(lock)
+	var label: Label = Kit.label(text, 18, Color("eef1f7"))
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_vertical = Control.SIZE_FILL
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.clip_text = true
+	line.add_child(label)
+	if note != "":
+		var small: Label = Kit.label(note, 16, Color("ffd9a0"), HORIZONTAL_ALIGNMENT_RIGHT)
+		small.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		small.size_flags_vertical = Control.SIZE_FILL
+		line.add_child(small)
+	return holder
+
+
+## 그림 상자(그림 한 장을 가운데만 늘려 깐 판). 출석 칸·보상 칸·주사위 카드 틀에 쓴다. 그림이 없으면 null.
+static func art_box(name: String, corner: float, padding: int = 8) -> PanelContainer:
+	var art = style(name, Vector4(corner, corner, corner, corner), Vector4(padding, padding, padding, padding))
+	if art == null:
+		return null
+	var box := PanelContainer.new()
+	box.add_theme_stylebox_override("panel", art)
+	return box
