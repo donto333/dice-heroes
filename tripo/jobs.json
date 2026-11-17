@@ -126,7 +126,8 @@
    "name": "machao",
    "image": "assets/standees/machao.png",
    "local": "tripo/web/machao.glb",
-   "view": -15
+   "view": -15,
+   "turn_fix": -45
   },
   {
    "name": "marcopolo",
@@ -150,7 +151,8 @@
    "name": "pasteur",
    "image": "assets/standees/pasteur.png",
    "local": "tripo/web/pasteur.glb",
-   "view": 5
+   "view": 5,
+   "turn_fix": -80
   },
   {
    "name": "perseus",
@@ -290,7 +292,8 @@
    "model_task": "2cd253cd-7771-42d3-913d-5975de607cc9",
    "rig_task": "bee5a56d-56b6-4249-a1de-5a1ed8e5ae75",
    "anim_task": "383ae34d-3b6c-44a6-a7f6-9f78859ff18e",
-   "view": 80
+   "view": 80,
+   "turn_fix": -40
   },
   {
    "name": "ganning",
@@ -304,7 +307,8 @@
    "model_task": "c24818b1-746f-4f96-a3a7-91e52e289c9d",
    "rig_task": "00df101b-a1cd-413c-9fc2-565a39af3f91",
    "anim_task": "314bf6d9-1a0e-4588-a79b-63d8faddd2fd",
-   "view": 80
+   "view": 80,
+   "turn_fix": -55
   },
   {
    "name": "choiyoung",
@@ -318,7 +322,8 @@
    "model_task": "6d85ec7b-5d3b-4204-a05a-635650140ebd",
    "rig_task": "a56f27b6-cab5-4ed7-8fc2-4834015b2157",
    "anim_task": "934dbb02-e128-4da2-b04b-602ce144052b",
-   "view": 80
+   "view": 80,
+   "turn_fix": -80
   },
   {
    "name": "dokkaebi",
@@ -363,5 +368,12 @@
    "view": 105
   }
  ],
- "note": "2026-11-17: 뼈대로 앞 방향을 재서 모두 같은 각도로 다시 찍기 (2)"
+ "note": "2026-11-18: 방향 보정 5명 다시 찍기",
+ "only": [
+  "choiyoung",
+  "pasteur",
+  "ganning",
+  "choichiwon",
+  "machao"
+ ]
 }

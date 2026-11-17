@@ -232,7 +232,11 @@ def main() -> None:
 	print("남은 크레딧:", balance.get("balance"), "/ 묶인 크레딧:", balance.get("frozen"))
 	if len(sys.argv) > 1 and sys.argv[1] == "balance":
 		return
-	jobs = json.loads((ROOT / "tripo" / "jobs.json").read_text())["jobs"]
+	order = json.loads((ROOT / "tripo" / "jobs.json").read_text())
+	jobs = order["jobs"]
+	# 주문서에 "only"가 있으면 그 영웅만 다시 찍는다(고친 몇 명만 빨리 확인할 때).
+	if order.get("only"):
+		jobs = [job for job in jobs if job["name"] in order["only"]]
 	# 여러 서버가 나눠 일할 때(SHARDS)는 자기 몫(SHARD)만 맡는다.
 	shards = int(os.environ.get("SHARDS", "1") or 1)
 	shard = int(os.environ.get("SHARD", "0") or 0)
