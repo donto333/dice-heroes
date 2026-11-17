@@ -219,6 +219,13 @@ func _run() -> void:
 	picker._on_preset_pressed(0)
 	await _wait(0.3)
 	await _shot("12c_presets")
+	# 자동 추천 전략 창과 공격형 추천 결과
+	_party_picker()._on_auto_pressed()
+	await _wait(0.3)
+	await _shot("12d_strategies")
+	_party_picker()._auto_pick("attack")
+	await _wait(0.3)
+	await _shot("12e_auto_attack")
 	_party_picker()._on_start_pressed()
 	await _wait(0.6)
 	await _shot("12a_searching")

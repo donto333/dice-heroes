@@ -64,6 +64,29 @@ var _presets: Array = []
 var _preset_buttons: Array = []
 var _save_button: Button
 var _saving := false
+## 자동 추천 전략 고르기 창(누르면 뜸)
+var _strategy_overlay: Control = null
+var _rng := RandomNumberGenerator.new()
+
+## 자동 추천 전략: [id, 이름, 설명]. 무게는 STRATEGY_WEIGHTS.
+const STRATEGIES := [
+	["balanced", "균형", "능력과 강화를 고루 따져요"],
+	["attack", "공격형", "공격·이동이 센 영웅 위주"],
+	["defense", "수비형", "방어가 단단한 영웅 위주"],
+	["speed", "속도형", "이동 주사위가 많은 영웅 위주"],
+	["skill", "스킬형", "지력이 높아 어빌리티를 자주 써요"],
+	["bond", "결속", "세 명 모두 같은 분류 (시작 게이지 +15%)"],
+	["harmony", "조화", "세 명 모두 다른 분류 (부적 1개)"],
+	["random", "무작위", "한도 안에서 아무렇게나"],
+]
+## 전략마다 능력치에 곱하는 무게(공격·이동·방어·지력)
+const STRATEGY_WEIGHTS := {
+	"balanced": {"attack": 1.0, "move": 1.0, "defense": 1.0, "intellect": 1.0},
+	"attack": {"attack": 1.7, "move": 1.2, "defense": 0.6, "intellect": 0.7},
+	"defense": {"attack": 0.7, "move": 0.8, "defense": 1.8, "intellect": 0.9},
+	"speed": {"attack": 0.9, "move": 2.4, "defense": 0.8, "intellect": 0.9},
+	"skill": {"attack": 0.8, "move": 0.9, "defense": 0.8, "intellect": 1.9},
+}
 
 
 func setup(character_list: Array, ability_table: Dictionary, initial: Dictionary, options: Dictionary = {}) -> void:
@@ -506,29 +529,141 @@ func _show_info(id: String) -> void:
 
 ## 포인트 6 안에서 자리마다 필요한 능력이 높은 조합을 고른다.
 func _on_auto_pressed() -> void:
-	# 자리마다 점수가 높은 후보를 등급별로 몇 명만 남겨서 조합을 찾는다. 모두 맞춰 보면 느리다.
-	# 점수에는 강화(레벨) 효과도 넣는다: 전투 보너스와 스킬 충전 속도.
-	var pools := {
-		"attack": _top_by_grade(_slot_score.bind("attack")),
-		"defense": _top_by_grade(_slot_score.bind("defense")),
-		"support": _top_by_grade(_slot_score.bind("support")),
-	}
+	_open_strategies()
+
+
+## 자동 추천 전략 고르기 창. 파티 고르기 칸 위에 어둡게 덮고 가운데에 버튼을 띄운다.
+func _open_strategies() -> void:
+	if is_instance_valid(_strategy_overlay):
+		_strategy_overlay.queue_free()
+	var overlay := Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+	_strategy_overlay = overlay
+	var dim := ColorRect.new()
+	dim.color = Color(0.02, 0.04, 0.12, 0.6)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed:
+			_close_strategies())
+	overlay.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	var panel := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color("16306e")
+	box.border_color = GOLD
+	box.set_border_width_all(3)
+	box.set_corner_radius_all(18)
+	box.set_content_margin_all(18)
+	panel.add_theme_stylebox_override("panel", box)
+	center.add_child(panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	panel.add_child(column)
+	var title := _label("어떤 전략으로 짤까요?", 24, GOLD)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
+	column.add_child(_label("같은 전략을 다시 누르면 비슷하게 좋은 다른 조합을 보여 줘요.", 16, Color(1, 1, 1, 0.8)))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	column.add_child(grid)
+	for entry in STRATEGIES:
+		var color := Color("2fb457") if entry[0] == "balanced" else (Color("8a4fd0") if entry[0] in ["bond", "harmony"] else Color("2f74d6"))
+		var button := _plain_button(str(entry[1]), color)
+		button.custom_minimum_size = Vector2(250, 58)
+		button.tooltip_text = str(entry[2])
+		button.pressed.connect(_auto_pick.bind(str(entry[0])))
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 2)
+		cell.add_child(button)
+		var note := _label(str(entry[2]), 15, Color(1, 1, 1, 0.75))
+		note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		note.custom_minimum_size = Vector2(250, 0)
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		cell.add_child(note)
+		grid.add_child(cell)
+	var close := _plain_button("닫기", Color("2f74d6"))
+	close.custom_minimum_size = Vector2(0, 52)
+	close.pressed.connect(_close_strategies)
+	column.add_child(close)
+
+
+func _close_strategies() -> void:
+	if is_instance_valid(_strategy_overlay):
+		_strategy_overlay.queue_free()
+	_strategy_overlay = null
+
+
+## 전략에 맞춰 파티를 고른다. 가장 좋은 점수의 95% 안에 드는 조합 가운데 하나를 무작위로 골라
+## 누를 때마다 다른 파티가 나올 수 있게 한다(지금 파티와 같은 것은 되도록 피함).
+## 결속·조화는 분류 조건을 지키는 조합만, 무작위는 한도 안의 모든 조합에서 고른다.
+func _auto_pick(strategy: String) -> void:
+	_close_strategies()
+	_rng.randomize()
+	var weights: Dictionary = STRATEGY_WEIGHTS.get(strategy, STRATEGY_WEIGHTS["balanced"])
+	var scores := {}
+	for slot in SLOTS:
+		var table := {}
+		for character in characters:
+			table[character["id"]] = _slot_score(character, slot, weights)
+		scores[slot] = table
+	var combos: Array = []
 	var best_score := -1.0
-	var best := {}
-	for a in pools["attack"]:
-		for d in pools["defense"]:
-			for s in pools["support"]:
-				if a["id"] == d["id"] or a["id"] == s["id"] or d["id"] == s["id"]:
+	for a in characters:
+		for d in characters:
+			if d["id"] == a["id"]:
+				continue
+			if int(a["grade"]) + int(d["grade"]) + 1 > point_limit:
+				continue
+			for s in characters:
+				if s["id"] == a["id"] or s["id"] == d["id"]:
 					continue
 				if int(a["grade"]) + int(d["grade"]) + int(s["grade"]) > point_limit:
 					continue
-				var score := _slot_score(a, "attack") + _slot_score(d, "defense") + _slot_score(s, "support")
-				if score > best_score:
-					best_score = score
-					best = {"attack": a["id"], "defense": d["id"], "support": s["id"]}
-	if not best.is_empty():
-		party = best
+				var same: bool = a["category"] == d["category"] and d["category"] == s["category"]
+				var all_different: bool = a["category"] != d["category"] and d["category"] != s["category"] and a["category"] != s["category"]
+				if strategy == "bond" and not same:
+					continue
+				if strategy == "harmony" and not all_different:
+					continue
+				var score := float(scores["attack"][a["id"]]) + float(scores["defense"][d["id"]]) + float(scores["support"][s["id"]])
+				combos.append([score, {"attack": a["id"], "defense": d["id"], "support": s["id"]}])
+				best_score = maxf(best_score, score)
+	var name := _strategy_name(strategy)
+	if combos.is_empty():
+		if _info_label != null:
+			_info_label.text = "%s: 가진 영웅으로는 조건에 맞는 파티를 짤 수 없어요." % name
+		return
+	var good: Array = []
+	for combo in combos:
+		if strategy == "random" or float(combo[0]) >= best_score * 0.95:
+			good.append(combo[1])
+	if good.size() > 1:
+		good = good.filter(func(choice): return choice != party)
+	party = good[_rng.randi_range(0, good.size() - 1)].duplicate()
 	_refresh()
+	if _info_label != null:
+		_info_label.text = "자동 추천 · %s: %s" % [name, _strategy_note(strategy)]
+
+
+func _strategy_name(strategy: String) -> String:
+	for entry in STRATEGIES:
+		if entry[0] == strategy:
+			return str(entry[1])
+	return strategy
+
+
+func _strategy_note(strategy: String) -> String:
+	for entry in STRATEGIES:
+		if entry[0] == strategy:
+			return str(entry[2])
+	return ""
 
 
 ## 영웅 레벨(강화가 없으면 1).
@@ -542,18 +677,22 @@ func _from_table(table: Array, level: int) -> int:
 
 ## 자리에 앉혔을 때의 점수. 능력치(주사위 1개 = 3.5점 정도)에 강화 효과를 같은 저울로 더한다.
 ## 전투 보너스 +1 = 합계 +1점. 스킬 충전 +x% = 그 자리 게이지가 x% 빨리 참(지력으로 환산해 더한다).
-func _slot_score(character: Dictionary, slot: String) -> float:
+func _slot_score(character: Dictionary, slot: String, weights: Dictionary = {}) -> float:
+	var w_attack := float(weights.get("attack", 1.0))
+	var w_move := float(weights.get("move", 1.0))
+	var w_defense := float(weights.get("defense", 1.0))
+	var w_intellect := float(weights.get("intellect", 1.0))
 	var level := _level_of(character)
 	var battle := float(_from_table(_level_battle, level))
 	var charge := float(_from_table(_level_gauge, level)) / 100.0
 	match slot:
 		"attack":
-			return float(character["attack"]) * 3.5 * 3.0 + float(character["move"]) * 2.0 * 3.5 + battle * 3.0 + charge * 4.0
+			return float(character["attack"]) * 3.5 * 3.0 * w_attack + float(character["move"]) * 2.0 * 3.5 * w_move + battle * 3.0 + charge * 4.0
 		"defense":
-			return float(character["defense"]) * 3.5 * 3.0 + battle * 3.0 + charge * 4.0
+			return float(character["defense"]) * 3.5 * 3.0 * w_defense + battle * 3.0 + charge * 4.0
 		_:
 			var intellect := float(character["intellect"])
-			return intellect * 2.0 * 3.5 * (1.0 + charge) + charge * 4.0
+			return intellect * 2.0 * 3.5 * (1.0 + charge) * w_intellect + charge * 4.0
 
 
 ## 등급마다 점수가 높은 캐릭터 4명씩을 고른다.
