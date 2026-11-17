@@ -278,7 +278,7 @@ func _build_gacha(column: VBoxContainer) -> void:
 func _on_free_draw() -> void:
 	if not Profile.use_free_card_draw(app.profile, app.eco):
 		return
-	_draw(1)
+	_pull(1)
 
 
 func _on_paid_draw(count: int) -> void:
@@ -288,11 +288,11 @@ func _on_paid_draw(count: int) -> void:
 		app.play("denied")
 		app.toast("보석이 모자라요.")
 		return
-	_draw(count)
+	_pull(count)
 
 
 ## 결과는 뽑는 순간 정해져 저장된다. 창에 카드를 한 장씩 뒤집듯 보여 준다.
-func _draw(count: int) -> void:
+func _pull(count: int) -> void:
 	var cards := _cards()
 	var results := Profile.draw_cards(app.profile, cards, app.eco, count, app.rng)
 	app.save()
