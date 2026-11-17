@@ -1086,9 +1086,7 @@ func _battle_players() -> bool:
 	if result["attacker_won"]:
 		say("  %s 승리! %s은(는) 직전 거점으로 돌아갑니다." % [player["name"], opponent["name"]])
 		_return_to_checkpoint(1 - current)
-		if effect_sum(current, "chase") > 0:
-			say("  추격! %d칸 더 전진합니다." % CHASE_STEPS)
-			_walk(current, CHASE_STEPS, false)
+		_chase_after_win()
 		return true
 	say("  %s 방어 성공! %s은(는) 직전 거점으로 돌아갑니다." % [opponent["name"], player["name"]])
 	_return_to_checkpoint(current)
@@ -1128,6 +1126,7 @@ func _battle_keeper(keeper_dice: int, keeper_name: String) -> bool:
 	_battle_event(attacker["name"], keeper_name, result, "keeper")
 	if result["attacker_won"]:
 		say("  %s 승리!" % player["name"])
+		_chase_after_win()
 		return true
 	say("  패배... %s은(는) 직전 거점으로 돌아갑니다." % player["name"])
 	_return_to_checkpoint(current)
@@ -1153,6 +1152,7 @@ func _battle_ambush(monster_dice: int, monster_name: String) -> bool:
 	_battle_event(monster_name, defender["name"], result, "ambush")
 	if not result["attacker_won"]:
 		say("  %s 방어 성공!" % player["name"])
+		_chase_after_win()
 		return true
 	say("  막지 못했습니다... %s은(는) 직전 거점으로 돌아갑니다." % player["name"])
 	_return_to_checkpoint(current)
@@ -1292,6 +1292,17 @@ func _apply_effect(effect: Dictionary, player_index: int) -> void:
 				_apply_effect(picked, player_index)
 		_:
 			push_warning("알 수 없는 효과: %s" % kind)
+
+
+## 추격 효과(이기면 3칸 더 전진): 상대 말·관문지기·전투 칸 적·습격 몬스터 어느 전투든 이기면 적용(2026-11-18 사용자 결정).
+## 골의 수호자를 이겨 판이 끝났으면 움직이지 않는다.
+func _chase_after_win() -> void:
+	if winner >= 0 or effect_sum(current, "chase") <= 0:
+		return
+	if str(node_of(int(players[current]["pos"])).get("type", "")) == "goal":
+		return
+	say("  추격! %d칸 더 전진합니다." % CHASE_STEPS)
+	_walk(current, CHASE_STEPS, false)
 
 
 ## 상대 팀 게이지를 amount%만큼 빼앗아 우리 팀에 더한다(세 자리 평균으로 셈).

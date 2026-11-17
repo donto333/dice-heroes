@@ -1961,6 +1961,18 @@ func _check_battle_effects() -> void:
 			chased = chased or int(trial["game"].players[0]["trail"].size()) > 6
 			drained = drained or int(trial["game"].players[0]["gauge"]["attack"]) >= 30
 	_check(chased, "추격: 이겼는데 더 전진하지 않음")
+	# 추격은 관문지기·전투 칸 적을 이겨도 적용된다.
+	var keeper_chased := false
+	for seed_value in range(1, 60):
+		var game = _skill_table(seed_value, "hanxin")
+		game.players[0]["cursed"] = false
+		_place(game, 0, [0, 1, 2, 3, 4, 5])
+		_place(game, 1, [0])
+		game._apply_effect({"type": "chase", "amount": 1, "turns": 1}, 0)
+		game._apply_effect({"type": "atk_dice", "amount": 3, "turns": 1}, 0)
+		if game._battle_keeper(1, "시험 문지기"):
+			keeper_chased = keeper_chased or int(game.players[0]["trail"].size()) == 9
+	_check(keeper_chased, "추격: 문지기를 이겼는데 3칸 더 전진하지 않음")
 	_check(drained, "흡수: 이겼는데 상대 게이지를 빼앗지 않음")
 	var countered := false
 	var far := range(0, 13)
