@@ -1338,6 +1338,52 @@ func _test_double() -> void:
 	_check(Game.is_double([3, 3]) and Game.is_double([6, 6, 6]), "같은 눈인데 더블이 아님")
 	_check(not Game.is_double([3]) and not Game.is_double([2, 5]) and not Game.is_double([]), "더블이 아닌데 더블임")
 	_check(int(_data["rules"].get("double_gauge", 0)) > 0 and int(_data["rules"]["double_gauge"]) <= 20, "더블 게이지가 없거나 너무 큼")
+	# 더블 다시 굴리기: 더블이면 차례가 안 넘어가고, 추가 굴림에서는 스킬·카드를 못 쓴다.
+	var found := false
+	for seed_value in 400:
+		var game = _new_game(3000 + seed_value)
+		game.double_reroll = true
+		game.double_reroll_max = 1
+		game.begin_turn()
+		_place(game, 0, [0])
+		game.players[0]["effects"].append({"key": "move_dice", "amount": 1, "turns": 2})
+		game.roll_move()
+		var guard := 0
+		while game.awaiting_choice() and guard < 10:
+			game.choose_path(0)
+			guard += 1
+		var rolled_double := false
+		for event in game.events:
+			if str(event.get("kind", "")) == "move" and bool(event.get("reroll", false)):
+				rolled_double = true
+		if game.winner >= 0 or int(game.players[0]["skip"]) > 0:
+			continue
+		var gauge_before: int = int(game.players[0]["gauge"]["attack"])
+		game.end_turn()
+		if not rolled_double:
+			_check(game.current == 1 and not game.bonus_turn, "더블이 아닌데 차례가 안 넘어감")
+			continue
+		found = true
+		_check(game.current == 0 and game.bonus_turn, "더블인데 차례가 넘어감")
+		_check(game.begin_turn(), "추가 굴림을 시작하지 못함")
+		_check(int(game.players[0]["gauge"]["attack"]) == gauge_before, "추가 굴림에서 턴 게이지가 참")
+		game.players[0]["gauge"]["attack"] = 100
+		_check(not game.can_use_ability("attack"), "추가 굴림에서 스킬을 쓸 수 있음")
+		game.players[0]["hand"] = [game.cards.keys()[0]]
+		_check(not game.can_play_card(0), "추가 굴림에서 카드를 쓸 수 있음")
+		_check(game.can_act(), "추가 굴림에서 주사위를 못 굴림")
+		game.bonus_chain = game.double_reroll_max
+		game.roll_move()
+		guard = 0
+		while game.awaiting_choice() and guard < 10:
+			game.choose_path(0)
+			guard += 1
+		if game.winner < 0:
+			game.end_turn()
+			_check(game.current == 1 and not game.bonus_turn and game.bonus_chain == 0, "추가 굴림 한도를 넘겨 또 굴림")
+		break
+	_check(found, "400판 동안 더블이 한 번도 안 나옴")
+	_check(bool(_data["rules"].get("double_reroll", false)) and int(_data["rules"].get("double_reroll_max", 0)) >= 1, "더블 다시 굴리기 규칙이 없음")
 
 
 ## 관문: 지나가다가도 멈춰 싸우고, 이기면 다음부터 그냥 지나가고, 지면 관문지기가 약해진다.

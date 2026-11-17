@@ -68,7 +68,7 @@
 - 관문(gate 칸, 강제 전투): 맵마다 큰길 28%·52%·76% 지점에 3개(tools/make_maps.py). 지나가다가도 멈춰 관문지기와 싸운다. 관문지기 주사위는 3·4·4개, 골의 수호자는 5개. 이기면 카드 1장, 그 플레이어는 그 관문을 다시 싸우지 않는다(`game.gates_cleared`). 지면 직전 거점으로 가고 관문지기 주사위가 1개 줄어든다(data/rules.json의 gate_weaken). 골의 수호자도 질 때마다 1개씩 줄되 goal_min_dice(3개)까지
 - 갈림길 안개(2026-11-16): 갈림길(다음 칸 2개 이상)에서 갈라진 두 길의 칸(다시 모이는 칸 앞까지)은 안개 칸(`game.fog`, `_setup_fog`)이다. 화면(`board_view.gd`의 `_view_fogged`·`_draw_fog`)은 말이 밟기 전까지 칸 그림·글자·바닥 효과·적·물건을 숨기고 회색 칸 위에 안개를 그린다. 규칙(칸 효과·전투)은 그대로이고 data/rules.json의 branch_fog로 끈다.
 - 시너지: 파티 세 명이 같은 분류면 결속(시작 게이지 +15%), 모두 다른 분류면 조화(부적). data/rules.json의 synergy, `Game.synergy_of`
-- 더블: 이동 주사위 2개 이상이 모두 같은 눈이면 어빌리티 게이지 +12%(data/rules.json의 double_gauge)
+- 더블: 이동 주사위 2개 이상이 모두 같은 눈이면 어빌리티 게이지 +12%(data/rules.json의 double_gauge). 그리고 이동을 마친 뒤 같은 플레이어가 한 번 더 굴린다(2026-11-17 사용자 결정, double_reroll·이어서 double_reroll_max번까지, `game.bonus_roll`→`end_turn`→`bonus_turn`). 추가 굴림에서는 스킬(어빌리티)·카드를 쓸 수 없고 턴 게이지도 안 찬다
 - 따라잡기: 상대보다 10칸 이상 뒤처진 쪽은 이동 주사위에서 큰 눈이 더 잘 나온다(data/rules.json의 catchup_gap·catchup_move_weights). 전투 주사위는 그대로
 - 보드 약 120칸, 맵 9종(유턴형·피라미드형·나선형·직선형·계단형·산맥형·세로 S자형·쌍고리형·성벽형, tools/make_maps.py로 생성), 거점은 10칸 안팎마다, 갈림길(마름모) 3개, 50턴 제한(data/rules.json)
 - 규칙 검사(tests)는 칸 번호가 정해진 작은 고정 맵 tests/fixtures/board_small.json으로 한다
