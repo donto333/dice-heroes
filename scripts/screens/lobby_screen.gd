@@ -455,6 +455,7 @@ func _add_tiles(badges: Dictionary) -> void:
 		["상점", "SHOP", "ic_shop_stall", "무료 소환" if free_summon else ("dot" if bool(badges.get("shop", false)) else ""), "shop"],
 		["미션", "MISSION", "ic_mission_board", "dot" if bool(badges.get("missions", false)) else "", "missions"],
 		["시즌 패스", "SEASON PASS", "ic_pass_ticket", "dot" if Profile.pass_claimable_count(app.profile, app.eco) > 0 else "", "pass"],
+		["카드", "CARDS", "card", "dot" if Profile.free_card_draws_left(app.profile, app.eco) > 0 else "", "cards"],
 	]
 	for spec in menus:
 		row3.add_child(_navy_tile(spec))

@@ -21,7 +21,36 @@
       "attack": "lubu",
       "defense": "haetae",
       "support": "choichiwon"
-    }
+    },
+    "cards": [
+      "tailwind",
+      "banner",
+      "fortress",
+      "shrink_road",
+      "mirror_shield",
+      "sandstorm",
+      "snare",
+      "charm",
+      "war_drum",
+      "herb",
+      "scout",
+      "prayer",
+      "inspiration",
+      "guide_star",
+      "sage_ring"
+    ],
+    "deck": [
+      "tailwind",
+      "banner",
+      "fortress",
+      "shrink_road",
+      "mirror_shield",
+      "charm",
+      "war_drum",
+      "scout",
+      "prayer",
+      "inspiration"
+    ]
   },
   "summon": {
     "_comment": "rates는 등급별 확률(%). 10회 소환의 마지막 한 장은 ★★ 이상 보장. pity_3번 안에 ★★★가 안 나오면 다음은 ★★★ 확정.",
@@ -39,6 +68,29 @@
       "2": 10,
       "3": 25
     }
+  },
+  "card_gacha": {
+    "_comment": "카드 뽑기. rates는 등급별 확률(%). 10회의 마지막 한 장은 ★★ 이상 보장, pity_3번 안에 ★★★가 안 나오면 다음은 ★★★ 확정. 이미 가진 카드가 나오면 dupe_gold만큼 골드로 바뀐다.",
+    "cost_one": 30,
+    "cost_ten": 270,
+    "free_per_day": 1,
+    "rates": {
+      "3": 8,
+      "2": 32,
+      "1": 60
+    },
+    "pity_3": 20,
+    "dupe_gold": {
+      "1": 100,
+      "2": 300,
+      "3": 1000
+    }
+  },
+  "card_deck": {
+    "_comment": "카드 덱: 판에서는 덱에 넣은 카드만 뽑힌다. size장까지, 최소 min장, ★★★은 max_grade3장까지.",
+    "size": 10,
+    "min": 6,
+    "max_grade3": 2
   },
   "upgrade": {
     "_comment": "레벨 1→2, 2→3, 3→4, 4→5에 드는 조각과 골드. 전투 보너스는 data/rules.json의 level_battle_bonus.",

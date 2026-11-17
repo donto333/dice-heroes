@@ -155,6 +155,10 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 			"pos": start_id,
 			"trail": [start_id],
 			"hand": [],
+			## 카드 덱(2026-11-18): 이 플레이어는 덱의 카드만 뽑는다. 비어 있으면 모든 카드에서 뽑는다.
+			## draw_pile은 섞어 둔 남은 카드. 다 쓰면 덱을 다시 섞는다.
+			"deck": _valid_deck(party.get("deck", [])),
+			"draw_pile": [],
 			"gauge": {"attack": 0, "defense": 0, "support": 0},
 			## 게이지가 가득 차서 넘친 양. 100이 모이면 카드 1장이 된다.
 			"overflow": 0,
@@ -1394,11 +1398,38 @@ func _draw_card(player_index: int, announce: bool) -> void:
 		if announce:
 			say("  손이 가득 차서 카드를 받지 못했습니다.")
 		return
-	var ids: Array = cards.keys()
-	var card_id: String = ids[rng.randi_range(0, ids.size() - 1)]
+	var card_id := _next_card(player_index)
 	hand.append(card_id)
 	if announce:
 		say("  %s: 카드 [%s] 획득" % [players[player_index]["name"], cards[card_id]["name"]])
+
+
+## 다음에 뽑을 카드. 덱이 있으면 섞어 둔 더미 맨 위, 없으면 모든 카드 중 무작위.
+func _next_card(player_index: int) -> String:
+	var deck: Array = players[player_index].get("deck", [])
+	if deck.is_empty():
+		var ids: Array = cards.keys()
+		return str(ids[rng.randi_range(0, ids.size() - 1)])
+	var pile: Array = players[player_index]["draw_pile"]
+	if pile.is_empty():
+		pile.append_array(deck)
+		# 섞기(피셔-예이츠). 규칙 코드의 rng만 쓴다.
+		for i in range(pile.size() - 1, 0, -1):
+			var j := rng.randi_range(0, i)
+			var keep = pile[i]
+			pile[i] = pile[j]
+			pile[j] = keep
+	return str(pile.pop_back())
+
+
+## 덱에서 없는 카드를 거른다.
+func _valid_deck(deck) -> Array:
+	var result: Array = []
+	if deck is Array:
+		for id in deck:
+			if cards.has(str(id)):
+				result.append(str(id))
+	return result
 
 
 func _event(data: Dictionary) -> void:

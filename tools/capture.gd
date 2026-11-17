@@ -181,6 +181,20 @@ func _run() -> void:
 	summon_show._close(false)
 	await _wait(0.3)
 
+	# 카드 화면(2026-11-18): 덱 편성, 카드 뽑기, 10장 뽑기 결과
+	_app.go("cards")
+	await _wait(0.4)
+	await _shot("09f_cards_deck")
+	_app.go("cards", {"tab": "gacha"})
+	await _wait(0.4)
+	await _shot("09g_cards_gacha")
+	_app.profile["gems"] = int(_app.profile.get("gems", 0)) + 1000
+	_app.current_screen._on_paid_draw(10)
+	await _wait(0.6)
+	await _shot("09h_cards_result")
+	_close_dialogs()
+	await _wait(0.3)
+
 	_app.go("missions")
 	await _wait(0.4)
 	await _shot("10_missions")
