@@ -3,7 +3,7 @@ extends Control
 ## 소환 확률과 보장은 data/economy.json, 규칙은 scripts/rules/profile.gd.
 ## 진짜 돈 결제는 아직 없다. 보석은 미션·출석·레벨업·첫 승리로 모은다.
 
-const SummonFx := preload("res://scripts/ui/summon_fx.gd")
+const SummonShow := preload("res://scripts/ui/summon_show.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
@@ -406,71 +406,22 @@ func _on_paid(count: int) -> void:
 		app.play("denied")
 		app.toast("보석이 모자라요.")
 		return
-	_summon(count)
+	_summon(count, cost)
 
 
-func _summon(count: int) -> void:
+func _summon(count: int, again_cost: int = 0) -> void:
 	var results := Profile.summon(app.profile, app.data["characters"], app.eco, count, app.rng)
 	app.save()
-	# 결과를 바로 보여 주지 않고 소환 연출(마법진과 빛기둥)을 먼저 보여 준다.
-	var best_grade := 1
-	for entry in results:
-		best_grade = maxi(best_grade, int(entry["grade"]))
-	if app.instant:
-		await app.wait_loading("소환 중...", 0.9)
-	else:
-		var ritual := SummonFx.new()
-		app.add_child(ritual)
-		app.play("skill")
-		await ritual.play(best_grade)
-	app.play("summon_%d" % clampi(best_grade, 1, 3))
-	app.go("shop", {"tab": _tab})
-	app.current_screen.show_results(results)
-
-
-## 소환 결과를 카드로 하나씩 뒤집어 보여 준다.
-func show_results(results: Array) -> void:
-	var grid := GridContainer.new()
-	grid.columns = 5 if results.size() > 4 else results.size()
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 8)
-	var best := 1
-	var cards: Array = []
-	for entry in results:
-		var grade := int(entry["grade"])
-		best = max(best, grade)
-		var character: Dictionary = app.character(str(entry["id"]))
-		var cell := Kit.vbox(2)
-		cell.custom_minimum_size = Vector2(112 if results.size() > 4 else 180, 0)
-		var face := Portrait.new()
-		face.custom_minimum_size = Vector2(0, 112 if results.size() > 4 else 180)
-		face.hd = results.size() <= 4
-		face.border = Kit.GRADE_COLORS[grade]
-		face.border_width = 4.0
-		face.show_character(character, Kit.CATEGORY_COLORS.get(character.get("category", ""), Kit.LINE))
-		cell.add_child(face)
-		cell.add_child(Kit.label("★".repeat(grade), 16, Kit.GRADE_COLORS[grade], HORIZONTAL_ALIGNMENT_CENTER))
-		cell.add_child(Kit.label(str(character.get("name", "")), 16, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-		var note: String = "NEW!" if bool(entry["new"]) else "조각 +%d" % int(entry["shards"])
-		cell.add_child(Kit.label(note, 16, Kit.GOLD if bool(entry["new"]) else Kit.GEM, HORIZONTAL_ALIGNMENT_CENTER))
-		cell.modulate.a = 0.0
-		grid.add_child(cell)
-		cards.append(cell)
-	var body := Kit.vbox(10)
-	var center := CenterContainer.new()
-	center.add_child(grid)
-	body.add_child(center)
-	var title_text: String = "★★★ 등장!" if best >= 3 else "소환 결과"
-	var window: Control = app.dialog(title_text, body, [["확인", Kit.ACCENT]], 680)
-	# 카드가 하나씩 통 튀어나온다.
-	var tween := window.create_tween()
-	for cell in cards:
-		cell.pivot_offset = cell.custom_minimum_size * 0.5
-		cell.scale = Vector2(0.4, 0.4)
-		tween.tween_property(cell, "modulate:a", 1.0, 0.08)
-		tween.parallel().tween_property(cell, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	if best >= 3:
-		app.play("purchase")
+	# 결과는 이미 정해져 저장됐다. 소환 연출(제단 → 운명의 주사위 → 카드 뒤집기)로 보여 준다.
+	# 연출이 끝나면 이 화면은 새로 그려지므로(app.go) 그 뒤에는 self를 쓰지 않는다.
+	var host = app
+	var tab := _tab
+	var show := SummonShow.new()
+	host.add_child(show)
+	var again: bool = await show.play(host, results, again_cost)
+	host.go("shop", {"tab": tab})
+	if again:
+		host.current_screen._on_paid(count)
 
 
 func _on_exchange(index: int) -> void:
