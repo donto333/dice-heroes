@@ -728,15 +728,18 @@ static func day_cell(day_number: int, reward_text: String, now: bool, done: bool
 		cell = PanelContainer.new()
 		cell.add_theme_stylebox_override("panel", Kit.box(Kit.PANEL_LIGHT if now else (Color("13458f") if done else Kit.PANEL), Kit.GOLD, 2, 10, 4))
 	else:
-		# 칸 위 가운데 보석 장식 아래로 글자를 내린다.
+		# 위아래 보석 장식과 금테 안쪽으로 글자를 넣는다(글자가 금테에 닿지 않게).
 		var art_style := cell.get_theme_stylebox("panel") as StyleBoxTexture
 		if art_style != null:
-			art_style.content_margin_top = 16
-			art_style.content_margin_left = 10
-			art_style.content_margin_right = 10
+			art_style.content_margin_top = 24
+			art_style.content_margin_bottom = 22
+			art_style.content_margin_left = 12
+			art_style.content_margin_right = 12
 	var ink: Color = Color("5a3200") if now else (Kit.MUTED if done else Color.WHITE)
+	# 날짜와 보상을 한 덩어리로 칸 한가운데에 모은다(위아래로 벌어져 가운데가 비지 않게).
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 2)
+	column.add_theme_constant_override("separation", 8)
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cell.add_child(column)
 	var top := HBoxContainer.new()
@@ -760,11 +763,11 @@ static func day_cell(day_number: int, reward_text: String, now: bool, done: bool
 			stamp.texture = stamp_tex
 		stamp.custom_minimum_size = Vector2(24, 24)
 		stamp.size = Vector2(24, 24)
-		stamp.position = Vector2(-22, -6)
+		# 금테 모서리에 걸치지 않게 안쪽 오른쪽 위에 찍는다.
+		stamp.position = Vector2(-20, 3)
 		corner.add_child(stamp)
 	var reward: Label = Kit.label(reward_text.replace("  ", "\n"), 18, ink, HORIZONTAL_ALIGNMENT_CENTER)
 	reward.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	reward.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(reward)
 	for label in [day_label, reward]:
 		if now:
