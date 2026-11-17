@@ -81,9 +81,66 @@ func _run_duels() -> void:
 	quit(0)
 
 
+## 무제한 무작위: 소환 포인트와 상관없이 아무 세 명(AI가 자리 배치)끼리 붙인 승률.
+## 포인트 한도가 있으면 ★ 영웅이 ★★★와 한 팀이 되어 승률이 따라 올라가므로, 영웅 한 명의 세기는 이 방식으로 잰다.
+## 영웅 전체의 평균은 늘 50%다. GAMES는 서버 한 대가 돌릴 판 수(기본 40000).
+func _run_free() -> void:
+	var games := _env_int("GAMES", 40000)
+	var shard := _env_int("SHARD", 0)
+	var data: Dictionary = GameData.load_all()
+	var chars: Array = data["characters"]
+	var datas: Array = []
+	for board in data["boards"]:
+		var copy := data.duplicate()
+		copy["board"] = board
+		datas.append(copy)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242 + shard * 7919
+	var stats := {}
+	for index in games:
+		var parties: Array = []
+		for side in 2:
+			var picks: Array = []
+			while picks.size() < 3:
+				var pick: Dictionary = chars[rng.randi_range(0, chars.size() - 1)]
+				if not picks.has(pick):
+					picks.append(pick)
+			var party: Dictionary = AI.best_placement(picks)["party"].duplicate()
+			party["name"] = "A" if side == 0 else "B"
+			parties.append(party)
+		var game = Game.new()
+		game.setup(datas[rng.randi_range(0, datas.size() - 1)], parties, rng.randi() & 0x7fffffff)
+		var steps := 0
+		while game.winner < 0 and steps < 400:
+			AI.take_turn(game)
+			steps += 1
+		var first_score := 0.5
+		if game.winner == 0:
+			first_score = 1.0
+		elif game.winner == 1:
+			first_score = 0.0
+		for side in 2:
+			for slot in ["attack", "defense", "support"]:
+				var key := "%s|%s" % [parties[side][slot], slot]
+				if not stats.has(key):
+					stats[key] = [0, 0.0]
+				stats[key][0] += 1
+				stats[key][1] += first_score if side == 0 else 1.0 - first_score
+	var out_path := OS.get_environment("OUT")
+	if out_path != "":
+		var file := FileAccess.open(out_path, FileAccess.WRITE)
+		file.store_string(JSON.stringify({"mode": "free", "games": games, "heroes": stats}))
+		file.close()
+	print("끝: 무제한 무작위 %d판" % games)
+	quit(0)
+
+
 func _init() -> void:
 	if OS.get_environment("MODE") == "duel":
 		_run_duels()
+		return
+	if OS.get_environment("MODE") == "free":
+		_run_free()
 		return
 	var limit := _env_int("LIMIT", 6)
 	var games := _env_int("GAMES", 150)
