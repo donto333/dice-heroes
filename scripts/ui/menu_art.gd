@@ -539,7 +539,7 @@ static func reward_capsules(reward: Dictionary) -> HBoxContainer:
 ## extra: 두 줄 글 아래에 덧붙일 것(작은 초상화 줄 등).
 static func summary(icon_name: String, first: String, second: String = "", extra: Control = null) -> PanelContainer:
 	var card := PanelContainer.new()
-	var art = style("summary_card", Vector4(30, 30, 30, 30), Vector4(16, 14, 14, 14))
+	var art = style("summary_card", Vector4(30, 30, 30, 30), Vector4(24, 16, 20, 16))
 	card.add_theme_stylebox_override("panel", art if art != null else Kit.plate(Color("13458f"), Kit.TRIM, 14.0, 12, false))
 	# 위: 아이콘 + 첫 줄, 아래: 둘째 줄(판 너비 전체), 그 아래 덧붙일 것
 	var words := VBoxContainer.new()
