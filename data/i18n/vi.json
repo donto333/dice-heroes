@@ -1500,9 +1500,6 @@
  "얻은": "Nhận được",
  "보상": "Phần thưởng",
  "화면 연출 새 단장: 메뉴 화면이 부드럽게 나타나고, 보상을 받으면 금화와 보석이 위쪽 재화 칸으로 날아가요. 알림은 내용을 가리지 않게 위 줄이나 화면 아래에 떠요.": "Hiệu ứng màn hình mới: menu hiện ra mượt mà, khi nhận thưởng thì vàng và đá quý bay lên ô tiền tệ phía trên. Thông báo hiện ở thanh trên hoặc cuối màn hình để không che nội dung.",
- "이동 주사위가 2개인 영웅이 같은 눈 두 개를 굴리면 '더블!' 우리 팀 어빌리티 게이지가 12% 더 차고, 주사위를 한 번 더 굴려요. 더 굴릴 때는 스킬과 카드를 쓸 수 없어요.": "Anh hùng có 2 xúc xắc di chuyển tung ra hai số giống nhau là 'Đôi!' Thanh kỹ năng của đội tăng thêm 12% và bạn được tung thêm một lần. Lượt tung thêm không dùng được kỹ năng và thẻ.",
- "더블! 한 번 더!": "Đôi! Tung lần nữa!",
- "더블 다시 굴리기: 더블이 나오면 주사위를 한 번 더 굴려요. 더 굴릴 때는 스킬과 카드를 쓸 수 없어요.": "Tung lại khi ra đôi: ra đôi thì được tung thêm một lần. Lượt tung thêm không dùng được kỹ năng và thẻ.",
  "이동 주사위가 2개인 영웅이 같은 눈 두 개를 굴리면 '더블!' 우리 팀 어빌리티 게이지가 12% 더 차요.": "Anh hùng có 2 xúc xắc di chuyển tung ra hai số giống nhau là 'Đôi!' Thanh kỹ năng của đội tăng thêm 12%.",
  "%s: 버텨 냈습니다! 거점으로 돌아가지 않습니다.": "%s: Trụ vững! Không về cứ điểm.",
  "%d칸 앞으로 날아갑니다!": "Bay lên phía trước %d ô!",
@@ -1595,7 +1592,5 @@
  "이번 이동 +1칸, 이번 턴 전투에서 지면 한 번 다시 굴림": "Lần đi này +1 ô, thua trận lượt này được tung lại một lần",
  "곤충기": "Ký sự côn trùng",
  "지금 칸과 바로 뒤 칸에 덫 2개": "Đặt 2 bẫy: ô này và ô ngay phía sau",
- "어린이날 선물": "Quà Ngày Thiếu nhi",
- "%s: 더블! 한 번 더 굴립니다. (스킬·카드 사용 불가)": "%s: Đôi! Tung thêm lần nữa. (Không dùng kỹ năng, thẻ)",
- "더블! 이동이 끝나면 한 번 더 굴립니다.": "Đôi! Tung thêm lần nữa sau khi đi xong."
+ "어린이날 선물": "Quà Ngày Thiếu nhi"
 }

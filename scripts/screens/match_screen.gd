@@ -1667,8 +1667,6 @@ func _goal_name() -> String:
 
 
 func _turn_title(index: int) -> String:
-	if game.bonus_turn:
-		return "더블! 한 번 더!"
 	if _is_local():
 		return "%s 차례" % game.players[index]["name"]
 	return "내 차례" if _humans[index] else "AI 차례"
@@ -1942,7 +1940,7 @@ func _show_move(event: Dictionary) -> void:
 		_fx.pop_text(_board_center() - Vector2(0, 40), "%d" % int(event["total"]), PLAYER_TEXT_COLORS[who].lightened(0.3), 150)
 		_fx.burst(_board_center() - Vector2(0, 40), "spark", 16)
 		if doubled:
-			_say(who, "더블! 한 번 더!" if bool(event.get("reroll", false)) else "더블! 게이지 +%d%%" % game.double_gauge)
+			_say(who, "더블! 게이지 +%d%%" % game.double_gauge)
 			_play("double")
 			_announce("double")
 			_fx.flash(Color(1.0, 0.9, 0.4, 0.45), 0.35)

@@ -69,7 +69,7 @@
 - 갈림길 안개(2026-11-16): 갈림길(다음 칸 2개 이상)에서 갈라진 두 길의 칸(다시 모이는 칸 앞까지)은 안개 칸(`game.fog`, `_setup_fog`)이다. 화면(`board_view.gd`의 `_view_fogged`·`_draw_fog`)은 말이 밟기 전까지 칸 그림·글자·바닥 효과·적·물건을 숨기고 회색 칸 위에 안개를 그린다. 규칙(칸 효과·전투)은 그대로이고 data/rules.json의 branch_fog로 끈다.
 - 어빌리티(2026-11-17 개편): 영웅 48명이 저마다 자기 어빌리티를 하나씩 가진다(`data/abilities.json`, ★★★은 `unique_<id>`, 나머지는 `skill_<id>`, 나눠 쓰지 않음). 효과 종류(`game.gd`의 `_apply_effect`)에 새로 더한 것: 6이 나오면 더하기 crit, 최소 눈 atk_floor·def_floor·move_floor, 이기면 게이지 빼앗기 drain, 게이지 더 차기 gauge_boost, 거점 복귀 한 번 막기 stand_ground(`_return_to_checkpoint`), 즉시 날기 advance, 상대 밀어내기 push_enemy, 게이지 빼앗기 steal_gauge, 상대 어빌리티·카드 봉인 enemy_seal·enemy_card_seal(상대에게 sealed·card_sealed), 덫 여러 개 trap(amount), 무작위 하나 random_one(도깨비방망이). 전투 굴림의 최소 눈·6 보너스는 `resolve_battle`의 attack_mods·defense_mods로 넘긴다.
 - 시너지: 파티 세 명이 같은 분류면 결속(시작 게이지 +15%), 모두 다른 분류면 조화(부적). data/rules.json의 synergy, `Game.synergy_of`
-- 더블: 이동 주사위 2개 이상이 모두 같은 눈이면 어빌리티 게이지 +12%(data/rules.json의 double_gauge). 그리고 이동을 마친 뒤 같은 플레이어가 한 번 더 굴린다(2026-11-17 사용자 결정, double_reroll·이어서 double_reroll_max번까지, `game.bonus_roll`→`end_turn`→`bonus_turn`). 추가 굴림에서는 스킬(어빌리티)·카드를 쓸 수 없고 턴 게이지도 안 찬다
+- 더블: 이동 주사위 2개 이상이 모두 같은 눈이면 어빌리티 게이지 +12%(data/rules.json의 double_gauge)
 - 따라잡기: 상대보다 10칸 이상 뒤처진 쪽은 이동 주사위에서 큰 눈이 더 잘 나온다(data/rules.json의 catchup_gap·catchup_move_weights). 전투 주사위는 그대로
 - 보드 약 120칸, 맵 9종(유턴형·피라미드형·나선형·직선형·계단형·산맥형·세로 S자형·쌍고리형·성벽형, tools/make_maps.py로 생성), 거점은 10칸 안팎마다, 갈림길(마름모) 3개, 50턴 제한(data/rules.json)
 - 규칙 검사(tests)는 칸 번호가 정해진 작은 고정 맵 tests/fixtures/board_small.json으로 한다

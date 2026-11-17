@@ -1500,9 +1500,6 @@
  "얻은": "Earned",
  "보상": "Rewards",
  "화면 연출 새 단장: 메뉴 화면이 부드럽게 나타나고, 보상을 받으면 금화와 보석이 위쪽 재화 칸으로 날아가요. 알림은 내용을 가리지 않게 위 줄이나 화면 아래에 떠요.": "Smoother screens: menus now slide in gently, and coins and gems fly up to your currency when you claim rewards. Notices now appear in the top bar or at the bottom so they don't cover anything.",
- "이동 주사위가 2개인 영웅이 같은 눈 두 개를 굴리면 '더블!' 우리 팀 어빌리티 게이지가 12% 더 차고, 주사위를 한 번 더 굴려요. 더 굴릴 때는 스킬과 카드를 쓸 수 없어요.": "When a hero with 2 move dice rolls a pair, it's a 'Double!' Your team's ability gauge fills 12% more and you roll again. Skills and cards can't be used on the extra roll.",
- "더블! 한 번 더!": "Double! Roll again!",
- "더블 다시 굴리기: 더블이 나오면 주사위를 한 번 더 굴려요. 더 굴릴 때는 스킬과 카드를 쓸 수 없어요.": "Double re-roll: roll a double to roll again. Skills and cards can't be used on the extra roll.",
  "이동 주사위가 2개인 영웅이 같은 눈 두 개를 굴리면 '더블!' 우리 팀 어빌리티 게이지가 12% 더 차요.": "When a hero with 2 move dice rolls a pair, it's a 'Double!' Your team's ability gauge fills 12% more.",
  "%s: 버텨 냈습니다! 거점으로 돌아가지 않습니다.": "%s: Held firm! Doesn't return to base.",
  "%d칸 앞으로 날아갑니다!": "Flies %d spaces ahead!",
@@ -1595,7 +1592,5 @@
  "이번 이동 +1칸, 이번 턴 전투에서 지면 한 번 다시 굴림": "+1 space this move; if you lose a battle this turn, roll once more",
  "곤충기": "Souvenirs Entomologiques",
  "지금 칸과 바로 뒤 칸에 덫 2개": "2 traps: on this space and the one behind",
- "어린이날 선물": "Children's Day Gift",
- "%s: 더블! 한 번 더 굴립니다. (스킬·카드 사용 불가)": "%s: Double! Roll once more. (No skills or cards)",
- "더블! 이동이 끝나면 한 번 더 굴립니다.": "Double! Roll again after this move."
+ "어린이날 선물": "Children's Day Gift"
 }
