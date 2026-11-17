@@ -744,13 +744,13 @@ static func day_cell(day_number: int, reward_text: String, now: bool, done: bool
 		var corner := Control.new()
 		corner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		top.add_child(corner)
-		var stamp: TextureRect = Kit.icon("check", 28.0)
+		var stamp: TextureRect = Kit.icon("check", 24.0)
 		var stamp_tex := tex("stamp")
 		if stamp_tex != null:
 			stamp.texture = stamp_tex
-		stamp.custom_minimum_size = Vector2(28, 28)
-		stamp.size = Vector2(28, 28)
-		stamp.position = Vector2(-30, 1)
+		stamp.custom_minimum_size = Vector2(24, 24)
+		stamp.size = Vector2(24, 24)
+		stamp.position = Vector2(-22, -6)
 		corner.add_child(stamp)
 	var reward: Label = Kit.label(reward_text.replace("  ", "\n"), 18, ink, HORIZONTAL_ALIGNMENT_CENTER)
 	reward.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
