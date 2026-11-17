@@ -39,7 +39,7 @@ const SCREEN_MOODS := {
 	"lobby": Color("3b2f9e"), "shop": Color("1f3a82"), "heroes": Color("1f3a82"), "missions": Color("1f3a82"),
 	"settings": Color("1f3a82"), "adventure": Color("1f3a82"), "pass": Color("1f3a82"), "help": Color("1f3a82"),
 }
-const VERSION := "0.24.2"
+const VERSION := "0.24.3"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -148,7 +148,42 @@ func _setup_font() -> void:
 	var backup: FontFile = load("res://assets/fonts/NotoSansKR-Regular-subset.otf")
 	if main_font != null and backup != null:
 		var extra: Array[Font] = [backup]
+		# 골드 금화 그림을 글자 하나(Kit.GOLD_ICON, 사용 영역 U+E000)로 넣어 글 사이에 금화가 보이게 한다.
+		var coin := _coin_font()
+		if coin != null:
+			extra.append(coin)
 		main_font.fallbacks = extra
+
+
+## 금화 그림(assets/ui_icons/gold.png)으로 만든 그림 글꼴. 글자 크기에 맞춰 늘고 줄고, 글자 색에 물들지 않는다.
+func _coin_font() -> FontFile:
+	var texture: Texture2D = load("res://assets/ui_icons/gold.png")
+	if texture == null:
+		return null
+	var image: Image = texture.get_image()
+	if image == null:
+		return null
+	image = image.duplicate()
+	if image.is_compressed():
+		image.decompress()
+	image.convert(Image.FORMAT_RGBA8)
+	const SIZE := 64
+	image.resize(SIZE, SIZE, Image.INTERPOLATE_LANCZOS)
+	var font := FontFile.new()
+	font.fixed_size = SIZE
+	font.fixed_size_scale_mode = TextServer.FIXED_SIZE_SCALE_ENABLED
+	var cache := Vector2i(SIZE, 0)
+	font.set_cache_ascent(0, SIZE, SIZE * 0.88)
+	font.set_cache_descent(0, SIZE, SIZE * 0.22)
+	font.set_texture_image(0, cache, 0, image)
+	var glyph := Kit.GOLD_CODE
+	var drawn := SIZE * 1.05
+	font.set_glyph_texture_idx(0, cache, glyph, 0)
+	font.set_glyph_uv_rect(0, cache, glyph, Rect2(0, 0, SIZE, SIZE))
+	font.set_glyph_size(0, cache, glyph, Vector2(drawn, drawn))
+	font.set_glyph_offset(0, cache, glyph, Vector2(SIZE * 0.05, -SIZE * 0.88))
+	font.set_glyph_advance(0, SIZE, glyph, Vector2(SIZE * 1.12, 0))
+	return font
 
 
 # ---------------------------------------------------------------- 프로필
