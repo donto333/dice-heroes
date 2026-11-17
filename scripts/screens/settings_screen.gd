@@ -27,6 +27,12 @@ func setup(main_app, _params: Dictionary) -> void:
 	Kit.expand(body)
 	scroll.add_child(body)
 
+	# ---- 언어: 누를 때마다 한국어 → English → Tiếng Việt 차례로 바뀐다(lang.gd).
+	var lang_button := MenuArt.pill_button(Lang.language_name(), "green", "m")
+	lang_button.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	lang_button.custom_minimum_size = Vector2(240, 56)
+	lang_button.pressed.connect(_on_language)
+	MenuArt.list_row(body, "m_monitor", "언어 (Language)", "한국어 · English · Tiếng Việt", lang_button)
 	# ---- 소리
 	body.add_child(MenuArt.section("소리", "m_speaker", "효과음·음성·음악"))
 	_toggle_row(body, "m_speaker", "효과음", app.sfx_on(), _on_sound)
@@ -185,6 +191,12 @@ func _on_music() -> void:
 func _on_fast() -> void:
 	app.profile["settings"]["fast"] = not bool(app.profile["settings"].get("fast", false))
 	app.save()
+	app.play("click")
+	app.go("settings")
+
+
+func _on_language() -> void:
+	Lang.use(Lang.next_code())
 	app.play("click")
 	app.go("settings")
 

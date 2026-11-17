@@ -71,8 +71,8 @@ func _draw() -> void:
 		var text := str(slots[index]["text"])
 		var font_size := 24
 		var width := radius * 0.62
-		draw_string_outline(font, Vector2(radius * 0.34, font_size * 0.36), text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size, 6, Color(0, 0, 0, 0.75))
-		draw_string(font, Vector2(radius * 0.34, font_size * 0.36), text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size, Color.WHITE)
+		draw_string_outline(font, Vector2(radius * 0.34, font_size * 0.36), tr(text), HORIZONTAL_ALIGNMENT_CENTER, width, font_size, 6, Color(0, 0, 0, 0.75))
+		draw_string(font, Vector2(radius * 0.34, font_size * 0.36), tr(text), HORIZONTAL_ALIGNMENT_CENTER, width, font_size, Color.WHITE)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# 테두리 전구
 	for bulb in 16:

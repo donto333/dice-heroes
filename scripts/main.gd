@@ -65,6 +65,7 @@ func _ready() -> void:
 	Engine.max_fps = 60
 	set_process(true)
 	_setup_font()
+	Lang.setup()
 	rng.randomize()
 	data = GameData.load_all()
 	eco = data.get("economy", {})
