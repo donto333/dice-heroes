@@ -596,12 +596,13 @@ func _navy_tile(spec: Array) -> Button:
 	var tile := _art_button(_slice("tile_navy", 34, Color("17398a")))
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile.pressed.connect(_on_tab.bind(str(spec[4])))
-	var inner := _inner(tile, 12, 8, 26, 10)
-	var row := Kit.hbox(6)
+	# 좌우 여백을 같게 해야 아이콘+글자 묶음이 가운데에 온다(> 표시는 아래쪽이라 글자와 겹치지 않는다).
+	var inner := _inner(tile, 10, 8, 10, 10)
+	var row := Kit.hbox(4)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(row)
-	var glyph := _lobby_icon(str(spec[2]), 54.0)
+	var glyph := _lobby_icon(str(spec[2]), 46.0)
 	glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(glyph)
 	var text := Kit.vbox(-2)
@@ -610,7 +611,8 @@ func _navy_tile(spec: Array) -> Button:
 	row.add_child(text)
 	var title := _bold(str(spec[0]), 22, Color.WHITE, Color("0b1f4d"), 5)
 	text.add_child(title)
-	Kit.fit_text(title, tile, 62.0, 22)
+	# 글자 칸 = 타일 너비 - 좌우 여백(20) - 아이콘(46) - 틈(4) - 여유(4). 넘치면 묶음이 오른쪽으로 밀려났다.
+	Kit.fit_text(title, tile, 74.0, 22)
 	var english := Kit.label(str(spec[1]), 11, Color(1, 1, 1, 0.8))
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	english.visible = Lang.current == "ko"
@@ -1048,6 +1050,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"로비 아래 메뉴(영웅·상점·미션·시즌 패스) 글자가 가운데로 정렬됐어요.",
 	"긴 영웅 이름(아멜리아 에어하트 등)도 카드 안에 다 보여요: 글자를 줄이거나 자간을 좁혀요.",
 	"파티 편성 카드: 아래 띠의 ★과 영웅 이름이 가려지지 않고 끝까지 보여요.",
 	"화면 연출 새 단장: 메뉴 화면이 부드럽게 나타나고, 보상을 받으면 금화와 보석이 위쪽 재화 칸으로 날아가요. 알림은 내용을 가리지 않게 위 줄이나 화면 아래에 떠요.",
