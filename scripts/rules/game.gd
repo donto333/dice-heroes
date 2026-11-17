@@ -28,6 +28,14 @@ const TIMED_EFFECTS := [
 	"atk_dice", "def_dice", "atk_bonus", "def_bonus",
 	"move_dice", "enemy_dice_minus", "chase", "counter",
 	"move_plus", "move_best", "retry",
+	# 2026-11-17 어빌리티 개편으로 더한 지속 효과
+	"crit",          # 공격 주사위에 6이 나오면 하나마다 amount 더함
+	"atk_floor",     # 공격 주사위 눈이 amount보다 작으면 amount로 올림
+	"def_floor",     # 방어 주사위 눈이 amount보다 작으면 amount로 올림
+	"move_floor",    # 이동 주사위 눈이 amount보다 작으면 amount로 올림
+	"drain",         # 상대 말과 싸워 이기면 상대 게이지를 amount% 빼앗음
+	"gauge_boost",   # 턴마다 차는 게이지 amount% 더
+	"stand_ground",  # 거점으로 돌아갈 일이 생기면 한 번 막음(쓰면 없어짐)
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -356,6 +364,15 @@ func effect_sum(player_index: int, key: String) -> int:
 	return total
 
 
+## 같은 종류 지속 효과 중 가장 큰 값(최소 눈처럼 더하면 안 되는 것).
+func effect_max(player_index: int, key: String) -> int:
+	var best := 0
+	for effect in players[player_index]["effects"]:
+		if effect["key"] == key:
+			best = maxi(best, int(effect["amount"]))
+	return best
+
+
 func can_act() -> bool:
 	return winner < 0 and not moved
 
@@ -381,6 +398,8 @@ func choice_label(option_index: int) -> String:
 func can_use_ability(slot: String) -> bool:
 	if not can_act() or ability_used:
 		return false
+	if effect_sum(current, "sealed") > 0:
+		return false
 	if ability_of(current, slot).is_empty():
 		return false
 	return int(players[current]["gauge"][slot]) >= 100
@@ -388,6 +407,8 @@ func can_use_ability(slot: String) -> bool:
 
 func can_play_card(hand_index: int) -> bool:
 	if not can_act() or card_played:
+		return false
+	if effect_sum(current, "card_sealed") > 0:
 		return false
 	if hand_index < 0 or hand_index >= players[current]["hand"].size():
 		return false
@@ -492,7 +513,11 @@ func begin_turn() -> bool:
 	var intellect := int(support["intellect"])
 	if map_attr == "위인" and support["category"] == "위인":
 		intellect += ATTR_BONUS
-	_gain_turn_gauge(current, gauge_base + gauge_per_intellect * intellect)
+	var gain := gauge_base + gauge_per_intellect * intellect
+	var boost := effect_sum(current, "gauge_boost")
+	if boost > 0:
+		gain += int(gain * boost / 100.0)
+	_gain_turn_gauge(current, gain)
 	return true
 
 
@@ -586,6 +611,9 @@ func roll_move(aim: String = "") -> void:
 			say("  길잡이 별: %s와 %s 중 큰 쪽" % [str(rolls), str(again)])
 			if _sum(again) > _sum(rolls):
 				rolls = again
+		var move_floor := effect_max(current, "move_floor")
+		if move_floor > 0:
+			rolls = _raise_floor(rolls, move_floor)
 		total = _sum(rolls)
 		say("%s: 이동 주사위 %s → %d칸" % [player["name"], str(rolls), total])
 	var bonus := effect_sum(current, "move_plus")
@@ -753,6 +781,10 @@ func _move_back(player_index: int, steps: int) -> void:
 func _return_to_checkpoint(player_index: int) -> void:
 	var trail: Array = players[player_index]["trail"]
 	if trail.size() <= 1:
+		return
+	if _consume_effect(player_index, "stand_ground"):
+		say("  %s: 버텨 냈습니다! 거점으로 돌아가지 않습니다." % players[player_index]["name"])
+		_event({"kind": "stand_ground", "player": player_index})
 		return
 	trail.pop_back()
 	_arrive_back(player_index)
@@ -925,15 +957,17 @@ static func win_chance(attack_dice: int, defense_dice: int, attack_bonus: int, d
 	return wins / (wins + losses)
 
 
-func resolve_battle(attack_dice: int, defense_dice: int, attack_bonus: int, defense_bonus: int) -> Dictionary:
+## attack_mods·defense_mods: 어빌리티가 바꾸는 굴림. {"floor": 최소 눈, "six": 6 하나마다 더할 값}
+func resolve_battle(attack_dice: int, defense_dice: int, attack_bonus: int, defense_bonus: int,
+		attack_mods: Dictionary = {}, defense_mods: Dictionary = {}) -> Dictionary:
 	var attack_count: int = clamp(attack_dice, 1, MAX_BATTLE_DICE)
 	var defense_count: int = clamp(defense_dice, 1, MAX_BATTLE_DICE)
 	var result := {}
 	for attempt in 10:
-		var attack_rolls := roll_dice(attack_count)
-		var defense_rolls := roll_dice(defense_count)
-		var attack_total := _sum(attack_rolls) + attack_bonus
-		var defense_total := _sum(defense_rolls) + defense_bonus
+		var attack_rolls := _raise_floor(roll_dice(attack_count), int(attack_mods.get("floor", 0)))
+		var defense_rolls := _raise_floor(roll_dice(defense_count), int(defense_mods.get("floor", 0)))
+		var attack_total := _sum(attack_rolls) + attack_bonus + _six_bonus(attack_rolls, int(attack_mods.get("six", 0)))
+		var defense_total := _sum(defense_rolls) + defense_bonus + _six_bonus(defense_rolls, int(defense_mods.get("six", 0)))
 		result = {
 			"attack_rolls": attack_rolls,
 			"defense_rolls": defense_rolls,
@@ -944,6 +978,32 @@ func resolve_battle(attack_dice: int, defense_dice: int, attack_bonus: int, defe
 		if attack_total != defense_total:
 			break
 	return result
+
+
+## 주사위 눈을 floor 밑으로는 안 내려가게 올린다.
+static func _raise_floor(rolls: Array, floor_value: int) -> Array:
+	if floor_value <= 1:
+		return rolls
+	var raised: Array = []
+	for value in rolls:
+		raised.append(maxi(int(value), mini(floor_value, 6)))
+	return raised
+
+
+static func _six_bonus(rolls: Array, per_six: int) -> int:
+	if per_six <= 0:
+		return 0
+	return rolls.count(6) * per_six
+
+
+## 이 플레이어가 공격할 때 굴림을 바꾸는 효과
+func _attack_mods(player_index: int) -> Dictionary:
+	return {"floor": effect_max(player_index, "atk_floor"), "six": effect_sum(player_index, "crit")}
+
+
+## 이 플레이어가 막을 때 굴림을 바꾸는 효과
+func _defense_mods(player_index: int) -> Dictionary:
+	return {"floor": effect_max(player_index, "def_floor")}
 
 
 func _attack_dice(player_index: int) -> int:
@@ -998,15 +1058,18 @@ func _battle_players() -> bool:
 	say("  전투! %s(공격) vs %s(방어)" % [attacker["name"], defender["name"]])
 	var attack_dice := _attack_dice(current)
 	var defense_dice := _defense_dice(1 - current)
+	var attack_mods := _attack_mods(current)
+	var defense_mods := _defense_mods(1 - current)
 	var result := resolve_battle(
-		attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current))
+		attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current), attack_mods, defense_mods)
 	if not result["attacker_won"] and _consume_effect(current, "retry"):
 		_say_battle(result)
 		say("  재도전! 한 번 더 굴립니다.")
 		result = resolve_battle(
-			attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current))
+			attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current), attack_mods, defense_mods)
 	_say_battle(result)
 	_battle_event(attacker["name"], defender["name"], result, "player")
+	_drain_after_battle(current if result["attacker_won"] else 1 - current)
 	if result["attacker_won"]:
 		say("  %s 승리! %s은(는) 직전 거점으로 돌아갑니다." % [player["name"], opponent["name"]])
 		_return_to_checkpoint(1 - current)
@@ -1029,7 +1092,7 @@ func _battle_comeback(player_index: int) -> bool:
 	var defender: Dictionary = char_of(1 - player_index, "defense")
 	say("  전투! %s(공격) vs %s(방어)" % [attacker["name"], defender["name"]])
 	var result := resolve_battle(_attack_dice(player_index), _defense_dice(1 - player_index),
-		_attack_bonus(player_index), _defense_bonus(1 - player_index))
+		_attack_bonus(player_index), _defense_bonus(1 - player_index), _attack_mods(player_index), _defense_mods(1 - player_index))
 	_say_battle(result)
 	_battle_event(attacker["name"], defender["name"], result, "card")
 	return bool(result["attacker_won"])
@@ -1042,11 +1105,12 @@ func _battle_keeper(keeper_dice: int, keeper_name: String) -> bool:
 	say("  전투! %s vs 키퍼 [%s]" % [attacker["name"], keeper_name])
 	var attack_dice := _attack_dice(current)
 	var defense_dice := keeper_dice - effect_sum(current, "enemy_dice_minus")
-	var result := resolve_battle(attack_dice, defense_dice, _attack_bonus(current), 0)
+	var attack_mods := _attack_mods(current)
+	var result := resolve_battle(attack_dice, defense_dice, _attack_bonus(current), 0, attack_mods)
 	if not result["attacker_won"] and _consume_effect(current, "retry"):
 		_say_battle(result)
 		say("  재도전! 한 번 더 굴립니다.")
-		result = resolve_battle(attack_dice, defense_dice, _attack_bonus(current), 0)
+		result = resolve_battle(attack_dice, defense_dice, _attack_bonus(current), 0, attack_mods)
 	_say_battle(result)
 	_battle_event(attacker["name"], keeper_name, result, "keeper")
 	if result["attacker_won"]:
@@ -1066,11 +1130,12 @@ func _battle_ambush(monster_dice: int, monster_name: String) -> bool:
 	var attack_dice := monster_dice - effect_sum(current, "enemy_dice_minus")
 	var defense_dice := _defense_dice(current)
 	var defense_bonus := _defense_bonus(current)
-	var result := resolve_battle(attack_dice, defense_dice, 0, defense_bonus)
+	var defense_mods := _defense_mods(current)
+	var result := resolve_battle(attack_dice, defense_dice, 0, defense_bonus, {}, defense_mods)
 	if result["attacker_won"] and _consume_effect(current, "retry"):
 		_say_battle(result)
 		say("  재도전! 한 번 더 굴립니다.")
-		result = resolve_battle(attack_dice, defense_dice, 0, defense_bonus)
+		result = resolve_battle(attack_dice, defense_dice, 0, defense_bonus, {}, defense_mods)
 	_say_battle(result)
 	_battle_event(monster_name, defender["name"], result, "ambush")
 	if not result["attacker_won"]:
@@ -1136,8 +1201,12 @@ func _apply_effect(effect: Dictionary, player_index: int) -> void:
 			else:
 				_add_effect(opponent_index, "move_dice", amount, 2)
 		"trap":
-			traps[int(player["pos"])] = player_index
-			say("  %d번 칸에 덫을 숨겨 두었습니다." % int(player["pos"]))
+			# amount개: 지금 칸부터 지나온 길을 따라 뒤로 하나씩
+			var trail: Array = player["trail"]
+			for i in mini(max(amount, 1), trail.size()):
+				var spot := int(trail[trail.size() - 1 - i])
+				traps[spot] = player_index
+				say("  %d번 칸에 덫을 숨겨 두었습니다." % spot)
 		"swap":
 			_swap_positions(player_index)
 		"comeback":
@@ -1178,8 +1247,61 @@ func _apply_effect(effect: Dictionary, player_index: int) -> void:
 		"set_attr":
 			map_attr = char_of(player_index, "attack")["category"]
 			say("  맵 속성이 [%s](으)로 바뀌었습니다." % map_attr)
+		"advance":
+			say("  %d칸 앞으로 날아갑니다!" % amount)
+			_walk(player_index, amount, false)
+		"push_enemy":
+			if _consume_charm(opponent_index):
+				say("  %s의 부적이 막아 냈습니다." % opponent["name"])
+			else:
+				say("  %s을(를) %d칸 밀어냅니다!" % [opponent["name"], amount])
+				_move_back(opponent_index, amount)
+		"steal_gauge":
+			_steal_gauge(player_index, amount)
+		"enemy_seal":
+			# 상대의 다음 차례까지 남도록 2턴으로 건다.
+			if _consume_charm(opponent_index):
+				say("  %s의 부적이 막아 냈습니다." % opponent["name"])
+			else:
+				_add_effect(opponent_index, "sealed", 1, 2)
+				say("  %s은(는) 다음 차례에 어빌리티를 쓸 수 없습니다." % opponent["name"])
+		"enemy_card_seal":
+			if _consume_charm(opponent_index):
+				say("  %s의 부적이 막아 냈습니다." % opponent["name"])
+			else:
+				_add_effect(opponent_index, "card_sealed", 1, 2)
+				say("  %s은(는) 다음 차례에 카드를 쓸 수 없습니다." % opponent["name"])
+		"random_one":
+			var choices: Array = effect.get("effects", [])
+			if not choices.is_empty():
+				var picked: Dictionary = choices[rng.randi_range(0, choices.size() - 1)]
+				say("  뚝딱! [%s]" % str(picked.get("label", "")))
+				_apply_effect(picked, player_index)
 		_:
 			push_warning("알 수 없는 효과: %s" % kind)
+
+
+## 상대 팀 게이지를 amount%만큼 빼앗아 우리 팀에 더한다(세 자리 평균으로 셈).
+func _steal_gauge(player_index: int, amount: int) -> void:
+	var opponent_index := 1 - player_index
+	var gauge: Dictionary = players[opponent_index]["gauge"]
+	var have := 0
+	for slot in SLOTS:
+		have += int(gauge[slot])
+	var taken := mini(amount, int(have / float(SLOTS.size())))
+	if taken <= 0:
+		say("  빼앗을 게이지가 없습니다.")
+		return
+	_add_gauge(opponent_index, -taken)
+	_add_gauge(player_index, taken)
+	say("  %s의 게이지 %d%%를 빼앗았습니다." % [players[opponent_index]["name"], taken])
+
+
+## 상대 말과 싸워 이긴 쪽에 흡수 효과가 있으면 게이지를 빼앗는다.
+func _drain_after_battle(winner_index: int) -> void:
+	var amount := effect_sum(winner_index, "drain")
+	if amount > 0:
+		_steal_gauge(winner_index, amount)
 
 
 ## 두 말의 자리와 지나온 길을 서로 바꾼다.

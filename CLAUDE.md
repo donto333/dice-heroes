@@ -67,6 +67,7 @@
 - 주사위 컨트롤: 굴리기 버튼을 꾹 눌러 낮게·높게를 노리면 35% 확률로 그쪽 눈 비율을 쓴다(`game.roll_move(aim)`, data/rules.json의 dice_control, 화면은 `scripts/ui/aim_bar.gd`). AI는 늘 높게 노린다
 - 관문(gate 칸, 강제 전투): 맵마다 큰길 28%·52%·76% 지점에 3개(tools/make_maps.py). 지나가다가도 멈춰 관문지기와 싸운다. 관문지기 주사위는 3·4·4개, 골의 수호자는 5개. 이기면 카드 1장, 그 플레이어는 그 관문을 다시 싸우지 않는다(`game.gates_cleared`). 지면 직전 거점으로 가고 관문지기 주사위가 1개 줄어든다(data/rules.json의 gate_weaken). 골의 수호자도 질 때마다 1개씩 줄되 goal_min_dice(3개)까지
 - 갈림길 안개(2026-11-16): 갈림길(다음 칸 2개 이상)에서 갈라진 두 길의 칸(다시 모이는 칸 앞까지)은 안개 칸(`game.fog`, `_setup_fog`)이다. 화면(`board_view.gd`의 `_view_fogged`·`_draw_fog`)은 말이 밟기 전까지 칸 그림·글자·바닥 효과·적·물건을 숨기고 회색 칸 위에 안개를 그린다. 규칙(칸 효과·전투)은 그대로이고 data/rules.json의 branch_fog로 끈다.
+- 어빌리티(2026-11-17 개편): 영웅 48명이 저마다 자기 어빌리티를 하나씩 가진다(`data/abilities.json`, ★★★은 `unique_<id>`, 나머지는 `skill_<id>`, 나눠 쓰지 않음). 효과 종류(`game.gd`의 `_apply_effect`)에 새로 더한 것: 6이 나오면 더하기 crit, 최소 눈 atk_floor·def_floor·move_floor, 이기면 게이지 빼앗기 drain, 게이지 더 차기 gauge_boost, 거점 복귀 한 번 막기 stand_ground(`_return_to_checkpoint`), 즉시 날기 advance, 상대 밀어내기 push_enemy, 게이지 빼앗기 steal_gauge, 상대 어빌리티·카드 봉인 enemy_seal·enemy_card_seal(상대에게 sealed·card_sealed), 덫 여러 개 trap(amount), 무작위 하나 random_one(도깨비방망이). 전투 굴림의 최소 눈·6 보너스는 `resolve_battle`의 attack_mods·defense_mods로 넘긴다.
 - 시너지: 파티 세 명이 같은 분류면 결속(시작 게이지 +15%), 모두 다른 분류면 조화(부적). data/rules.json의 synergy, `Game.synergy_of`
 - 더블: 이동 주사위 2개 이상이 모두 같은 눈이면 어빌리티 게이지 +12%(data/rules.json의 double_gauge)
 - 따라잡기: 상대보다 10칸 이상 뒤처진 쪽은 이동 주사위에서 큰 눈이 더 잘 나온다(data/rules.json의 catchup_gap·catchup_move_weights). 전투 주사위는 그대로

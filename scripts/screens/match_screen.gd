@@ -1874,6 +1874,11 @@ func _present_events() -> void:
 				await _show_fate(event)
 			"tile":
 				await _show_tile(event)
+			"stand_ground":
+				# 거점 복귀를 막은 어빌리티(버티기). 말 위에 방패 빛을 띄운다.
+				var holder := int(event["player"])
+				_say(holder, "버텼다!")
+				_fx.burst(_piece_spot(holder), "heal", 22, 1.0)
 			"ability":
 				# 어빌리티는 영웅 그림 컷인으로 보여 준다(누가 쓰든).
 				var caster := int(event["player"])

@@ -41,6 +41,8 @@ const EFFECT_TYPES := [
 	"atk_bonus", "def_bonus", "retry", "chase", "counter", "enemy_dice_minus",
 	"gauge_team", "gauge_enemy", "draw_card", "skip_enemy", "enemy_move_dice",
 	"trap", "swap", "comeback", "discard_enemy", "steal_card", "cure", "charm", "set_attr", "multi",
+	"crit", "atk_floor", "def_floor", "move_floor", "drain", "gauge_boost", "stand_ground",
+	"advance", "push_enemy", "steal_gauge", "enemy_seal", "enemy_card_seal", "random_one",
 ]
 
 var _failures: Array[String] = []
@@ -242,18 +244,20 @@ func _check_board(board: Dictionary, board_index: int) -> void:
 
 func _test_references() -> void:
 	var abilities: Dictionary = _data["abilities"]
-	var shared_count := 0
 	for ability_id in abilities:
 		var ability: Dictionary = abilities[ability_id]
 		_check(str(ability.get("name", "")) != "" and str(ability.get("text", "")) != "", "어빌리티 이름이나 설명이 없음: " + ability_id)
 		_check(_effect_ok(ability.get("effect", {})), "모르는 어빌리티 효과: " + ability_id)
-		if not str(ability_id).begins_with("unique_"):
-			shared_count += 1
-	_check(shared_count >= 20 and shared_count <= 30, "공용 어빌리티가 20~30종이 아님: %d" % shared_count)
+	# 2026-11-17 개편: 영웅마다 자기 어빌리티가 하나씩(나눠 쓰지 않음). ★★★은 unique_, 나머지는 skill_.
+	var owners := {}
 	for character in _data["characters"]:
 		var ability_id: String = character.get("ability", "")
 		_check(abilities.has(ability_id), "없는 어빌리티를 가리킴: " + str(character.get("id", "")))
 		_check(ability_id.begins_with("unique_") == (int(character["grade"]) == 3), "전용 어빌리티는 ★★★만 가짐: " + str(character.get("id", "")))
+		_check(not owners.has(ability_id), "두 영웅이 같은 어빌리티를 씀: " + ability_id)
+		owners[ability_id] = true
+	_check(owners.size() == abilities.size(), "주인 없는 어빌리티가 있음")
+	_test_new_skill_effects()
 
 	# 모든 어빌리티를 한 번씩 써도 판이 깨지지 않는지.
 	for ability_id in abilities:
@@ -575,7 +579,7 @@ func _effect_ok(effect: Dictionary) -> bool:
 	var kind := str(effect.get("type", ""))
 	if not (kind in EFFECT_TYPES):
 		return false
-	if kind == "multi":
+	if kind == "multi" or kind == "random_one":
 		var parts: Array = effect.get("effects", [])
 		if parts.is_empty():
 			return false
@@ -1578,3 +1582,69 @@ func _test_lang() -> void:
 			var want := slot.search_all(str(source).replace("%%", "")).size()
 			var got := slot.search_all(target.replace("%%", "")).size()
 			_check(want == got, "번역 자리 수가 다름(%s): %s → %s" % [code, source, target])
+
+
+## 어빌리티 개편으로 생긴 효과들이 규칙대로 도는지.
+func _test_new_skill_effects() -> void:
+	# 최소 눈: 주사위가 모두 3 이상
+	var game = _new_game(11)
+	for i in 30:
+		var result: Dictionary = game.resolve_battle(5, 5, 0, 0, {"floor": 3}, {"floor": 4})
+		for value in result["attack_rolls"]:
+			_check(int(value) >= 3, "공격 최소 눈 3이 지켜지지 않음")
+		for value in result["defense_rolls"]:
+			_check(int(value) >= 4, "방어 최소 눈 4가 지켜지지 않음")
+	# 6 보너스
+	_check(Game._six_bonus([6, 1, 6], 2) == 4, "6 보너스 계산이 틀림")
+	# 버티기: 거점으로 돌아가지 않고 효과는 없어짐
+	game = _new_game(12)
+	game.begin_turn()
+	game._walk(0, 8, false)
+	var before := int(game.players[0]["pos"])
+	game._apply_effect({"type": "stand_ground", "amount": 1, "turns": 2}, 0)
+	game._return_to_checkpoint(0)
+	_check(int(game.players[0]["pos"]) == before, "버티기인데 거점으로 돌아감")
+	_check(game.effect_sum(0, "stand_ground") == 0, "버티기를 써도 남아 있음")
+	game._return_to_checkpoint(0)
+	_check(int(game.players[0]["pos"]) != before, "버티기가 두 번 막음")
+	# 밀어내기: 상대가 뒤로
+	game = _new_game(13)
+	game._walk(1, 6, false)
+	var their := int(game.players[1]["trail"].size())
+	game.players[1]["charm"] = false
+	game._apply_effect({"type": "push_enemy", "amount": 3}, 0)
+	_check(int(game.players[1]["trail"].size()) == their - 3, "밀어내기 3칸이 아님")
+	# 앞으로 날기
+	var mine := int(game.players[0]["trail"].size())
+	game._apply_effect({"type": "advance", "amount": 4}, 0)
+	_check(int(game.players[0]["trail"].size()) == mine + 4, "4칸 날기가 아님")
+	# 게이지 빼앗기
+	for slot in Game.SLOTS:
+		game.players[1]["gauge"][slot] = 60
+		game.players[0]["gauge"][slot] = 0
+	game._apply_effect({"type": "steal_gauge", "amount": 30}, 0)
+	_check(int(game.players[1]["gauge"]["attack"]) == 30 and int(game.players[0]["gauge"]["attack"]) == 30, "게이지 30% 빼앗기가 틀림")
+	# 봉인: 상대의 다음 차례에 어빌리티·카드를 못 씀
+	game = _new_game(14)
+	game.begin_turn()
+	game.players[1]["charm"] = false
+	game._apply_effect({"type": "enemy_seal"}, 0)
+	game._apply_effect({"type": "enemy_card_seal"}, 0)
+	game.end_turn()
+	game.begin_turn()
+	for slot in Game.SLOTS:
+		game.players[1]["gauge"][slot] = 100
+	_check(game.current == 1 and not game.can_use_ability("attack"), "봉인인데 어빌리티를 씀")
+	_check(not game.can_play_card(0), "카드 봉인인데 카드를 씀")
+	game.end_turn()
+	game.begin_turn()
+	game.end_turn()
+	game.begin_turn()
+	for slot in Game.SLOTS:
+		game.players[1]["gauge"][slot] = 100
+	_check(game.current == 1 and game.can_use_ability("attack"), "봉인이 다음 차례 뒤에도 남음")
+	# 무작위 하나
+	game = _new_game(15)
+	game.players[0]["charm"] = false
+	game._apply_effect({"type": "random_one", "effects": [{"type": "charm", "label": "부적"}]}, 0)
+	_check(bool(game.players[0]["charm"]), "무작위 효과가 적용되지 않음")
