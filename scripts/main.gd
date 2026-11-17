@@ -372,6 +372,7 @@ func say(hero_id: String, kind: String) -> void:
 	if voice_on() and not instant:
 		if hero_id == "announcer":
 			hero_id = "announcer_" + announcer_id()
+		voice.lang = Lang.current
 		voice.say(hero_id, kind)
 
 
