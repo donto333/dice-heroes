@@ -273,7 +273,6 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	text.anchor_right = 0.9
 	text.offset_left = 0
 	text.offset_right = 0
-	text.resized.connect(_fit_label.bind(text, 16, 10))
 	button.add_child(text)
 	return {"portrait": portrait, "text": text, "stat": stat, "frame": frame}
 
@@ -322,6 +321,7 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	name_label.anchor_left = 0.1
 	name_label.anchor_right = 0.9
 	button.add_child(name_label)
+	KitStyle.squeeze_text(name_label, 18, 12)
 	# 분류는 왼쪽 위 작은 동그란 표식으로만
 	var dot := Panel.new()
 	var dot_style := StyleBoxFlat.new()
@@ -346,17 +346,6 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 
 
 ## 카드 안 가로 띠 글자(위·아래 비율 사이에 가운데 정렬).
-## 글자가 칸 너비를 넘으면 글자 크기를 줄여 한 줄에 다 보이게 한다(가장 작게 smallest까지).
-func _fit_label(label: Label, largest: int, smallest: int) -> void:
-	var font := label.get_theme_font("font")
-	var room := label.size.x - 4.0
-	var font_size := largest
-	if font != null and room > 0.0:
-		while font_size > smallest and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > room:
-			font_size -= 1
-	label.add_theme_font_size_override("font_size", font_size)
-
-
 func _band_label(text: String, font_size: int, top: float, bottom: float) -> Label:
 	var label := _label(text, font_size, Color.WHITE)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -633,7 +622,7 @@ func _refresh() -> void:
 		if parts.has("frame"):
 			# 금테 자리 카드: 고른 자리는 테가 밝게 빛난다.
 			parts["text"].text = "비어 있음" if character.is_empty() else "%s %s" % ["★".repeat(int(character["grade"])), character["name"]]
-			_fit_label(parts["text"], 16, 10)
+			KitStyle.squeeze_text(parts["text"], 16, 11)
 			parts["stat"].text = SLOT_HINTS[slot] if character.is_empty() else "%s %d" % [STAT_NAMES[stat], int(character[stat])]
 			parts["frame"].modulate = Color(1.3, 1.25, 1.0) if slot == _active_slot else Color(0.82, 0.82, 0.9)
 			button.pivot_offset = button.size * 0.5

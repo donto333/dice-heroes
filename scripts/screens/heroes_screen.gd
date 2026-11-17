@@ -184,7 +184,10 @@ func _card(character: Dictionary, owned: bool) -> Control:
 		text.offset_top = 0
 		text.offset_bottom = 0
 		text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		text.autowrap_mode = TextServer.AUTOWRAP_OFF
 		button.add_child(text)
+		# 긴 이름(아멜리아 에어하트 등)은 글자를 줄이거나 자간을 좁혀 칸 안에 다 보이게.
+		Kit.squeeze_text(text, 18, 12)
 	else:
 		column.add_child(text)
 	if not owned:
