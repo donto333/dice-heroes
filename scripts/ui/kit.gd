@@ -41,7 +41,9 @@ const GRADE_COLORS := {1: Color("9aa4b8"), 2: Color("6fd3ff"), 3: Color("ffcf4d"
 ## 광택 아이콘이 없을 때 대신 쓸 도트 아이콘 이름
 const ICON_FALLBACK := {"pass": "goal", "todo": "start", "help": "hidden", "attend": "treasure", "missions": "checkpoint",
 	"roulette": "fate", "deals": "luck", "swords": "battle", "chat": "start", "adventure": "goal", "friend": "pawn"}
-const GOLD_ICON := "골드"
+## 골드는 금화 그림 글자(main.gd의 _coin_font가 글꼴에 넣음). 금화 그림이 없으면 "골드" 글자로.
+const GOLD_CODE := 0xE000
+static var GOLD_ICON := String.chr(GOLD_CODE) if ResourceLoader.exists("res://assets/ui_icons/gold.png") else "골드"
 ## 글꼴(한글 부분집합)에 마름모 기호가 없어서 웹에서 깨진다. 글자로 쓴다.
 const GEM_ICON := "보석"
 

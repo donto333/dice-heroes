@@ -1064,7 +1064,7 @@ func _test_font_coverage() -> void:
 		var text := FileAccess.get_file_as_string(path)
 		for index in text.length():
 			var code := text.unicode_at(index)
-			if code > 127 and not font.has_char(code):
+			if code > 127 and not font.has_char(code) and not (code >= 0xE000 and code <= 0xF8FF):
 				missing[String.chr(code)] = path
 	_check(missing.is_empty(), "글꼴에 없는 글자: " + str(missing))
 
