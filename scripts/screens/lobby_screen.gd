@@ -387,6 +387,7 @@ func _add_top_bar() -> void:
 		caption.offset_top = -22
 		caption.offset_bottom = -3
 		button.add_child(caption)
+		Kit.fit_text(caption, button, 4.0, 13, 9)
 		if bool(spec[2]):
 			_red_badge(button)
 		bar.add_child(button)
@@ -595,7 +596,7 @@ func _white_tile(spec: Array) -> Button:
 	title.remove_theme_color_override("font_shadow_color")
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.add_child(title)
-	Kit.fit_text(title, tile, 112.0, 25)
+	Kit.fit_text(title, tile, 84.0, 25)
 	var english := Kit.label(str(spec[1]), 12, Color("4a6aa8"))
 	english.remove_theme_color_override("font_shadow_color")
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -631,7 +632,7 @@ func _navy_tile(spec: Array) -> Button:
 	row.add_child(text)
 	var title := _bold(str(spec[0]), 22, Color.WHITE, Color("0b1f4d"), 5)
 	text.add_child(title)
-	Kit.fit_text(title, tile, 98.0, 22)
+	Kit.fit_text(title, tile, 62.0, 22)
 	var english := Kit.label(str(spec[1]), 11, Color(1, 1, 1, 0.8))
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	english.visible = Lang.current == "ko"
