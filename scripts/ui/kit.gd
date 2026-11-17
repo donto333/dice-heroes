@@ -523,3 +523,39 @@ static func fit_text(label: Label, holder: Control, reserve: float, base_size: i
 			size -= 1
 		label.add_theme_font_size_override("font_size", size)
 	holder.resized.connect(fit)
+
+
+## 긴 글자를 칸 너비에 맞춘다: 먼저 글자를 smallest까지 줄이고, 그래도 넘치면 자간을 좁힌다.
+## 칸 크기가 바뀔 때마다 다시 맞추도록 resized에도 걸어 둔다(처음 한 번만 걸린다).
+static func squeeze_text(label: Label, largest: int, smallest: int) -> void:
+	if not label.has_meta("fit_hooked"):
+		label.set_meta("fit_hooked", true)
+		label.resized.connect(func() -> void: _refit(label, largest, smallest))
+	_refit(label, largest, smallest)
+
+
+static func _refit(label: Label, largest: int, smallest: int) -> void:
+	var room := label.size.x - 4.0
+	label.add_theme_font_size_override("font_size", largest)
+	if label.has_meta("fit_base_font"):
+		label.add_theme_font_override("font", label.get_meta("fit_base_font"))
+		label.remove_meta("fit_base_font")
+	var font := label.get_theme_font("font")
+	var shown := label.tr(label.text)
+	if font == null or room <= 0.0 or shown == "":
+		return
+	var font_size := largest
+	while font_size > smallest and font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > room:
+		font_size -= 1
+	label.add_theme_font_size_override("font_size", font_size)
+	var width := font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	if width <= room:
+		return
+	# 가장 작게 해도 넘치면 글자 사이를 좁힌다(글자당 최대 4픽셀).
+	var count: int = maxi(shown.length() - 1, 1)
+	var squeeze: int = mini(int(ceil((width - room) / float(count))), 4)
+	var tight := FontVariation.new()
+	tight.base_font = font
+	tight.spacing_glyph = -squeeze
+	label.set_meta("fit_base_font", font)
+	label.add_theme_font_override("font", tight)
