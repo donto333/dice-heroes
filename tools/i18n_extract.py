@@ -18,7 +18,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LANGS = ["en", "vi"]
 HANGUL = re.compile("[가-힣]")
 # 화면에 안 나오는 글(개발용 기록·음성 대사 원문)은 뺀다. 음성 대사는 소리가 한국어라 자막 번역은 나중에.
-SKIP_DATA = {"voice_lines.json", "voice_extra.json"}
+SKIP_DATA = {"voice_lines.json", "voice_extra.json", "voice_i18n.json"}
 SKIP_KEYS = {"_comment", "comment", "note_dev", "voice_name", "voice", "tags"}
 SKIP_CALL = re.compile(r"\b(push_error|push_warning|print|printerr|prints|assert)\s*\(")
 STRING = re.compile(r'"((?:[^"\\\n]|\\.)*)"')
@@ -82,6 +82,9 @@ def from_data() -> list:
     # 음성 파일 중 화면에 나오는 것: 안내 음성 이름(설정).
     extra = json.load(open(os.path.join(ROOT, "data", "voice_extra.json"), encoding="utf-8"))
     found.extend(str(item.get("label", "")) for item in extra.get("announcers", []) if item.get("label"))
+    # 로비 말풍선에 나오는 영웅 대기 대사(번역은 data/voice_i18n.json에서 채운다).
+    lines = json.load(open(os.path.join(ROOT, "data", "voice_lines.json"), encoding="utf-8"))
+    found.extend(str(hero["lines"].get("idle", "")) for hero in lines.get("heroes", {}).values())
     return found
 
 

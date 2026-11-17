@@ -1,0 +1,1593 @@
+{
+ "_comment": "영웅·안내·적 음성 대사의 영어·베트남어 번역(tools/voice_i18n_src.py가 만든다). 소리 파일은 assets/audio/voice_<언어>/<id>_<상황>.ogg. 한국어 목소리 그대로 그 나라 말을 한다(사용자 결정 2026-11-17).",
+ "tags": {
+  "lubu": {
+   "select": "arrogant, deep",
+   "idle": "bored, scoffing",
+   "move": "shouting",
+   "attack": "roaring",
+   "defend": "mocking laugh",
+   "skill": "roaring on the battlefield",
+   "win": "laughing heartily",
+   "lose": "gritting teeth"
+  },
+  "yisunsin": {
+   "select": "calm and dignified",
+   "idle": "quietly thoughtful",
+   "move": "firm",
+   "attack": "commanding",
+   "defend": "unwavering",
+   "skill": "commanding loudly",
+   "win": "calm but moved",
+   "lose": "solemn, low"
+  },
+  "alexander": {
+   "select": "confident",
+   "idle": "gazing far away",
+   "move": "energetic",
+   "attack": "spirited shout",
+   "defend": "proud",
+   "skill": "rallying an army",
+   "win": "satisfied",
+   "lose": "graceful in defeat"
+  },
+  "machao": {
+   "select": "bold and fiery",
+   "idle": "restless",
+   "move": "spurring a horse",
+   "attack": "thrusting a spear",
+   "defend": "gritting teeth",
+   "skill": "fierce",
+   "win": "young and hearty",
+   "lose": "frustrated"
+  },
+  "eulji": {
+   "select": "relaxed and seasoned",
+   "idle": "stroking his beard",
+   "move": "calm",
+   "attack": "sharp",
+   "defend": "steadfast",
+   "skill": "triumphant command",
+   "win": "chuckling politely",
+   "lose": "calm sigh"
+  },
+  "leonidas": {
+   "select": "deep and firm",
+   "idle": "low mutter",
+   "move": "short and strong",
+   "attack": "roaring",
+   "defend": "holding the line",
+   "skill": "roaring to warriors",
+   "win": "breathing hard",
+   "lose": "falling but defiant"
+  },
+  "hanxin": {
+   "select": "calm and confident",
+   "idle": "thoughtful",
+   "move": "measured",
+   "attack": "decisive",
+   "defend": "unbothered",
+   "skill": "commanding loudly",
+   "win": "quiet smile",
+   "lose": "bitter"
+  },
+  "ganning": {
+   "select": "cocky and boisterous",
+   "idle": "restless",
+   "move": "excited",
+   "attack": "rough shout",
+   "defend": "scoffing",
+   "skill": "cocky shout",
+   "win": "roaring laughter",
+   "lose": "grumbling"
+  },
+  "choiyoung": {
+   "select": "solemn and deep",
+   "idle": "heavy",
+   "move": "firm",
+   "attack": "commanding",
+   "defend": "steadfast",
+   "skill": "loud command",
+   "win": "dignified",
+   "lose": "sorrowful"
+  },
+  "robinhood": {
+   "select": "playful",
+   "idle": "lighthearted",
+   "move": "breezy",
+   "attack": "drawing a bow",
+   "defend": "laughing",
+   "skill": "cheeky",
+   "win": "excited",
+   "lose": "sheepish"
+  },
+  "mulan": {
+   "select": "determined",
+   "idle": "calm, catching breath",
+   "move": "brave and bright",
+   "attack": "battle cry",
+   "defend": "gritting teeth",
+   "skill": "shouting with strength",
+   "win": "happy and bright",
+   "lose": "frustrated but resolute"
+  },
+  "gyebaek": {
+   "select": "solemn, low",
+   "idle": "quietly",
+   "move": "resolute",
+   "attack": "all-out shout",
+   "defend": "holding firm",
+   "skill": "menacing",
+   "win": "catching breath",
+   "lose": "grieving"
+  },
+  "sejong": {
+   "select": "kind and noble",
+   "idle": "calm, reading",
+   "move": "gentle",
+   "attack": "firm but gentle",
+   "defend": "calm",
+   "skill": "proclaiming",
+   "win": "pleased",
+   "lose": "humble"
+  },
+  "zhugeliang": {
+   "select": "calm and refined",
+   "idle": "serene",
+   "move": "calm",
+   "attack": "quiet but sharp",
+   "defend": "smiling",
+   "skill": "majestic",
+   "win": "calm",
+   "lose": "sighing"
+  },
+  "davinci": {
+   "select": "curious old man",
+   "idle": "muttering",
+   "move": "excited",
+   "attack": "thrilled",
+   "defend": "calm",
+   "skill": "confident",
+   "win": "delighted",
+   "lose": "disappointed"
+  },
+  "zhouyu": {
+   "select": "elegant and confident",
+   "idle": "playing a zither",
+   "move": "light",
+   "attack": "sharp",
+   "defend": "cold laugh",
+   "skill": "commanding",
+   "win": "triumphant",
+   "lose": "lamenting"
+  },
+  "jangyeongsil": {
+   "select": "earnest and bright",
+   "idle": "focused",
+   "move": "eager",
+   "attack": "confident",
+   "defend": "calm",
+   "skill": "proud",
+   "win": "overjoyed",
+   "lose": "downcast"
+  },
+  "archimedes": {
+   "select": "excited old man",
+   "idle": "muttering",
+   "move": "relaxed",
+   "attack": "shouting",
+   "defend": "calm",
+   "skill": "firm",
+   "win": "laughing",
+   "lose": "scratching head"
+  },
+  "sunwu": {
+   "select": "low and weighty",
+   "idle": "quiet",
+   "move": "calm",
+   "attack": "firm",
+   "defend": "calm",
+   "skill": "quiet but strong",
+   "win": "calm",
+   "lose": "calm"
+  },
+  "choichiwon": {
+   "select": "scholarly and calm",
+   "idle": "reciting poetry",
+   "move": "dignified",
+   "attack": "emphatic",
+   "defend": "steadfast",
+   "skill": "clear declaration",
+   "win": "pleased",
+   "lose": "lonely"
+  },
+  "libai": {
+   "select": "tipsy and merry",
+   "idle": "drowsy",
+   "move": "humming, swaying",
+   "attack": "hearty",
+   "defend": "laughing",
+   "skill": "grand recitation",
+   "win": "laughing heartily",
+   "lose": "disappointed"
+  },
+  "marcopolo": {
+   "select": "excited storyteller",
+   "idle": "reminiscing",
+   "move": "cheerful",
+   "attack": "confident",
+   "defend": "relaxed",
+   "skill": "confident shout",
+   "win": "delighted",
+   "lose": "calm"
+  },
+  "hypatia": {
+   "select": "intellectual and calm",
+   "idle": "quiet",
+   "move": "calm",
+   "attack": "decisive",
+   "defend": "calm",
+   "skill": "quiet and mysterious",
+   "win": "gentle smile",
+   "lose": "wistful"
+  },
+  "seohui": {
+   "select": "calm and confident",
+   "idle": "thoughtful",
+   "move": "calm",
+   "attack": "emphatic",
+   "defend": "steadfast",
+   "skill": "encouraging",
+   "win": "dignified",
+   "lose": "calm"
+  },
+  "zeus": {
+   "select": "majestic, godlike",
+   "idle": "slow and imposing",
+   "move": "commanding",
+   "attack": "furious shout",
+   "defend": "angry",
+   "skill": "shouting like thunder",
+   "win": "low laugh",
+   "lose": "disbelieving"
+  },
+  "wukong": {
+   "select": "young, high and playful like a mischievous monkey",
+   "idle": "young, playful, yawning",
+   "move": "young, playful, excited",
+   "attack": "young, playful shout",
+   "defend": "young, giggling",
+   "skill": "young, loud and excited",
+   "win": "young, smug",
+   "lose": "young, grumbling"
+  },
+  "dangun": {
+   "select": "kind and majestic",
+   "idle": "serene",
+   "move": "gentle",
+   "attack": "stern",
+   "defend": "calm",
+   "skill": "proclaiming to the sky",
+   "win": "warm",
+   "lose": "calm"
+  },
+  "athena": {
+   "select": "dignified and wise",
+   "idle": "calm",
+   "move": "firm",
+   "attack": "sharp shout",
+   "defend": "cold",
+   "skill": "solemn blessing",
+   "win": "graceful",
+   "lose": "dignified in defeat"
+  },
+  "heracles": {
+   "select": "hearty and deep",
+   "idle": "bored",
+   "move": "energetic",
+   "attack": "roaring",
+   "defend": "mocking laugh",
+   "skill": "huge roar",
+   "win": "laughing heartily",
+   "lose": "frustrated"
+  },
+  "gumiho": {
+   "select": "playful, teasing",
+   "idle": "lazy yawn",
+   "move": "light and cheerful",
+   "attack": "sharp laugh",
+   "defend": "teasing",
+   "skill": "whispering, then eerie",
+   "win": "giggling",
+   "lose": "pouting"
+  },
+  "anubis": {
+   "select": "low and ominous",
+   "idle": "quiet",
+   "move": "cold",
+   "attack": "menacing",
+   "defend": "icy",
+   "skill": "quiet then loud",
+   "win": "calm",
+   "lose": "low"
+  },
+  "dokkaebi": {
+   "select": "goofy and gravelly",
+   "idle": "cackling",
+   "move": "giggling",
+   "attack": "loud",
+   "defend": "teasing",
+   "skill": "playful shout",
+   "win": "laughing heartily",
+   "lose": "grumbling"
+  },
+  "haetae": {
+   "select": "heavy and stern",
+   "idle": "low",
+   "move": "deep",
+   "attack": "growling",
+   "defend": "firm",
+   "skill": "roaring",
+   "win": "dignified",
+   "lose": "low"
+  },
+  "perseus": {
+   "select": "young and proud",
+   "idle": "thoughtful",
+   "move": "energetic",
+   "attack": "shouting",
+   "defend": "nimble",
+   "skill": "brave shout",
+   "win": "happy",
+   "lose": "frustrated"
+  },
+  "tengu": {
+   "select": "arrogant and low",
+   "idle": "scoffing",
+   "move": "fast",
+   "attack": "fierce",
+   "defend": "mocking",
+   "skill": "loud",
+   "win": "smug",
+   "lose": "frustrated"
+  },
+  "isis": {
+   "select": "clear and caring",
+   "idle": "soft",
+   "move": "gentle",
+   "attack": "firm",
+   "defend": "warm",
+   "skill": "praying warmly",
+   "win": "relieved",
+   "lose": "calm"
+  },
+  "tesla": {
+   "select": "cold and intellectual",
+   "idle": "musing",
+   "move": "calm",
+   "attack": "sharp",
+   "defend": "calm",
+   "skill": "rising to a shout",
+   "win": "quietly satisfied",
+   "lose": "bitter"
+  },
+  "nightingale": {
+   "select": "warm and firm",
+   "idle": "quiet",
+   "move": "calm",
+   "attack": "firm",
+   "defend": "resolute",
+   "skill": "encouraging",
+   "win": "relieved",
+   "lose": "sad but resolute"
+  },
+  "edison": {
+   "select": "seasoned and stubborn",
+   "idle": "muttering",
+   "move": "energetic",
+   "attack": "confident",
+   "defend": "unbothered",
+   "skill": "proud",
+   "win": "laughing",
+   "lose": "matter-of-fact"
+  },
+  "wright": {
+   "select": "excited and bright",
+   "idle": "checking the wind",
+   "move": "excited",
+   "attack": "shouting",
+   "defend": "relaxed",
+   "skill": "thrilled",
+   "win": "cheering",
+   "lose": "cheerful"
+  },
+  "amundsen": {
+   "select": "calm and sturdy",
+   "idle": "quiet",
+   "move": "measured",
+   "attack": "firm",
+   "defend": "steadfast",
+   "skill": "commanding",
+   "win": "holding back emotion",
+   "lose": "calm"
+  },
+  "verne": {
+   "select": "gentle storyteller",
+   "idle": "dreamy",
+   "move": "excited",
+   "attack": "emphatic",
+   "defend": "relaxed",
+   "skill": "cheerful",
+   "win": "pleased",
+   "lose": "wistful"
+  },
+  "pasteur": {
+   "select": "earnest and warm",
+   "idle": "focused",
+   "move": "calm",
+   "attack": "firm",
+   "defend": "calm",
+   "skill": "warm blessing",
+   "win": "relieved",
+   "lose": "resolute"
+  },
+  "houdini": {
+   "select": "showman, confident",
+   "idle": "shuffling cards",
+   "move": "lively",
+   "attack": "shouting",
+   "defend": "cheeky",
+   "skill": "showman flourish",
+   "win": "bowing",
+   "lose": "sheepish"
+  },
+  "earhart": {
+   "select": "brave and bright",
+   "idle": "looking up",
+   "move": "excited",
+   "attack": "shouting",
+   "defend": "relaxed",
+   "skill": "energetic",
+   "win": "happy",
+   "lose": "cheerful"
+  },
+  "twain": {
+   "select": "wry storyteller",
+   "idle": "lazy",
+   "move": "easygoing",
+   "attack": "witty",
+   "defend": "deadpan",
+   "skill": "cheerful",
+   "win": "laughing",
+   "lose": "wry"
+  },
+  "fabre": {
+   "select": "kind old man",
+   "idle": "whispering",
+   "move": "slow",
+   "attack": "emphatic",
+   "defend": "calm",
+   "skill": "firm",
+   "win": "pleased",
+   "lose": "calm"
+  },
+  "bangjeonghwan": {
+   "select": "kind and bright",
+   "idle": "warm",
+   "move": "gentle",
+   "attack": "firm",
+   "defend": "resolute",
+   "skill": "cheering",
+   "win": "happy",
+   "lose": "comforting"
+  }
+ },
+ "en": {
+  "lubu": {
+   "select": "Who under heaven dares to stop me? Step forward, if you have the nerve.",
+   "idle": "Hmph. My blood is restless. Where is the fight?",
+   "move": "Out of my way! I'm coming through!",
+   "attack": "Take my halberd! Haaah!",
+   "defend": "Ha! Is that all you've got?",
+   "skill": "Behold! The might of the peerless warrior!",
+   "win": "Hahaha! No one under heaven can match me!",
+   "lose": "Ugh... I will not forget this humiliation."
+  },
+  "yisunsin": {
+   "select": "I still have twelve ships left.",
+   "idle": "First, we must read the wind and the tides.",
+   "move": "All forces, advance.",
+   "attack": "Now! Fire all at once!",
+   "defend": "Do not retreat. Hold the formation!",
+   "skill": "Crane wing formation! Surround the enemy!",
+   "win": "We won because we all fought together.",
+   "lose": "Those who seek death shall live. I will rise again."
+  },
+  "alexander": {
+   "select": "I will see the end of the world with my own eyes.",
+   "idle": "There must be kingdoms beyond that horizon too.",
+   "move": "Advance! Do not stop!",
+   "attack": "Clear the way before my sword!",
+   "defend": "A king does not retreat!",
+   "skill": "Conquer! The world is ours!",
+   "win": "Another land shall remember my name.",
+   "lose": "Well done... I shall remember your name."
+  },
+  "machao": {
+   "select": "The golden general of the west rides out!",
+   "idle": "My horse wants to run. So do I.",
+   "move": "Ride! Hyah!",
+   "attack": "Take the spear of the west!",
+   "defend": "Is that all? I'll take it!",
+   "skill": "You won't escape! Chase them to the end!",
+   "win": "Ha! Victory to the western cavalry!",
+   "lose": "Not yet... It's not over yet!"
+  },
+  "eulji": {
+   "select": "I know these rivers better than anyone.",
+   "idle": "Waiting for the enemy to tire is also strategy.",
+   "move": "The time has come. Let us move.",
+   "attack": "I see an opening! Now!",
+   "defend": "I will not give a single step.",
+   "skill": "You fell for the trap! Break the dam!",
+   "win": "Heh heh. Be content with this and go home.",
+   "lose": "Hmm, you read my move."
+  },
+  "leonidas": {
+   "select": "Not one step further shall you pass.",
+   "idle": "Polish your shields. The battle is near.",
+   "move": "Sparta, forward!",
+   "attack": "Take my spear! Hah!",
+   "defend": "Shields up! Hold!",
+   "skill": "Do not retreat! We are the wall!",
+   "win": "Did you see? This is Sparta!",
+   "lose": "Even as I fall... I will not drop my shield."
+  },
+  "hanxin": {
+   "select": "The more soldiers, the better.",
+   "idle": "A battle is won before it begins.",
+   "move": "Step by step, in order.",
+   "attack": "Now! Push them hard!",
+   "defend": "Just as I expected.",
+   "skill": "Fight with the river at our backs! There is no retreat!",
+   "win": "All according to plan.",
+   "lose": "My plan was shallow. I must rethink it."
+  },
+  "ganning": {
+   "select": "Hear the bells? The great Gan Ning has arrived!",
+   "idle": "Ugh, I'm itching for a fight!",
+   "move": "Alright, let's have some fun!",
+   "attack": "Take this! Hyaah!",
+   "defend": "You call that an attack?",
+   "skill": "No rest! Here comes another!",
+   "win": "Hahaha! The wine will taste great tonight!",
+   "lose": "Tch, just bad luck today."
+  },
+  "choiyoung": {
+   "select": "Look upon gold as you would a stone.",
+   "idle": "Only when the nation is at peace may a general rest.",
+   "move": "Follow me.",
+   "attack": "Cut them down!",
+   "defend": "I shall be the shield!",
+   "skill": "Raise an iron wall! Let no one through!",
+   "win": "The people can sleep in peace tonight.",
+   "lose": "It is my own failing..."
+  },
+  "robinhood": {
+   "select": "Robin Hood, finest archer of Sherwood Forest.",
+   "idle": "Whose purse will be heavy today, I wonder?",
+   "move": "I know these woods. Follow me!",
+   "attack": "One arrow is all it takes!",
+   "defend": "Whoa, that was close!",
+   "skill": "I'll just borrow this. It's for the poor!",
+   "win": "Bullseye! Tonight we feast!",
+   "lose": "Haha... even arrows miss sometimes."
+  },
+  "mulan": {
+   "select": "I will fight in my father's place.",
+   "idle": "I'll polish my sword and wait for the moment.",
+   "move": "All right, moving forward!",
+   "attack": "I won't back down! Hyah!",
+   "defend": "This won't knock me down!",
+   "skill": "I'll rise again, as many times as it takes!",
+   "win": "We did it! Is everyone safe?",
+   "lose": "So frustrating... but next time, I'll win."
+  },
+  "gyebaek": {
+   "select": "There is no going back. This is where we stand.",
+   "idle": "The wind on the plains is cold.",
+   "move": "Men of the last stand, forward.",
+   "attack": "Strike with your lives on the line!",
+   "defend": "I will not retreat until I die!",
+   "skill": "Stand back! Come closer and I'll cut you down!",
+   "win": "We held the line... again today.",
+   "lose": "Is this the end... I fought without shame."
+  },
+  "sejong": {
+   "select": "For my people, I will do anything.",
+   "idle": "The night is deep. Just a little more reading.",
+   "move": "Let us go together.",
+   "attack": "What is wrong must be set right!",
+   "defend": "Do not rush. There is always a way.",
+   "skill": "Write the voice of the people in letters of their own!",
+   "win": "This is thanks to everyone's wisdom.",
+   "lose": "I should have looked more carefully."
+  },
+  "zhugeliang": {
+   "select": "The Sleeping Dragon has awakened. Shall I share my plan for the realm?",
+   "idle": "The stars are moving strangely.",
+   "move": "The wind has changed. Let us go.",
+   "attack": "You are already in the palm of my hand.",
+   "defend": "I read that move long ago.",
+   "skill": "I shall deploy the Eight Trigrams. There is no way out.",
+   "win": "Everything went according to plan.",
+   "lose": "Heaven is not on our side..."
+  },
+  "davinci": {
+   "select": "The world is full of wonders.",
+   "idle": "How do birds fly... Hmm, I must draw it again.",
+   "move": "Let's go and see for ourselves!",
+   "attack": "What do you think of this design?",
+   "defend": "I prepared for that already.",
+   "skill": "Behold the blueprints in my mind!",
+   "win": "Splendid! It worked just as I imagined!",
+   "lose": "Hmm, I must revise the drawings."
+  },
+  "zhouyu": {
+   "select": "The southeast wind is blowing. Our time has come.",
+   "idle": "If the melody is wrong, I always notice.",
+   "move": "Let us ride the river wind.",
+   "attack": "Set the fire!",
+   "defend": "You thought such a trick would fool me?",
+   "skill": "Throw them into chaos! Shake their ranks!",
+   "win": "Never underestimate Zhou Yu of Jiangdong.",
+   "lose": "Why does heaven test me so..."
+  },
+  "jangyeongsil": {
+   "select": "Let me measure the time of the heavens.",
+   "idle": "If I file this gear just a bit more...",
+   "move": "Yes, I'll go right away!",
+   "attack": "Behold the power of this device!",
+   "defend": "I already accounted for that.",
+   "skill": "Knowledge is power! The answer was in the books!",
+   "win": "I did it! The water clock rings its bell!",
+   "lose": "My calculation was wrong. I'll build it again."
+  },
+  "archimedes": {
+   "select": "Eureka! I've found it, I've found it!",
+   "idle": "Don't step on my circles... I'm calculating.",
+   "move": "Give me a lever and I can go anywhere.",
+   "attack": "Take this! The power of principle!",
+   "defend": "You can't break through at that angle.",
+   "skill": "The principle of the iron wall! Force must scatter!",
+   "win": "Ha, proof complete!",
+   "lose": "Heh, I set up the equation wrong."
+  },
+  "sunwu": {
+   "select": "The best victory is won without fighting.",
+   "idle": "Know your enemy and yourself, and you will never be in peril.",
+   "move": "Let us move like flowing water.",
+   "attack": "Strike where they are empty!",
+   "defend": "Defend firmly and you will not waver.",
+   "skill": "All warfare is deception. The ruse worked!",
+   "win": "I won before I fought.",
+   "lose": "I did not know my enemy well enough."
+  },
+  "choichiwon": {
+   "select": "With a single line of writing, I will move the world.",
+   "idle": "In the autumn wind, I chant in sorrow...",
+   "move": "Shall I take up my brush and set out?",
+   "attack": "These words are my sword!",
+   "defend": "Righteous words do not break.",
+   "skill": "The power of learning! Time to use what I know!",
+   "win": "My words moved their hearts.",
+   "lose": "Few in this world understand me."
+  },
+  "libai": {
+   "select": "A cup beneath the moon, and a poem. What do you say?",
+   "idle": "Hmm... out of wine. But the moon is still bright.",
+   "move": "Let's go wherever the wind blows.",
+   "attack": "Swords and poems are best when drunk!",
+   "defend": "Oops! A drunk man is hard to hit.",
+   "skill": "Blow, O wind! Follow me, O clouds!",
+   "win": "Hahaha! Another cup for this feeling!",
+   "lose": "Ah, I've sobered up."
+  },
+  "marcopolo": {
+   "select": "The East holds so many wonders.",
+   "idle": "I remember the sunset over the Silk Road.",
+   "move": "Let's set off to find a new road!",
+   "attack": "Witness the skill of a seasoned traveler!",
+   "defend": "Danger like this was common on the road.",
+   "skill": "Navigate by the stars! Set the course!",
+   "win": "I must write this story in my book!",
+   "lose": "The way home is also a journey."
+  },
+  "hypatia": {
+   "select": "Shall we read the paths of the stars together?",
+   "idle": "Never stop asking questions. That is learning.",
+   "move": "Just follow the orbit.",
+   "attack": "The answer is already clear!",
+   "defend": "That equation is wrong.",
+   "skill": "Forget it all. Think again from the beginning.",
+   "win": "Reason has won.",
+   "lose": "There was still something I didn't know."
+  },
+  "seohui": {
+   "select": "With words alone, I will defend this land.",
+   "idle": "First, we must see what the other side wants.",
+   "move": "Let us go and negotiate.",
+   "attack": "That makes no sense at all!",
+   "defend": "Not an inch of land will I give up.",
+   "skill": "Take heart! We are in the right!",
+   "win": "We won without drawing a sword.",
+   "lose": "My words were not enough."
+  },
+  "zeus": {
+   "select": "I am Zeus, king of thunder. Bow your head.",
+   "idle": "No need to hurry. The heavens always wait.",
+   "move": "Follow me, mortals.",
+   "attack": "Face the judgment of the gods!",
+   "defend": "You dare lay a hand on a god?",
+   "skill": "Lightning! Strike them down!",
+   "win": "Heh heh heh. Was there ever any doubt?",
+   "lose": "Impossible... I let my guard down."
+  },
+  "wukong": {
+   "select": "Here comes the Great Sage, Sun Wukong!",
+   "idle": "Yawn, I'm bored. Maybe I'll grab a peach.",
+   "move": "Riding my cloud! Whoosh!",
+   "attack": "Taste my staff!",
+   "defend": "Hehe, that was just my clone!",
+   "skill": "Let's go, cloud! A hundred thousand miles!",
+   "win": "See? I'm the Great Sage!",
+   "lose": "Tch, don't tell my master, okay?"
+  },
+  "dangun": {
+   "select": "Bring benefit to all humankind.",
+   "idle": "Do you remember the day the heavens opened?",
+   "move": "Children, open the way.",
+   "attack": "Do not defy the will of heaven!",
+   "defend": "That power cannot reach me.",
+   "skill": "Let light shine upon the whole world!",
+   "win": "We achieved this together.",
+   "lose": "This too must be the will of heaven."
+  },
+  "athena": {
+   "select": "Wisdom leads to victory.",
+   "idle": "Battles are won with the mind, not strength.",
+   "move": "Raise your spears. We go.",
+   "attack": "Take the spear of the goddess of war!",
+   "defend": "My shield does not break.",
+   "skill": "I grant you my protection. Fight without fear.",
+   "win": "Well fought. A wise victory.",
+   "lose": "This time... you were one step ahead."
+  },
+  "heracles": {
+   "select": "I finished twelve labors! Leave anything to me!",
+   "idle": "Lion or monster, anyone out there?",
+   "move": "Alright, time to warm up!",
+   "attack": "Hrraaah! Take this!",
+   "defend": "Ha! That tickles!",
+   "skill": "All-out attack! I'll smash a mountain!",
+   "win": "Hahaha! The thirteenth labor is done!",
+   "lose": "Grr... beaten in strength? Impossible!"
+  },
+  "gumiho": {
+   "select": "Oh my, falling for me already? Hehe.",
+   "idle": "Haaah... so bored. Anyone I can charm today?",
+   "move": "Come on, follow me!",
+   "attack": "Hehe, want a taste of my tails?",
+   "defend": "Oops, I'm not over there!",
+   "skill": "Shh... you'd better watch your back.",
+   "win": "Ahaha! Too easy! Wanna play again?",
+   "lose": "Hmph, I just went easy on you today. Really!"
+  },
+  "anubis": {
+   "select": "The scales of the underworld await you.",
+   "idle": "The sand falls, and time is on my side.",
+   "move": "Death is never in a hurry.",
+   "attack": "Let us weigh your heart!",
+   "defend": "The strength of the living cannot reach me.",
+   "skill": "Tremble. The gates of the underworld open!",
+   "win": "The scales do not lie.",
+   "lose": "Not yet... your time has not come."
+  },
+  "dokkaebi": {
+   "select": "Gold, come out! Silver, come out! Bonk!",
+   "idle": "Anyone up for a wrestling match?",
+   "move": "Heh heh, where shall I go?",
+   "attack": "Taste my club! Bonk!",
+   "defend": "Nyeh! That didn't hurt!",
+   "skill": "Right back at you! Bonk!",
+   "win": "Ha ha! Bring me buckwheat jelly!",
+   "lose": "Bah, I only lost because the sun came up!"
+  },
+  "haetae": {
+   "select": "I guard against fire and disaster.",
+   "idle": "My horn tells right from wrong.",
+   "move": "I go to guard the road.",
+   "attack": "The wicked shall be rammed!",
+   "defend": "None shall pass here.",
+   "skill": "I hold! Disaster shall not take a single step inside!",
+   "win": "The palace is safe once again.",
+   "lose": "I... could not stop it?"
+  },
+  "perseus": {
+   "select": "I slew Medusa with my own hands.",
+   "idle": "Sometimes you need a shield like a mirror.",
+   "move": "With winged sandals, away!",
+   "attack": "Take this blade!",
+   "defend": "Look in my shield and I see everything!",
+   "skill": "A keen blade! I can cut with my eyes closed!",
+   "win": "The monster has fallen! Let's go home!",
+   "lose": "Oh no... I met its gaze."
+  },
+  "tengu": {
+   "select": "Every wind on this mountain is mine.",
+   "idle": "Why are humans so slow?",
+   "move": "Riding the wind!",
+   "attack": "Feel the wind of my fan!",
+   "defend": "Hmph, you thought you could reach me?",
+   "skill": "Charge! Strike like the mountain wind!",
+   "win": "See? This is the master of the mountain.",
+   "lose": "Ugh, my pride is crushed..."
+  },
+  "isis": {
+   "select": "I give you the breath of life.",
+   "idle": "I can hear the waters of the Nile.",
+   "move": "Carefully now, let's go together.",
+   "attack": "That's enough. Step back now!",
+   "defend": "It's all right, I'll protect you.",
+   "skill": "A healing touch... let the wounds close.",
+   "win": "I'm so glad everyone is safe.",
+   "lose": "It's all right. We just rise again."
+  },
+  "tesla": {
+   "select": "The future is mine.",
+   "idle": "Alternating current flows through my mind.",
+   "move": "Let us move as fast as current.",
+   "attack": "One million volts!",
+   "defend": "I grounded that already.",
+   "skill": "Lightning coil, activate! Behold the power of the sky!",
+   "win": "My calculations are never wrong.",
+   "lose": "The world still cannot keep up with me."
+  },
+  "nightingale": {
+   "select": "This lamp will never go out.",
+   "idle": "I should make my rounds of the ward tonight too.",
+   "move": "Let's go where the wounded are.",
+   "attack": "Step away from the patient!",
+   "defend": "As long as I'm here, no one gives up!",
+   "skill": "Everyone, get up! We can still do this!",
+   "win": "I'm glad everyone is safe.",
+   "lose": "It hurts... but tomorrow I'll light the lamp again."
+  },
+  "edison": {
+   "select": "Fail a thousand times, succeed once, and that's enough.",
+   "idle": "Not this filament. Bring me the next one.",
+   "move": "Come, let's step out of the lab!",
+   "attack": "Behold my latest invention!",
+   "defend": "I already patented that.",
+   "skill": "Invention complete! The light is on!",
+   "win": "Ha, it worked on the thousand-and-first try!",
+   "lose": "I just found one more way that doesn't work."
+  },
+  "wright": {
+   "select": "Today we will fly for sure!",
+   "idle": "Good wind... Brother, check the wings!",
+   "move": "Spin the propeller, let's go!",
+   "attack": "Coming from above, watch out!",
+   "defend": "A little tilt and I can dodge it!",
+   "skill": "Exploration flight! We're up, we're up!",
+   "win": "We flew! We really flew!",
+   "lose": "It's fine, I'll fix the wings and fly again."
+  },
+  "amundsen": {
+   "select": "I survived the cold of the South Pole.",
+   "idle": "Preparation is victory. Let's check the sleds again.",
+   "move": "Step by step, to the very end.",
+   "attack": "Break the ice and push on!",
+   "defend": "I'm used to a blizzard or two.",
+   "skill": "Set the course! Straight south!",
+   "win": "The flag is planted. We did it.",
+   "lose": "Coming home alive is part of exploring too."
+  },
+  "verne": {
+   "select": "What you imagine will someday come true.",
+   "idle": "What lies twenty thousand leagues under the sea?",
+   "move": "Around the world in eighty days!",
+   "attack": "Never underestimate imagination!",
+   "defend": "I already wrote that scene.",
+   "skill": "I read it in a book! The answer is in this chapter!",
+   "win": "A fine ending. Time to write the next volume.",
+   "lose": "I'll have to rewrite this chapter."
+  },
+  "pasteur": {
+   "select": "I am fighting an enemy no eye can see.",
+   "idle": "Hmm, these tiny things spread disease.",
+   "move": "No rush. Let's be precise.",
+   "attack": "Begone, germs!",
+   "defend": "I boiled and sterilized it already.",
+   "skill": "Bless you all. This vaccine will protect everyone.",
+   "win": "The child lived. That is enough.",
+   "lose": "We can always run the experiment again."
+  },
+  "houdini": {
+   "select": "No lock in the world can hold me!",
+   "idle": "Now, would you pick a card?",
+   "move": "Ladies and gentlemen, to the stage!",
+   "attack": "Blink and you'll miss it! Hup!",
+   "defend": "Huh? I've already escaped.",
+   "skill": "Ta-da! The wound vanishes without a trace!",
+   "win": "A round of applause, please! Thank you!",
+   "lose": "Haha... that was just a rehearsal."
+  },
+  "earhart": {
+   "select": "The sky has no limits.",
+   "idle": "It must be clear above the clouds today.",
+   "move": "Engine on, taking off!",
+   "attack": "Nose dive, here I come!",
+   "defend": "I'm used to turbulence!",
+   "skill": "Full throttle! Hold on tight!",
+   "win": "Landing successful! What a flight!",
+   "lose": "Ran out of fuel. Next time I'll go farther."
+  },
+  "twain": {
+   "select": "Want to hear a funny story?",
+   "idle": "The Mississippi will flow slowly again today.",
+   "move": "Shall we drift along on a raft?",
+   "attack": "The pen stings more than the sword!",
+   "defend": "Reports of my defeat are greatly exaggerated.",
+   "skill": "Well, let's start over from the beginning!",
+   "win": "Ha, this will make a good story.",
+   "lose": "Well, losing stories are fun to write too."
+  },
+  "fabre": {
+   "select": "Look closely at the little things.",
+   "idle": "Shh... a dung beetle is passing by.",
+   "move": "Slowly, watch your step.",
+   "attack": "A bee's sting is small, but it smarts!",
+   "defend": "Just curl up tight like a beetle.",
+   "skill": "Hold tight. A shell doesn't break easily.",
+   "win": "A good observation. I'll write it in my notebook.",
+   "lose": "It's fine. We can look again tomorrow."
+  },
+  "bangjeonghwan": {
+   "select": "Children are the hope of tomorrow.",
+   "idle": "What story shall I tell the children today?",
+   "move": "Let's hold hands and go together.",
+   "attack": "You must not make the children cry!",
+   "defend": "I'll stand in front!",
+   "skill": "Everyone, cheer up! We can do it!",
+   "win": "Everyone's smiling, so I'm happy too.",
+   "lose": "It's okay. If you fall, just get back up."
+  },
+  "announcer_l": {
+   "start": "The game begins!",
+   "turn": "It's your turn!",
+   "enemy_turn": "Opponent's turn.",
+   "battle": "Battle start!",
+   "double": "Double!",
+   "gate": "Gate battle!",
+   "goal": "Goal!",
+   "catchup": "Catch-up chance!",
+   "last_turn": "Final turn!",
+   "win": "Victory!",
+   "lose": "Defeat."
+  },
+  "announcer_n": {
+   "start": "The game begins!",
+   "turn": "It's your turn!",
+   "enemy_turn": "Opponent's turn.",
+   "battle": "Battle start!",
+   "double": "Double!",
+   "gate": "Gate battle!",
+   "goal": "Goal!",
+   "catchup": "Catch-up chance!",
+   "last_turn": "Final turn!",
+   "win": "Victory!",
+   "lose": "Defeat."
+  },
+  "announcer_o": {
+   "start": "The game begins!",
+   "turn": "It's your turn!",
+   "enemy_turn": "Opponent's turn.",
+   "battle": "Battle start!",
+   "double": "Double!",
+   "gate": "Gate battle!",
+   "goal": "Goal!",
+   "catchup": "Catch-up chance!",
+   "last_turn": "Final turn!",
+   "win": "Victory!",
+   "lose": "Defeat."
+  },
+  "announcer_m": {
+   "start": "Game start!",
+   "turn": "My turn!",
+   "enemy_turn": "Their turn!",
+   "battle": "Battle!",
+   "double": "Double!",
+   "gate": "Gate battle!",
+   "goal": "Goal!",
+   "catchup": "Catch up!",
+   "last_turn": "Last turn!",
+   "win": "Win!",
+   "lose": "Lose..."
+  },
+  "enemy_gate": {
+   "appear": "Halt! No one passes this gate!",
+   "win": "Begone! And never come back!",
+   "lose": "Ugh... very well, pass."
+  },
+  "enemy_boss": {
+   "appear": "So you made it this far. But this is the end.",
+   "win": "You're not ready. Come back stronger!",
+   "lose": "Splendid... this match is yours."
+  },
+  "enemy_keeper": {
+   "appear": "I guard this outpost. Come at me!",
+   "win": "Hahaha! With skills like that?",
+   "lose": "No way... I lost?"
+  },
+  "enemy_monster": {
+   "appear": "Graaaah!",
+   "win": "Kuhahaha!",
+   "lose": "Gwaaagh..."
+  }
+ },
+ "vi": {
+  "lubu": {
+   "select": "Thiên hạ này ai dám cản ta? Có gan thì bước ra đây.",
+   "idle": "Hừ, tay chân ngứa ngáy quá. Bao giờ mới đánh?",
+   "move": "Tránh đường! Ta đến đây!",
+   "attack": "Đỡ lấy kích của ta! Hây!",
+   "defend": "Ha ha! Chỉ có vậy thôi sao?",
+   "skill": "Hãy nhìn đây! Sức mạnh vô song của ta!",
+   "win": "Ha ha ha! Thiên hạ không ai địch nổi ta!",
+   "lose": "Hự... Mối nhục này ta sẽ không quên."
+  },
+  "yisunsin": {
+   "select": "Thần vẫn còn mười hai chiến thuyền.",
+   "idle": "Trước hết phải xem gió và dòng nước.",
+   "move": "Toàn quân, tiến lên.",
+   "attack": "Ngay bây giờ! Bắn đồng loạt!",
+   "defend": "Không được lùi. Giữ vững đội hình!",
+   "skill": "Bày trận cánh hạc! Bao vây quân địch!",
+   "win": "Đó là nhờ tất cả cùng chiến đấu.",
+   "lose": "Quyết tử thì sẽ sống. Ta sẽ đứng dậy."
+  },
+  "alexander": {
+   "select": "Ta sẽ tận mắt nhìn thấy tận cùng thế giới.",
+   "idle": "Bên kia chân trời chắc cũng có những vương quốc.",
+   "move": "Tiến lên! Không được dừng!",
+   "attack": "Hãy mở đường trước lưỡi kiếm của ta!",
+   "defend": "Vua không bao giờ lùi bước!",
+   "skill": "Chinh phục! Thế giới là của chúng ta!",
+   "win": "Thêm một vùng đất sẽ nhớ tên ta.",
+   "lose": "Giỏi lắm... Ta sẽ nhớ tên ngươi."
+  },
+  "machao": {
+   "select": "Mã Siêu của Tây Lương xuất trận đây!",
+   "idle": "Ngựa của ta muốn phi. Ta cũng vậy.",
+   "move": "Phi nào! Giá!",
+   "attack": "Đỡ lấy ngọn giáo Tây Lương!",
+   "defend": "Chừng này thôi à? Ta đỡ được!",
+   "skill": "Không thoát được đâu! Đuổi theo đến cùng!",
+   "win": "Ha! Kỵ binh Tây Lương chiến thắng!",
+   "lose": "Chưa đâu... Vẫn chưa kết thúc!"
+  },
+  "eulji": {
+   "select": "Dòng sông này ta hiểu rõ hơn ai hết.",
+   "idle": "Chờ địch mệt mỏi cũng là binh pháp.",
+   "move": "Đã đến lúc. Chúng ta đi thôi.",
+   "attack": "Thấy sơ hở rồi! Ngay bây giờ!",
+   "defend": "Ta không lùi một bước nào.",
+   "skill": "Trúng kế rồi! Phá đê đi!",
+   "win": "Ha ha, biết đủ thì hãy quay về đi.",
+   "lose": "Hừm, ta bị đọc vị mất rồi."
+  },
+  "leonidas": {
+   "select": "Không ai được bước qua con đường này.",
+   "idle": "Lau sạch khiên đi. Sắp đến trận chiến rồi.",
+   "move": "Sparta, tiến lên!",
+   "attack": "Đỡ lấy giáo của ta! Hây!",
+   "defend": "Giơ khiên lên! Trụ vững!",
+   "skill": "Không được lùi! Chúng ta là bức tường thành!",
+   "win": "Thấy chưa? Đây là Sparta!",
+   "lose": "Dù ngã xuống... ta không buông khiên."
+  },
+  "hanxin": {
+   "select": "Binh lính càng nhiều càng tốt.",
+   "idle": "Trận thắng đã được định trước khi bắt đầu.",
+   "move": "Từng bước một, theo thứ tự.",
+   "attack": "Ngay bây giờ! Dồn ép chúng!",
+   "defend": "Đúng như ta dự đoán.",
+   "skill": "Bày trận bối thủy! Không còn đường lùi!",
+   "win": "Mọi thứ đúng như kế sách.",
+   "lose": "Kế của ta còn nông cạn. Phải tính lại."
+  },
+  "ganning": {
+   "select": "Nghe tiếng chuông không? Cam Ninh ta đến rồi!",
+   "idle": "Chà, ngứa ngáy chịu không nổi!",
+   "move": "Nào, quậy một trận thôi!",
+   "attack": "Ăn một đòn này! Hây!",
+   "defend": "Thế mà gọi là tấn công à?",
+   "skill": "Không nghỉ đâu! Tiếp chiêu nữa!",
+   "win": "Ha ha ha! Tối nay rượu sẽ ngon lắm đây!",
+   "lose": "Chậc, hôm nay chỉ xui thôi."
+  },
+  "choiyoung": {
+   "select": "Hãy coi vàng như đá.",
+   "idle": "Nước yên thì tướng mới được nghỉ.",
+   "move": "Theo ta.",
+   "attack": "Chém chúng!",
+   "defend": "Ta sẽ là tấm khiên!",
+   "skill": "Dựng tường sắt! Không cho ai lọt qua!",
+   "win": "Bá tánh đêm nay có thể ngủ yên rồi.",
+   "lose": "Đó là lỗi của ta..."
+  },
+  "robinhood": {
+   "select": "Ta là Robin Hood, cung thủ giỏi nhất rừng Sherwood.",
+   "idle": "Hôm nay túi ai sẽ nặng đây nhỉ?",
+   "move": "Ta rành đường rừng này. Theo ta!",
+   "attack": "Một mũi tên là đủ!",
+   "defend": "Ối, suýt nữa thì trúng!",
+   "skill": "Ta mượn tạm cái này nhé. Phần của người nghèo!",
+   "win": "Trúng đích! Tối nay ăn mừng!",
+   "lose": "Ha ha... cũng có ngày tên bắn trượt."
+  },
+  "mulan": {
+   "select": "Con sẽ thay cha ra trận.",
+   "idle": "Ta sẽ lau kiếm và chờ thời cơ.",
+   "move": "Được rồi, tiến lên!",
+   "attack": "Ta không lùi bước! Hây!",
+   "defend": "Chừng này không quật ngã được ta!",
+   "skill": "Dù bao nhiêu lần, ta cũng sẽ đứng dậy!",
+   "win": "Làm được rồi! Mọi người đều an toàn chứ?",
+   "lose": "Tức quá... nhưng lần sau ta nhất định thắng."
+  },
+  "gyebaek": {
+   "select": "Không còn đường lui. Đây là chỗ của chúng ta.",
+   "idle": "Gió trên cánh đồng lạnh quá.",
+   "move": "Đội cảm tử, tiến lên.",
+   "attack": "Liều mạng mà chém!",
+   "defend": "Chưa chết thì ta chưa lùi!",
+   "skill": "Lùi lại! Đến gần là ta chém!",
+   "win": "Hôm nay... vẫn giữ được.",
+   "lose": "Đến đây thôi sao... Ta đã chiến đấu không hổ thẹn."
+  },
+  "sejong": {
+   "select": "Vì bá tánh, ta sẽ làm bất cứ điều gì.",
+   "idle": "Đêm đã khuya. Đọc thêm chút nữa rồi ngủ.",
+   "move": "Chúng ta cùng đi nào.",
+   "attack": "Điều sai trái phải được sửa lại!",
+   "defend": "Đừng vội. Luôn có cách.",
+   "skill": "Hãy viết tiếng nói của bá tánh thành chữ!",
+   "win": "Đó là nhờ trí tuệ của mọi người.",
+   "lose": "Lẽ ra trẫm phải xem xét kỹ hơn."
+  },
+  "zhugeliang": {
+   "select": "Ngọa Long đã tỉnh. Ngài có muốn nghe kế sách thiên hạ?",
+   "idle": "Các vì sao chuyển động bất thường.",
+   "move": "Gió đã đổi chiều. Đi thôi.",
+   "attack": "Ngươi đã nằm trong lòng bàn tay ta.",
+   "defend": "Nước đi đó ta đã đọc từ lâu.",
+   "skill": "Ta sẽ bày Bát Trận Đồ. Không có lối thoát.",
+   "win": "Mọi việc đều theo kế sách.",
+   "lose": "Trời không giúp ta..."
+  },
+  "davinci": {
+   "select": "Thế giới đầy những điều thú vị.",
+   "idle": "Chim bay thế nào nhỉ... Hừm, phải vẽ lại.",
+   "move": "Nào, đi xem tận mắt thôi!",
+   "attack": "Thiết kế này thế nào!",
+   "defend": "Ta đã chuẩn bị sẵn rồi.",
+   "skill": "Hãy xem bản thiết kế trong đầu ta!",
+   "win": "Tuyệt vời! Chạy đúng như ta nghĩ!",
+   "lose": "Hừm, phải sửa lại bản vẽ."
+  },
+  "zhouyu": {
+   "select": "Gió đông nam đã thổi. Thời cơ đã đến.",
+   "idle": "Nhạc sai một nốt, ta đều nhận ra.",
+   "move": "Theo gió sông mà đi.",
+   "attack": "Phóng hỏa!",
+   "defend": "Mưu mẹo đó mà định lừa ta sao?",
+   "skill": "Gây rối loạn! Làm rung chuyển trận địch!",
+   "win": "Đừng xem thường Chu Du của Giang Đông.",
+   "lose": "Sao trời lại thử thách ta thế này..."
+  },
+  "jangyeongsil": {
+   "select": "Để tôi đo thời gian của bầu trời.",
+   "idle": "Mài bánh răng này thêm chút nữa là được...",
+   "move": "Vâng, tôi đi ngay!",
+   "attack": "Hãy xem sức mạnh của thiết bị này!",
+   "defend": "Điều đó tôi đã tính trước rồi.",
+   "skill": "Hiểu biết là sức mạnh! Đáp án nằm trong sách!",
+   "win": "Thành công rồi! Đồng hồ nước đã điểm chuông!",
+   "lose": "Tôi tính sai rồi. Tôi sẽ làm lại."
+  },
+  "archimedes": {
+   "select": "Eureka! Tìm ra rồi, tìm ra rồi!",
+   "idle": "Đừng giẫm lên hình tròn của ta... ta đang tính.",
+   "move": "Có đòn bẩy thì đi đâu cũng được.",
+   "attack": "Đỡ lấy! Sức mạnh của nguyên lý!",
+   "defend": "Góc đó không xuyên qua được đâu.",
+   "skill": "Nguyên lý tường sắt! Lực sẽ bị phân tán!",
+   "win": "Ha, chứng minh xong!",
+   "lose": "Ha ha, ta lập sai phương trình rồi."
+  },
+  "sunwu": {
+   "select": "Không đánh mà thắng mới là thượng sách.",
+   "idle": "Biết người biết ta, trăm trận không nguy.",
+   "move": "Hãy di chuyển như dòng nước.",
+   "attack": "Đánh vào chỗ trống!",
+   "defend": "Giữ vững thì không lay chuyển.",
+   "skill": "Binh bất yếm trá. Kế đã thành công!",
+   "win": "Thắng trước rồi mới đánh.",
+   "lose": "Ta chưa hiểu hết kẻ địch."
+  },
+  "choichiwon": {
+   "select": "Chỉ với một dòng chữ, ta sẽ lay chuyển thế gian.",
+   "idle": "Trong gió thu, ta buồn bã ngâm thơ...",
+   "move": "Cầm bút lên đường thôi.",
+   "attack": "Những dòng chữ này là thanh kiếm của ta!",
+   "defend": "Lời chính trực không thể bị bẻ gãy.",
+   "skill": "Sức mạnh của học vấn! Đến lúc thể hiện rồi!",
+   "win": "Lời văn đã lay động lòng người.",
+   "lose": "Thế gian ít ai hiểu ta."
+  },
+  "libai": {
+   "select": "Một chén dưới trăng, một bài thơ thì sao?",
+   "idle": "Hừm... hết rượu rồi. Trăng vẫn còn sáng.",
+   "move": "Gió thổi đâu thì đi đó.",
+   "attack": "Kiếm hay thơ, say mới ngon!",
+   "defend": "Ối! Người say khó bị đánh trúng lắm.",
+   "skill": "Gió ơi thổi đi! Mây ơi theo ta!",
+   "win": "Ha ha ha! Thêm một chén nữa nào!",
+   "lose": "Ôi, tỉnh rượu mất rồi."
+  },
+  "marcopolo": {
+   "select": "Phương Đông có biết bao điều kỳ diệu.",
+   "idle": "Tôi nhớ hoàng hôn trên Con đường Tơ lụa.",
+   "move": "Nào, lên đường tìm lối mới!",
+   "attack": "Hãy xem tài của người đi xa!",
+   "defend": "Nguy hiểm thế này trên đường là chuyện thường.",
+   "skill": "Nhìn sao định hướng! Giữ vững hải trình!",
+   "win": "Chuyện này phải viết vào sách mới được!",
+   "lose": "Đường về cũng là một chuyến đi."
+  },
+  "hypatia": {
+   "select": "Chúng ta cùng đọc đường đi của các vì sao nhé?",
+   "idle": "Không ngừng đặt câu hỏi, đó là học.",
+   "move": "Cứ đi theo quỹ đạo là được.",
+   "attack": "Đáp án đã rõ rồi!",
+   "defend": "Phương trình đó sai rồi.",
+   "skill": "Quên hết đi. Hãy suy nghĩ lại từ đầu.",
+   "win": "Lý trí đã chiến thắng.",
+   "lose": "Vẫn còn điều ta chưa biết."
+  },
+  "seohui": {
+   "select": "Chỉ bằng lời nói, ta sẽ giữ mảnh đất này.",
+   "idle": "Trước hết phải xem đối phương muốn gì.",
+   "move": "Đi đàm phán thôi.",
+   "attack": "Lời đó hoàn toàn vô lý!",
+   "defend": "Không nhường một tấc đất.",
+   "skill": "Cố lên! Chúng ta đúng!",
+   "win": "Thắng mà không cần rút kiếm.",
+   "lose": "Lời ta chưa đủ thuyết phục."
+  },
+  "zeus": {
+   "select": "Ta là Zeus, vua sấm sét. Hãy cúi đầu.",
+   "idle": "Không cần vội. Bầu trời luôn chờ đợi.",
+   "move": "Theo ta, hỡi người phàm.",
+   "attack": "Hãy nhận sự phán xét của thần linh!",
+   "defend": "Ngươi dám động vào thần sao?",
+   "skill": "Sấm sét! Giáng xuống bọn chúng!",
+   "win": "Hừ hừ hừ. Kết quả hiển nhiên thôi.",
+   "lose": "Không thể nào... Ta đã sơ suất."
+  },
+  "wukong": {
+   "select": "Tề Thiên Đại Thánh Tôn Ngộ Không giá đáo!",
+   "idle": "Ngáp, chán quá. Đi hái đào ăn thôi.",
+   "move": "Cưỡi cân đẩu vân đây! Vèo!",
+   "attack": "Nếm thử gậy Như Ý của ta này!",
+   "defend": "Hì hì, đó chỉ là phân thân của ta thôi!",
+   "skill": "Đi nào, cân đẩu vân! Mười vạn tám nghìn dặm!",
+   "win": "Thấy chưa? Ta chính là Tề Thiên Đại Thánh!",
+   "lose": "Chậc, đừng nói với sư phụ nhé?"
+  },
+  "dangun": {
+   "select": "Hãy làm lợi ích cho muôn người.",
+   "idle": "Ngươi có nhớ ngày trời mở ra không?",
+   "move": "Hỡi các con, hãy mở đường.",
+   "attack": "Đừng chống lại ý trời!",
+   "defend": "Sức mạnh đó không chạm tới ta.",
+   "skill": "Hãy ban ánh sáng cho khắp nhân gian!",
+   "win": "Chúng ta đã cùng nhau làm nên điều này.",
+   "lose": "Đây cũng là ý trời."
+  },
+  "athena": {
+   "select": "Trí tuệ dẫn lối chiến thắng.",
+   "idle": "Trận chiến thắng bằng trí óc, không phải sức mạnh.",
+   "move": "Giơ giáo lên. Xuất phát.",
+   "attack": "Đỡ lấy ngọn giáo của nữ thần chiến tranh!",
+   "defend": "Khiên của ta không thể vỡ.",
+   "skill": "Ta ban sự che chở. Hãy chiến đấu không sợ hãi.",
+   "win": "Đánh hay lắm. Một chiến thắng sáng suốt.",
+   "lose": "Lần này... ngươi hơn ta một bậc."
+  },
+  "heracles": {
+   "select": "Ta đã hoàn thành mười hai kỳ công! Cứ giao cho ta!",
+   "idle": "Sư tử hay quái vật, có ai không?",
+   "move": "Được rồi, khởi động nào!",
+   "attack": "Hây a! Đỡ này!",
+   "defend": "Ha! Nhột quá!",
+   "skill": "Tấn công dữ dội! Ta sẽ đập nát cả núi!",
+   "win": "Ha ha ha! Kỳ công thứ mười ba cũng xong!",
+   "lose": "Hừ... thua về sức mạnh? Không thể nào!"
+  },
+  "gumiho": {
+   "select": "Ôi, đã phải lòng ta rồi sao? Hì hì.",
+   "idle": "Haa... chán quá. Có ai để ta mê hoặc không nhỉ?",
+   "move": "Nào, theo ta đi!",
+   "attack": "Hì hì, muốn nếm thử đuôi của ta không?",
+   "defend": "Ôi, ta đâu có ở đó!",
+   "skill": "Suỵt... coi chừng sau lưng đấy.",
+   "win": "A ha ha! Dễ quá! Chơi thêm ván nữa nhé?",
+   "lose": "Hứ, hôm nay ta nhường thôi. Thật đấy!"
+  },
+  "anubis": {
+   "select": "Cán cân âm phủ đang chờ ngươi.",
+   "idle": "Cát rơi, và thời gian đứng về phía ta.",
+   "move": "Cái chết không bao giờ vội vàng.",
+   "attack": "Hãy cân trái tim ngươi!",
+   "defend": "Sức mạnh người sống không chạm tới ta.",
+   "skill": "Run sợ đi. Cổng âm phủ đã mở!",
+   "win": "Cán cân không biết nói dối.",
+   "lose": "Chưa... chưa đến lượt ngươi."
+  },
+  "dokkaebi": {
+   "select": "Vàng ra đây! Bạc ra đây! Cốc!",
+   "idle": "Có ai muốn vật một trận không?",
+   "move": "Hê hê, đi đâu bây giờ nhỉ?",
+   "attack": "Nếm gậy của ta này! Cốc!",
+   "defend": "Lêu lêu, không đau đâu!",
+   "skill": "Trả lại cho ngươi đây! Cốc!",
+   "win": "Ha ha! Mang thạch kiều mạch ra đây!",
+   "lose": "Hừ, tại trời sáng nên ta mới thua!"
+  },
+  "haetae": {
+   "select": "Ta ngăn chặn lửa và tai họa.",
+   "idle": "Sừng của ta phân biệt đúng sai.",
+   "move": "Ta đi canh giữ con đường.",
+   "attack": "Kẻ gian sẽ bị húc văng!",
+   "defend": "Không ai được qua đây.",
+   "skill": "Trụ vững! Tai họa không vào được một bước!",
+   "win": "Cung điện hôm nay vẫn bình an.",
+   "lose": "Ta... đã không ngăn được sao?"
+  },
+  "perseus": {
+   "select": "Chính tay ta đã chém Medusa.",
+   "idle": "Có lúc cần một tấm khiên như gương.",
+   "move": "Với đôi dép có cánh, xuất phát!",
+   "attack": "Đỡ lấy lưỡi kiếm này!",
+   "defend": "Soi vào khiên là thấy hết!",
+   "skill": "Lưỡi kiếm sắc bén! Nhắm mắt cũng chém được!",
+   "win": "Quái vật đã ngã! Về thôi!",
+   "lose": "Ôi không... ta lỡ nhìn vào mắt nó."
+  },
+  "tengu": {
+   "select": "Mọi cơn gió trên núi này là của ta.",
+   "idle": "Sao loài người chậm chạp thế?",
+   "move": "Cưỡi gió mà đi!",
+   "attack": "Đỡ lấy gió quạt của ta!",
+   "defend": "Hừ, tưởng chạm được ta sao?",
+   "skill": "Xung phong! Ập tới như gió núi!",
+   "win": "Thấy chưa, đây là chủ nhân của núi.",
+   "lose": "Hự, ta bị bẽ mặt rồi..."
+  },
+  "isis": {
+   "select": "Ta trao cho ngươi hơi thở sự sống.",
+   "idle": "Ta nghe thấy tiếng nước sông Nile.",
+   "move": "Cẩn thận nhé, chúng ta cùng đi.",
+   "attack": "Đủ rồi. Lùi lại đi!",
+   "defend": "Không sao, ta sẽ bảo vệ ngươi.",
+   "skill": "Bàn tay chữa lành... vết thương hãy lành lại.",
+   "win": "Mọi người đều bình an, thật may quá.",
+   "lose": "Không sao. Đứng dậy là được."
+  },
+  "tesla": {
+   "select": "Tương lai thuộc về tôi.",
+   "idle": "Dòng điện xoay chiều đang chạy trong đầu tôi.",
+   "move": "Hãy đi nhanh như dòng điện.",
+   "attack": "Một triệu vôn!",
+   "defend": "Tôi đã nối đất từ trước rồi.",
+   "skill": "Cuộn dây sấm sét, khởi động! Hãy xem sức mạnh của bầu trời!",
+   "win": "Tính toán của tôi không bao giờ sai.",
+   "lose": "Thế giới vẫn chưa theo kịp tôi."
+  },
+  "nightingale": {
+   "select": "Ngọn đèn này sẽ không bao giờ tắt.",
+   "idle": "Đêm nay tôi cũng phải đi một vòng phòng bệnh.",
+   "move": "Hãy đến chỗ người bị thương.",
+   "attack": "Tránh xa bệnh nhân ra!",
+   "defend": "Còn tôi ở đây thì không ai bỏ cuộc!",
+   "skill": "Mọi người đứng dậy! Chúng ta vẫn làm được!",
+   "win": "Mọi người an toàn là tốt rồi.",
+   "lose": "Buồn quá... nhưng ngày mai tôi vẫn sẽ thắp đèn."
+  },
+  "edison": {
+   "select": "Thất bại nghìn lần, thành công một lần là đủ.",
+   "idle": "Không phải dây tóc này. Mang cái tiếp theo đây.",
+   "move": "Nào, ra khỏi phòng thí nghiệm thôi!",
+   "attack": "Hãy xem phát minh mới của tôi!",
+   "defend": "Cái đó tôi đã đăng ký bằng sáng chế rồi.",
+   "skill": "Phát minh hoàn tất! Đèn sáng rồi!",
+   "win": "Ha, lần thứ một nghìn lẻ một thì thành công!",
+   "lose": "Tôi chỉ tìm thêm một cách không hiệu quả thôi."
+  },
+  "wright": {
+   "select": "Hôm nay nhất định chúng ta sẽ bay!",
+   "idle": "Gió tốt đấy... Anh ơi, xem cánh giúp em!",
+   "move": "Quay cánh quạt, xuất phát!",
+   "attack": "Từ trên cao đây, coi chừng!",
+   "defend": "Nghiêng một chút là né được!",
+   "skill": "Bay thám hiểm! Lên rồi, lên rồi!",
+   "win": "Bay được rồi! Thật sự bay được rồi!",
+   "lose": "Không sao, sửa cánh rồi bay lại."
+  },
+  "amundsen": {
+   "select": "Tôi đã vượt qua cái lạnh Nam Cực.",
+   "idle": "Chuẩn bị là chiến thắng. Kiểm tra lại xe trượt nào.",
+   "move": "Từng bước một, đến tận cùng.",
+   "attack": "Phá băng mà tiến lên!",
+   "defend": "Bão tuyết thì tôi quen rồi.",
+   "skill": "Định hướng! Thẳng về phía nam!",
+   "win": "Cờ đã cắm. Chúng ta làm được rồi.",
+   "lose": "Sống sót trở về cũng là thám hiểm."
+  },
+  "verne": {
+   "select": "Điều ta tưởng tượng rồi sẽ thành hiện thực.",
+   "idle": "Hai vạn dặm dưới đáy biển có gì nhỉ?",
+   "move": "Vòng quanh thế giới trong tám mươi ngày!",
+   "attack": "Đừng xem thường trí tưởng tượng!",
+   "defend": "Cảnh đó tôi đã viết rồi.",
+   "skill": "Tôi đọc trong sách rồi! Đáp án ở chương này!",
+   "win": "Một kết thúc hay. Đi viết tập tiếp theo thôi.",
+   "lose": "Chương này phải viết lại rồi."
+  },
+  "pasteur": {
+   "select": "Tôi đang chiến đấu với kẻ thù vô hình.",
+   "idle": "Hừm, những thứ nhỏ bé này lây bệnh đây.",
+   "move": "Đừng vội, hãy chính xác.",
+   "attack": "Vi trùng, lui ra!",
+   "defend": "Tôi đã đun sôi khử trùng rồi.",
+   "skill": "Chúc phúc cho mọi người. Vắc xin này sẽ bảo vệ tất cả.",
+   "win": "Đứa bé đã sống. Vậy là đủ.",
+   "lose": "Thí nghiệm thì làm lại là được."
+  },
+  "houdini": {
+   "select": "Không ổ khóa nào giữ được tôi!",
+   "idle": "Nào, mời bạn rút một lá bài?",
+   "move": "Thưa quý vị, lên sân khấu nào!",
+   "attack": "Chớp mắt là lỡ đấy! Hấp!",
+   "defend": "Ơ? Tôi đã thoát ra rồi mà.",
+   "skill": "Ta-đa! Vết thương biến mất không dấu vết!",
+   "win": "Xin một tràng pháo tay! Cảm ơn!",
+   "lose": "Ha ha... đó chỉ là buổi tập thôi."
+  },
+  "earhart": {
+   "select": "Bầu trời không có giới hạn.",
+   "idle": "Hôm nay trên mây chắc trời quang.",
+   "move": "Nổ máy rồi, cất cánh!",
+   "attack": "Bổ nhào, lao xuống đây!",
+   "defend": "Nhiễu động thì tôi quen rồi!",
+   "skill": "Hết tốc lực! Bám chắc vào!",
+   "win": "Hạ cánh thành công! Chuyến bay tuyệt vời!",
+   "lose": "Hết nhiên liệu rồi. Lần sau tôi sẽ bay xa hơn."
+  },
+  "twain": {
+   "select": "Muốn nghe một chuyện vui không?",
+   "idle": "Hôm nay sông Mississippi lại trôi chầm chậm.",
+   "move": "Thả bè trôi thong thả nhé?",
+   "attack": "Ngòi bút còn đau hơn lưỡi kiếm!",
+   "defend": "Tin đồn tôi thua đã bị phóng đại quá rồi.",
+   "skill": "Nào, bắt đầu lại từ đầu thôi!",
+   "win": "Ha, chuyện này viết thành truyện hay đây.",
+   "lose": "Chà, chuyện thua viết ra cũng vui."
+  },
+  "fabre": {
+   "select": "Hãy nhìn kỹ những điều nhỏ bé.",
+   "idle": "Suỵt... bọ hung đang đi ngang qua.",
+   "move": "Chậm thôi, nhìn dưới chân nhé.",
+   "attack": "Nọc ong nhỏ nhưng đau lắm đấy!",
+   "defend": "Cứ cuộn tròn chắc như con bọ.",
+   "skill": "Giữ chắc vào. Vỏ không dễ vỡ đâu.",
+   "win": "Quan sát hay lắm. Phải ghi vào sổ.",
+   "lose": "Không sao. Mai lại quan sát tiếp."
+  },
+  "bangjeonghwan": {
+   "select": "Trẻ em là hy vọng của ngày mai.",
+   "idle": "Hôm nay kể chuyện gì cho các em đây?",
+   "move": "Nắm tay cùng đi nào.",
+   "attack": "Không được làm các em khóc!",
+   "defend": "Tôi sẽ đứng phía trước!",
+   "skill": "Mọi người cố lên! Chúng ta làm được!",
+   "win": "Mọi người cười nên tôi cũng vui.",
+   "lose": "Không sao. Ngã thì đứng dậy thôi."
+  },
+  "announcer_l": {
+   "start": "Trận đấu bắt đầu!",
+   "turn": "Đến lượt bạn!",
+   "enemy_turn": "Đến lượt đối thủ.",
+   "battle": "Bắt đầu chiến đấu!",
+   "double": "Đôi!",
+   "gate": "Trận chiến cửa ải!",
+   "goal": "Về đích!",
+   "catchup": "Cơ hội bắt kịp!",
+   "last_turn": "Lượt cuối cùng!",
+   "win": "Chiến thắng!",
+   "lose": "Thất bại."
+  },
+  "announcer_n": {
+   "start": "Trận đấu bắt đầu!",
+   "turn": "Đến lượt bạn!",
+   "enemy_turn": "Đến lượt đối thủ.",
+   "battle": "Bắt đầu chiến đấu!",
+   "double": "Đôi!",
+   "gate": "Trận chiến cửa ải!",
+   "goal": "Về đích!",
+   "catchup": "Cơ hội bắt kịp!",
+   "last_turn": "Lượt cuối cùng!",
+   "win": "Chiến thắng!",
+   "lose": "Thất bại."
+  },
+  "announcer_o": {
+   "start": "Trận đấu bắt đầu!",
+   "turn": "Đến lượt bạn!",
+   "enemy_turn": "Đến lượt đối thủ.",
+   "battle": "Bắt đầu chiến đấu!",
+   "double": "Đôi!",
+   "gate": "Trận chiến cửa ải!",
+   "goal": "Về đích!",
+   "catchup": "Cơ hội bắt kịp!",
+   "last_turn": "Lượt cuối cùng!",
+   "win": "Chiến thắng!",
+   "lose": "Thất bại."
+  },
+  "announcer_m": {
+   "start": "Bắt đầu!",
+   "turn": "Lượt tôi!",
+   "enemy_turn": "Lượt địch!",
+   "battle": "Chiến đấu!",
+   "double": "Đôi!",
+   "gate": "Cửa ải!",
+   "goal": "Về đích!",
+   "catchup": "Bắt kịp!",
+   "last_turn": "Lượt cuối!",
+   "win": "Thắng!",
+   "lose": "Thua..."
+  },
+  "enemy_gate": {
+   "appear": "Dừng lại! Không ai được qua cửa ải này!",
+   "win": "Cút đi! Đừng bao giờ quay lại!",
+   "lose": "Hự... được rồi, qua đi."
+  },
+  "enemy_boss": {
+   "appear": "Ngươi đến được tận đây sao. Nhưng đây là điểm cuối.",
+   "win": "Còn non lắm. Mạnh hơn rồi hãy đến!",
+   "lose": "Giỏi lắm... trận này ngươi thắng."
+  },
+  "enemy_keeper": {
+   "appear": "Ta canh giữ cứ điểm này. Lao vào đây!",
+   "win": "Ha ha ha! Tài cán thế mà đòi à!",
+   "lose": "Sao lại thế... ta thua ư?"
+  },
+  "enemy_monster": {
+   "appear": "Graaaah!",
+   "win": "Kha kha kha!",
+   "lose": "Grừ..."
+  }
+ }
+}
