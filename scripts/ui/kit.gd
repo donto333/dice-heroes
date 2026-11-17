@@ -504,3 +504,19 @@ static func round_shortcut(text: String, icon_name: String, color: Color, badge:
 ## (global_position끼리 빼면 돌린 화면에서 방향이 틀어진다).
 static func spot_in(home: CanvasItem, other: CanvasItem, point: Vector2) -> Vector2:
 	return home.get_global_transform().affine_inverse() * (other.get_global_transform() * point)
+
+
+## 번역된 글이 칸(holder)보다 넓으면 글자 크기를 줄여 맞춘다(영어·베트남어는 한국어보다 길다).
+## reserve: holder 안에서 글 말고 다른 것(아이콘·여백)이 차지하는 너비.
+static func fit_text(label: Label, holder: Control, reserve: float, base_size: int, min_size: int = 12) -> void:
+	var fit := func() -> void:
+		var room := holder.size.x - reserve
+		if room <= 0.0:
+			return
+		var font := label.get_theme_font("font")
+		var shown := label.tr(label.text)
+		var size := base_size
+		while size > min_size and font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > room:
+			size -= 1
+		label.add_theme_font_size_override("font_size", size)
+	holder.resized.connect(fit)

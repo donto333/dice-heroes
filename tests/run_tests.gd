@@ -103,6 +103,7 @@ func _init() -> void:
 	_test_streak_power()
 	_test_presets()
 	_test_coupon_and_backup()
+	_test_lang()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -1552,3 +1553,28 @@ func _test_audio_tables() -> void:
 	for enemy in ["enemy_gate", "enemy_boss", "enemy_keeper", "enemy_monster"]:
 		for kind in ["appear", "win", "lose"]:
 			_check(str(extra.get(enemy, {}).get("lines", {}).get(kind, "")) != "", "적 음성 대사가 없음: %s %s" % [enemy, kind])
+
+
+## 번역(lang.gd): 그대로 맞는 글, 숫자·이름이 끼는 글, 여러 줄 글, 번역 파일의 자리 수.
+func _test_lang() -> void:
+	Lang.use("en")
+	_check(Lang.t("닫기") == "Close", "번역: 그대로 맞는 글")
+	_check(Lang.t("보석 300") == "Gems 300", "번역: 숫자가 낀 글 " + Lang.t("보석 300"))
+	_check(Lang.t("트로피 +30") == "Trophies +30", "번역: 부호 있는 숫자 " + Lang.t("트로피 +30"))
+	_check(Lang.t("나: 카드 [순풍] 획득") == "Me: Got card [Tailwind]", "번역: 끼운 이름도 번역 " + Lang.t("나: 카드 [순풍] 획득"))
+	_check(Lang.t("닫기\n확인") == "Close\nOK", "번역: 여러 줄")
+	_check(Lang.t("없는 글 12345") == "없는 글 12345", "번역: 없는 글은 그대로")
+	Lang.use("vi")
+	_check(Lang.t("닫기") == "Đóng", "번역: 베트남어")
+	Lang.use("ko")
+	_check(Lang.t("닫기") == "닫기", "번역: 한국어로 돌아옴")
+	var slot := RegEx.create_from_string("%(?:[0-9]+\\$)?[0-9.+-]*[sdf]")
+	for code in ["en", "vi"]:
+		var table = JSON.parse_string(FileAccess.get_file_as_string("res://data/i18n/%s.json" % code))
+		for source in table:
+			var target := str(table[source])
+			if target == "":
+				continue
+			var want := slot.search_all(str(source).replace("%%", "")).size()
+			var got := slot.search_all(target.replace("%%", "")).size()
+			_check(want == got, "번역 자리 수가 다름(%s): %s → %s" % [code, source, target])

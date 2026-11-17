@@ -354,6 +354,15 @@ func _run() -> void:
 	await _wait(0.4)
 	await _shot("19_lobby_after")
 	_close_dialogs()
+	# 다른 언어 화면(lang.gd): 영어 5장, 베트남어 2장을 찍고 한국어로 돌아온다.
+	for item in [["en", ["lobby", "heroes", "shop", "settings", "help"]], ["vi", ["lobby", "shop"]]]:
+		Lang.use(str(item[0]))
+		for screen_name in item[1]:
+			_app.go(str(screen_name))
+			await _wait(0.5)
+			await _shot("30_%s_%s" % [item[0], screen_name])
+			_close_dialogs()
+	Lang.use("ko")
 	await _play_full_game()
 	# 세로로 든 화면: 게임이 스스로 돌아 가로로 그려지는지 확인한다(로비와 영웅 화면).
 	root.size = Vector2i(720, 1280)

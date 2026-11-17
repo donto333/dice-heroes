@@ -387,6 +387,7 @@ func _add_top_bar() -> void:
 		caption.offset_top = -22
 		caption.offset_bottom = -3
 		button.add_child(caption)
+		Kit.fit_text(caption, button, 4.0, 13, 9)
 		if bool(spec[2]):
 			_red_badge(button)
 		bar.add_child(button)
@@ -595,9 +596,12 @@ func _white_tile(spec: Array) -> Button:
 	title.remove_theme_color_override("font_shadow_color")
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.add_child(title)
+	Kit.fit_text(title, tile, 84.0, 25)
 	var english := Kit.label(str(spec[1]), 12, Color("4a6aa8"))
 	english.remove_theme_color_override("font_shadow_color")
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 영어 부제는 한국어 화면에서만(다른 언어는 제목과 겹친다).
+	english.visible = Lang.current == "ko"
 	text.add_child(english)
 	var sub := Kit.label(str(spec[3]), 14, Color("c4421f") if bool(spec[4]) else Color("3d5585"))
 	sub.remove_theme_color_override("font_shadow_color")
@@ -626,9 +630,12 @@ func _navy_tile(spec: Array) -> Button:
 	text.alignment = BoxContainer.ALIGNMENT_CENTER
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(text)
-	text.add_child(_bold(str(spec[0]), 22, Color.WHITE, Color("0b1f4d"), 5))
+	var title := _bold(str(spec[0]), 22, Color.WHITE, Color("0b1f4d"), 5)
+	text.add_child(title)
+	Kit.fit_text(title, tile, 62.0, 22)
 	var english := Kit.label(str(spec[1]), 11, Color(1, 1, 1, 0.8))
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	english.visible = Lang.current == "ko"
 	text.add_child(english)
 	_chevron(tile, Color.WHITE, Color("0b1f4d"))
 	var mark := str(spec[3])

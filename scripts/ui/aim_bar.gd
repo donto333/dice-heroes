@@ -65,8 +65,8 @@ func _draw() -> void:
 		var active: bool = aim_of(value) == aim_of((zone[0] + zone[1]) * 0.5)
 		var color: Color = zone[2]
 		draw_rect(rect, color if active else color.darkened(0.45))
-		draw_string_outline(font, Vector2(rect.position.x, 20), zone[3], HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 18, 5, Color.BLACK)
-		draw_string(font, Vector2(rect.position.x, 20), zone[3], HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 18, Color.WHITE if active else Color(1, 1, 1, 0.6))
+		draw_string_outline(font, Vector2(rect.position.x, 20), tr(zone[3]), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 18, 5, Color.BLACK)
+		draw_string(font, Vector2(rect.position.x, 20), tr(zone[3]), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 18, Color.WHITE if active else Color(1, 1, 1, 0.6))
 	var x := bar.position.x + bar.size.x * value
 	draw_rect(Rect2(x - 4.0, bar.position.y - 5.0, 8.0, bar.size.y + 10.0), Color.WHITE)
 	draw_rect(Rect2(x - 2.0, bar.position.y - 3.0, 4.0, bar.size.y + 6.0), Color("ffcf4d"))
