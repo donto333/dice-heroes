@@ -88,11 +88,15 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 	var room: Vector2 = (holder.size if holder != null else get_viewport_rect().size) - Vector2(40, 96)
 	var fit := minf(1.0, minf(room.x / maxf(need.x, 1.0), room.y / maxf(need.y, 1.0)))
 	_panel.pivot_offset = _panel.size * 0.5
-	_panel.scale = Vector2(0.85, 0.85) * fit
 	_panel.modulate.a = 1.0
+	# 금테 창은 0.2초 동안 0.9배에서 1배로 커지며 뜬다(UI 개편 3단계). 자동 사진·저사양 모드에서는 곧바로 1배.
+	if MenuArt.calm(holder):
+		_panel.scale = Vector2.ONE * fit
+		return
+	_panel.scale = Vector2(0.9, 0.9) * fit
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_panel, "scale", Vector2.ONE * fit, 0.22)
+	tween.tween_property(_panel, "scale", Vector2.ONE * fit, 0.2)
 
 
 func _on_button(callback: Callable) -> void:

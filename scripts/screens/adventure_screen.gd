@@ -215,6 +215,7 @@ func _sweep(id: String) -> void:
 		return
 	app.save()
 	app.play("reward")
+	MenuArt.fly_reward(app, null, reward)
 	app.go("adventure", {"chapter": _chapter})
 	app.toast("소탕 완료: %s · 경험치 +%d" % [Kit.reward_line(reward), int(reward["exp"])])
 

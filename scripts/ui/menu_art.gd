@@ -7,6 +7,8 @@ extends RefCounted
 
 const Kit := preload("res://scripts/ui/kit.gd")
 const PillSkin := preload("res://scripts/ui/pill_skin.gd")
+const GameData := preload("res://scripts/game_data.gd")
+const Fx := preload("res://scripts/ui/fx.gd")
 
 const ART := "res://assets/ui_menu/"
 
@@ -124,7 +126,8 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	if backdrop_art != "":
 		Kit.backdrop(screen, backdrop_art, 1.0)
 	var shade := ColorRect.new()
-	shade.color = Color(0.0, 0.03, 0.14, 0.3)
+	# UI 개편 3단계: 배경 그림이 더 보이게 어두운 막을 0.25로.
+	shade.color = Color(0.0, 0.03, 0.14, 0.25)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	screen.add_child(shade)
@@ -139,11 +142,15 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	outer.add_theme_constant_override("separation", 10)
 	margin.add_child(outer)
 
-	# 위 줄
+	# 위 줄. 등장 연출 때 위에서 내려오도록, 배치에 끼지 않는 빈 Control(top_holder) 안에 꽉 채워 넣는다.
+	var top_holder := Control.new()
+	top_holder.custom_minimum_size = Vector2(0, 70)
+	top_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	outer.add_child(top_holder)
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 10)
-	head.custom_minimum_size = Vector2(0, 70)
-	outer.add_child(head)
+	head.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_holder.add_child(head)
 	head.add_child(_home_button(app))
 	var spec: Array = TITLES.get(str(app.current_name), ["", ""])
 	var plate := title_plate(str(spec[0]), Kit.icon(str(spec[1]), 40.0).texture)
@@ -154,7 +161,10 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 		head.add_child(Kit.label(str(spec[0]), 32))
 	var gap := Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(gap)
+	# 알림 띠(toast.gd)는 이 빈칸(제목 명판과 재화 칸 사이)에 뜬다.
+	screen.set_meta("toast_spot", gap)
 	head.add_child(_money_chip("gold", int(app.profile.get("gold", 0)), Kit.GOLD))
 	head.add_child(_money_chip("gem", int(app.profile.get("gems", 0)), Kit.GEM))
 
@@ -163,12 +173,24 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	body.add_theme_constant_override("separation", 12)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	outer.add_child(body)
+	var rail_holder: Control = null
 	if not tabs.is_empty():
+		# 왼쪽 판도 등장 연출 때 왼쪽에서 밀려 들어오도록 빈 Control(rail_holder) 안에 넣는다.
+		# rail_holder의 최소 크기는 판의 최소 크기를 따라간다.
+		rail_holder = Control.new()
+		rail_holder.custom_minimum_size = Vector2(238, 0)
+		rail_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		body.add_child(rail_holder)
 		var rail := PanelContainer.new()
 		rail.custom_minimum_size = Vector2(238, 0)
 		var rail_style = style("rail_panel", Vector4(24, 34, 24, 34), Vector4(12, 18, 12, 18))
 		rail.add_theme_stylebox_override("panel", rail_style if rail_style != null else Kit.plate(Color("17357f"), Kit.TRIM, 20.0, 12, false))
-		body.add_child(rail)
+		rail.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		rail_holder.add_child(rail)
+		var holder_ref := rail_holder
+		rail.minimum_size_changed.connect(func() -> void:
+			if is_instance_valid(holder_ref) and is_instance_valid(rail):
+				holder_ref.custom_minimum_size = Vector2(238, rail.get_combined_minimum_size().y))
 		var list := VBoxContainer.new()
 		list.add_theme_constant_override("separation", 10)
 		rail.add_child(list)
@@ -194,7 +216,59 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 10)
 	board.add_child(content)
+	if rail_holder != null and rail_holder.get_child_count() > 0:
+		rail_holder.custom_minimum_size = Vector2(238, (rail_holder.get_child(0) as Control).get_combined_minimum_size().y)
+	screen.set_meta("own_entrance", true)
+	_enter(screen, app, head, rail_holder, board)
 	return content
+
+
+## 연출을 건너뛸 때인지: 자동 사진(instant)·저사양 모드에서는 연출 없이 곧바로 마지막 모습이 된다.
+static func calm(app) -> bool:
+	if app == null:
+		return true
+	return bool(app.get("instant")) or GameData.low_gfx or (app.has_method("low_gfx_on") and app.low_gfx_on())
+
+
+## 메뉴 틀 등장 연출(UI 개편 3단계, 기획서 3장).
+## 처음 들어올 때(0.25초): 위 줄은 위에서 내려오고, 왼쪽 판은 왼쪽에서 밀려 들어오고, 큰 판은 0.96배에서 커지며 나타난다.
+## 같은 화면을 다시 그릴 때(왼쪽 항목 전환·보상 받은 뒤): 큰 판만 0.15초 페이드.
+## 컨테이너가 자리를 정하는 노드는 position을 건드리지 않는다: 위 줄·왼쪽 판은 빈 Control 안에 든 자식만 움직이고,
+## 큰 판은 pivot_offset + scale(배치에 영향 없음)과 투명도만 바꾼다.
+static func _enter(screen: Control, app, head: Control, rail_holder: Control, board: Control) -> void:
+	if calm(app):
+		return
+	var again: bool = bool(app.get("redraw"))
+	var rail: Control = null
+	if rail_holder != null and rail_holder.get_child_count() > 0:
+		rail = rail_holder.get_child(0) as Control
+	board.modulate.a = 0.0
+	if not again:
+		head.modulate.a = 0.0
+		if rail != null:
+			rail.modulate.a = 0.0
+	# 배치가 끝나야 크기를 알 수 있으므로 한 프레임 기다린다.
+	await screen.get_tree().process_frame
+	if not is_instance_valid(screen) or not is_instance_valid(board):
+		return
+	if again:
+		board.create_tween().tween_property(board, "modulate:a", 1.0, 0.15)
+		return
+	var time := 0.25
+	head.position.y = -48.0
+	var top: Tween = head.create_tween().set_parallel(true)
+	top.tween_property(head, "position:y", 0.0, time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	top.tween_property(head, "modulate:a", 1.0, time * 0.8)
+	if rail != null and is_instance_valid(rail):
+		rail.position.x = -rail.size.x * 0.6
+		var side: Tween = rail.create_tween().set_parallel(true)
+		side.tween_property(rail, "position:x", 0.0, time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		side.tween_property(rail, "modulate:a", 1.0, time * 0.8)
+	board.pivot_offset = board.size * 0.5
+	board.scale = Vector2(0.96, 0.96)
+	var grow: Tween = board.create_tween().set_parallel(true)
+	grow.tween_property(board, "scale", Vector2.ONE, time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	grow.tween_property(board, "modulate:a", 1.0, time)
 
 
 ## 세로 판의 항목 버튼: 고른 것은 금색, 나머지는 파란 알약. 왼쪽에 아이콘, 오른쪽에 글자.
@@ -257,6 +331,9 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 	TextStyle.number(label, 5)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
+	# 받기 연출(fly_reward)이 이 칸을 찾아 알갱이를 날리고 숫자를 올린다.
+	capsule.set_meta("money", icon_name)
+	capsule.set_meta("label", label)
 	var plus := tex("plus_btn")
 	if plus != null:
 		# 시안처럼 오른쪽 끝에 초록 더하기(꾸밈).
@@ -744,3 +821,109 @@ static func reward_cell(icon_name: String, text: String, side: float = 96.0) -> 
 	TextStyle.number(label, 5)
 	column.add_child(label)
 	return cell
+
+
+# ---------------------------------------------------------------- 받기 연출(3단계)
+
+## 보상을 받으면 from(누른 버튼) 자리에서 금화·보석 알갱이가 위 줄 재화 칸으로 날아가고 숫자가 올라간다.
+## from이 없거나 지워졌으면 마지막으로 누른 자리에서 날린다. 자동 사진·저사양 모드에서는 아무것도 하지 않는다.
+## 화면을 다시 그리기(app.go) 바로 앞에 불러도 된다: 출발 자리는 지금 재고, 재화 칸은 다음 프레임에 새 화면에서 찾는다.
+static func fly_reward(app, from, reward: Dictionary) -> void:
+	if calm(app):
+		return
+	var kinds: Array = []
+	if int(reward.get("gold", 0)) > 0:
+		kinds.append(["gold", int(reward["gold"]), "coin", "gold"])
+	if int(reward.get("gems", 0)) > 0:
+		kinds.append(["gem", int(reward["gems"]), "gem", "gems"])
+	if kinds.is_empty():
+		return
+	var start: Vector2 = app.size * 0.5
+	if from != null and is_instance_valid(from) and from is Control and (from as Control).is_inside_tree():
+		start = Kit.spot_in(app, from, (from as Control).size * 0.5)
+	else:
+		start = app.to_app(app.get_viewport().get_mouse_position())
+	var layer := Control.new()
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	app.add_child(layer)
+	var fx := Fx.new()
+	layer.add_child(fx)
+	fx.burst(start, "coin", 10, 0.5)
+	# 새 화면이 자리를 잡을 때까지 기다린다.
+	await app.get_tree().process_frame
+	await app.get_tree().process_frame
+	if not is_instance_valid(layer):
+		return
+	var longest := 0.0
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for kind in kinds:
+		var chip := _find_money(app.current_screen, str(kind[0]))
+		var target: Vector2 = start + Vector2(0, -260)
+		if chip != null:
+			target = Kit.spot_in(app, chip, Vector2(28.0, chip.size.y * 0.5))
+		var picture: Texture2D = Fx.tex(str(kind[2]))
+		if picture == null:
+			picture = Kit.icon(str(kind[0]), 34.0).texture
+		var amount: int = int(kind[1])
+		var count: int = clampi(4 + int(log(float(amount)) / log(10.0)), 4, 9)
+		var bit_size := 34.0
+		for index in count:
+			var bit := TextureRect.new()
+			bit.texture = picture
+			bit.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			bit.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			bit.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			bit.size = Vector2(bit_size, bit_size)
+			bit.pivot_offset = bit.size * 0.5
+			bit.position = start - bit.size * 0.5
+			bit.modulate.a = 0.0
+			layer.add_child(bit)
+			var spread: Vector2 = start + Vector2(rng.randf_range(-80.0, 80.0), rng.randf_range(-70.0, 20.0))
+			var delay := 0.04 * index
+			var path: Tween = bit.create_tween()
+			path.tween_interval(delay)
+			path.tween_property(bit, "modulate:a", 1.0, 0.05)
+			path.tween_property(bit, "position", spread - bit.size * 0.5, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			path.tween_property(bit, "position", target - bit.size * 0.5, 0.42).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+			path.parallel().tween_property(bit, "scale", Vector2(0.7, 0.7), 0.42)
+			path.tween_callback(bit.queue_free)
+			longest = maxf(longest, delay + 0.65)
+		if chip != null:
+			_count_up(app, chip, str(kind[3]), amount, 0.6)
+	var ending: Tween = layer.create_tween()
+	ending.tween_interval(longest + 1.0)
+	ending.tween_callback(layer.queue_free)
+
+
+## 재화 칸 숫자를 (지금 값 - 받은 양)에서 지금 값까지 올리고, 다 오르면 칸이 살짝 튄다.
+static func _count_up(app, chip: Control, key: String, amount: int, delay: float) -> void:
+	if not chip.has_meta("label"):
+		return
+	var label = chip.get_meta("label")
+	if not is_instance_valid(label) or not (label is Label):
+		return
+	var final_value: int = int(app.profile.get(key, 0))
+	var first_value: int = maxi(final_value - amount, 0)
+	label.text = Kit.comma(first_value)
+	var count: Tween = label.create_tween()
+	count.tween_interval(delay)
+	count.tween_method(func(value: float) -> void: label.text = Kit.comma(int(round(value))), float(first_value), float(final_value), 0.45)
+	chip.pivot_offset = chip.size * 0.5
+	var pulse: Tween = chip.create_tween()
+	pulse.tween_interval(delay)
+	pulse.tween_property(chip, "scale", Vector2(1.1, 1.1), 0.08)
+	pulse.tween_property(chip, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+static func _find_money(root: Node, kind: String) -> Control:
+	if root == null or not is_instance_valid(root):
+		return null
+	if root is Control and root.has_meta("money") and str(root.get_meta("money")) == kind:
+		return root
+	for child in root.get_children():
+		var found := _find_money(child, kind)
+		if found != null:
+			return found
+	return null

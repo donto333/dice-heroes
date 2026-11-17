@@ -41,7 +41,7 @@ func setup(main_app, _params: Dictionary) -> void:
 		var all := MenuArt.pill_button("보상 %d개 모두 받기" % waiting, "gold", "l")
 		all.custom_minimum_size = Vector2(0, 76)
 		all.add_theme_font_size_override("font_size", 28)
-		all.pressed.connect(_on_claim_everything)
+		all.pressed.connect(_on_claim_everything.bind(all))
 		for side in [0, 1]:
 			var gift: TextureRect = Kit.icon("m_gift", 54.0)
 			gift.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT if side == 0 else Control.PRESET_CENTER_RIGHT)
@@ -85,7 +85,7 @@ func _attendance_panel() -> Control:
 		row.add_child(Kit.expand(cell))
 	var claim := MenuArt.pill_button("오늘 출석 보상 받기" if can else "오늘 출석 완료 · 내일 또 오세요", "gold" if can else "gray", "l")
 	claim.disabled = not can
-	claim.pressed.connect(_on_check_in)
+	claim.pressed.connect(_on_check_in.bind(claim))
 	group.add_child(claim)
 	return group
 
@@ -101,7 +101,7 @@ func _missions_panel() -> Control:
 	var button := MenuArt.pill_button("받음" if all_claimed else "받기", "gold" if all_done and not all_claimed else "gray", "m")
 	button.custom_minimum_size = Vector2(130, 56)
 	button.disabled = all_claimed or not all_done
-	button.pressed.connect(_on_all_clear)
+	button.pressed.connect(_on_all_clear.bind(button))
 	var words := MenuArt.list_row(group, "m_gift", "모든 미션 완료 보너스", "", _reward_and(all_reward, button))
 	words.get_child(0).add_theme_color_override("font_color", Kit.GOLD)
 	return group
@@ -161,7 +161,7 @@ func _guide_panel() -> Control:
 	var button := MenuArt.pill_button("받기" if done else "진행 중", "gold" if done else "gray", "m")
 	button.custom_minimum_size = Vector2(120, 56)
 	button.disabled = not done
-	button.pressed.connect(_on_guide)
+	button.pressed.connect(_on_guide.bind(button))
 	var words := MenuArt.list_row(group, "m_castle", str(step["text"]), "", _reward_and(step["reward"], button))
 	words.add_child(_progress(value, goal, done))
 	return group
@@ -177,13 +177,14 @@ func _progress(value: int, goal: int, done: bool) -> HBoxContainer:
 	return line
 
 
-func _on_guide() -> void:
+func _on_guide(from: Control = null) -> void:
 	var reward := Profile.claim_guide(app.profile, app.data)
 	if reward.is_empty():
 		return
 	app.save()
 	app.play("reward")
 	app.toast("길잡이 보상: %s" % Kit.reward_line(reward))
+	MenuArt.fly_reward(app, from, reward)
 	app.go("missions", {"tab": _tab})
 
 
@@ -196,19 +197,20 @@ func _achievement_row(achievement: Dictionary) -> Control:
 	var button := MenuArt.pill_button("받음" if claimed else ("받기" if done else "진행 중"), "gold" if done and not claimed else "gray", "m")
 	button.custom_minimum_size = Vector2(120, 56)
 	button.disabled = claimed or not done
-	button.pressed.connect(_on_achievement.bind(str(achievement["id"])))
+	button.pressed.connect(_on_achievement.bind(str(achievement["id"]), button))
 	var words := MenuArt.list_row(holder, "trophy", str(achievement["text"]), "", _reward_and(achievement["reward"], button), claimed)
 	words.add_child(_progress(value, goal, done))
 	return holder
 
 
-func _on_achievement(id: String) -> void:
+func _on_achievement(id: String, from: Control = null) -> void:
 	var reward := Profile.claim_achievement(app.profile, app.data, id)
 	if reward.is_empty():
 		return
 	app.save()
 	app.play("reward")
 	app.toast("업적 보상: %s" % Kit.reward_line(reward))
+	MenuArt.fly_reward(app, from, reward)
 	app.go("missions", {"tab": _tab})
 
 
@@ -221,49 +223,53 @@ func _mission_row(mission: Dictionary) -> Control:
 	var button := MenuArt.pill_button("받음" if claimed else ("받기" if done else "진행 중"), "gold" if done and not claimed else "gray", "m")
 	button.custom_minimum_size = Vector2(120, 56)
 	button.disabled = claimed or not done
-	button.pressed.connect(_on_claim.bind(str(mission["id"])))
+	button.pressed.connect(_on_claim.bind(str(mission["id"]), button))
 	var words := MenuArt.list_row(holder, "check" if done else "missions", str(mission["text"]), "", _reward_and(mission["reward"], button), claimed)
 	words.add_child(_progress(progress, goal, done))
 	return holder
 
 
-func _on_check_in() -> void:
+func _on_check_in(from: Control = null) -> void:
 	var reward := Profile.check_in(app.profile, app.eco, app.today())
 	if reward.is_empty():
 		return
 	app.save()
 	app.play("stamp")
 	app.toast("출석 보상: %s" % Kit.reward_line(reward))
+	MenuArt.fly_reward(app, from, reward)
 	app.go("missions", {"tab": _tab})
 
 
-func _on_claim(id: String) -> void:
+func _on_claim(id: String, from: Control = null) -> void:
 	var reward := Profile.claim_mission(app.profile, app.eco, id)
 	if reward.is_empty():
 		return
 	app.save()
 	app.play("good")
 	app.toast("미션 보상: %s" % Kit.reward_line(reward))
+	MenuArt.fly_reward(app, from, reward)
 	app.go("missions", {"tab": _tab})
 
 
-func _on_all_clear() -> void:
+func _on_all_clear(from: Control = null) -> void:
 	var reward := Profile.claim_all_clear(app.profile, app.eco)
 	if reward.is_empty():
 		return
 	app.save()
 	app.play("reward")
 	app.toast("모든 미션 완료! %s" % Kit.reward_line(reward))
+	MenuArt.fly_reward(app, from, reward)
 	app.go("missions", {"tab": _tab})
 
 
-func _on_claim_everything() -> void:
+func _on_claim_everything(from: Control = null) -> void:
 	var total := Profile.claim_everything(app.profile, app.eco, app.data)
 	if int(total["count"]) == 0:
 		return
 	app.save()
 	app.play("reward")
 	app.toast("보상 %d개: %s" % [int(total["count"]), Kit.reward_line({"gold": int(total["gold"]), "gems": int(total["gems"])})])
+	MenuArt.fly_reward(app, from, {"gold": int(total["gold"]), "gems": int(total["gems"])})
 	app.go("missions", {"tab": _tab})
 
 

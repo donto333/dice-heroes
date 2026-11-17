@@ -193,6 +193,7 @@ func _on_mileage() -> void:
 		return
 	app.save()
 	app.play("purchase")
+	MenuArt.fly_reward(app, null, reward)
 	app.go("shop", {"tab": _tab})
 	app.toast("마일리지 보상: %s" % Kit.reward_line(reward))
 

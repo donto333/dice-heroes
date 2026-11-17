@@ -185,14 +185,14 @@ func _pick_map(start: Dictionary) -> void:
 	var body := Kit.vbox(8)
 	body.add_child(Kit.para("싸울 맵을 고르세요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	body.add_child(grid)
-	_map_window = app.dialog("맵 고르기", body, [["취소", Kit.PANEL_LIGHT]], 680)
+	_map_window = app.dialog("맵 고르기", body, [["취소", Kit.PANEL_LIGHT]], 780)
 
 
 func _map_cell(index: int, title: String, note: String, board: Dictionary) -> Control:
 	var theme: Dictionary = board.get("theme", {})
 	var fill := Color(str(theme.get("bg", "2a3164")))
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(204, 176)
+	button.custom_minimum_size = Vector2(232, 196)
 	for state in ["normal", "hover", "pressed"]:
 		var style := Kit.box(fill if state == "normal" else fill.lightened(0.15), Kit.GOLD if state != "normal" else fill.lightened(0.4), 3, 14, 6)
 		style.border_width_bottom = 7
@@ -219,13 +219,13 @@ func _map_cell(index: int, title: String, note: String, board: Dictionary) -> Co
 		preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		preview.show_board(board)
 		column.add_child(preview)
-	var name_label := Kit.label(title, 17, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	var name_label := Kit.label(title, 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	name_label.clip_text = true
 	name_label.add_theme_constant_override("outline_size", 5)
 	name_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(name_label)
-	var note_label := Kit.para(note, 13, Color(1, 1, 1, 0.85), HORIZONTAL_ALIGNMENT_CENTER)
+	var note_label := Kit.para(note, 16, Color(1, 1, 1, 0.88), HORIZONTAL_ALIGNMENT_CENTER)
 	note_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(note_label)
 	return button

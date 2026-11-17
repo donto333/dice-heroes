@@ -79,7 +79,7 @@ func _ready() -> void:
 	left.size_flags_stretch_ratio = 0.68
 	halves.add_child(left)
 	_banner = ArtView.new()
-	_banner.custom_minimum_size = Vector2(0, 108)
+	_banner.custom_minimum_size = Vector2(0, 96)
 	_banner.focus_y = 0.45
 	_banner.fade_bottom = 0.35
 	_banner.visible = false
@@ -98,7 +98,7 @@ func _ready() -> void:
 	_mvp_box.add_theme_constant_override("separation", 0)
 	left.add_child(_mvp_box)
 	var card := Control.new()
-	card.custom_minimum_size = Vector2(176, 221)
+	card.custom_minimum_size = Vector2(156, 196)
 	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mvp_box.add_child(card)
@@ -144,7 +144,7 @@ func _ready() -> void:
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	halves.add_child(right)
 	_rows = VBoxContainer.new()
-	_rows.add_theme_constant_override("separation", 5)
+	_rows.add_theme_constant_override("separation", 4)
 	right.add_child(_rows)
 	_notes = HFlowContainer.new()
 	_notes.add_theme_constant_override("h_separation", 8)
@@ -214,7 +214,7 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 		child.queue_free()
 	var rewards: Array = extras.get("rewards", [])
 	for entry in rewards:
-		_rewards.add_child(MenuArt.reward_cell(str(entry[0]), str(entry[1]), 94.0))
+		_rewards.add_child(MenuArt.reward_cell(str(entry[0]), str(entry[1]), 86.0))
 	_rewards.visible = not rewards.is_empty()
 	_reward_title.visible = not rewards.is_empty()
 	if outcome == "win":
@@ -258,17 +258,21 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 	if visible and _panel.modulate.a > 0.0:
 		return
 	visible = true
-	_panel.pivot_offset = _panel.size * 0.5
-	_panel.scale = Vector2(0.8, 0.8)
 	_panel.modulate.a = 0.0
+	# 내용이 바뀌어 판 크기가 달라지므로 자리를 잡은 뒤(두 프레임) 가운데와 크기를 잰다.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_instance_valid(_panel):
+		return
+	# 창 위·아래 장식(판 밖으로 약 54 튀어나옴)까지 화면 안에 들어오고 위아래 여백이 12 이상 남게 줄인다.
+	var room: float = size.y - 2.0 * (54.0 + 12.0)
+	var fit: float = minf(1.0, room / maxf(_panel.size.y, 1.0))
+	_panel.pivot_offset = _panel.size * 0.5
+	_panel.scale = Vector2(0.8, 0.8) * fit
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_panel, "scale", Vector2.ONE, 0.35)
+	tween.tween_property(_panel, "scale", Vector2.ONE * fit, 0.35)
 	tween.parallel().tween_property(_panel, "modulate:a", 1.0, 0.25)
-	# 내용이 바뀌어 판 크기가 달라지므로 다음 프레임에 가운데를 다시 잡는다.
-	await get_tree().process_frame
-	if is_instance_valid(_panel):
-		_panel.pivot_offset = _panel.size * 0.5
 
 
 ## 결과 줄을 채운다. rows가 비면 details 글 줄을 "이름: 값" 모양으로 나눠 결과 줄로 보여 준다.
@@ -284,7 +288,7 @@ func _fill_rows(rows: Array, details: PackedStringArray) -> void:
 			else:
 				list.append(["star", str(line), ""])
 	for entry in list:
-		_rows.add_child(MenuArt.result_row(str(entry[0]), str(entry[1]), str(entry[2]), 46.0))
+		_rows.add_child(MenuArt.result_row(str(entry[0]), str(entry[1]), str(entry[2]), 42.0))
 
 
 ## 알림 띠: 작은 어두운 캡슐에 글을 하나씩.
