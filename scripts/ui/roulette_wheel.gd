@@ -26,7 +26,7 @@ const RING_HOLE := 0.77
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(440, 460)
+	custom_minimum_size = Vector2(400, 410)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ring = _load("roulette_ring")
 	_arrow = _load("roulette_arrow")

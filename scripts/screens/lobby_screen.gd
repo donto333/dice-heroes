@@ -971,7 +971,7 @@ func open_roulette() -> void:
 	body.add_child(center)
 	_spin_info = Kit.para("", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	body.add_child(_spin_info)
-	_spin_button = Kit.button("", Color("e8890c"), 30, 92)
+	_spin_button = Kit.button("", Color("e8890c"), 28, 72)
 	_spin_button.pressed.connect(_on_spin)
 	body.add_child(_spin_button)
 	_refresh_roulette()
@@ -1035,6 +1035,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"창과 결과 화면 새 단장: 창 글자가 커지고 버튼이 금테 알약으로 바뀌었어요. AI 난이도는 카드 3장, 룰렛은 금테 바퀴, 대전 결과는 MVP 카드와 보상 칸, 상대를 찾을 때는 금빛 주사위 문양이 돌아요.",
 	"메뉴 화면 버튼을 금테 알약 하나로 맞추고, 상점·미션·설정·모험·패스·파티 화면 안쪽을 새 목록 줄로 바꿨어요.",
 	"게임 방법·파티 편성 화면도 새 틀로 바뀌었어요.",
 	"타이틀 화면 새 단장: 금빛 로고와 리본 부제가 생겼어요.",

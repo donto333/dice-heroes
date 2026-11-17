@@ -640,6 +640,13 @@ static func day_cell(day_number: int, reward_text: String, now: bool, done: bool
 	if cell == null:
 		cell = PanelContainer.new()
 		cell.add_theme_stylebox_override("panel", Kit.box(Kit.PANEL_LIGHT if now else (Color("13458f") if done else Kit.PANEL), Kit.GOLD, 2, 10, 4))
+	else:
+		# 칸 위 가운데 보석 장식 아래로 글자를 내린다.
+		var art_style := cell.get_theme_stylebox("panel") as StyleBoxTexture
+		if art_style != null:
+			art_style.content_margin_top = 16
+			art_style.content_margin_left = 10
+			art_style.content_margin_right = 8
 	var ink: Color = Color("5a3200") if now else (Kit.MUTED if done else Color.WHITE)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 2)

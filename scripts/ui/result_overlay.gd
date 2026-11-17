@@ -79,7 +79,7 @@ func _ready() -> void:
 	left.size_flags_stretch_ratio = 0.68
 	halves.add_child(left)
 	_banner = ArtView.new()
-	_banner.custom_minimum_size = Vector2(0, 118)
+	_banner.custom_minimum_size = Vector2(0, 108)
 	_banner.focus_y = 0.45
 	_banner.fade_bottom = 0.35
 	_banner.visible = false
@@ -98,7 +98,7 @@ func _ready() -> void:
 	_mvp_box.add_theme_constant_override("separation", 0)
 	left.add_child(_mvp_box)
 	var card := Control.new()
-	card.custom_minimum_size = Vector2(190, 239)
+	card.custom_minimum_size = Vector2(176, 221)
 	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mvp_box.add_child(card)
@@ -281,7 +281,7 @@ func _fill_rows(rows: Array, details: PackedStringArray) -> void:
 			else:
 				list.append(["star", str(line), ""])
 	for entry in list:
-		_rows.add_child(MenuArt.result_row(str(entry[0]), str(entry[1]), str(entry[2]), 50.0))
+		_rows.add_child(MenuArt.result_row(str(entry[0]), str(entry[1]), str(entry[2]), 46.0))
 
 
 ## 알림 띠: 작은 어두운 캡슐에 글을 하나씩.
