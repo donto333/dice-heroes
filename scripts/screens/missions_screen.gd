@@ -64,11 +64,13 @@ func _attendance_panel() -> Control:
 		var done := day < today_index or (day == today_index and not can)
 		var now := day == today_index and can
 		var fill: Color = Kit.PANEL_LIGHT if now else (Color("13458f") if done else Kit.PANEL)
-		var cell := Kit.label("%d일\n%s%s" % [day + 1, Kit.reward_line(table[day]).replace("  ", "\n"), "\n✓" if done else ""], 15,
+		var cell := Kit.label("%d일\n%s%s" % [day + 1, Kit.reward_line(table[day]).replace("  ", "\n"), "\n✓" if done else ""], 20,
 			Kit.GOLD if now else (Kit.MUTED if done else Color.WHITE), HORIZONTAL_ALIGNMENT_CENTER)
 		cell.custom_minimum_size = Vector2(0, 110)
 		cell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		cell.add_theme_stylebox_override("normal", Kit.box(fill, Kit.GOLD if now else Kit.LINE, 3 if now else 1, 10, 4))
+		cell.add_theme_stylebox_override("normal", Kit.box(fill, Kit.GOLD if now else Color("c9a24a"), 3 if now else 2, 10, 4))
+		cell.add_theme_constant_override("outline_size", 4)
+		cell.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
 		row.add_child(Kit.expand(cell))
 	var claim := Kit.button("오늘 출석 보상 받기" if can else "오늘 출석 완료 · 내일 또 오세요", Color("f39a1c"), 24, 76)
 	claim.disabled = not can

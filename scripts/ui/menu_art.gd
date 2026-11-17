@@ -15,6 +15,7 @@ const TITLES := {
 	"settings": ["설정", "settings"],
 	"adventure": ["모험", "adventure"],
 	"pass": ["시즌 패스", "pass"],
+	"help": ["게임 방법", "help"],
 }
 
 
