@@ -127,7 +127,7 @@
    "image": "assets/standees/machao.png",
    "local": "tripo/web/machao.glb",
    "view": -15,
-   "turn_fix": -45
+   "turn_fix": -20
   },
   {
    "name": "marcopolo",
@@ -152,7 +152,7 @@
    "image": "assets/standees/pasteur.png",
    "local": "tripo/web/pasteur.glb",
    "view": 5,
-   "turn_fix": -80
+   "turn_fix": -35
   },
   {
    "name": "perseus",
@@ -308,7 +308,7 @@
    "rig_task": "00df101b-a1cd-413c-9fc2-565a39af3f91",
    "anim_task": "314bf6d9-1a0e-4588-a79b-63d8faddd2fd",
    "view": 80,
-   "turn_fix": -55
+   "turn_fix": -25
   },
   {
    "name": "choiyoung",
@@ -323,7 +323,7 @@
    "rig_task": "a56f27b6-cab5-4ed7-8fc2-4834015b2157",
    "anim_task": "934dbb02-e128-4da2-b04b-602ce144052b",
    "view": 80,
-   "turn_fix": -80
+   "turn_fix": -35
   },
   {
    "name": "dokkaebi",
@@ -368,12 +368,11 @@
    "view": 105
   }
  ],
- "note": "2026-11-18: 방향 보정 5명 다시 찍기",
+ "note": "2026-11-18: 방향 보정 4명 다시",
  "only": [
   "choiyoung",
   "pasteur",
   "ganning",
-  "choichiwon",
   "machao"
  ]
 }
