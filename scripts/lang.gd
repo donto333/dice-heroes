@@ -149,6 +149,18 @@ func _translate_line(text: String) -> String:
 			# 끼워 넣은 이름(영웅 이름 등)도 번역이 있으면 바꾼다.
 			values.append(_exact.get(value, value))
 		return _fill(str(pattern[1]), values)
+	# "★★★  영웅", "골드 300 · 보석 30"처럼 이어 붙인 글은 조각마다 찾아 본다.
+	for separator in ["  ·  ", " · ", "  ", " / "]:
+		if text.contains(separator):
+			var parts := text.split(separator)
+			var changed := false
+			for i in parts.size():
+				var part := _translate_line(parts[i]) if parts[i] != "" else ""
+				if part != parts[i]:
+					parts[i] = part
+					changed = true
+			if changed:
+				return separator.join(parts)
 	return text
 
 

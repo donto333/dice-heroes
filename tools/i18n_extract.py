@@ -79,6 +79,9 @@ def from_data() -> list:
         if os.path.basename(path) in SKIP_DATA or os.sep + "i18n" + os.sep in path:
             continue
         walk(json.load(open(path, encoding="utf-8")))
+    # 음성 파일 중 화면에 나오는 것: 안내 음성 이름(설정).
+    extra = json.load(open(os.path.join(ROOT, "data", "voice_extra.json"), encoding="utf-8"))
+    found.extend(str(item.get("label", "")) for item in extra.get("announcers", []) if item.get("label"))
     return found
 
 
