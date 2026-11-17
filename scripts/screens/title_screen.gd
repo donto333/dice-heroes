@@ -87,6 +87,17 @@ func setup(main_app, _params: Dictionary) -> void:
 	var band_text := Kit.vbox(6)
 	band_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	band.add_child(band_text)
+	var logo_art := GameData.logo("title")
+	if logo_art != null and has_keyart:
+		# 그린 금빛 로고(주사위 엠블럼·월계수·보석, ChatGPT 시안 2026-11-17)가 있으면 글자 제목 대신 쓴다.
+		column.remove_child(band)
+		# 큰 주사위 아이콘과 그 위의 늘어나는 빈칸을 빼서 로고가 위쪽 3분의 1에 오게 한다.
+		for _i in 2:
+			var extra := column.get_child(column.get_child_count() - 1)
+			column.remove_child(extra)
+			extra.queue_free()
+		_build_art_title(column, logo_art)
+		return
 	var logo := Kit.title("주사위 영웅전", 118 if has_keyart else 104)
 	logo.add_theme_constant_override("outline_size", 30 if has_keyart else 20)
 	logo.add_theme_color_override("font_outline_color", Color("5a1e00"))
@@ -106,6 +117,69 @@ func setup(main_app, _params: Dictionary) -> void:
 	column.add_child(Kit.spacer(80, false))
 	column.add_child(Kit.label("버전 %s" % app.VERSION, 18, Color(1, 1, 1, 0.45), HORIZONTAL_ALIGNMENT_CENTER))
 	column.add_child(Kit.spacer(24, false))
+
+
+## 그린 로고 · 리본 부제 · 금 마름모 사이의 "화면을 누르세요" · 버전.
+func _build_art_title(column: VBoxContainer, logo_art: Texture2D) -> void:
+	var logo := TextureRect.new()
+	logo.texture = logo_art
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.custom_minimum_size = Vector2(720, 341)
+	logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(logo)
+	var ribbon_art := GameData.logo("title_ribbon")
+	var tagline_box := PanelContainer.new()
+	tagline_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tagline_box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	tagline_box.custom_minimum_size = Vector2(560, 64)
+	if ribbon_art != null:
+		var ribbon := StyleBoxTexture.new()
+		ribbon.texture = ribbon_art
+		ribbon.texture_margin_left = 60
+		ribbon.texture_margin_right = 60
+		ribbon.content_margin_left = 60
+		ribbon.content_margin_right = 60
+		ribbon.content_margin_bottom = 6
+		tagline_box.add_theme_stylebox_override("panel", ribbon)
+	else:
+		tagline_box.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	column.add_child(tagline_box)
+	var tagline := Kit.label("영웅과 함께 굴리는 주사위 보드 RPG", 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	tagline.add_theme_constant_override("outline_size", 6)
+	tagline.add_theme_color_override("font_outline_color", Color("0c2f6e"))
+	tagline.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tagline_box.add_child(tagline)
+	column.add_child(Kit.spacer(0))
+	var hint_row := Kit.hbox(14)
+	hint_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	hint_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(hint_row)
+	var diamond_art := GameData.logo("title_diamond")
+	var diamonds: Array = []
+	for side in 2:
+		if diamond_art == null:
+			break
+		var diamond := TextureRect.new()
+		diamond.texture = diamond_art
+		diamond.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		diamond.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		diamond.custom_minimum_size = Vector2(30, 30)
+		diamond.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		diamond.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		diamonds.append(diamond)
+	if diamonds.size() == 2:
+		hint_row.add_child(diamonds[0])
+	_hint = Kit.label("화면을 누르세요", 34, Color("ffe9a8"), HORIZONTAL_ALIGNMENT_CENTER)
+	_hint.add_theme_constant_override("outline_size", 8)
+	_hint.add_theme_color_override("font_outline_color", Color("3a1a00"))
+	hint_row.add_child(_hint)
+	if diamonds.size() == 2:
+		hint_row.add_child(diamonds[1])
+	column.add_child(Kit.spacer(60, false))
+	column.add_child(Kit.label("버전 %s" % app.VERSION, 18, Color(1, 1, 1, 0.6), HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(Kit.spacer(20, false))
 
 
 func _process(delta: float) -> void:
