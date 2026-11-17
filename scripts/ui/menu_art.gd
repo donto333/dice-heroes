@@ -269,17 +269,26 @@ static func _enter(screen: Control, app, head: Control, rail_holder: Control, bo
 	grow.tween_property(board, "modulate:a", 1.0, time)
 
 
-## 세로 판의 항목 버튼: 고른 것은 금색, 나머지는 파란 알약. 왼쪽에 아이콘, 오른쪽에 글자.
+## 세로 판의 항목 버튼: 고른 것은 금색, 나머지는 파란 알약.
+## 배치(2026-11-17 고침): 양 끝 금 장식(버튼 높이의 약 0.42배)은 비워 두고,
+## 그 안쪽 왼쪽에 아이콘, 아이콘 뒤부터 오른쪽 장식 앞까지의 칸 가운데에 글자를 둔다.
+## 글자가 칸보다 길면(번역 글 포함) 글자 크기를 줄여 장식에 닿지 않게 한다.
 static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool = false) -> Button:
+	const HEIGHT := 76.0
+	const FONT := 26
+	const FONT_MIN := 15
 	var button := Button.new()
 	button.text = str(entry[1])
-	button.custom_minimum_size = Vector2(0, 76)
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.add_theme_font_size_override("font_size", 26)
-	# 아이콘은 버튼 왼쪽의 같은 크기 칸에 두고, 글자는 그 칸 바로 뒤 같은 자리에서 시작한다
-	# (아이콘마다 생김새·너비가 달라도 글자 시작 위치가 줄마다 같게).
-	var box := 32.0 if small else 46.0
-	var text_left := 16.0
+	button.custom_minimum_size = Vector2(0, HEIGHT)
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.clip_text = true
+	button.add_theme_font_size_override("font_size", FONT)
+	var art := tex("menu_on" if on else "menu_off")
+	# 양 끝 장식 너비(그림에서 장식은 높이의 약 0.42배). 그림이 없을 때는 둥근 끝만큼만 띄운다.
+	var ornament := HEIGHT * 0.42 if art != null else 14.0
+	var box := 32.0 if small else 40.0
+	var text_left := ornament + 4.0
+	var text_right := ornament + 4.0
 	if entry.size() > 2:
 		var picture: TextureRect = Kit.icon(str(entry[2]), box)
 		if picture.texture != null:
@@ -288,29 +297,28 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool =
 			picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			picture.anchor_top = 0.5
 			picture.anchor_bottom = 0.5
-			picture.offset_left = 14
-			picture.offset_right = 14 + box
+			picture.offset_left = ornament - 2.0
+			picture.offset_right = ornament - 2.0 + box
 			picture.offset_top = -box / 2.0 - 1
 			picture.offset_bottom = box / 2.0 - 1
 			picture.z_index = 1
 			button.add_child(picture)
-			text_left = 14 + box + (6 if small else 10)
-	var art := tex("menu_on" if on else "menu_off")
+			text_left = ornament - 2.0 + box + 6.0
 	if art != null:
 		# 높이가 달라도 금 장식이 찌그러지지 않게 높이에 맞춰 줄여 그린다(pill_skin.gd).
 		var skin := PillSkin.new()
 		skin.texture = art
 		skin.cap = 0.47
 		button.add_child(skin)
-		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-			var space := StyleBoxEmpty.new()
-			space.content_margin_left = text_left
-			space.content_margin_right = 12
-			space.content_margin_top = 4
-			space.content_margin_bottom = 6
-			button.add_theme_stylebox_override(state, space)
 	else:
 		Kit.paint(button, Color("ffc62b") if on else Color("2f74d6"))
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var space := StyleBoxEmpty.new()
+		space.content_margin_left = text_left
+		space.content_margin_right = text_right
+		space.content_margin_top = 4
+		space.content_margin_bottom = 6
+		button.add_theme_stylebox_override(state, space)
 	var ink := Color("5a3200") if on else Color.WHITE
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		button.add_theme_color_override(state, ink)
@@ -318,6 +326,23 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool =
 		button.add_theme_constant_override("outline_size", 0)
 	else:
 		TextStyle.menu(button, Color(0, 0.05, 0.25), 7)
+	# 글자 칸 너비에 맞춰 글자 크기를 정한다(버튼 크기가 정해진 뒤, 언어가 바뀌어 다시 그릴 때도).
+	var fit := func() -> void:
+		if not is_instance_valid(button) or button.size.x < 8.0:
+			return
+		var font := button.get_theme_font("font")
+		if font == null:
+			return
+		var room := button.size.x - text_left - text_right
+		var outline := float(button.get_theme_constant("outline_size"))
+		var shown := button.tr(button.text)
+		var px := FONT
+		while px > FONT_MIN and font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + outline > room:
+			px -= 1
+		if button.get_theme_font_size("font_size") != px:
+			button.add_theme_font_size_override("font_size", px)
+	button.resized.connect(fit)
+	button.ready.connect(fit)
 	button.pressed.connect(func() -> void: on_tab.call(str(entry[0])))
 	return button
 
