@@ -129,7 +129,6 @@
  "시너지": "Cộng hưởng",
  "파티 세 명이 모두 같은 분류면 '결속'(시작 게이지 +15%), 모두 다른 분류면 '조화'(부적 1개)가 붙어요. 파티를 고를 때 아래에 보여요.": "Nếu cả ba thành viên cùng phân loại sẽ có 'Gắn kết' (thanh khởi đầu +15%), nếu đều khác nhau sẽ có 'Hòa hợp' (1 bùa hộ mệnh). Hiện bên dưới khi chọn đội.",
  "더블": "Đôi",
- "이동 주사위가 2개인 영웅이 같은 눈 두 개를 굴리면 '더블!' 우리 팀 어빌리티 게이지가 12% 더 차요.": "Anh hùng có 2 xúc xắc di chuyển tung ra hai số giống nhau là 'Đôi!' Thanh kỹ năng của đội tăng thêm 12%.",
  "모험 소탕": "Càn quét phiêu lưu",
  "별 3개로 깬 모험 스테이지는 '소탕'으로 대전 없이 승리 보상을 받을 수 있어요. 하루 5번까지예요.": "Màn phiêu lưu đạt 3 sao có thể 'Càn quét' để nhận thưởng thắng không cần đấu. Tối đa 5 lần mỗi ngày.",
  "따라잡기": "Đuổi kịp",
@@ -1500,5 +1499,8 @@
  "경험 +%d": "EXP +%d",
  "얻은": "Nhận được",
  "보상": "Phần thưởng",
- "화면 연출 새 단장: 메뉴 화면이 부드럽게 나타나고, 보상을 받으면 금화와 보석이 위쪽 재화 칸으로 날아가요. 알림은 내용을 가리지 않게 위 줄이나 화면 아래에 떠요.": "Hiệu ứng màn hình mới: menu hiện ra mượt mà, khi nhận thưởng thì vàng và đá quý bay lên ô tiền tệ phía trên. Thông báo hiện ở thanh trên hoặc cuối màn hình để không che nội dung."
+ "화면 연출 새 단장: 메뉴 화면이 부드럽게 나타나고, 보상을 받으면 금화와 보석이 위쪽 재화 칸으로 날아가요. 알림은 내용을 가리지 않게 위 줄이나 화면 아래에 떠요.": "Hiệu ứng màn hình mới: menu hiện ra mượt mà, khi nhận thưởng thì vàng và đá quý bay lên ô tiền tệ phía trên. Thông báo hiện ở thanh trên hoặc cuối màn hình để không che nội dung.",
+ "이동 주사위가 2개인 영웅이 같은 눈 두 개를 굴리면 '더블!' 우리 팀 어빌리티 게이지가 12% 더 차고, 주사위를 한 번 더 굴려요. 더 굴릴 때는 스킬과 카드를 쓸 수 없어요.": "Anh hùng có 2 xúc xắc di chuyển tung ra hai số giống nhau là 'Đôi!' Thanh kỹ năng của đội tăng thêm 12% và bạn được tung thêm một lần. Lượt tung thêm không dùng được kỹ năng và thẻ.",
+ "더블! 한 번 더!": "Đôi! Tung lần nữa!",
+ "더블 다시 굴리기: 더블이 나오면 주사위를 한 번 더 굴려요. 더 굴릴 때는 스킬과 카드를 쓸 수 없어요.": "Tung lại khi ra đôi: ra đôi thì được tung thêm một lần. Lượt tung thêm không dùng được kỹ năng và thẻ."
 }
