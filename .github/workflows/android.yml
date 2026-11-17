@@ -1,0 +1,131 @@
+name: Android
+
+# main 빌드가 성공하면 안드로이드 앱(APK)을 만들어 '안드로이드 앱' 릴리스에 올린다.
+# 휴대폰에서 받는 주소: https://github.com/donto333/dice-heroes/releases/latest/download/dice-heroes.apk
+# 시험할 때는 claude/android로 시작하는 브랜치에 올리거나 gh workflow run android.yml --ref <브랜치>로 돌린다(이때는 릴리스에 안 올리고 실행 결과물로만 남김).
+#
+# 서명: 저장소 비밀값 ANDROID_KEYSTORE_BASE64·ANDROID_KEYSTORE_PASSWORD·ANDROID_KEY_ALIAS가 있으면 그 키로,
+# 없으면 저장소의 시험용 키(android/test-release.keystore, 비밀번호 android)로 서명한다.
+# 같은 키로 서명해야 새 버전을 지우지 않고 덮어 설치할 수 있다. 플레이 스토어에 올릴 때는 진짜 키를 비밀값으로 넣는다.
+
+on:
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+  push:
+    # 안드로이드 설정을 시험하는 브랜치(claude/android로 시작)에 올리면 APK만 만들어 본다.
+    branches: ['claude/android**']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7"
+  GODOT_RELEASE: stable
+
+jobs:
+  apk:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'pull_request')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Godot와 내보내기 템플릿 받기
+        run: |
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}"
+          curl -fsSL -o godot.zip "${base}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip"
+          curl -fsSL -o templates.tpz "${base}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz"
+          unzip -q godot.zip -d "${RUNNER_TEMP}/godot"
+          mv "${RUNNER_TEMP}/godot/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64" "${RUNNER_TEMP}/godot/godot"
+          chmod +x "${RUNNER_TEMP}/godot/godot"
+          echo "${RUNNER_TEMP}/godot" >> "${GITHUB_PATH}"
+          template_dir="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p "${template_dir}"
+          unzip -q templates.tpz -d "${RUNNER_TEMP}/tpl"
+          mv "${RUNNER_TEMP}/tpl/templates/"* "${template_dir}/"
+          rm -f godot.zip templates.tpz
+
+      - name: 안드로이드 도구 경로 알려 주기
+        run: |
+          sdk="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "SDK: $sdk / JAVA: $JAVA_HOME"
+          ls "$sdk/build-tools" | tail -3
+          mkdir -p ~/.config/godot
+          for name in editor_settings-4.tres editor_settings-${GODOT_VERSION}.tres; do
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' "$sdk" "$JAVA_HOME" > ~/.config/godot/$name
+          done
+          cat ~/.config/godot/editor_settings-4.tres
+
+      - name: 서명 키 준비
+        env:
+          KEY_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -n "$KEY_B64" ] && [ -n "$KEY_PASS" ] && [ -n "$KEY_ALIAS" ]; then
+            echo "$KEY_B64" | base64 -d > "${RUNNER_TEMP}/release.keystore"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=${RUNNER_TEMP}/release.keystore" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
+            echo "비밀값의 서명 키를 씁니다."
+          else
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=${GITHUB_WORKSPACE}/android/test-release.keystore" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=diceheroes" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android" >> "$GITHUB_ENV"
+            echo "시험용 서명 키를 씁니다."
+          fi
+
+      - name: 버전 적기
+        run: |
+          name=$(grep -oP 'const VERSION := "\K[^"]+' scripts/main.gd)
+          code=$((1000 + ${GITHUB_RUN_NUMBER}))
+          sed -i "s/^version\/code=.*/version\/code=${code}/; s/^version\/name=.*/version\/name=\"${name}\"/" export_presets.cfg
+          echo "APP_VERSION=${name}" >> "$GITHUB_ENV"
+          grep "^version/" export_presets.cfg
+
+      - name: 리소스 가져오기
+        run: godot --headless --import
+
+      - name: APK 만들기
+        run: |
+          mkdir -p build/android
+          godot --headless --export-release "Android" build/android/dice-heroes.apk 2>&1 | tee export.log
+          test -f build/android/dice-heroes.apk
+          ls -la build/android
+          sdk="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          tools="$sdk/build-tools/$(ls "$sdk/build-tools" | sort -V | tail -1)"
+          "$tools/apksigner" verify --print-certs build/android/dice-heroes.apk | head -3
+          "$tools/aapt" dump badging build/android/dice-heroes.apk | grep -E "^package|launchable|sdkVersion|application-label" || true
+
+      - name: APK 보관
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/android/dice-heroes.apk
+
+      - name: 안드로이드 앱 릴리스에 올리기
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="android"
+          notes="주사위 영웅전 안드로이드 앱 ${APP_VERSION}. 휴대폰에서 dice-heroes.apk를 받아 설치하세요."
+          if gh release view "$tag" > /dev/null 2>&1; then
+            gh release edit "$tag" --title "안드로이드 앱 ${APP_VERSION}" --notes "$notes" --latest
+          else
+            gh release create "$tag" --title "안드로이드 앱 ${APP_VERSION}" --notes "$notes" --target "${{ github.event.workflow_run.head_sha }}" --latest
+          fi
+          gh release upload "$tag" build/android/dice-heroes.apk --clobber
