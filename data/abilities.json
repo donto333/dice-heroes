@@ -3,13 +3,13 @@
   "abilities": {
     "unique_lubu": {
       "name": "천하무쌍",
-      "text": "2턴간 공격 주사위 +2개, 이번 턴 공격 주사위에 6이 나오면 하나마다 +2",
+      "text": "2턴간 공격 주사위 +1개, 이번 턴 공격 주사위에 6이 나오면 하나마다 +2",
       "effect": {
         "type": "multi",
         "effects": [
           {
             "type": "atk_dice",
-            "amount": 2,
+            "amount": 1,
             "turns": 2
           },
           {
@@ -94,7 +94,7 @@
     },
     "skill_eulji": {
       "name": "살수대첩",
-      "text": "상대의 다음 이동 주사위 -1개, 다음 내 차례까지 방어에 성공하면 상대 3칸 추가 후퇴",
+      "text": "이번 이동 +2칸, 상대의 다음 이동 주사위 -1개, 다음 내 차례까지 방어에 성공하면 상대 3칸 추가 후퇴",
       "effect": {
         "type": "multi",
         "effects": [
@@ -105,6 +105,11 @@
           {
             "type": "counter",
             "amount": 1,
+            "turns": 1
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
             "turns": 1
           }
         ]
@@ -333,7 +338,7 @@
     },
     "skill_jangyeongsil": {
       "name": "측우기",
-      "text": "카드 1장 획득, 2턴간 게이지가 50% 더 참",
+      "text": "이번 이동 +3칸, 카드 1장 획득, 2턴간 게이지가 50% 더 참",
       "effect": {
         "type": "multi",
         "effects": [
@@ -345,6 +350,11 @@
             "type": "gauge_boost",
             "amount": 50,
             "turns": 2
+          },
+          {
+            "type": "move_plus",
+            "amount": 3,
+            "turns": 1
           }
         ]
       }
@@ -408,11 +418,21 @@
     },
     "skill_marcopolo": {
       "name": "동방견문",
-      "text": "이동 주사위를 두 번 굴려 큰 쪽으로",
+      "text": "이동 주사위를 두 번 굴려 큰 쪽으로, 이번 이동 +2칸",
       "effect": {
-        "type": "move_best",
-        "amount": 1,
-        "turns": 1
+        "type": "multi",
+        "effects": [
+          {
+            "type": "move_best",
+            "amount": 1,
+            "turns": 1
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
+            "turns": 1
+          }
+        ]
       }
     },
     "skill_hypatia": {
@@ -441,13 +461,13 @@
     },
     "unique_zeus": {
       "name": "벼락",
-      "text": "상대를 3칸 밀어내고, 2턴간 상대 전투 주사위 -1개",
+      "text": "상대를 2칸 밀어내고, 2턴간 상대 전투 주사위 -1개",
       "effect": {
         "type": "multi",
         "effects": [
           {
             "type": "push_enemy",
-            "amount": 3
+            "amount": 2
           },
           {
             "type": "enemy_dice_minus",
@@ -483,7 +503,7 @@
     },
     "unique_dangun": {
       "name": "홍익인간",
-      "text": "2턴간 방어 주사위 +2개, 방어에 성공하면 상대 3칸 추가 후퇴, 부적 1장, 저주·쉬기 해제",
+      "text": "이번 이동 +2칸, 2턴간 방어 주사위 +2개, 방어에 성공하면 상대 3칸 추가 후퇴, 부적 1장, 저주·쉬기 해제",
       "effect": {
         "type": "multi",
         "effects": [
@@ -502,13 +522,18 @@
           },
           {
             "type": "cure"
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
+            "turns": 1
           }
         ]
       }
     },
     "skill_athena": {
       "name": "아이기스",
-      "text": "다음 내 차례까지 방어 주사위 +2개, 방어 주사위 눈 최소 3",
+      "text": "이번 이동 +3칸, 다음 내 차례까지 방어 주사위 +2개, 방어 주사위 눈 최소 3",
       "effect": {
         "type": "multi",
         "effects": [
@@ -519,6 +544,11 @@
           },
           {
             "type": "def_floor",
+            "amount": 3,
+            "turns": 1
+          },
+          {
+            "type": "move_plus",
             "amount": 3,
             "turns": 1
           }
@@ -546,7 +576,7 @@
     },
     "skill_gumiho": {
       "name": "여우 구슬",
-      "text": "상대 게이지 30%를 빼앗고, 지금 칸에 덫",
+      "text": "이번 이동 +2칸, 상대 게이지 30%를 빼앗고, 지금 칸에 덫",
       "effect": {
         "type": "multi",
         "effects": [
@@ -557,6 +587,11 @@
           {
             "type": "trap",
             "amount": 1
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
+            "turns": 1
           }
         ]
       }
@@ -670,7 +705,7 @@
     },
     "skill_isis": {
       "name": "생명의 날개",
-      "text": "저주·쉬기 해제, 우리 팀 게이지 +30%",
+      "text": "저주·쉬기 해제, 우리 팀 게이지 +50%",
       "effect": {
         "type": "multi",
         "effects": [
@@ -679,31 +714,27 @@
           },
           {
             "type": "gauge_team",
-            "amount": 30
+            "amount": 50
           }
         ]
       }
     },
     "unique_tesla": {
       "name": "번개 코일",
-      "text": "상대 1턴 쉬기, 상대 게이지 10%를 빼앗음",
+      "text": "상대 1턴 쉬기",
       "effect": {
         "type": "multi",
         "effects": [
           {
             "type": "skip_enemy",
             "amount": 1
-          },
-          {
-            "type": "steal_gauge",
-            "amount": 10
           }
         ]
       }
     },
     "unique_nightingale": {
       "name": "백의의 천사",
-      "text": "저주·쉬기 해제, 부적 1장, 카드 1장, 우리 팀 게이지 +40%, 2턴간 방어 주사위 +1개",
+      "text": "이번 이동 +3칸, 저주·쉬기 해제, 부적 1장, 카드 1장, 우리 팀 게이지 +40%, 2턴간 방어 주사위 +1개",
       "effect": {
         "type": "multi",
         "effects": [
@@ -725,6 +756,11 @@
             "type": "def_dice",
             "amount": 1,
             "turns": 2
+          },
+          {
+            "type": "move_plus",
+            "amount": 3,
+            "turns": 1
           }
         ]
       }
@@ -797,7 +833,7 @@
     },
     "skill_pasteur": {
       "name": "백신",
-      "text": "부적 1장, 저주·쉬기 해제, 2턴간 방어 주사위 +1개",
+      "text": "이번 이동 +2칸, 부적 1장, 저주·쉬기 해제, 2턴간 방어 주사위 +1개",
       "effect": {
         "type": "multi",
         "effects": [
@@ -811,13 +847,18 @@
             "type": "def_dice",
             "amount": 1,
             "turns": 2
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
+            "turns": 1
           }
         ]
       }
     },
     "skill_houdini": {
       "name": "탈출 마술",
-      "text": "저주·쉬기 해제, 2턴 안에 지면 한 번은 거점으로 돌아가지 않음",
+      "text": "이번 이동 +2칸, 저주·쉬기 해제, 2턴 안에 지면 한 번은 거점으로 돌아가지 않음",
       "effect": {
         "type": "multi",
         "effects": [
@@ -828,6 +869,11 @@
             "type": "stand_ground",
             "amount": 1,
             "turns": 2
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
+            "turns": 1
           }
         ]
       }
@@ -853,13 +899,13 @@
     },
     "skill_twain": {
       "name": "뱃길 안내",
-      "text": "이번 이동 +1칸, 이번 턴 전투에서 지면 한 번 다시 굴림",
+      "text": "이번 이동 +2칸, 이번 턴 전투에서 지면 한 번 다시 굴림",
       "effect": {
         "type": "multi",
         "effects": [
           {
             "type": "move_plus",
-            "amount": 1,
+            "amount": 2,
             "turns": 1
           },
           {
@@ -880,10 +926,10 @@
     },
     "skill_bangjeonghwan": {
       "name": "어린이날 선물",
-      "text": "우리 팀 게이지 +40%",
+      "text": "우리 팀 게이지 +60%",
       "effect": {
         "type": "gauge_team",
-        "amount": 40
+        "amount": 60
       }
     }
   }
