@@ -214,12 +214,12 @@ func _run() -> void:
 	_app.start_mode("rank")
 	await _wait(0.4)
 	await _shot("12_party")
-	var picker = _app.current_screen.get_child(0)
+	var picker = _party_picker()
 	picker._on_save_mode_pressed()
 	picker._on_preset_pressed(0)
 	await _wait(0.3)
 	await _shot("12c_presets")
-	_app.current_screen.get_child(0)._on_start_pressed()
+	_party_picker()._on_start_pressed()
 	await _wait(0.6)
 	await _shot("12a_searching")
 	await _wait(2.1)
@@ -403,12 +403,28 @@ func _find_scroll(node: Node) -> ScrollContainer:
 	return null
 
 
+## 파티 화면 안의 파티 고르기 칸(PartySelect). 시안식 틀 안에 들어가 있어 깊이 찾는다.
+func _party_picker() -> Node:
+	var found = _find_with(_app.current_screen, "_on_start_pressed")
+	return found if found != null else _app.current_screen.get_child(0)
+
+
+func _find_with(node: Node, method: String) -> Node:
+	for child in node.get_children():
+		if child.has_method(method):
+			return child
+		var deeper = _find_with(child, method)
+		if deeper != null:
+			return deeper
+	return null
+
+
 ## 한 판을 처음부터 끝까지 자동으로 해 본다(빠르게). 실제 흐름에서 스크립트 오류가 나는지 보는 용도.
 ## 내 차례면 굴리고, 갈림길·싸움 선택은 첫 번째를 고르고, VS·전투 화면은 바로 넘긴다.
 func _play_full_game() -> void:
 	_app.start_mode("rank")
 	await _wait(0.4)
-	_app.current_screen.get_child(0)._on_start_pressed()
+	_party_picker()._on_start_pressed()
 	await _wait(0.3)
 	var screen = _app.current_screen
 	Engine.time_scale = 10.0
