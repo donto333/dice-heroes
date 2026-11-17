@@ -13,71 +13,127 @@ const ArtView := preload("res://scripts/ui/art_view.gd")
 var app
 
 
+var _chapter := ""
+
+
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
-	# 시안식 틀: 왼쪽 세로 판 없이 큰 금테 판 하나(위 홈 버튼으로 로비).
-	var column := MenuArt.frame(self, app, "ui/bg_adventure", [], "", func(_id: String) -> void: pass)
 	var adventure: Dictionary = app.data.get("adventure", {})
+	var chapters: Array = adventure.get("chapters", [])
+	# 고른 장: 받은 값이 없으면 열린 장 중 아직 별을 다 못 모은 첫 장(없으면 마지막으로 열린 장).
+	_chapter = str(_params.get("chapter", ""))
+	if _chapter == "":
+		for chapter in chapters:
+			if not _chapter_open(chapter, adventure):
+				break
+			_chapter = str(chapter["id"])
+			if _chapter_stars(chapter) < chapter["stages"].size() * 3:
+				break
+	if _chapter == "" and not chapters.is_empty():
+		_chapter = str(chapters[0]["id"])
+	# 시안식 틀: 왼쪽 세로 판에 장 목록(깬 장은 별, 잠긴 장은 자물쇠), 오른쪽 큰 판에는 고른 장만.
+	var rail: Array = []
+	for chapter in chapters:
+		var open := _chapter_open(chapter, adventure)
+		var icon_name := "m_lock" if not open else ("star" if _chapter_stars(chapter) > 0 else "m_castle")
+		rail.append([str(chapter["id"]), str(chapter["name"]), icon_name])
+	var column := MenuArt.frame(self, app, "ui/bg_adventure", rail, _chapter, _on_chapter)
 	var stage_count := Profile.all_stages(adventure).size()
 	var header := Kit.hbox(10)
 	column.add_child(header)
-	header.add_child(Kit.expand(Kit.label("챕터를 골라 스테이지에 도전하세요", 22, Color.WHITE)))
-	header.add_child(Kit.label("★ %d / %d" % [Profile.total_stars(app.profile), stage_count * 3], 28, Kit.GOLD))
+	header.add_child(Kit.expand(Kit.label("장을 골라 스테이지에 도전하세요", 20, Color.WHITE)))
+	header.add_child(MenuArt.capsule("%d / %d" % [Profile.total_stars(app.profile), stage_count * 3], "star", 20))
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)
-	var body := Kit.vbox(14)
+	var body := Kit.vbox(12)
 	Kit.expand(body)
 	scroll.add_child(body)
-	for chapter in adventure.get("chapters", []):
-		body.add_child(_chapter_card(chapter, adventure))
+	for chapter in chapters:
+		if str(chapter["id"]) == _chapter:
+			body.add_child(_chapter_card(chapter, adventure))
 
+
+func _chapter_open(chapter: Dictionary, adventure: Dictionary) -> bool:
+	return Profile.stage_unlocked(app.profile, adventure, str(chapter["stages"][0]["id"]))
+
+
+func _chapter_stars(chapter: Dictionary) -> int:
+	var total := 0
+	for stage in chapter["stages"]:
+		total += Profile.stage_stars(app.profile, str(stage["id"]))
+	return total
+
+
+func _on_chapter(id: String) -> void:
+	if id == _chapter:
+		return
+	app.play("tab")
+	app.go("adventure", {"chapter": id})
 
 
 func _chapter_card(chapter: Dictionary, adventure: Dictionary) -> Control:
 	var board: Dictionary = app.data["boards"][int(chapter["map"])]
-	var theme_color := Color(str(board.get("theme", {}).get("bg", "1d2246")))
-	var first_stage := str(chapter["stages"][0]["id"])
-	var open := Profile.stage_unlocked(app.profile, adventure, first_stage)
-	var card := Kit.panel(theme_color.darkened(0.05) if open else Color("13458f"), theme_color.lightened(0.3) if open else Kit.LINE, 14)
+	var open := _chapter_open(chapter, adventure)
 	var column := Kit.vbox(10)
-	card.add_child(column)
-	# 장 표지 그림(assets/art/chapters/<장 id>.jpg). 잠긴 장은 어둡게.
-	var cover := _cover(str(chapter["id"]), 150.0)
+	# 장 그림 띠(assets/art/chapters/<장 id>.jpg). 잠긴 장은 어둡게.
+	var cover := _cover(str(chapter["id"]), 200.0)
 	if cover != null:
 		cover.modulate = Color.WHITE if open else Color(0.35, 0.35, 0.42)
 		column.add_child(cover)
-	var head := Kit.hbox(12)
-	column.add_child(head)
+	var line := MenuArt.row(12)
+	column.add_child(line)
+	var head := Kit.hbox(14)
+	line.add_child(head)
 	var preview := MapPreview.new()
-	preview.custom_minimum_size = Vector2(170, 110)
+	preview.custom_minimum_size = Vector2(180, 116)
 	preview.show_board(board)
 	preview.modulate = Color.WHITE if open else Color(0.4, 0.4, 0.45)
 	head.add_child(preview)
 	var info := Kit.vbox(4)
 	head.add_child(Kit.expand(info))
-	info.add_child(Kit.label(str(chapter["name"]), 30, Kit.GOLD if open else Kit.MUTED))
-	info.add_child(Kit.label("%s · 수호자 %s" % [board.get("shape", ""), _goal_name(board)], 18, Color.WHITE if open else Kit.MUTED))
+	var title_row := Kit.hbox(8)
+	info.add_child(title_row)
+	title_row.add_child(Kit.expand(Kit.label(str(chapter["name"]), 30, Kit.GOLD if open else Kit.MUTED)))
+	title_row.add_child(MenuArt.capsule("%d / %d" % [_chapter_stars(chapter), chapter["stages"].size() * 3], "star", 18))
+	info.add_child(Kit.label("%s · 수호자 %s" % [board.get("shape", ""), _goal_name(board)], 20, Color.WHITE if open else Kit.MUTED))
 	info.add_child(Kit.para(str(chapter["intro"]) if open else "앞 장을 끝내면 열려요.", 18, Kit.MUTED))
-	var stages := Kit.hbox(8)
+	var stages := Kit.hbox(10)
 	column.add_child(stages)
+	var next_found := false
 	for stage in chapter["stages"]:
-		stages.add_child(Kit.expand(_stage_button(stage, adventure)))
-	return card
+		var id := str(stage["id"])
+		var is_next := not next_found and Profile.stage_unlocked(app.profile, adventure, id) and Profile.stage_stars(app.profile, id) == 0
+		if is_next:
+			next_found = true
+		stages.add_child(Kit.expand(_stage_button(stage, adventure, is_next)))
+	return column
 
 
-func _stage_button(stage: Dictionary, adventure: Dictionary) -> Button:
+## 스테이지 버튼: 깬 것 초록 + 별, 다음 것 금색, 잠긴 것 회색 + 자물쇠.
+func _stage_button(stage: Dictionary, adventure: Dictionary, is_next: bool) -> Button:
 	var id := str(stage["id"])
 	var unlocked := Profile.stage_unlocked(app.profile, adventure, id)
 	var stars := Profile.stage_stars(app.profile, id)
 	var star_text := "★".repeat(stars) + "☆".repeat(3 - stars)
-	var label := "%s%s\n%s\n%s" % [id, "  보스" if bool(stage.get("boss", false)) else "", stage["name"], star_text if unlocked else "잠김"]
-	var color: Color = Color("8a2b2b") if bool(stage.get("boss", false)) else Kit.ACCENT
-	var button := Kit.button(label, color if unlocked else Kit.DISABLED, 18, 110)
+	var label := "%s%s  %s\n%s" % [id, "  보스" if bool(stage.get("boss", false)) else "", stage["name"], star_text if unlocked else "잠김"]
+	var color_name := "gray"
+	if unlocked:
+		color_name = "gold" if is_next else ("green" if stars > 0 else "blue")
+	var button := MenuArt.pill_button(label, color_name, "l")
+	button.custom_minimum_size = Vector2(0, 104)
+	button.add_theme_font_size_override("font_size", 22)
 	button.disabled = not unlocked
+	if not unlocked:
+		var lock: TextureRect = Kit.icon("m_lock", 30.0)
+		button.icon = lock.texture
+		button.expand_icon = false
+		button.add_theme_constant_override("icon_max_width", 30)
 	button.pressed.connect(_on_stage.bind(id))
+	if is_next:
+		Kit.shimmer(button)
 	return button
 
 
@@ -138,7 +194,7 @@ func _on_stage(id: String) -> void:
 		elif Profile.sweep_buys_left(app.profile, app.eco) > 0:
 			buttons.append(["소탕 +1 (보석 %d)" % int(app.eco["sweep"]["extra_cost_gems"]), Color("8a55e0"), _buy_sweep.bind(id)])
 	buttons.append(["닫기", Kit.PANEL_LIGHT])
-	app.dialog("", body, buttons, 660)
+	MenuArt.skin_buttons(app.dialog("", body, buttons, 660))
 
 
 ## 보석으로 소탕 횟수를 하나 사고 바로 소탕한다.
@@ -159,7 +215,7 @@ func _sweep(id: String) -> void:
 		return
 	app.save()
 	app.play("reward")
-	app.go("adventure")
+	app.go("adventure", {"chapter": _chapter})
 	app.toast("소탕 완료: %s · 경험치 +%d" % [Kit.reward_line(reward), int(reward["exp"])])
 
 

@@ -59,6 +59,12 @@ const GROUPS := [
 
 var _group := "basic"
 
+## 설명 제목 → 목록 줄 아이콘
+const SECTION_ICONS := {"목표": "flag", "맵": "adventure", "파티": "heroes", "이동": "speed", "전투": "swords",
+	"주사위 컨트롤": "dice", "더블": "dice", "따라잡기": "m_bolt", "시너지": "star",
+	"카드와 어빌리티": "card", "성장": "upgrade", "랭크": "trophy",
+	"모험": "m_castle", "모험 소탕": "hourglass", "AI 연습전": "auto", "매일 할 것": "todo", "업적": "trophy"}
+
 
 func setup(main_app, params: Dictionary) -> void:
 	app = main_app
@@ -88,19 +94,25 @@ func setup(main_app, params: Dictionary) -> void:
 	for section in SECTIONS:
 		if not wanted.has(section[0]):
 			continue
-		var card := Kit.panel()
-		var inside := Kit.vbox(6)
-		card.add_child(inside)
-		inside.add_child(Kit.label(section[0], 30, Kit.GOLD))
-		inside.add_child(Kit.para(section[1], 22, Color.WHITE))
-		body.add_child(card)
+		# 설명 판은 목록 줄 모양: 왼쪽 아이콘, 금색 제목, 아래 설명
+		var line := MenuArt.row(12)
+		body.add_child(line)
+		var inside := Kit.hbox(12)
+		line.add_child(inside)
+		var picture: TextureRect = Kit.icon(str(SECTION_ICONS.get(section[0], "help")), 52.0)
+		picture.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		inside.add_child(picture)
+		var words := Kit.vbox(4)
+		inside.add_child(Kit.expand(words))
+		words.add_child(Kit.label(section[0], 28, Kit.GOLD))
+		words.add_child(Kit.para(section[1], 20, Color.WHITE))
 
 
 func _add_tiles(body: VBoxContainer) -> void:
-	var tiles := Kit.panel()
+	body.add_child(MenuArt.section("칸 종류", "flag", "판 위 칸의 뜻"))
+	var tiles := MenuArt.row(12)
 	var tile_column := Kit.vbox(8)
 	tiles.add_child(tile_column)
-	tile_column.add_child(Kit.label("칸 종류", 30, Kit.GOLD))
 	for spec in TILES:
 		var row := Kit.hbox(12)
 		var icon := TextureRect.new()

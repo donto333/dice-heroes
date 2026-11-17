@@ -9,6 +9,8 @@ const TopBar := preload("res://scripts/ui/top_bar.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 
+## 분류 → 알약 색
+const CATEGORY_PILLS := {"": "blue", "영웅": "red", "위인": "blue", "신화": "purple", "근현대": "green"}
 const STAT_NAMES := [["move", "이동"], ["attack", "공격"], ["defense", "방어"], ["intellect", "지력"]]
 
 var app
@@ -25,26 +27,26 @@ func setup(main_app, params: Dictionary) -> void:
 	_filter = str(params.get("filter", ""))
 	# 시안식 틀: 왼쪽 세로 판에 영웅 목록·앨범·파티 편성, 오른쪽 큰 금테 판.
 	var rail := [["list", "영웅 목록", "heroes"], ["album", "영웅 앨범", "album"], ["party", "파티 편성", "swords"]]
-	var column := MenuArt.frame(self, app, "ui/bg_heroes", rail, "list", _on_rail)
+	var column := MenuArt.frame(self, app, "ui/bg_heroes", rail, "list", _on_rail, _summary_card())
 
 	var header := Kit.hbox(10)
 	column.add_child(header)
-	_count_label = Kit.label("", 24, Kit.GOLD)
+	_count_label = Kit.label("", 28, Kit.GOLD)
 	header.add_child(Kit.expand(_count_label))
-	var all_up := Kit.button("일괄 강화", Color("27a35a"), 20, 52)
-	all_up.custom_minimum_size = Vector2(140, 52)
+	var all_up := MenuArt.pill_button("일괄 강화", "green", "m")
+	all_up.custom_minimum_size = Vector2(150, 52)
 	all_up.disabled = not bool(app.badges().get("heroes", false))
 	all_up.pressed.connect(_upgrade_all)
 	header.add_child(all_up)
-	_owned_button = Kit.button("", Kit.PANEL_LIGHT, 20, 52)
-	_owned_button.custom_minimum_size = Vector2(180, 52)
+	_owned_button = MenuArt.pill_button("보유만 보기", "blue", "m")
+	_owned_button.custom_minimum_size = Vector2(190, 52)
 	_owned_button.pressed.connect(_on_owned_toggle)
 	header.add_child(_owned_button)
 
 	var tabs := Kit.hbox(6)
 	column.add_child(tabs)
 	for category in ["", "영웅", "위인", "신화", "근현대"]:
-		var tab := Kit.button("전체" if category == "" else category, Kit.PANEL, 20, 48)
+		var tab := Kit.button("전체" if category == "" else category, Kit.PANEL, 20, 50)
 		tab.pressed.connect(_on_filter.bind(category))
 		tabs.add_child(Kit.expand(tab))
 		_tabs[category] = tab
@@ -71,23 +73,17 @@ func _rebuild() -> void:
 		if Profile.owns(app.profile, str(character["id"])):
 			owned_count += 1
 	_count_label.text = "영웅 도감 %d / %d" % [owned_count, app.data["characters"].size()]
-	_owned_button.text = "보유만 보기 ✓" if _owned_only else "보유만 보기"
+	_owned_button.text = "보유만 보기"
+	_owned_button.icon = Kit.icon("m_check", 30.0).texture if _owned_only else null
+	_owned_button.expand_icon = false
+	_owned_button.add_theme_constant_override("icon_max_width", 30)
 	for category in _tabs:
-		var on: bool = category == _filter
-		var color: Color = Kit.CATEGORY_COLORS.get(category, Kit.PANEL_LIGHT)
-		# 시안처럼 고른 분류는 노란 알약, 나머지는 분류 색 알약.
+		# 고른 분류는 노란 알약(tab_on), 나머지는 분류 색 알약.
 		var tab: Button = _tabs[category]
-		if on and MenuArt.skin_button(tab, "tab_on", Vector4(30, 0, 30, 0), Vector4(10, 2, 10, 4)):
-			for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-				tab.add_theme_color_override(state, Color("5a3200"))
-			tab.add_theme_constant_override("outline_size", 0)
-		else:
-			Kit.paint(tab, color if category != "" else Color("2f74d6"), Color.WHITE)
-			var gloss = tab.get_node_or_null("Gloss")
-			if gloss != null:
-				gloss.visible = true
-			for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-				tab.add_theme_color_override(state, Color.WHITE)
+		if category == _filter:
+			MenuArt.tab(tab, true)
+		elif not MenuArt.pill(tab, CATEGORY_PILLS.get(category, "blue")):
+			Kit.paint(tab, Kit.CATEGORY_COLORS.get(category, Kit.PANEL_LIGHT), Color.WHITE)
 	# 가진 영웅 먼저, 그 안에서는 등급이 높은 순, 같으면 레벨이 높은 순
 	var shown: Array = []
 	for character in app.data["characters"]:
@@ -150,6 +146,8 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	face.locked = not owned
 	column.add_child(face)
 	var stars := Kit.label("★".repeat(grade), 16, Kit.GRADE_COLORS[grade], HORIZONTAL_ALIGNMENT_CENTER)
+	TextStyle.number(stars, 4)
+	stars.add_theme_color_override("font_color", Kit.GRADE_COLORS[grade])
 	stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(stars)
 	var caption: String = "%s\nLv.%d" % [character["name"], Profile.level_of(app.profile, id)] if owned else "%s\n미보유" % character["name"]
@@ -157,10 +155,20 @@ func _card(character: Dictionary, owned: bool) -> Control:
 		# 금테 카드: 아래 이름 띠에는 이름만, 레벨은 별 줄에 함께.
 		stars.text = "%s  %s" % ["★".repeat(grade), ("Lv.%d" % Profile.level_of(app.profile, id)) if owned else "미보유"]
 		caption = str(character["name"])
-	var text := Kit.label(caption, 16, Color.WHITE if owned else Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	var text := Kit.label(caption, 18, Color.WHITE if owned else Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	text.clip_text = true
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(text)
+	if not owned:
+		# 없는 영웅: 어둡게 + 가운데 자물쇠
+		var lock: TextureRect = Kit.icon("m_lock", 44.0)
+		lock.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		lock.position = Vector2(0, 0)
+		lock.offset_left = -22
+		lock.offset_right = 22
+		lock.offset_top = 56
+		lock.offset_bottom = 100
+		button.add_child(lock)
 	if owned and Profile.can_upgrade(app.profile, app.eco, id):
 		var up := Kit.label("강화!", 16, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		up.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -208,6 +216,7 @@ func show_hero(id: String) -> void:
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		stat_row.add_child(Kit.expand(bar))
 		stat_row.add_child(Kit.label(str(value), 20))
+		stat_row.add_child(Kit.icon("dice", 24.0))
 		info.add_child(stat_row)
 	var ability_box := Kit.panel(Color("13458f"), Kit.LINE, 12)
 	var ability_text := Kit.label("어빌리티 [%s]%s\n%s" % [ability.get("name", "-"), "  (★★★ 전용)" if str(character.get("ability", "")).begins_with("unique_") else "", ability.get("text", "")], 21)
@@ -249,7 +258,7 @@ func show_hero(id: String) -> void:
 		body.add_child(Kit.para("아직 없는 영웅이에요. 상점에서 소환하면 얻을 수 있어요.", 20, Kit.MUTED))
 		buttons.append(["상점으로", Color("f39a1c"), func(): app.go("shop")])
 	buttons.append(["닫기", Kit.PANEL_LIGHT])
-	app.dialog("", body, buttons, 660)
+	MenuArt.skin_buttons(app.dialog("", body, buttons, 660))
 
 
 func _sell_shards(id: String) -> void:
@@ -373,3 +382,20 @@ func _on_tab(screen_name: String) -> void:
 		return
 	app.play("click")
 	app.go(screen_name)
+
+
+## 왼쪽 판 아래 요약 카드: 모은 영웅 수와 출전 파티 작은 초상화 3개.
+func _summary_card() -> Control:
+	var owned_count := 0
+	for character in app.data["characters"]:
+		if Profile.owns(app.profile, str(character["id"])):
+			owned_count += 1
+	var faces := Kit.hbox(4)
+	for slot in ["attack", "defense", "support"]:
+		var character: Dictionary = app.character(str(app.profile.get("party", {}).get(slot, "")))
+		var face := Portrait.new()
+		face.custom_minimum_size = Vector2(44, 44)
+		face.border_width = 2.0
+		face.show_character(character, Kit.CATEGORY_COLORS.get(character.get("category", ""), Kit.LINE))
+		faces.add_child(face)
+	return MenuArt.summary("heroes", "모은 영웅 %d / %d" % [owned_count, app.data["characters"].size()], "출전 파티", faces)

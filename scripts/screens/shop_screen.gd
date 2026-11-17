@@ -29,7 +29,10 @@ func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
 	_tab = str(_params.get("tab", "summon"))
 	# 시안식 틀: 왼쪽 세로 판에 상점 항목, 오른쪽 큰 금테 판.
-	var column := MenuArt.frame(self, app, "ui/bg_shop", RAIL, _tab, _on_shop_tab)
+	var summon_table: Dictionary = app.eco.get("summon", {})
+	var pity_left: int = maxi(int(summon_table.get("pity_3", 0)) - int(app.profile.get("pity", 0)), 1)
+	var summary := MenuArt.summary("summon", "무료 소환 %d회" % Profile.free_summons_left(app.profile, app.eco), "★★★ 확정까지 %d회" % pity_left)
+	var column := MenuArt.frame(self, app, "ui/bg_shop", RAIL, _tab, _on_shop_tab, summary)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -51,6 +54,8 @@ func setup(main_app, _params: Dictionary) -> void:
 			body.add_child(_summon_panel())
 			body.add_child(_deals_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	# 남은 버튼도 모두 금테 알약으로(UI 개편 1단계)
+	MenuArt.skin_buttons(body)
 
 
 func _summon_panel() -> Control:
@@ -65,58 +70,62 @@ func _summon_panel() -> Control:
 	card.add_child(circle)
 	var column := Kit.vbox(12)
 	card.add_child(column)
-	column.add_child(Kit.title("영웅 소환", 44))
+	column.add_child(Kit.title("영웅 소환", 40))
 	var faces := Kit.hbox(8)
 	column.add_child(faces)
 	for id in BANNER:
 		var face := Portrait.new()
-		face.custom_minimum_size = Vector2(0, 170)
+		face.custom_minimum_size = Vector2(0, 150)
 		face.hd = true
 		var info: Dictionary = app.character(id)
 		face.show_character(info, Kit.GRADE_COLORS[3])
 		face.border = Kit.GOLD
 		faces.add_child(Kit.expand(face))
 	var rates: Dictionary = summon.get("rates", {})
-	column.add_child(Kit.para("확률  ★★★ %s%%  ·  ★★ %s%%  ·  ★ %s%%" % [str(rates.get("3", 0)), str(rates.get("2", 0)), str(rates.get("1", 0))], 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	var pity_left: int = int(summon.get("pity_3", 0)) - int(app.profile.get("pity", 0))
-	column.add_child(Kit.para("10회 소환은 ★★ 이상 1명 보장  ·  ★★★ 확정까지 %d회" % max(pity_left, 1), 20, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
-	column.add_child(Kit.para("이미 가진 영웅이 나오면 강화 조각으로 바뀌어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	var buttons := Kit.hbox(8)
+	# 확률·보장은 캡슐 두 개로
+	var caps := Kit.hbox(8)
+	caps.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_child(caps)
+	caps.add_child(MenuArt.capsule("★★★ %s%%  ·  ★★ %s%%  ·  ★ %s%%" % [str(rates.get("3", 0)), str(rates.get("2", 0)), str(rates.get("1", 0))], "star", 18))
+	caps.add_child(MenuArt.capsule("10회는 ★★ 이상 보장 · ★★★ 확정까지 %d회" % max(pity_left, 1), "", 18))
+	column.add_child(Kit.para("이미 가진 영웅이 나오면 강화 조각으로 바뀌어요.", 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	var buttons := Kit.hbox(10)
 	column.add_child(buttons)
 	var free_left := Profile.free_summons_left(app.profile, app.eco)
-	var free_button := Kit.button("무료 소환\n(오늘 %d회)" % free_left, Kit.GOOD, 22, 100)
+	var free_button := MenuArt.pill_button("무료 소환 (오늘 %d회)" % free_left, "green", "l")
 	free_button.disabled = free_left <= 0
 	free_button.pressed.connect(_on_free)
 	buttons.add_child(Kit.expand(free_button))
-	var one := Kit.button("1회\n%s" % Kit.money_text("gems", int(summon.get("cost_one", 100))), Kit.ACCENT, 22, 100)
+	var one := MenuArt.pill_button("1회  %s" % Kit.comma(int(summon.get("cost_one", 100))), "blue", "l")
+	_gem_icon(one)
 	one.disabled = not Profile.can_pay(app.profile, "gems", int(summon.get("cost_one", 100)))
 	one.pressed.connect(_on_paid.bind(1))
 	buttons.add_child(Kit.expand(one))
-	var ten := Kit.button("10회\n%s" % Kit.money_text("gems", int(summon.get("cost_ten", 900))), Color("f39a1c"), 22, 100)
+	var ten := MenuArt.pill_button("10회  %s" % Kit.comma(int(summon.get("cost_ten", 900))), "gold", "l")
+	_gem_icon(ten)
 	ten.disabled = not Profile.can_pay(app.profile, "gems", int(summon.get("cost_ten", 900)))
 	ten.pressed.connect(_on_paid.bind(10))
 	buttons.add_child(Kit.expand(ten))
+	Kit.shimmer(ten)
 	return card
 
 
 ## 오늘의 특가: 가진 영웅의 강화 조각을 골드로. 매일 바뀐다.
 func _deals_panel() -> Control:
-	var card := Kit.panel(Color("1e8f5a"), Color("b6ffd0"), 14)
-	var column := Kit.vbox(10)
-	card.add_child(column)
-	var head := Kit.hbox(8)
-	column.add_child(head)
-	head.add_child(Kit.expand(Kit.label("오늘의 특가", 30, Kit.GOLD)))
-	head.add_child(Kit.label("매일 자정에 바뀌어요", 17, Kit.MUTED))
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("오늘의 특가", "deals", "매일 자정에 바뀌어요"))
 	var deals := Profile.daily_deals(app.profile, app.data["characters"], app.eco, app.today())
 	if deals.is_empty():
-		column.add_child(Kit.para("강화할 영웅이 없어요. 모든 영웅이 최고 레벨이에요!", 19))
-		return card
-	var row := Kit.hbox(10)
-	column.add_child(row)
+		MenuArt.list_row(group, "check", "강화할 영웅이 없어요", "모든 영웅이 최고 레벨이에요!")
+		return group
+	var line := MenuArt.row(12)
+	group.add_child(line)
+	var cells := Kit.hbox(10)
+	line.add_child(cells)
 	for index in deals.size():
-		row.add_child(Kit.expand(_deal_cell(deals[index], index)))
-	return card
+		cells.add_child(Kit.expand(_deal_cell(deals[index], index)))
+	return group
 
 
 func _deal_cell(deal: Dictionary, index: int) -> Control:
@@ -133,8 +142,10 @@ func _deal_cell(deal: Dictionary, index: int) -> Control:
 	cell.add_child(Kit.label("%s %s" % ["★".repeat(grade), character.get("name", "")], 18, Kit.GRADE_COLORS[grade], HORIZONTAL_ALIGNMENT_CENTER))
 	var shards := int(app.profile["owned"][str(deal["id"])]["shards"])
 	cell.add_child(Kit.label("조각 +%d  (지금 %d)" % [int(deal["shards"]), shards], 16, Kit.GEM, HORIZONTAL_ALIGNMENT_CENTER))
-	var text: String = "구매 완료" if bool(deal["bought"]) else Kit.money_text("gold", int(deal["gold"]))
-	var buy := Kit.button(text, Color("2f8f4e"), 20, 60)
+	var text: String = "구매 완료" if bool(deal["bought"]) else Kit.comma(int(deal["gold"]))
+	var buy := MenuArt.pill_button(text, "green", "m")
+	if not bool(deal["bought"]):
+		_money_icon(buy, "gold")
 	buy.disabled = bool(deal["bought"]) or not Profile.can_pay(app.profile, "gold", int(deal["gold"]))
 	buy.pressed.connect(_on_deal.bind(index))
 	cell.add_child(buy)
@@ -152,29 +163,28 @@ func _on_deal(index: int) -> void:
 
 ## 보석 마일리지: 보석을 쓴 만큼 쌓여 단계 보상을 준다.
 func _mileage_panel() -> Control:
-	var card := Kit.panel(Color("1a7fd0"), Kit.GEM, 14)
-	var column := Kit.vbox(8)
-	card.add_child(column)
+	var group := Kit.vbox(8)
 	var steps: Array = app.eco["mileage"]["steps"]
 	var rewards: Array = app.eco["mileage"]["rewards"]
 	var spent := int(app.profile.get("gems_spent", 0))
 	var claimed: Array = app.profile.get("mileage_claimed", [])
-	var head := Kit.hbox(8)
-	column.add_child(head)
-	head.add_child(Kit.expand(Kit.label("보석 마일리지", 30, Kit.GOLD)))
-	head.add_child(Kit.label("쓴 보석 %d" % spent, 18, Color.WHITE))
+	group.add_child(MenuArt.section("보석 마일리지", "gem", "쓴 보석 %s" % Kit.comma(spent)))
+	var line := MenuArt.row(12)
+	group.add_child(line)
+	var column := Kit.vbox(8)
+	line.add_child(column)
 	column.add_child(Kit.bar(float(mini(spent, int(steps[steps.size() - 1]))) / float(int(steps[steps.size() - 1])), Kit.GEM, 12))
 	var marks := Kit.hbox(6)
 	column.add_child(marks)
 	for index in steps.size():
 		var got := claimed.has(index)
-		marks.add_child(Kit.expand(Kit.label("%d\n%s%s" % [int(steps[index]), Kit.reward_line(rewards[index]), "\n(받음)" if got else ""], 14, Kit.MUTED if got else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)))
+		marks.add_child(Kit.expand(Kit.label("%d\n%s%s" % [int(steps[index]), Kit.reward_line(rewards[index]), "\n(받음)" if got else ""], 16, Kit.MUTED if got else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)))
 	var ready: Array = Profile.mileage_claimable(app.profile, app.eco)
-	var button := Kit.button("보상 %d개 받기" % ready.size() if not ready.is_empty() else "보석을 쓰면 쌓여요", Kit.PRIMARY if not ready.is_empty() else Kit.PANEL_LIGHT, 20, 56)
+	var button := MenuArt.pill_button("보상 %d개 받기" % ready.size() if not ready.is_empty() else "보석을 쓰면 쌓여요", "gold" if not ready.is_empty() else "gray", "m")
 	button.disabled = ready.is_empty()
 	button.pressed.connect(_on_mileage)
 	column.add_child(button)
-	return card
+	return group
 
 
 func _on_mileage() -> void:
@@ -189,39 +199,44 @@ func _on_mileage() -> void:
 
 ## 유물 상점: 파티에 하나만 장착하는 시작 보너스.
 func _relic_panel() -> Control:
-	var card := Kit.panel(Color("b8651a"), Color("ffe0a8"), 14)
-	var column := Kit.vbox(8)
-	card.add_child(column)
-	var head := Kit.hbox(8)
-	column.add_child(head)
-	head.add_child(Kit.expand(Kit.label("유물 상점", 30, Kit.GOLD)))
-	head.add_child(Kit.label("하나만 장착 · 판을 시작할 때 효과", 17, Kit.MUTED))
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("유물 상점", "relic", "하나만 장착 · 판을 시작할 때 효과"))
 	var using := str(Profile.current_relic(app.profile, app.eco).get("id", ""))
 	for item in app.eco.get("relics", []):
 		var id := str(item["id"])
-		var line := Kit.panel(Kit.INSET, Kit.GOLD if id == using else Kit.LINE, 8)
-		var row := Kit.hbox(10)
+		var line := MenuArt.row(10)
+		var row := Kit.hbox(12)
 		line.add_child(row)
 		var picture := ArtView.new()
 		picture.show_art("relics/" + id)
 		if picture.has_art():
-			picture.custom_minimum_size = Vector2(72, 72)
+			picture.custom_minimum_size = Vector2(64, 64)
 			picture.focus_y = 0.5
 			row.add_child(picture)
 		else:
 			picture.free()
+			row.add_child(Kit.icon("relic", 48.0))
 		var words := Kit.vbox(0)
-		words.add_child(Kit.label(str(item["name"]), 22, Kit.GOLD if id == using else Color.WHITE))
-		words.add_child(Kit.label(str(item["text"]), 16, Kit.MUTED))
+		words.add_child(Kit.label(str(item["name"]) + ("  (장착 중)" if id == using else ""), 24, Kit.GOLD if id == using else Color.WHITE))
+		words.add_child(Kit.para(str(item["text"]), 18, Kit.MUTED))
 		row.add_child(Kit.expand(words))
 		var owned := Profile.owns_relic(app.profile, id)
-		var text := "벗기" if id == using else ("장착" if owned else Kit.reward_line(item.get("cost", {})))
-		var button := Kit.button(text, Kit.PANEL_LIGHT if id == using else (Kit.ACCENT if owned else Kit.PRIMARY), 18, 52)
-		button.custom_minimum_size = Vector2(150, 52)
+		var button: Button
+		if id == using:
+			button = MenuArt.pill_button("벗기", "blue", "m")
+		elif owned:
+			button = MenuArt.pill_button("장착", "green", "m")
+		else:
+			var cost: Dictionary = item.get("cost", {})
+			var currency := "gems" if int(cost.get("gems", 0)) > 0 else "gold"
+			button = MenuArt.pill_button(Kit.comma(int(cost.get(currency, 0))), "gold", "m")
+			_money_icon(button, "gem" if currency == "gems" else "gold")
+		button.custom_minimum_size = Vector2(160, 56)
+		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		button.pressed.connect(_on_relic.bind(id))
 		row.add_child(button)
-		column.add_child(line)
-	return card
+		group.add_child(line)
+	return group
 
 
 func _on_relic(id: String) -> void:
@@ -241,37 +256,47 @@ func _on_relic(id: String) -> void:
 
 ## 주사위 상점: 한 번 사면 계속 쓰는 꾸밈 주사위. 능력 차이는 없다.
 func _dice_panel() -> Control:
-	var card := Kit.panel(Color("7a3fc0"), Color("e0c4ff"), 14)
-	var column := Kit.vbox(10)
-	card.add_child(column)
-	var head := Kit.hbox(8)
-	column.add_child(head)
-	head.add_child(Kit.expand(Kit.label("주사위 상점", 30, Kit.GOLD)))
-	head.add_child(Kit.label("모양만 달라요 · 한 번 사면 계속 써요", 17, Kit.MUTED))
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("주사위 상점", "dice", "모양만 달라요 · 한 번 사면 계속 써요"))
 	var grid := GridContainer.new()
-	grid.columns = 6
-	grid.add_theme_constant_override("h_separation", 8)
+	grid.columns = 5
+	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
-	column.add_child(grid)
+	group.add_child(grid)
 	var using := str(Profile.current_dice_skin(app.profile, app.eco).get("id", "classic"))
 	for skin in app.eco.get("dice_skins", []):
 		var id := str(skin["id"])
+		# 금테 작은 카드(주사위 그림 + 이름 + 가격 알약)
+		var card: PanelContainer = MenuArt.art_box("goods_card", 30.0, 12)
+		if card == null:
+			card = Kit.panel(Kit.INSET, Kit.LINE, 8)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var cell := Kit.vbox(4)
-		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.add_child(cell)
 		var preview := DiePreview.new()
 		preview.skin = skin
 		preview.face = 6 if id == using else 5
 		preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		cell.add_child(preview)
-		cell.add_child(Kit.label(str(skin["name"]).replace(" 주사위", ""), 17, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+		var name_label := Kit.label(str(skin["name"]).replace(" 주사위", ""), 18, Kit.GOLD if id == using else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		name_label.clip_text = true
+		cell.add_child(name_label)
 		var owned := Profile.owns_dice_skin(app.profile, id)
-		var text := "사용 중" if id == using else ("쓰기" if owned else Kit.reward_line(skin.get("cost", {})))
-		var button := Kit.button(text, Kit.PANEL_LIGHT if id == using else (Kit.ACCENT if owned else Color("7d4fc0")), 17, 54)
-		button.disabled = id == using
+		var button: Button
+		if id == using:
+			button = MenuArt.pill_button("사용 중", "gray", "s")
+			button.disabled = true
+		elif owned:
+			button = MenuArt.pill_button("쓰기", "green", "s")
+		else:
+			var cost: Dictionary = skin.get("cost", {})
+			var currency := "gems" if int(cost.get("gems", 0)) > 0 else "gold"
+			button = MenuArt.pill_button(Kit.comma(int(cost.get(currency, 0))), "gold", "s")
+			_money_icon(button, "gem" if currency == "gems" else "gold")
 		button.pressed.connect(_on_dice_skin.bind(id))
 		cell.add_child(button)
-		grid.add_child(cell)
-	return card
+		grid.add_child(card)
+	return group
 
 
 func _on_dice_skin(id: String) -> void:
@@ -292,67 +317,79 @@ func _on_dice_skin(id: String) -> void:
 ## 보석 상품: 정식 버전에서 팔 구성을 미리 보여 준다. 아직 결제가 없어서 살 수 없다.
 func _gem_pack_panel() -> Control:
 	var table: Dictionary = app.eco.get("gem_packs", {})
-	var card := Kit.panel(Color("1a7fd0"), Kit.GEM, 14)
-	var column := Kit.vbox(10)
-	card.add_child(column)
-	var head := Kit.hbox(8)
-	column.add_child(head)
-	head.add_child(Kit.expand(Kit.label("보석 상점", 30, Kit.GOLD)))
-	head.add_child(Kit.label("준비 중", 20, Color("ff9a6a")))
-	column.add_child(Kit.para("정식 버전에서 열릴 상품이에요. 지금은 살 수 없고, 보석은 출석·미션·업적·패스·우편으로 모을 수 있어요.", 18, Kit.MUTED))
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("보석 상점", "gem", "준비 중"))
+	group.add_child(Kit.para("정식 버전에서 열릴 상품이에요. 지금은 살 수 없고, 보석은 출석·미션·업적·패스·우편으로 모을 수 있어요.", 18, Kit.MUTED))
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
-	column.add_child(grid)
+	group.add_child(grid)
 	for pack in table.get("packs", []):
-		var cell := Kit.panel(Color("13458f"), Kit.LINE, 10)
+		var cell := MenuArt.row(10)
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var line := Kit.hbox(8)
+		cell.add_child(line)
+		line.add_child(Kit.icon("gem", 44.0))
 		var text := Kit.vbox(2)
-		cell.add_child(text)
+		line.add_child(Kit.expand(text))
 		text.add_child(Kit.label(str(pack["name"]), 22))
-		text.add_child(Kit.label(Kit.money_text("gems", int(pack["gems"])), 22, Kit.GEM))
-		text.add_child(Kit.label(str(pack.get("note", "")), 16, Kit.MUTED))
-		var buy := Kit.button("준비 중", Kit.PANEL_LIGHT, 18, 50)
+		text.add_child(Kit.label(Kit.comma(int(pack["gems"])), 22, Kit.GEM))
+		if str(pack.get("note", "")) != "":
+			text.add_child(Kit.label(str(pack.get("note", "")), 16, Kit.MUTED))
+		var buy := MenuArt.pill_button("준비 중", "gray", "s")
 		buy.disabled = true
 		text.add_child(buy)
 		grid.add_child(cell)
 	# 묶음 상품(스타터·성장·패스 프리미엄) 설계도 함께 보여 준다.
 	for bundle in table.get("bundles", []):
-		var line := Kit.panel(Color("13458f"), Kit.LINE, 10)
+		var line := MenuArt.row(10)
 		var row := Kit.hbox(10)
 		line.add_child(row)
+		row.add_child(Kit.icon("gift", 48.0))
 		var words := Kit.vbox(2)
-		words.add_child(Kit.label(str(bundle["name"]), 22, Kit.GOLD))
-		words.add_child(Kit.para(str(bundle.get("text", "")), 17, Color.WHITE))
-		words.add_child(Kit.label(str(bundle.get("note", "")), 15, Kit.MUTED))
+		words.add_child(Kit.label(str(bundle["name"]), 24, Kit.GOLD))
+		words.add_child(Kit.para(str(bundle.get("text", "")), 18, Color.WHITE))
+		if str(bundle.get("note", "")) != "":
+			words.add_child(Kit.label(str(bundle.get("note", "")), 16, Kit.MUTED))
 		row.add_child(Kit.expand(words))
-		var soon := Kit.button("준비 중", Kit.PANEL_LIGHT, 18, 50)
-		soon.custom_minimum_size = Vector2(120, 50)
+		var soon := MenuArt.pill_button("준비 중", "gray", "m")
+		soon.custom_minimum_size = Vector2(130, 56)
+		soon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		soon.disabled = true
 		row.add_child(soon)
-		column.add_child(line)
-	return card
+		group.add_child(line)
+	return group
 
 
 func _exchange_panel() -> Control:
-	var card := Kit.panel()
-	var column := Kit.vbox(10)
-	card.add_child(column)
-	column.add_child(Kit.label("골드 교환", 30, Kit.GOLD))
-	column.add_child(Kit.label("골드는 영웅 강화에 써요.", 18, Kit.MUTED))
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("골드 교환", "gold", "골드는 영웅 강화에 써요"))
 	var offers: Array = app.eco.get("exchange", [])
 	for index in offers.size():
 		var offer: Dictionary = offers[index]
-		var row := Kit.hbox(10)
-		column.add_child(row)
-		row.add_child(Kit.expand(Kit.label("%s  →  %s" % [Kit.money_text("gems", int(offer["gems"])), Kit.money_text("gold", int(offer["gold"]))], 26)))
-		var buy := Kit.button("교환", Kit.ACCENT, 22, 64)
-		buy.custom_minimum_size = Vector2(150, 64)
+		var buy := MenuArt.pill_button(Kit.comma(int(offer["gems"])), "green", "m")
+		_money_icon(buy, "gem")
+		buy.custom_minimum_size = Vector2(160, 56)
 		buy.disabled = not Profile.can_pay(app.profile, "gems", int(offer["gems"]))
 		buy.pressed.connect(_on_exchange.bind(index))
-		row.add_child(buy)
-	return card
+		MenuArt.list_row(group, "gold", "골드 %s" % Kit.comma(int(offer["gold"])), "보석 %s개로 바꿔요" % Kit.comma(int(offer["gems"])), buy)
+	return group
+
+
+## 가격 버튼 왼쪽에 골드·보석 아이콘을 붙인다.
+func _money_icon(button: Button, icon_name: String) -> void:
+	var picture: TextureRect = Kit.icon(icon_name, 28.0)
+	if picture.texture == null:
+		return
+	button.icon = picture.texture
+	button.expand_icon = false
+	button.add_theme_constant_override("icon_max_width", 28)
+	button.add_theme_constant_override("h_separation", 6)
+
+
+func _gem_icon(button: Button) -> void:
+	_money_icon(button, "gem")
 
 
 func _on_free() -> void:
