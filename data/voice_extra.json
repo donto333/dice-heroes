@@ -1,9 +1,101 @@
 {
- "_comment": "영웅이 아닌 음성: 안내 음성(announcer)과 적 음성(enemy_*). 파일은 assets/audio/voice/<id>_<상황>.ogg. tools/make_batch2.py가 만든다.",
+ "_comment": "영웅이 아닌 음성: 안내 음성과 적 음성(enemy_*). 파일은 assets/audio/voice/<id>_<상황>.ogg. 안내 음성은 네 가지(announcers 목록, 파일 announcer_<id>_<상황>.ogg) 중 설정에서 고른다. heroes.announcer는 기본값(l)과 같은 대사표. v3 모델에 연기 지시를 붙여 만든 것(2026-11-16 사용자가 고름).",
  "heroes": {
   "announcer": {
-   "voice": "IAETYMYM3nJvjnlkVTKI",
-   "voice_name": "deoksu",
+   "voice": "hjCvGtSCRPyjYwe2lDf1",
+   "voice_name": "juan",
+   "lines": {
+    "start": "게임을 시작합니다!",
+    "turn": "당신의 차례입니다!",
+    "enemy_turn": "상대의 차례입니다.",
+    "battle": "전투가 시작됩니다!",
+    "double": "더블입니다!",
+    "gate": "관문 전투입니다!",
+    "goal": "골인입니다!",
+    "catchup": "따라잡기 기회입니다!",
+    "last_turn": "마지막 턴입니다!",
+    "win": "승리했습니다!",
+    "lose": "패배했습니다."
+   },
+   "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게"
+  },
+  "enemy_gate": {
+   "voice": "LrQhxz410fuKCcLPDGHz",
+   "voice_name": "관우",
+   "lines": {
+    "appear": "멈춰라! 이 관문은 아무도 못 지나간다!",
+    "win": "썩 물러가라! 다시는 오지 마라!",
+    "lose": "크윽... 좋다, 지나가거라."
+   },
+   "tags": {
+    "appear": "엄하고 굵게 호령하며",
+    "win": "호통치며",
+    "lose": "분하지만 인정하며"
+   }
+  },
+  "enemy_boss": {
+   "voice": "omI5ljpPfx2qLiwaLr5t",
+   "voice_name": "위엄 도독3",
+   "lines": {
+    "appear": "잘도 여기까지 왔구나. 허나, 여기가 끝이다.",
+    "win": "아직 멀었다. 더 강해져서 오너라!",
+    "lose": "훌륭하다... 이 승부, 네가 이겼다."
+   },
+   "tags": {
+    "appear": "낮고 위압적으로, 천천히",
+    "win": "위엄 있게 꾸짖으며",
+    "lose": "숨을 몰아쉬며 담담하게"
+   }
+  },
+  "enemy_keeper": {
+   "voice": "s8JtlFs6n1bywa1BkH7G",
+   "voice_name": "장비",
+   "lines": {
+    "appear": "이 거점은 내가 지킨다. 어디 덤벼 봐라!",
+    "win": "하하하! 그 실력으로 어딜 넘보느냐!",
+    "lose": "이런... 내가 지다니."
+   },
+   "tags": {
+    "appear": "거칠고 자신만만하게",
+    "win": "크게 비웃으며",
+    "lose": "어이없어하며"
+   }
+  },
+  "enemy_monster": {
+   "voice": "bHnQ6ikU0Hwws51HQXJb",
+   "voice_name": "패왕 무신2",
+   "lines": {
+    "appear": "크아아아!",
+    "win": "크하하하!",
+    "lose": "끄으윽..."
+   },
+   "tags": {
+    "appear": "짐승처럼 사납게 포효한다",
+    "win": "괴물처럼 음산하게 웃는다",
+    "lose": "쓰러지며 괴롭게 신음한다"
+   }
+  },
+  "announcer_l": {
+   "voice": "hjCvGtSCRPyjYwe2lDf1",
+   "voice_name": "juan",
+   "lines": {
+    "start": "게임을 시작합니다!",
+    "turn": "당신의 차례입니다!",
+    "enemy_turn": "상대의 차례입니다.",
+    "battle": "전투가 시작됩니다!",
+    "double": "더블입니다!",
+    "gate": "관문 전투입니다!",
+    "goal": "골인입니다!",
+    "catchup": "따라잡기 기회입니다!",
+    "last_turn": "마지막 턴입니다!",
+    "win": "승리했습니다!",
+    "lose": "패배했습니다."
+   },
+   "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게"
+  },
+  "announcer_m": {
+   "voice": "n2fbxG88jqAoaVPUy3IG",
+   "voice_name": "yooni",
    "lines": {
     "start": "게임 시작!",
     "turn": "내 차례!",
@@ -16,43 +108,62 @@
     "last_turn": "마지막 턴!",
     "win": "승리!",
     "lose": "패배..."
-   }
+   },
+   "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게"
   },
-  "enemy_gate": {
-   "voice": "SOYHLrjzK2X1ezoPC6cr",
-   "voice_name": "harry",
+  "announcer_n": {
+   "voice": "n2fbxG88jqAoaVPUy3IG",
+   "voice_name": "yooni",
    "lines": {
-    "appear": "멈춰라! 여기는 못 지나간다!",
-    "win": "돌아가라!",
-    "lose": "크윽... 지나가라."
-   }
+    "start": "게임을 시작합니다!",
+    "turn": "당신의 차례입니다!",
+    "enemy_turn": "상대의 차례입니다.",
+    "battle": "전투가 시작됩니다!",
+    "double": "더블입니다!",
+    "gate": "관문 전투입니다!",
+    "goal": "골인입니다!",
+    "catchup": "따라잡기 기회입니다!",
+    "last_turn": "마지막 턴입니다!",
+    "win": "승리했습니다!",
+    "lose": "패배했습니다."
+   },
+   "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게"
   },
-  "enemy_boss": {
-   "voice": "UmYoqGlufKxhJ6NCx5Mv",
-   "voice_name": "jangho",
+  "announcer_o": {
+   "voice": "wzMVIc8FAFmgMxFpN0uM",
+   "voice_name": "deokpal",
    "lines": {
-    "appear": "잘도 여기까지 왔구나.",
-    "win": "아직 멀었다!",
-    "lose": "훌륭하다... 네가 이겼다."
-   }
-  },
-  "enemy_keeper": {
-   "voice": "N2lVS1w4EtoT3dr4eOWO",
-   "voice_name": "callum",
-   "lines": {
-    "appear": "어디 한번 덤벼 봐라!",
-    "win": "하하하, 약하구나!",
-    "lose": "이런, 졌군."
-   }
-  },
-  "enemy_monster": {
-   "voice": "nPczCjzI2devNBz1zQrb",
-   "voice_name": "brian",
-   "lines": {
-    "appear": "크아아아!",
-    "win": "크하하하!",
-    "lose": "끄으윽..."
-   }
+    "start": "게임을 시작합니다!",
+    "turn": "당신의 차례입니다!",
+    "enemy_turn": "상대의 차례입니다.",
+    "battle": "전투가 시작됩니다!",
+    "double": "더블입니다!",
+    "gate": "관문 전투입니다!",
+    "goal": "골인입니다!",
+    "catchup": "따라잡기 기회입니다!",
+    "last_turn": "마지막 턴입니다!",
+    "win": "승리했습니다!",
+    "lose": "패배했습니다."
+   },
+   "tag": "방송 아나운서처럼 또렷하고 반듯한 발음으로, 힘 있게"
   }
- }
+ },
+ "announcers": [
+  {
+   "id": "l",
+   "label": "남성 아나운서"
+  },
+  {
+   "id": "m",
+   "label": "여성 아나운서(짧게)"
+  },
+  {
+   "id": "n",
+   "label": "여성 아나운서"
+  },
+  {
+   "id": "o",
+   "label": "차분한 남성"
+  }
+ ]
 }
