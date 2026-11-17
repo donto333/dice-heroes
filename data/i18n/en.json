@@ -1641,5 +1641,7 @@
  "미시시피강은 오늘도 느릿느릿 흐르겠지.": "The Mississippi will flow slowly again today.",
  "쉿... 쇠똥구리가 지나가고 있어요.": "Shh... a dung beetle is passing by.",
  "오늘은 아이들에게 무슨 이야기를 들려줄까요?": "What story shall I tell the children today?",
- "파티 편성 카드: 아래 띠의 ★과 영웅 이름이 가려지지 않고 끝까지 보여요.": "Party cards: the ★ and hero name on the bottom band are no longer cut off."
+ "파티 편성 카드: 아래 띠의 ★과 영웅 이름이 가려지지 않고 끝까지 보여요.": "Party cards: the ★ and hero name on the bottom band are no longer cut off.",
+ "레벨 %d / %d   ·   전투 +%d   ·   스킬 충전 +%d%%": "Level %d / %d   ·   Battle +%d   ·   Skill charge +%d%%",
+ "다음 레벨: 전투 +%d · 스킬 충전 +%d%%  (전투는 공격·방어 자리에서 주사위 합에 더해져요)": "Next level: Battle +%d · Skill charge +%d%%  (battle bonus is added to dice in Attack/Defense slots)"
 }

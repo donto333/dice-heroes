@@ -282,10 +282,12 @@ func show_hero(id: String) -> void:
 		var shards := int(app.profile["owned"][id]["shards"])
 		var cost := Profile.upgrade_cost(app.profile, app.eco, id)
 		var bonus_table: Array = app.data["rules"].get("level_battle_bonus", [])
-		var bonus: int = int(bonus_table[clampi(level - 1, 0, bonus_table.size() - 1)]) if not bonus_table.is_empty() else 0
-		body.add_child(Kit.para("레벨 %d / %d   ·   전투 합계 보너스 +%d" % [level, int(app.eco["upgrade"]["max_level"]), bonus], 22, Kit.GOLD))
-		if not bonus_table.is_empty() and level < bonus_table.size():
-			body.add_child(Kit.para("다음 레벨 보너스 +%d  (전투에서 주사위 합에 더해져요)" % int(bonus_table[level]), 18, Kit.MUTED))
+		var gauge_table: Array = app.data["rules"].get("level_gauge_bonus", [])
+		var at := func(table: Array, lv: int) -> int:
+			return int(table[clampi(lv - 1, 0, table.size() - 1)]) if not table.is_empty() else 0
+		body.add_child(Kit.para("레벨 %d / %d   ·   전투 +%d   ·   스킬 충전 +%d%%" % [level, int(app.eco["upgrade"]["max_level"]), at.call(bonus_table, level), at.call(gauge_table, level)], 22, Kit.GOLD))
+		if level < int(app.eco["upgrade"]["max_level"]):
+			body.add_child(Kit.para("다음 레벨: 전투 +%d · 스킬 충전 +%d%%  (전투는 공격·방어 자리에서 주사위 합에 더해져요)" % [at.call(bonus_table, level + 1), at.call(gauge_table, level + 1)], 18, Kit.MUTED))
 		if cost.is_empty():
 			body.add_child(Kit.label("최고 레벨입니다.", 20, Kit.MUTED))
 			# 더 쓸 데가 없는 조각은 골드로 판다.

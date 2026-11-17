@@ -1641,5 +1641,7 @@
  "미시시피강은 오늘도 느릿느릿 흐르겠지.": "Hôm nay sông Mississippi lại trôi chầm chậm.",
  "쉿... 쇠똥구리가 지나가고 있어요.": "Suỵt... bọ hung đang đi ngang qua.",
  "오늘은 아이들에게 무슨 이야기를 들려줄까요?": "Hôm nay kể chuyện gì cho các em đây?",
- "파티 편성 카드: 아래 띠의 ★과 영웅 이름이 가려지지 않고 끝까지 보여요.": "Thẻ đội hình: ★ và tên anh hùng ở dải dưới không còn bị che khuất."
+ "파티 편성 카드: 아래 띠의 ★과 영웅 이름이 가려지지 않고 끝까지 보여요.": "Thẻ đội hình: ★ và tên anh hùng ở dải dưới không còn bị che khuất.",
+ "레벨 %d / %d   ·   전투 +%d   ·   스킬 충전 +%d%%": "Cấp %d / %d   ·   Chiến đấu +%d   ·   Nạp kỹ năng +%d%%",
+ "다음 레벨: 전투 +%d · 스킬 충전 +%d%%  (전투는 공격·방어 자리에서 주사위 합에 더해져요)": "Cấp sau: Chiến đấu +%d · Nạp kỹ năng +%d%%  (thưởng chiến đấu cộng vào xúc xắc ở ô Tấn công/Phòng thủ)"
 }

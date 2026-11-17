@@ -727,10 +727,19 @@ func _test_level_bonus() -> void:
 	game.setup(_data, [low, high], 7)
 	var table: Array = _data["rules"].get("level_battle_bonus", [])
 	_check(table.size() == 5, "level_battle_bonus는 레벨 1~5의 5칸이어야 함")
-	_check(game.level_bonus(0, "attack") == 0, "레벨 1 보너스가 0이 아님")
+	_check(game.level_bonus(0, "attack") == int(table[0]), "레벨 1 보너스가 표와 다름")
 	_check(game.level_bonus(1, "attack") == int(table[4]), "레벨 5 공격 보너스가 표와 다름")
 	_check(game.level_bonus(1, "defense") == int(table[2]), "레벨 3 방어 보너스가 표와 다름")
 	_check(game._attack_bonus(1) >= int(table[4]), "레벨 보너스가 공격 합계에 들어가지 않음")
+	# 스킬 충전: 레벨이 높은 자리의 게이지가 더 빨리 찬다.
+	var charge: Array = _data["rules"].get("level_gauge_bonus", [])
+	_check(charge.size() == 5, "level_gauge_bonus는 레벨 1~5의 5칸이어야 함")
+	_check(game.level_gauge_percent(1, "defense") == int(charge[2]), "레벨 3 충전 보너스가 표와 다름")
+	for slot in ["attack", "defense", "support"]:
+		game.players[1]["gauge"][slot] = 0
+	game._gain_turn_gauge(1, 50)
+	_check(int(game.players[1]["gauge"]["attack"]) == 50 + int(50 * int(charge[4]) / 100.0), "레벨 5 자리 게이지가 더 차지 않음")
+	_check(int(game.players[1]["gauge"]["attack"]) > int(game.players[1]["gauge"]["support"]) or int(charge[4]) == int(charge[0]), "레벨 높은 자리가 더 빨리 차지 않음")
 
 
 func _test_profile_basics() -> void:
