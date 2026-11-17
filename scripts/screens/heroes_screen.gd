@@ -118,10 +118,11 @@ func _card(character: Dictionary, owned: bool) -> Control:
 		# 금테 카드 틀(위 보석 장식). 등급 색 테두리 대신 틀을 덮고, 없는 영웅은 어둡게.
 		for state in ["normal", "hover", "pressed"]:
 			var fill := Kit.box(Color("0f3d85") if state != "hover" else Color("1a4fa0"), Color.TRANSPARENT, 0, 10, 0)
-			fill.expand_margin_left = -6
-			fill.expand_margin_right = -6
-			fill.expand_margin_top = -10
-			fill.expand_margin_bottom = -8
+			# 바탕 칠은 틀 안쪽에만(틀 위 투명한 여백으로 남색이 비치지 않게)
+			fill.expand_margin_left = -10
+			fill.expand_margin_right = -10
+			fill.expand_margin_top = -20
+			fill.expand_margin_bottom = -10
 			button.add_theme_stylebox_override(state, fill)
 		frame = TextureRect.new()
 		frame.texture = frame_tex
