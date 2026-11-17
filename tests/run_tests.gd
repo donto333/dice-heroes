@@ -258,6 +258,7 @@ func _test_references() -> void:
 		owners[ability_id] = true
 	_check(owners.size() == abilities.size(), "주인 없는 어빌리티가 있음")
 	_test_new_skill_effects()
+	_test_every_ability_and_card()
 
 	# 모든 어빌리티를 한 번씩 써도 판이 깨지지 않는지.
 	for ability_id in abilities:
@@ -1657,3 +1658,363 @@ func _test_new_skill_effects() -> void:
 	game.players[0]["charm"] = false
 	game._apply_effect({"type": "random_one", "effects": [{"type": "charm", "label": "부적"}]}, 0)
 	_check(bool(game.players[0]["charm"]), "무작위 효과가 적용되지 않음")
+
+
+# ---------------------------------------------------------------- 어빌리티·카드 전수 검사(2026-11-18)
+
+## 효과 하나가 '쓰는 순간' 남기는 흔적을 확인한다. before는 쓰기 전 상태를 복사해 둔 것.
+func _check_effect_applied(game, part: Dictionary, before: Dictionary, label: String) -> void:
+	var kind := str(part.get("type", ""))
+	var amount := int(part.get("amount", 0))
+	var me: Dictionary = game.players[0]
+	var them: Dictionary = game.players[1]
+	match kind:
+		"move_fixed":
+			_check(game.effect_sum(0, "move_fixed") >= amount, "%s: 이동 고정이 안 걸림" % label)
+		"enemy_move_dice":
+			_check(game.effect_sum(1, "move_dice") <= amount, "%s: 상대 이동 주사위 감소가 안 걸림" % label)
+		"enemy_seal":
+			_check(game.effect_sum(1, "sealed") > 0, "%s: 상대 어빌리티 봉인이 안 걸림" % label)
+		"enemy_card_seal":
+			_check(game.effect_sum(1, "card_sealed") > 0, "%s: 상대 카드 봉인이 안 걸림" % label)
+		"gauge_team":
+			_check(int(me["gauge"]["defense"]) == mini(100, int(before["my_gauge"]) + amount), "%s: 우리 팀 게이지 +%d이 아님" % [label, amount])
+		"gauge_enemy":
+			_check(int(them["gauge"]["defense"]) == clampi(int(before["their_gauge"]) + amount, 0, 100), "%s: 상대 게이지 변화가 틀림" % label)
+		"steal_gauge":
+			_check(int(them["gauge"]["defense"]) < int(before["their_gauge"]), "%s: 상대 게이지를 빼앗지 못함" % label)
+		"draw_card":
+			_check(me["hand"].size() > int(before["my_hand"]), "%s: 카드를 받지 못함" % label)
+		"steal_card":
+			_check(them["hand"].size() < int(before["their_hand"]), "%s: 상대 카드를 훔치지 못함" % label)
+		"discard_enemy":
+			_check(them["hand"].size() < int(before["their_hand"]), "%s: 상대 카드를 없애지 못함" % label)
+		"skip_enemy":
+			_check(int(them["skip"]) >= amount, "%s: 상대 쉬기가 안 걸림" % label)
+		"cure":
+			_check(not bool(me["cursed"]) and int(me["skip"]) == 0, "%s: 저주·쉬기가 풀리지 않음" % label)
+		"charm":
+			_check(bool(me["charm"]), "%s: 부적을 받지 못함" % label)
+		"set_attr":
+			_check(game.map_attr == str(game.char_of(0, "attack")["category"]), "%s: 맵 속성이 바뀌지 않음" % label)
+		"advance":
+			_check(me["trail"].size() >= int(before["my_trail"]) + amount, "%s: %d칸 날아가지 않음" % [label, amount])
+		"push_enemy":
+			_check(them["trail"].size() == int(before["their_trail"]) - amount, "%s: 상대를 %d칸 밀지 못함" % [label, amount])
+		"trap":
+			_check(game.traps.size() >= mini(maxi(amount, 1), int(before["my_trail"])), "%s: 덫이 깔리지 않음" % label)
+		"comeback", "multi", "random_one":
+			pass
+		_:
+			if kind in Game.TIMED_EFFECTS:
+				_check(game.effect_sum(0, kind) == int(before.get("timed_" + kind, 0)) + amount, "%s: 지속 효과 [%s]가 안 걸림" % [label, kind])
+			else:
+				_check(false, "%s: 검사하지 못한 효과 [%s]" % [label, kind])
+
+
+## 쓰기 좋은 판을 차린다: 나는 5칸 와 있고, 상대는 8칸 앞서 카드 2장, 게이지 50, 부적 없음.
+func _skill_table(seed_value: int, hero_id: String):
+	var mine := {"name": "A", "attack": hero_id, "defense": "athena", "support": "choichiwon"}
+	if hero_id == "athena":
+		mine["defense"] = "zeus"
+	if hero_id == "choichiwon":
+		mine["support"] = "houdini"
+	var game = _new_game(seed_value, [mine, PARTIES[1]])
+	game.begin_turn()
+	_place(game, 0, [0, 1, 2, 3, 4, 5])
+	_place(game, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8])
+	game.traps.clear()
+	for index in 2:
+		game.players[index]["charm"] = false
+		game.players[index]["effects"] = []
+		game.players[index]["hand"] = []
+		for slot in Game.SLOTS:
+			game.players[index]["gauge"][slot] = 50
+	game.players[1]["hand"] = ["banner", "fortress"]
+	game.players[0]["cursed"] = true
+	game.players[0]["skip"] = 0
+	return game
+
+
+func _snapshot(game) -> Dictionary:
+	var shot := {
+		"my_gauge": int(game.players[0]["gauge"]["defense"]),
+		"their_gauge": int(game.players[1]["gauge"]["defense"]),
+		"my_hand": game.players[0]["hand"].size(),
+		"their_hand": game.players[1]["hand"].size(),
+		"my_trail": game.players[0]["trail"].size(),
+		"their_trail": game.players[1]["trail"].size(),
+	}
+	for kind in Game.TIMED_EFFECTS:
+		shot["timed_" + kind] = game.effect_sum(0, kind)
+	return shot
+
+
+func _effect_parts(effect: Dictionary) -> Array:
+	if str(effect.get("type", "")) == "multi":
+		return effect.get("effects", [])
+	return [effect]
+
+
+func _test_every_ability_and_card() -> void:
+	var characters: Array = _data["characters"]
+	var checked := 0
+	# 1) 영웅마다 자기 어빌리티를 ATTACK 자리에서 써 본다(게이지 100, 쓰면 0으로).
+	for character in characters:
+		var hero_id := str(character["id"])
+		var ability_id := str(character.get("ability", ""))
+		_check(_data["abilities"].has(ability_id), "어빌리티가 없음: " + hero_id)
+		if not _data["abilities"].has(ability_id):
+			continue
+		var ability: Dictionary = _data["abilities"][ability_id]
+		var effect: Dictionary = ability["effect"]
+		var label := "%s의 [%s]" % [character["name"], ability["name"]]
+		if str(effect.get("type", "")) == "random_one":
+			# 무작위 하나: 여러 번 써서 고를 수 있는 것이 모두 한 번 이상 나오고, 나온 것이 제대로 걸리는지 본다.
+			var seen := {}
+			for seed_value in range(1, 121):
+				var game = _skill_table(seed_value, hero_id)
+				game.players[0]["gauge"]["attack"] = 100
+				var before := _snapshot(game)
+				_check(game.use_ability("attack"), label + ": 쓸 수 없음")
+				var picked := ""
+				for message in game.messages:
+					if str(message).find("뚝딱") >= 0:
+						picked = str(message)
+				for part in effect["effects"]:
+					if picked.find(str(part.get("label", "?"))) >= 0:
+						seen[str(part["label"])] = true
+						_check_effect_applied(game, part, before, "%s(%s)" % [label, part["label"]])
+			_check(seen.size() == effect["effects"].size(), "%s: 나오지 않는 결과가 있음 (%d/%d)" % [label, seen.size(), effect["effects"].size()])
+			checked += 1
+			continue
+		var game = _skill_table(7, hero_id)
+		_check(not game.can_use_ability("attack"), label + ": 게이지 50인데 쓸 수 있음")
+		game.players[0]["gauge"]["attack"] = 100
+		var before := _snapshot(game)
+		game.take_events()
+		_check(game.use_ability("attack"), label + ": 게이지 100인데 쓸 수 없음")
+		_check(int(game.players[0]["gauge"]["attack"]) == 0, label + ": 쓴 뒤 게이지가 0이 아님")
+		_check(not game.can_use_ability("defense"), label + ": 한 턴에 어빌리티를 두 번 씀")
+		var announced := false
+		for event in game.take_events():
+			if event["kind"] == "ability" and str(event["name"]) == str(ability["name"]):
+				announced = true
+		_check(announced, label + ": 화면에 알릴 사건이 없음")
+		for part in _effect_parts(effect):
+			_check_effect_applied(game, part, before, label)
+		# 쓴 뒤에도 정상으로 굴러가는지(이동·도착·턴 넘김)
+		game.roll_move()
+		while game.awaiting_choice():
+			game.choose_path(0)
+		game.end_turn()
+		_check(int(game.players[0]["trail"].back()) == int(game.players[0]["pos"]), label + ": 쓴 뒤 위치가 어긋남")
+		checked += 1
+	_check(checked == characters.size(), "어빌리티를 다 검사하지 못함 (%d/%d)" % [checked, characters.size()])
+
+	# 2) 카드 20장을 하나씩 써 본다(역전의 첫걸음은 _test_cards에서 따로 본다).
+	for card_id in _data["cards"]:
+		var card: Dictionary = _data["cards"][card_id]
+		if str(card["effect"].get("type", "")) == "comeback":
+			continue
+		var game = _skill_table(9, "lubu")
+		game.players[0]["hand"] = [card_id]
+		var before := _snapshot(game)
+		before["my_hand"] = 0
+		_check(game.play_card(0), "카드 [%s]를 쓸 수 없음" % card["name"])
+		_check(not game.can_play_card(0), "카드 [%s]: 한 턴에 카드를 두 장 씀" % card["name"])
+		for part in _effect_parts(card["effect"]):
+			_check_effect_applied(game, part, before, "카드 [%s]" % card["name"])
+
+	# 3) 지속 효과가 실제 이동·전투 결과를 바꾸는지: 효과 없이와 있을 때를 같은 주사위로 비교한다.
+	_check_move_effects()
+	_check_battle_effects()
+	_check_effect_lengths()
+
+
+## 이동 효과: 같은 씨앗에서 효과가 있으면 더 멀리(고정이면 그 칸 수만큼) 간다.
+func _check_move_effects() -> void:
+	var cases := [
+		{"type": "move_plus", "amount": 3, "turns": 1},
+		{"type": "move_dice", "amount": 1, "turns": 1},
+		{"type": "move_best", "amount": 1, "turns": 1},
+		{"type": "move_floor", "amount": 3, "turns": 1},
+		{"type": "move_fixed", "amount": 6},
+	]
+	for effect in cases:
+		var plain := 0
+		var boosted := 0
+		for seed_value in range(1, 201):
+			for with_effect in [false, true]:
+				var game = _skill_table(seed_value, "lubu")
+				game.players[0]["cursed"] = false
+				if with_effect:
+					game._apply_effect(effect, 0)
+				game.take_events()
+				game.roll_move()
+				var total := 0
+				for event in game.take_events():
+					if event["kind"] == "move" and int(event["player"]) == 0:
+						total = int(event["total"])
+				if with_effect:
+					boosted += total
+					if str(effect["type"]) == "move_fixed":
+						_check(total == int(effect["amount"]), "이동 고정 %d칸이 아님: %d" % [int(effect["amount"]), total])
+				else:
+					plain += total
+		_check(boosted > plain, "이동 효과 [%s]가 이동 거리를 늘리지 않음 (%d → %d)" % [effect["type"], plain, boosted])
+	# 상대의 이동 주사위 -1: 상대 차례에 덜 간다
+	var normal := 0
+	var slowed := 0
+	for seed_value in range(1, 201):
+		for with_effect in [false, true]:
+			var game = _skill_table(seed_value, "lubu")
+			if with_effect:
+				game._apply_effect({"type": "enemy_move_dice", "amount": -1}, 0)
+			game.end_turn()
+			game.begin_turn()
+			game.take_events()
+			game.roll_move()
+			for event in game.take_events():
+				if event["kind"] == "move" and int(event["player"]) == 1:
+					if with_effect:
+						slowed += int(event["total"])
+					else:
+						normal += int(event["total"])
+	_check(slowed < normal, "상대 이동 주사위 -1이 상대 이동을 줄이지 않음 (%d → %d)" % [normal, slowed])
+
+
+## 내가 공격하는 판: 상대 말이 바로 앞 칸에 있다. 이긴 판 수와 결과를 센다.
+func _attack_trial(seed_value: int, effects: Array) -> Dictionary:
+	var game = _skill_table(seed_value, "hanxin")
+	game.players[0]["cursed"] = false
+	_place(game, 0, [0, 1, 2, 3, 4, 5])
+	_place(game, 1, [0, 1, 2, 3, 4, 5])
+	for slot in Game.SLOTS:
+		game.players[1]["gauge"][slot] = 60
+		game.players[0]["gauge"][slot] = 0
+	for effect in effects:
+		game._apply_effect(effect, 0)
+	game.moved = true
+	var won: bool = game._battle_players()
+	return {"won": won, "game": game}
+
+
+## 상대가 나를 공격하는 판(상대 차례). 막아 낸 판 수를 센다.
+func _defense_trial(seed_value: int, effects: Array) -> Dictionary:
+	var game = _skill_table(seed_value, "hanxin")
+	game.players[0]["cursed"] = false
+	_place(game, 0, [0, 1, 2, 3, 4, 5])
+	_place(game, 1, [0, 1, 2, 3, 4, 5])
+	for effect in effects:
+		game._apply_effect(effect, 0)
+	game.end_turn()
+	game.begin_turn()
+	game.players[1]["cursed"] = false
+	game.players[1]["effects"] = []
+	var attacker_won: bool = game._battle_players()
+	return {"held": not attacker_won, "game": game}
+
+
+func _check_battle_effects() -> void:
+	var trials := 400
+	var base_wins := 0
+	var base_held := 0
+	for seed_value in range(1, trials + 1):
+		if _attack_trial(seed_value, [])["won"]:
+			base_wins += 1
+		if _defense_trial(seed_value, [])["held"]:
+			base_held += 1
+	var attack_cases := [
+		{"type": "atk_dice", "amount": 1, "turns": 1},
+		{"type": "atk_bonus", "amount": 2, "turns": 1},
+		{"type": "crit", "amount": 2, "turns": 1},
+		{"type": "atk_floor", "amount": 3, "turns": 1},
+		{"type": "enemy_dice_minus", "amount": 1, "turns": 1},
+		{"type": "retry", "amount": 1, "turns": 1},
+	]
+	for effect in attack_cases:
+		var wins := 0
+		for seed_value in range(1, trials + 1):
+			if _attack_trial(seed_value, [effect])["won"]:
+				wins += 1
+		_check(wins > base_wins, "공격 효과 [%s]가 승률을 올리지 않음 (%d → %d / %d)" % [effect["type"], base_wins, wins, trials])
+	var defense_cases := [
+		{"type": "def_dice", "amount": 1, "turns": 1},
+		{"type": "def_bonus", "amount": 2, "turns": 1},
+		{"type": "def_floor", "amount": 3, "turns": 1},
+		{"type": "enemy_dice_minus", "amount": 1, "turns": 1},
+	]
+	for effect in defense_cases:
+		var held := 0
+		for seed_value in range(1, trials + 1):
+			if _defense_trial(seed_value, [effect])["held"]:
+				held += 1
+		_check(held > base_held, "방어 효과 [%s]가 막는 비율을 올리지 않음 (%d → %d / %d)" % [effect["type"], base_held, held, trials])
+	# 추격·흡수: 이기면 3칸 더 가고 상대 게이지를 빼앗는다. 반격: 막아 내면 상대가 3칸 더 물러난다.
+	var chased := false
+	var drained := false
+	for seed_value in range(1, 60):
+		var trial := _attack_trial(seed_value, [{"type": "chase", "amount": 1, "turns": 1}, {"type": "drain", "amount": 30, "turns": 1}, {"type": "atk_dice", "amount": 3, "turns": 1}])
+		if trial["won"]:
+			chased = chased or int(trial["game"].players[0]["trail"].size()) > 6
+			drained = drained or int(trial["game"].players[0]["gauge"]["attack"]) >= 30
+	_check(chased, "추격: 이겼는데 더 전진하지 않음")
+	_check(drained, "흡수: 이겼는데 상대 게이지를 빼앗지 않음")
+	var countered := false
+	for seed_value in range(1, 60):
+		var plain := _defense_trial(seed_value, [{"type": "def_dice", "amount": 3, "turns": 1}])
+		var trial := _defense_trial(seed_value, [{"type": "def_dice", "amount": 3, "turns": 1}, {"type": "counter", "amount": 1, "turns": 1}])
+		if trial["held"] and plain["held"]:
+			countered = countered or int(trial["game"].players[1]["trail"].size()) < int(plain["game"].players[1]["trail"].size())
+	_check(countered, "반격: 막아 냈는데 상대가 더 물러나지 않음")
+	# 게이지 가속: 다음 차례에 게이지가 더 찬다
+	var slow = _skill_table(3, "lubu")
+	var fast = _skill_table(3, "lubu")
+	fast._apply_effect({"type": "gauge_boost", "amount": 50, "turns": 2}, 0)
+	for game in [slow, fast]:
+		game.end_turn()
+		game.begin_turn()
+		game.end_turn()
+		game.begin_turn()
+	_check(int(fast.players[0]["gauge"]["defense"]) > int(slow.players[0]["gauge"]["defense"]), "게이지 가속이 게이지를 더 채우지 않음")
+
+
+## 효과가 설명대로 오래 가는지: '다음 내 차례까지'(1턴)는 상대 차례에도 남고 내 다음 차례에 사라진다.
+## '2턴간'은 내 다음 차례에도 남는다.
+func _check_effect_lengths() -> void:
+	var game = _skill_table(5, "lubu")
+	game._apply_effect({"type": "def_dice", "amount": 2, "turns": 1}, 0)
+	game._apply_effect({"type": "atk_bonus", "amount": 2, "turns": 2}, 0)
+	game.end_turn()
+	game.begin_turn()
+	_check(game.effect_sum(0, "def_dice") == 2, "'다음 내 차례까지' 방어 효과가 상대 차례에 사라짐")
+	game.end_turn()
+	game.begin_turn()
+	_check(game.effect_sum(0, "def_dice") == 0, "1턴 효과가 내 다음 차례에도 남음")
+	_check(game.effect_sum(0, "atk_bonus") == 2, "'2턴간' 효과가 내 다음 차례에 사라짐")
+	game.end_turn()
+	game.begin_turn()
+	game.end_turn()
+	game.begin_turn()
+	_check(game.effect_sum(0, "atk_bonus") == 0, "2턴 효과가 너무 오래 남음")
+	# 상대에게 거는 효과(이동 주사위 -1)는 상대의 다음 이동까지 남는다.
+	game = _skill_table(6, "lubu")
+	game._apply_effect({"type": "enemy_move_dice", "amount": -1}, 0)
+	game.end_turn()
+	game.begin_turn()
+	_check(game.current == 1 and game.effect_sum(1, "move_dice") == -1, "상대 이동 주사위 -1이 상대 차례 전에 사라짐")
+	# 부적은 상대가 거는 나쁜 효과를 한 번 막는다.
+	game = _skill_table(6, "lubu")
+	game.players[1]["charm"] = true
+	game._apply_effect({"type": "skip_enemy", "amount": 1}, 0)
+	_check(int(game.players[1]["skip"]) == 0 and not bool(game.players[1]["charm"]), "부적이 쉬기를 막지 못함")
+	# 덫: 상대가 그 칸에 멈추면 1턴 쉰다.
+	game = _skill_table(6, "lubu")
+	game._apply_effect({"type": "trap", "amount": 1}, 0)
+	_place(game, 0, [0, 1, 2])
+	game.end_turn()
+	game.begin_turn()
+	_place(game, 1, [0, 1, 2, 3, 4, 5])
+	game._resolve_tile(0)
+	_check(int(game.players[1]["skip"]) >= 1 or game.winner >= 0, "덫을 밟았는데 쉬지 않음")
