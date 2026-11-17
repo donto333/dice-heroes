@@ -7,6 +7,9 @@ const GameRules := preload("res://scripts/rules/game.gd")
 const GameDataLoader := preload("res://scripts/game_data.gd")
 ## data/rules.json의 synergy 표(파티를 고를 때 미리 보여 준다)
 var _synergy_table: Dictionary = GameDataLoader.load_json("res://data/rules.json").get("synergy", {})
+## 영웅 레벨(강화) 효과 표. 자동 추천과 자리 카드의 능력 줄에 쓴다.
+var _level_battle: Array = GameDataLoader.load_json("res://data/rules.json").get("level_battle_bonus", [])
+var _level_gauge: Array = GameDataLoader.load_json("res://data/rules.json").get("level_gauge_bonus", [])
 
 signal confirmed(party: Dictionary)
 signal cancelled
@@ -504,12 +507,13 @@ func _show_info(id: String) -> void:
 ## 포인트 6 안에서 자리마다 필요한 능력이 높은 조합을 고른다.
 func _on_auto_pressed() -> void:
 	# 자리마다 점수가 높은 후보를 등급별로 몇 명만 남겨서 조합을 찾는다. 모두 맞춰 보면 느리다.
+	# 점수에는 강화(레벨) 효과도 넣는다: 전투 보너스와 스킬 충전 속도.
 	var pools := {
-		"attack": _top_by_grade(func(c): return int(c["attack"]) * 3 + int(c["move"]) * 2),
-		"defense": _top_by_grade(func(c): return int(c["defense"]) * 3),
-		"support": _top_by_grade(func(c): return int(c["intellect"]) * 2),
+		"attack": _top_by_grade(_slot_score.bind("attack")),
+		"defense": _top_by_grade(_slot_score.bind("defense")),
+		"support": _top_by_grade(_slot_score.bind("support")),
 	}
-	var best_score := -1
+	var best_score := -1.0
 	var best := {}
 	for a in pools["attack"]:
 		for d in pools["defense"]:
@@ -518,13 +522,38 @@ func _on_auto_pressed() -> void:
 					continue
 				if int(a["grade"]) + int(d["grade"]) + int(s["grade"]) > point_limit:
 					continue
-				var score := int(a["attack"]) * 3 + int(a["move"]) * 2 + int(d["defense"]) * 3 + int(s["intellect"]) * 2
+				var score := _slot_score(a, "attack") + _slot_score(d, "defense") + _slot_score(s, "support")
 				if score > best_score:
 					best_score = score
 					best = {"attack": a["id"], "defense": d["id"], "support": s["id"]}
 	if not best.is_empty():
 		party = best
 	_refresh()
+
+
+## 영웅 레벨(강화가 없으면 1).
+func _level_of(character: Dictionary) -> int:
+	return maxi(1, int(_options.get("levels", {}).get(str(character.get("id", "")), 1)))
+
+
+func _from_table(table: Array, level: int) -> int:
+	return int(table[clampi(level - 1, 0, table.size() - 1)]) if not table.is_empty() else 0
+
+
+## 자리에 앉혔을 때의 점수. 능력치(주사위 1개 = 3.5점 정도)에 강화 효과를 같은 저울로 더한다.
+## 전투 보너스 +1 = 합계 +1점. 스킬 충전 +x% = 그 자리 게이지가 x% 빨리 참(지력으로 환산해 더한다).
+func _slot_score(character: Dictionary, slot: String) -> float:
+	var level := _level_of(character)
+	var battle := float(_from_table(_level_battle, level))
+	var charge := float(_from_table(_level_gauge, level)) / 100.0
+	match slot:
+		"attack":
+			return float(character["attack"]) * 3.5 * 3.0 + float(character["move"]) * 2.0 * 3.5 + battle * 3.0 + charge * 4.0
+		"defense":
+			return float(character["defense"]) * 3.5 * 3.0 + battle * 3.0 + charge * 4.0
+		_:
+			var intellect := float(character["intellect"])
+			return intellect * 2.0 * 3.5 * (1.0 + charge) + charge * 4.0
 
 
 ## 등급마다 점수가 높은 캐릭터 4명씩을 고른다.
@@ -535,7 +564,7 @@ func _top_by_grade(score_of: Callable) -> Array:
 		for character in characters:
 			if int(character["grade"]) == grade:
 				group.append(character)
-		group.sort_custom(func(x, y): return int(score_of.call(x)) > int(score_of.call(y)))
+		group.sort_custom(func(x, y): return float(score_of.call(x)) > float(score_of.call(y)))
 		picked.append_array(group.slice(0, 4))
 	return picked
 
@@ -624,6 +653,11 @@ func _refresh() -> void:
 			parts["text"].text = "비어 있음" if character.is_empty() else "%s %s" % ["★".repeat(int(character["grade"])), character["name"]]
 			KitStyle.squeeze_text(parts["text"], 16, 11)
 			parts["stat"].text = SLOT_HINTS[slot] if character.is_empty() else "%s %d" % [STAT_NAMES[stat], int(character[stat])]
+			# 강화 효과도 함께: 공격·방어 자리는 전투 보너스(+n)를 붙인다.
+			if not character.is_empty() and slot != "support":
+				var bonus := _from_table(_level_battle, _level_of(character))
+				if bonus > 0:
+					parts["stat"].text += " +%d" % bonus
 			parts["frame"].modulate = Color(1.3, 1.25, 1.0) if slot == _active_slot else Color(0.82, 0.82, 0.9)
 			button.pivot_offset = button.size * 0.5
 			continue
