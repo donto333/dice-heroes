@@ -398,4 +398,4 @@ func _summary_card() -> Control:
 		face.border_width = 2.0
 		face.show_character(character, Kit.CATEGORY_COLORS.get(character.get("category", ""), Kit.LINE))
 		faces.add_child(face)
-	return MenuArt.summary("heroes", "모은 영웅 %d / %d" % [owned_count, app.data["characters"].size()], "출전 파티", faces)
+	return MenuArt.summary("heroes", "영웅 %d / %d" % [owned_count, app.data["characters"].size()], "출전 파티", faces)
