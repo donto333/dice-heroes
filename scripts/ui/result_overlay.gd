@@ -254,6 +254,9 @@ func show_result(outcome: String, subtitle: String, details: PackedStringArray, 
 	# 로고 그림이 있으면 큰 글자 제목은 숨긴다(같은 말을 두 번 하지 않게). 친구 대전처럼 설명이 이긴 사람을 알려 준다.
 	_title.visible = not (_banner.visible and logo_texture != null)
 	_subtitle.text = subtitle
+	# 이미 떠 있으면(같은 판의 결과를 다시 채울 때) 튀어나오는 연출을 다시 하지 않는다.
+	if visible and _panel.modulate.a > 0.0:
+		return
 	visible = true
 	_panel.pivot_offset = _panel.size * 0.5
 	_panel.scale = Vector2(0.8, 0.8)
