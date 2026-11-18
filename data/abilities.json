@@ -51,7 +51,7 @@
     },
     "unique_alexander": {
       "name": "정복왕",
-      "text": "이번 턴 이동 주사위 +1개, 전투에서 이기면 3칸 더 전진하고 상대 게이지 30%를 빼앗음",
+      "text": "이번 이동 +1칸, 이번 턴 이동 주사위 +1개, 전투에서 이기면 3칸 더 전진하고 상대 게이지 30%를 빼앗음",
       "effect": {
         "type": "multi",
         "effects": [
@@ -68,6 +68,11 @@
           {
             "type": "drain",
             "amount": 30,
+            "turns": 1
+          },
+          {
+            "type": "move_plus",
+            "amount": 1,
             "turns": 1
           }
         ]
@@ -136,7 +141,7 @@
     },
     "skill_hanxin": {
       "name": "배수진",
-      "text": "이번 턴 공격 주사위 +1개, 공격 주사위 눈 최소 3",
+      "text": "이번 이동 +2칸, 이번 턴 공격 주사위 +1개, 공격 주사위 눈 최소 3",
       "effect": {
         "type": "multi",
         "effects": [
@@ -148,6 +153,11 @@
           {
             "type": "atk_floor",
             "amount": 3,
+            "turns": 1
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
             "turns": 1
           }
         ]
@@ -374,7 +384,7 @@
     },
     "skill_sunwu": {
       "name": "지피지기",
-      "text": "카드 1장 획득, 상대는 다음 차례에 카드를 못 씀",
+      "text": "이번 이동 +2칸, 카드 1장 획득, 상대는 다음 차례에 카드를 못 씀",
       "effect": {
         "type": "multi",
         "effects": [
@@ -384,13 +394,18 @@
           },
           {
             "type": "enemy_card_seal"
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
+            "turns": 1
           }
         ]
       }
     },
     "skill_choichiwon": {
       "name": "격문",
-      "text": "카드 1장 획득, 상대 팀 게이지 -20%",
+      "text": "이번 이동 +1칸, 카드 1장 획득, 상대 팀 게이지 -20%",
       "effect": {
         "type": "multi",
         "effects": [
@@ -401,6 +416,11 @@
           {
             "type": "gauge_enemy",
             "amount": -20
+          },
+          {
+            "type": "move_plus",
+            "amount": 1,
+            "turns": 1
           }
         ]
       }
@@ -666,7 +686,7 @@
     },
     "skill_haetae": {
       "name": "불막이",
-      "text": "이번 이동 +2칸, 다음 내 차례까지 방어 합계 +4, 저주 해제",
+      "text": "이번 이동 +1칸, 다음 내 차례까지 방어 합계 +4, 저주 해제",
       "effect": {
         "type": "multi",
         "effects": [
@@ -680,7 +700,7 @@
           },
           {
             "type": "move_plus",
-            "amount": 2,
+            "amount": 1,
             "turns": 1
           }
         ]
@@ -725,7 +745,7 @@
     },
     "skill_isis": {
       "name": "생명의 날개",
-      "text": "저주·쉬기 해제, 우리 팀 게이지 +50%",
+      "text": "이번 이동 +1칸, 저주·쉬기 해제, 우리 팀 게이지 +50%",
       "effect": {
         "type": "multi",
         "effects": [
@@ -735,6 +755,11 @@
           {
             "type": "gauge_team",
             "amount": 50
+          },
+          {
+            "type": "move_plus",
+            "amount": 1,
+            "turns": 1
           }
         ]
       }
@@ -933,10 +958,20 @@
     },
     "skill_fabre": {
       "name": "곤충기",
-      "text": "지금 칸과 바로 뒤 칸에 덫 2개",
+      "text": "이번 이동 +1칸, 지금 칸과 바로 뒤 칸에 덫 2개",
       "effect": {
-        "type": "trap",
-        "amount": 2
+        "type": "multi",
+        "effects": [
+          {
+            "type": "trap",
+            "amount": 2
+          },
+          {
+            "type": "move_plus",
+            "amount": 1,
+            "turns": 1
+          }
+        ]
       }
     },
     "skill_bangjeonghwan": {
