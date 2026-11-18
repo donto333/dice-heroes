@@ -176,6 +176,7 @@ func _mini_card(cards: Dictionary, id: String, grade: int) -> Control:
 	name_label.clip_text = true
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(name_label)
+	Kit.squeeze_text(name_label, 12, 8)
 	return panel
 
 
