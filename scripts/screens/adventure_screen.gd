@@ -221,4 +221,4 @@ func _sweep(id: String) -> void:
 
 
 func _start_stage(id: String) -> void:
-	app.go("party", {"purpose": "match", "mode": "adventure", "stage": id})
+	app.start_mode("adventure", {"stage": id})

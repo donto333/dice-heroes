@@ -7,6 +7,7 @@ extends SceneTree
 const MAIN_SCENE := "res://scenes/main.tscn"
 const SaveStore := preload("res://scripts/save_store.gd")
 const Dialog := preload("res://scripts/ui/dialog.gd")
+const MatchLauncher := preload("res://scripts/ui/match_launcher.gd")
 
 var _app: Node
 var _out_dir := ""
@@ -279,7 +280,12 @@ func _run() -> void:
 	await _wait(0.4)
 	await _shot("11b_help")
 
+	# 대전 시작 확인 창(파티 편성 + 카드 편성, 확인·취소)
 	_app.start_mode("rank")
+	await _wait(0.4)
+	await _shot("12_start_confirm")
+	_close_dialogs()
+	_app.go("party", {"purpose": "edit"})
 	await _wait(0.4)
 	await _shot("12_party")
 	var picker = _party_picker()
@@ -295,6 +301,10 @@ func _run() -> void:
 	await _wait(0.3)
 	await _shot("12e_auto_attack")
 	_party_picker()._on_start_pressed()
+	await _wait(0.3)
+	_app.start_mode("rank")
+	await _wait(0.3)
+	_app.get_meta("match_launcher").confirm()
 	await _wait(0.6)
 	await _shot("12a_searching")
 	await _wait(2.1)
@@ -421,7 +431,7 @@ func _run() -> void:
 	_app.start_mode("local")
 	await _wait(0.4)
 	await _shot("18_party_local")
-	_app.current_screen._pick_map({})
+	MatchLauncher.for_map(_app).pick_map({})
 	await _wait(0.4)
 	await _shot("18b_map_pick")
 	_close_dialogs()
@@ -508,7 +518,7 @@ func _find_with(node: Node, method: String) -> Node:
 func _play_full_game() -> void:
 	_app.start_mode("rank")
 	await _wait(0.4)
-	_party_picker()._on_start_pressed()
+	_app.get_meta("match_launcher").confirm()
 	await _wait(0.3)
 	var screen = _app.current_screen
 	Engine.time_scale = 10.0

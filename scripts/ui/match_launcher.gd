@@ -1,0 +1,341 @@
+extends Node
+## 대전 시작 도우미(2026-11-18 사용자 결정).
+## 랭크전·AI 연습전·모험·오늘의 도전을 누르면 파티 고르기 화면 대신
+## '파티 편성 + 카드 편성'을 한눈에 보여 주는 창을 띄우고, 확인을 누르면 바로 대전을 시작한다.
+## 편성을 바꾸고 싶으면 로비의 '편성' 메뉴에서 바꾼다.
+## 친구 대전은 두 사람이 48명 중에서 고르므로 예전처럼 파티 화면을 쓰고, 맵 고르기만 여기를 쓴다.
+## 쓰는 법: MatchLauncher.ask(app, "rank", {}) / 맵 고르기만: launcher.pick_map(start)
+
+const Kit := preload("res://scripts/ui/kit.gd")
+const Profile := preload("res://scripts/rules/profile.gd")
+const AI := preload("res://scripts/rules/ai.gd")
+const Game := preload("res://scripts/rules/game.gd")
+const MapPreview := preload("res://scripts/ui/map_preview.gd")
+const Portrait := preload("res://scripts/ui/portrait.gd")
+const ArtView := preload("res://scripts/ui/art_view.gd")
+const CardPanels := preload("res://scripts/ui/card_panels.gd")
+
+const MODE_TITLES := {"rank": "랭크전", "ai": "AI 연습전", "local": "친구 대전", "adventure": "모험", "challenge": "오늘의 도전"}
+const SLOTS := [["attack", "ATTACK"], ["defense", "DEFENSE"], ["support", "SUPPORT"]]
+
+var app
+var mode := ""
+var params: Dictionary = {}
+var _window: Control
+var _map_window: Control
+var _pending: Dictionary = {}
+
+
+## 시작 확인 창을 띄운다. 도우미 노드는 app에 붙고, 할 일을 마치면 스스로 사라진다.
+static func ask(main_app, start_mode: String, start_params: Dictionary = {}) -> Node:
+	var launcher = load("res://scripts/ui/match_launcher.gd").new()
+	main_app.add_child(launcher)
+	launcher.app = main_app
+	launcher.mode = start_mode
+	launcher.params = start_params
+	main_app.set_meta("match_launcher", launcher)
+	launcher._open()
+	return launcher
+
+
+## 맵 고르기만 쓰는 도우미(친구 대전).
+static func for_map(main_app) -> Node:
+	var launcher = load("res://scripts/ui/match_launcher.gd").new()
+	main_app.add_child(launcher)
+	launcher.app = main_app
+	return launcher
+
+
+func _open() -> void:
+	var title := "%s 시작" % MODE_TITLES.get(mode, "대전")
+	if mode == "adventure":
+		var found := Profile.find_stage(app.data.get("adventure", {}), str(params.get("stage", "")))
+		if not found.is_empty():
+			title = "%s 시작" % str(found["stage"].get("name", "모험"))
+	_window = app.dialog(title, _body(), [["확인", Kit.ACCENT, confirm], ["취소", Kit.PANEL_LIGHT, cancel]], 1000)
+
+
+func _body() -> Control:
+	var body := Kit.vbox(10)
+	var columns := Kit.hbox(18)
+	body.add_child(columns)
+	columns.add_child(_party_column())
+	var line := ColorRect.new()
+	line.color = Color(1, 1, 1, 0.18)
+	line.custom_minimum_size = Vector2(2, 0)
+	columns.add_child(line)
+	columns.add_child(Kit.expand(_deck_column()))
+	body.add_child(Kit.para("편성은 로비의 '편성' 메뉴에서 바꿀 수 있어요.", 16, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	return body
+
+
+# ---------------------------------------------------------------- 파티 편성 쪽
+
+func _party_column() -> Control:
+	var column := Kit.vbox(8)
+	column.custom_minimum_size = Vector2(300, 0)
+	var party: Dictionary = app.profile["party"]
+	var limit: int = app.point_limit()
+	var total := 0
+	var categories: Array = []
+	for slot in SLOTS:
+		var member: Dictionary = app.character(str(party.get(slot[0], "")))
+		total += int(member.get("grade", 0))
+		categories.append(str(member.get("category", "")))
+	column.add_child(Kit.label("파티 편성 · 소환 포인트 %d / %d" % [total, limit], 20, Kit.GOLD))
+	for slot in SLOTS:
+		column.add_child(_member_row(slot[1], app.character(str(party.get(slot[0], "")))))
+	var notes: Array = []
+	var synergy: Dictionary = Game.synergy_of(app.data.get("rules", {}).get("synergy", {}), categories)
+	if not synergy.is_empty():
+		notes.append("시너지: %s" % str(synergy.get("name", "")))
+	var relic: Dictionary = Profile.current_relic(app.profile, app.eco)
+	notes.append("유물: %s" % (str(relic["name"]) if not relic.is_empty() else "없음"))
+	column.add_child(Kit.para("\n".join(notes), 16, Kit.MUTED))
+	return column
+
+
+func _member_row(slot_name: String, member: Dictionary) -> Control:
+	var row := Kit.hbox(10)
+	var grade := int(member.get("grade", 1))
+	var face := Portrait.new()
+	face.custom_minimum_size = Vector2(64, 64)
+	face.border = Kit.GRADE_COLORS.get(grade, Kit.GOLD)
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if member.is_empty():
+		face.show_text("?", Kit.LINE)
+	else:
+		face.show_character(member, Kit.CATEGORY_COLORS.get(member.get("category", ""), Kit.LINE))
+	row.add_child(face)
+	var text := Kit.vbox(0)
+	text.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(Kit.expand(text))
+	text.add_child(Kit.label(slot_name, 13, Kit.MUTED))
+	text.add_child(Kit.label(str(member.get("name", "비어 있음")), 20, Color.WHITE))
+	if not member.is_empty():
+		var id := str(member.get("id", ""))
+		text.add_child(Kit.label("%s  Lv.%d" % ["★".repeat(grade), max(1, Profile.level_of(app.profile, id))], 14, Kit.GRADE_COLORS.get(grade, Kit.GOLD)))
+	return row
+
+
+# ---------------------------------------------------------------- 카드 편성 쪽
+
+func _deck_column() -> Control:
+	var column := Kit.vbox(6)
+	var cards: Dictionary = app.data.get("cards", {})
+	var deck: Array = app.profile.get("deck", [])
+	var size := int(app.eco.get("card_deck", {}).get("size", 15))
+	var broken := Profile.deck_error(app.profile, cards, app.eco, deck) != ""
+	if broken:
+		deck = app.eco.get("start", {}).get("deck", [])
+	column.add_child(Kit.label("카드 편성 %d / %d" % [deck.size(), size], 20, Kit.GOLD))
+	if broken:
+		column.add_child(Kit.para("카드 편성이 맞지 않아 기본 덱으로 시작해요.", 15, Color("ffb3a3")))
+	var per_grade: Dictionary = app.eco.get("card_deck", {}).get("per_grade", {})
+	for grade in [3, 2, 1]:
+		var ids: Array = []
+		for id in deck:
+			if Profile.card_grade(cards, str(id)) == grade:
+				ids.append(str(id))
+		column.add_child(Kit.label("%s %d / %d" % [CardPanels.GRADE_NAMES[grade], ids.size(), int(per_grade.get(str(grade), 0))], 14, Kit.GRADE_COLORS[grade]))
+		var row := Kit.hbox(6)
+		row.custom_minimum_size = Vector2(0, 74)
+		for id in ids:
+			row.add_child(_mini_card(cards, id, grade))
+		if ids.is_empty():
+			row.add_child(Kit.label("없음", 14, Kit.MUTED))
+		column.add_child(row)
+	return column
+
+
+## 작은 카드: 그림과 이름만.
+func _mini_card(cards: Dictionary, id: String, grade: int) -> Control:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(76, 74)
+	panel.tooltip_text = str(cards.get(id, {}).get("text", ""))
+	panel.add_theme_stylebox_override("panel", Kit.box(CardPanels.GRADE_FILLS[grade], Kit.GRADE_COLORS[grade], 2, 8, 3))
+	var column := Kit.vbox(1)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(column)
+	var picture := ArtView.new()
+	picture.show_art("cards/" + id)
+	picture.custom_minimum_size = Vector2(0, 46)
+	picture.focus_y = 0.5
+	picture.corner_radius = 6.0
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if picture.has_art():
+		column.add_child(picture)
+	else:
+		picture.free()
+		var holder := CenterContainer.new()
+		holder.custom_minimum_size = Vector2(0, 46)
+		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.add_child(Kit.icon("card", 30))
+		column.add_child(holder)
+	var name_label := Kit.label(str(cards.get(id, {}).get("name", id)), 12, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	name_label.clip_text = true
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(name_label)
+	return panel
+
+
+# ---------------------------------------------------------------- 시작
+
+func cancel() -> void:
+	app.play("click")
+	_finish()
+
+
+func _finish() -> void:
+	if app != null and app.has_meta("match_launcher") and app.get_meta("match_launcher") == self:
+		app.remove_meta("match_launcher")
+	queue_free()
+
+
+## 확인: 저장된 파티·덱으로 대전을 시작한다.
+func confirm() -> void:
+	if _window != null and is_instance_valid(_window):
+		_window.close()
+	var limit: int = app.point_limit()
+	var party: Dictionary = app.profile["party"]
+	if not Profile.party_ok(app.profile, app.data["characters"], party, limit):
+		app.play("denied")
+		app.toast("소환 포인트 %d 안에서 파티를 먼저 짜 주세요." % limit)
+		app.go("party", {"purpose": "edit"})
+		_finish()
+		return
+	app.play("good")
+	var mine := Profile.battle_party(app.profile, party, "나")
+	if mode == "adventure":
+		var found := Profile.find_stage(app.data.get("adventure", {}), str(params.get("stage", "")))
+		if found.is_empty():
+			app.go("adventure")
+			_finish()
+			return
+		var stage: Dictionary = found["stage"]
+		var enemy: Dictionary = stage["enemy"].duplicate()
+		enemy["name"] = str(stage["name"])
+		var level := int(stage["ai_level"])
+		enemy["levels"] = {"attack": level, "defense": level, "support": level}
+		_go({"mode": "adventure", "stage": str(stage["id"]), "parties": [mine, enemy], "humans": [true, false], "map": int(found["chapter"]["map"])})
+		return
+	if mode == "challenge":
+		# 상대 파티와 맵은 날짜로 정해져 하루 동안 같다.
+		var day_rng := RandomNumberGenerator.new()
+		day_rng.seed = Profile.challenge_seed(app.profile)
+		var challenger: Dictionary = AI.pick_party(app.data["characters"], limit, day_rng)
+		challenger["name"] = "오늘의 도전자"
+		var challenge_level := Profile.challenge_level(app.profile, app.eco)
+		challenger["levels"] = {"attack": challenge_level, "defense": challenge_level, "support": challenge_level}
+		_go({"mode": "challenge", "parties": [mine, challenger], "humans": [true, false],
+			"map": day_rng.randi_range(0, app.data["boards"].size() - 1)})
+		return
+	var theirs: Dictionary = AI.pick_party(app.data["characters"], limit, app.rng)
+	theirs["name"] = "AI"
+	var ai_level := 1
+	if mode == "rank":
+		ai_level = Profile.rank_ai_level(app.eco, int(app.profile["trophies"]))
+		var names: Array = app.eco.get("ai_names", [])
+		if not names.is_empty():
+			var tier: Dictionary = Profile.tier_of(app.eco, int(app.profile["trophies"]))
+			theirs["name"] = "%s(%s)" % [names[app.rng.randi_range(0, names.size() - 1)], tier["name"]]
+	var scale := 1.0
+	if mode == "ai":
+		var difficulty: Dictionary = Profile.ai_difficulty(app.eco, str(app.profile.get("ai_difficulty", "easy")))
+		ai_level = int(difficulty["level"])
+		scale = float(difficulty["reward_scale"])
+		if not bool(difficulty["smart"]):
+			# 쉬움: 조합을 따지지 않은 아무 파티
+			theirs = AI.pick_party(app.data["characters"], limit, app.rng, 1)
+		theirs["name"] = "AI(%s)" % difficulty["name"]
+	theirs["levels"] = {"attack": ai_level, "defense": ai_level, "support": ai_level}
+	var start := {"mode": mode, "parties": [mine, theirs], "humans": [true, false], "reward_scale": scale}
+	if mode == "ai":
+		pick_map(start)
+		return
+	start["map"] = _random_map()
+	_go(start)
+
+
+func _go(start: Dictionary) -> void:
+	app.go_loading("match", start, "대전 준비 중...", 1.0, true)
+	_finish()
+
+
+# ---------------------------------------------------------------- 맵 고르기
+
+## AI 연습전·친구 대전은 시작하기 전에 맵을 고른다. (랭크전은 늘 무작위, 모험은 장마다 정해짐)
+func pick_map(start: Dictionary) -> void:
+	_pending = start
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	grid.add_child(_map_cell(-1, "무작위", "어떤 맵이 나올까?", {}))
+	var boards: Array = app.data["boards"]
+	for index in boards.size():
+		var board: Dictionary = boards[index]
+		var note := str(board.get("feature", ""))
+		var record: Dictionary = Profile.map_record(app.profile, str(board.get("name", "")))
+		if int(record["played"]) > 0:
+			note = "내 전적 %d판 %d승" % [int(record["played"]), int(record["wins"])]
+		grid.add_child(_map_cell(index, "%s (%s)" % [board.get("name", "맵"), board.get("shape", "")], note, board))
+	var body := Kit.vbox(8)
+	body.add_child(Kit.para("싸울 맵을 고르세요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	body.add_child(grid)
+	_map_window = app.dialog("맵 고르기", body, [["취소", Kit.PANEL_LIGHT, cancel]], 780)
+
+
+func _map_cell(index: int, title: String, note: String, board: Dictionary) -> Control:
+	var theme: Dictionary = board.get("theme", {})
+	var fill := Color(str(theme.get("bg", "2a3164")))
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(232, 196)
+	for state in ["normal", "hover", "pressed"]:
+		var style := Kit.box(fill if state == "normal" else fill.lightened(0.15), Kit.GOLD if state != "normal" else fill.lightened(0.4), 3, 14, 6)
+		style.border_width_bottom = 7
+		button.add_theme_stylebox_override(state, style)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	button.pressed.connect(_on_map_picked.bind(index))
+	var column := Kit.vbox(2)
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	column.offset_left = 8
+	column.offset_right = -8
+	column.offset_top = 8
+	column.offset_bottom = -12
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(column)
+	if board.is_empty():
+		var mark := Kit.label("?", 70, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+		mark.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(mark)
+	else:
+		var preview := MapPreview.new()
+		preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		preview.show_board(board)
+		column.add_child(preview)
+	var name_label := Kit.label(title, 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	name_label.clip_text = true
+	name_label.add_theme_constant_override("outline_size", 5)
+	name_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(name_label)
+	var note_label := Kit.para(note, 16, Color(1, 1, 1, 0.88), HORIZONTAL_ALIGNMENT_CENTER)
+	note_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(note_label)
+	return button
+
+
+func _on_map_picked(index: int) -> void:
+	app.play("good")
+	if _map_window != null and is_instance_valid(_map_window):
+		_map_window.close()
+	_pending["map"] = index if index >= 0 else _random_map()
+	_go(_pending)
+
+
+func _random_map() -> int:
+	return app.rng.randi_range(0, app.data["boards"].size() - 1)

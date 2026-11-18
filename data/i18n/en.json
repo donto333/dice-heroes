@@ -1807,5 +1807,11 @@
  "카드 편성 화면이 바뀌었어요: 왼쪽에 등급별 덱(전설·희귀·일반), 오른쪽에 보유 카드.": "The Card Deck screen is new: your deck by grade (Legendary · Rare · Common) on the left, owned cards on the right.",
  "★★★ 영웅 12명의 스킬 컷인에 전용 스킬 장면 그림이 생겼어요.": "Twelve ★★★ heroes now have their own skill scene art in the skill cut-in.",
  "업적마다 종류별 메달 아이콘이 생겼어요.": "Each achievement now has its own medal icon by type.",
- "기다리는 화면의 도움말에 그림이 생겼어요.": "Loading screen tips now come with pictures."
+ "기다리는 화면의 도움말에 그림이 생겼어요.": "Loading screen tips now come with pictures.",
+ "랭크전·모험 등을 시작할 때 파티와 카드 편성을 한눈에 보는 확인 창이 떠요. 확인을 누르면 바로 시작해요.": "Starting Ranked, Adventure and more now shows one window with your party and card deck. Press OK to start right away.",
+ "%s 시작": "Start %s",
+ "편성은 로비의 '편성' 메뉴에서 바꿀 수 있어요.": "You can change your lineup in the lobby's Formation menu.",
+ "파티 편성 · 소환 포인트 %d / %d": "Party · Summon Points %d / %d",
+ "카드 편성이 맞지 않아 기본 덱으로 시작해요.": "Your deck isn't valid, so the starter deck will be used.",
+ "소환 포인트 %d 안에서 파티를 먼저 짜 주세요.": "Please build a party within %d summon points first."
 }
