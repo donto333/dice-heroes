@@ -13,6 +13,7 @@ const Dialog := preload("res://scripts/ui/dialog.gd")
 const Toast := preload("res://scripts/ui/toast.gd")
 const Music := preload("res://scripts/ui/music.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
+const MatchLauncher := preload("res://scripts/ui/match_launcher.gd")
 const ProfileCard := preload("res://scripts/ui/profile_card.gd")
 const LoadingOverlay := preload("res://scripts/ui/loading_overlay.gd")
 const Opening := preload("res://scripts/ui/opening.gd")
@@ -546,10 +547,15 @@ func message(title_text: String, text: String, button_text: String = "확인", c
 
 # ---------------------------------------------------------------- 대전
 
-## 대전 모드를 고르면 파티를 확인한 뒤 대전 화면으로 간다.
-## mode: "rank"(랭크전), "ai"(AI 연습), "local"(한 기기 2인)
-func start_mode(mode: String) -> void:
-	go("party", {"purpose": "match", "mode": mode, "player": 1})
+## 대전 모드를 고르면 시작 확인 창(파티 편성 + 카드 편성, 확인·취소)을 띄우고 확인하면 바로 대전한다.
+## mode: "rank"(랭크전), "ai"(AI 연습), "adventure"(모험, extra의 stage), "challenge"(오늘의 도전), "local"(한 기기 2인)
+## 친구 대전만 두 사람이 파티를 고르는 화면으로 간다.
+func start_mode(mode: String, extra: Dictionary = {}) -> void:
+	if mode == "local":
+		go("party", {"purpose": "match", "mode": mode, "player": 1})
+		return
+	play("click")
+	MatchLauncher.ask(self, mode, extra)
 
 
 # ---------------------------------------------------------------- 끌어서 내리기

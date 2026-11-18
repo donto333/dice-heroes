@@ -67,6 +67,7 @@
 - ★★★ 스킬 장면 그림(2026-11-18, GPT 그림 활용 기획 3단계): `assets/cutins/<영웅 id>.png`(512 정사각, 바탕 없는 상반신)가 있으면 컷인(`cutin.gd`의 _hero_art)이 초상화 대신 띠 위로 튀어나오게 그린다(`GameData.cutin_art`). 주문서 `codex_jobs/job_cutin.md`, 넣는 도구 `tools/import_cutins.py <그림 폴더>`.
 - 업적 아이콘(2026-11-18, GPT 그림 활용 기획 4단계): 업적 종류(stat)별 금테 메달 12종 `assets/ui_icons/ach_*.png`(192), 미션 화면 업적 줄이 `missions_screen.gd`의 ACHIEVEMENT_ICONS로 고른다(없으면 trophy). Codex 웹에서 4×3 판 한 장으로 그려 `tools/import_icon_sheet.py <판> <폴더> <이름들> [크기]`(아이콘 판을 덩어리로 잘라 넣는 공용 도구)로 넣었다.
 - 기다림 화면 도움말 그림(2026-11-18, GPT 그림 활용 기획 5단계): `loading_overlay.gd`의 TIPS 12개와 같은 순서의 그림 `assets/art/tips/tip_01~12.png`(`GameData.tip_art`). 도움말을 보여 줄 때 그림은 왼쪽 아래, 글은 그 오른쪽. TIPS를 바꾸거나 늘리면 그림도 같은 번호로 맞춘다. Codex 웹에서 4×3 판 한 장으로 그려 잘라 넣음.
+- 대전 시작 확인 창(2026-11-18 사용자 결정): 랭크전·AI 연습전·모험·오늘의 도전은 파티 고르기 화면을 거치지 않는다. `app.start_mode(모드, {"stage": id})`가 `scripts/ui/match_launcher.gd`(MatchLauncher.ask)로 저장된 파티 편성(세 명·소환 포인트·시너지·유물)과 카드 편성(등급별 줄)을 한 창에 보여 주고, 버튼은 확인·취소뿐이다. 확인하면 상대를 정해 바로 대전(AI 연습전은 맵 고르기 창 뒤). 파티가 한도를 넘거나 비면 편성 화면으로 보낸다. 친구 대전만 예전처럼 파티 화면(purpose match, mode local)을 쓰고 맵 고르기는 `MatchLauncher.for_map(app).pick_map(start)`. 자동 사진 `12_start_confirm`, 자동 진행은 `app.get_meta("match_launcher").confirm()`.
 - 매일 바뀌는 것(날짜 씨앗): 오늘의 미션 6개(`Profile.active_missions`), 오늘의 특가, 오늘의 도전(상대·맵). 하루 기록은 `profile["daily"]`.
 
 ## 게임 요약

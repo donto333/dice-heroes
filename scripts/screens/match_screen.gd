@@ -2393,7 +2393,7 @@ func _on_retry_pressed() -> void:
 	if _is_local():
 		app.go_loading("match", {"mode": _mode, "parties": _parties, "humans": _humans, "map": app.rng.randi_range(0, app.data["boards"].size() - 1)}, "대전 준비 중...", 0.8, true)
 	elif _mode == "adventure":
-		app.go("party", {"purpose": "match", "mode": "adventure", "stage": _next_stage if _next_stage != "" else _stage_id})
+		app.start_mode("adventure", {"stage": _next_stage if _next_stage != "" else _stage_id})
 	else:
 		app.start_mode(_mode)
 
