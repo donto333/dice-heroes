@@ -1806,5 +1806,6 @@
  "보유 카드 %d / %d": "Owned cards %d / %d",
  "카드 편성 화면이 바뀌었어요: 왼쪽에 등급별 덱(전설·희귀·일반), 오른쪽에 보유 카드.": "The Card Deck screen is new: your deck by grade (Legendary · Rare · Common) on the left, owned cards on the right.",
  "★★★ 영웅 12명의 스킬 컷인에 전용 스킬 장면 그림이 생겼어요.": "Twelve ★★★ heroes now have their own skill scene art in the skill cut-in.",
- "업적마다 종류별 메달 아이콘이 생겼어요.": "Each achievement now has its own medal icon by type."
+ "업적마다 종류별 메달 아이콘이 생겼어요.": "Each achievement now has its own medal icon by type.",
+ "기다리는 화면의 도움말에 그림이 생겼어요.": "Loading screen tips now come with pictures."
 }
