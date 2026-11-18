@@ -668,6 +668,9 @@ func _show_skill_info(focus: String) -> void:
 		face.border_width = 3.0
 		face.show_character(character, SLOT_COLORS[slot].darkened(0.3))
 		row.add_child(face)
+		var info_icon := GameData.ability_icon_rect(str(character.get("ability", "")), 64.0)
+		if info_icon != null:
+			row.add_child(info_icon)
 		var words := Kit.vbox(2)
 		row.add_child(Kit.expand(words))
 		var head := Kit.hbox(8)
@@ -700,6 +703,9 @@ func _notify(character: Dictionary, title: String, text: String, color: Color) -
 	face.border_width = 3.0
 	face.show_character(character, color.darkened(0.4))
 	row.add_child(face)
+	var notify_icon := GameData.ability_icon_rect(str(character.get("ability", "")), 54.0)
+	if notify_icon != null:
+		row.add_child(notify_icon)
 	var words := VBoxContainer.new()
 	words.add_theme_constant_override("separation", 0)
 	words.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1510,6 +1516,19 @@ func _make_skill_button(slot: String) -> Button:
 	portrait.anchor_bottom = 0.8
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(portrait)
+	# 어빌리티 아이콘: 초상화 오른쪽 아래 귀퉁이에 작은 메달로 겹친다.
+	var badge := TextureRect.new()
+	badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	badge.anchor_left = 0.25
+	badge.anchor_right = 0.25
+	badge.anchor_top = 0.58
+	badge.anchor_bottom = 0.58
+	badge.offset_right = 34
+	badge.offset_bottom = 34
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(badge)
+	button.set_meta("badge", badge)
 	var gauge := Kit.bar(0.0, Color("ffcf4d"), 8)
 	gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	gauge.anchor_left = 0.445
@@ -2473,6 +2492,8 @@ func _refresh() -> void:
 		_ability_gauges[slot].value = clampf(float(me["gauge"][slot]) / 100.0, 0.0, 1.0)
 		var portrait = _ability_portraits[slot]
 		portrait.show_character(character, SLOT_COLORS[slot])
+		if button.has_meta("badge"):
+			button.get_meta("badge").texture = GameData.ability_icon(str(character.get("ability", "")))
 
 	var hand: Array = me["hand"]
 	for index in _card_buttons.size():

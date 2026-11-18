@@ -9,6 +9,7 @@ const TopBar := preload("res://scripts/ui/top_bar.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const CardPanels := preload("res://scripts/ui/card_panels.gd")
+const GameData := preload("res://scripts/game_data.gd")
 
 ## 분류 → 알약 색
 const CATEGORY_PILLS := {"": "blue", "영웅": "red", "위인": "blue", "신화": "purple", "근현대": "green"}
@@ -297,7 +298,12 @@ func show_hero(id: String) -> void:
 	var ability_box := Kit.panel(Color("13458f"), Kit.LINE, 12)
 	var ability_text := Kit.label("어빌리티 [%s]%s\n%s" % [ability.get("name", "-"), "  (★★★ 전용)" if str(character.get("ability", "")).begins_with("unique_") else "", ability.get("text", "")], 21)
 	ability_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	ability_box.add_child(ability_text)
+	var ability_row := Kit.hbox(12)
+	ability_box.add_child(ability_row)
+	var detail_icon := GameData.ability_icon_rect(str(character.get("ability", "")), 72.0)
+	if detail_icon != null:
+		ability_row.add_child(detail_icon)
+	ability_row.add_child(Kit.expand(ability_text))
 	body.add_child(ability_box)
 	if character.has("bio"):
 		body.add_child(Kit.para(str(character["bio"]), 18, Kit.MUTED))
