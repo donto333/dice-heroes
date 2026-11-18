@@ -22,7 +22,6 @@ const TITLES := {
 	"pass": ["시즌 패스", "pass"],
 	"help": ["게임 방법", "help"],
 	"party": ["파티 편성", "swords"],
-	"cards": ["카드", "card"],
 }
 
 

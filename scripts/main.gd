@@ -18,7 +18,7 @@ const LoadingOverlay := preload("res://scripts/ui/loading_overlay.gd")
 const Opening := preload("res://scripts/ui/opening.gd")
 ## 화면마다 틀 배경음악
 const SCREEN_MUSIC := {"match": "match", "title": "title", "login": "title",
-	"shop": "shop", "heroes": "shop", "missions": "shop", "pass": "shop", "cards": "shop"}
+	"shop": "shop", "heroes": "shop", "missions": "shop", "pass": "shop"}
 
 const SCREENS := {
 	"title": preload("res://scripts/screens/title_screen.gd"),
@@ -33,14 +33,13 @@ const SCREENS := {
 	"help": preload("res://scripts/screens/help_screen.gd"),
 	"adventure": preload("res://scripts/screens/adventure_screen.gd"),
 	"pass": preload("res://scripts/screens/pass_screen.gd"),
-	"cards": preload("res://scripts/screens/cards_screen.gd"),
 }
 ## 화면마다 다른 판 색(분위기). 시안식 틀을 쓰는 메뉴 화면(영웅·상점·미션·설정·모험·패스)은 시안처럼 모두 남색(2026-11-17).
 const SCREEN_MOODS := {
 	"lobby": Color("3b2f9e"), "shop": Color("1f3a82"), "heroes": Color("1f3a82"), "missions": Color("1f3a82"),
-	"settings": Color("1f3a82"), "adventure": Color("1f3a82"), "pass": Color("1f3a82"), "help": Color("1f3a82"), "cards": Color("1f3a82"),
+	"settings": Color("1f3a82"), "adventure": Color("1f3a82"), "pass": Color("1f3a82"), "help": Color("1f3a82"),
 }
-const VERSION := "0.28.1"
+const VERSION := "0.28.2"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}

@@ -12,6 +12,7 @@ const DiePreview := preload("res://scripts/ui/die_preview.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
+const CardPanels := preload("res://scripts/ui/card_panels.gd")
 
 const BANNER := ["zeus", "lubu", "sejong", "nightingale"]
 
@@ -21,7 +22,7 @@ var app
 ## 상점 탭: 소환(소환·특가) / 성장(유물·골드 교환) / 꾸미기(주사위) / 보석(마일리지·보석 상점)
 const TABS := [["summon", "소환"], ["grow", "성장"], ["look", "꾸미기"], ["gems", "보석"]]
 ## 왼쪽 세로 판 항목: [id, 글자, 아이콘]
-const RAIL := [["summon", "영웅 소환", "summon"], ["grow", "성장", "upgrade"], ["look", "주사위", "dice"], ["gems", "보석", "gem"], ["cards", "카드 뽑기", "card"]]
+const RAIL := [["summon", "영웅 소환", "summon"], ["grow", "성장", "upgrade"], ["look", "주사위", "dice"], ["gems", "보석", "gem"]]
 var _tab := "summon"
 
 
@@ -53,6 +54,12 @@ func setup(main_app, _params: Dictionary) -> void:
 		_:
 			body.add_child(_summon_panel())
 			body.add_child(_gold_summon_panel())
+			# 카드 뽑기(2026-11-18 사용자 요청): 영웅 뽑기 바로 아래
+			body.add_child(MenuArt.section("카드 뽑기", "card", "아이템 카드를 모아 덱을 짜요"))
+			var panels := CardPanels.new()
+			add_child(panels)
+			panels.init(app, "shop", {"tab": "summon"})
+			panels.build_gacha(body)
 			body.add_child(_deals_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	# 남은 버튼도 모두 금테 알약으로(UI 개편 1단계)
@@ -476,10 +483,6 @@ func _on_shop_tab(id: String) -> void:
 	if id == _tab:
 		return
 	app.play("tab")
-	if id == "cards":
-		# 카드 뽑기는 카드 화면에 있다(덱 편성과 한곳에서).
-		app.go("cards", {"tab": "gacha"})
-		return
 	app.go("shop", {"tab": id})
 
 
