@@ -1784,5 +1784,22 @@
  "카드 앨범": "Card Album",
  "등급마다 카드를 모으면 보상을 받아요.": "Collect cards of each grade to earn rewards.",
  "%d장 %s": "%d cards %s",
- "카드 앨범 보상: %s": "Card album reward: %s"
+ "카드 앨범 보상: %s": "Card album reward: %s",
+ "영웅 도감": "Hero Collection",
+ "카드 도감": "Card Collection",
+ "목록": "List",
+ "도감": "Collection",
+ "도감 보상: %s": "Collection reward: %s",
+ "카드 도감 보상: %s": "Card collection reward: %s",
+ "도전 완료!": "Challenge done!",
+ "영웅 능력치 창에 어빌리티가 얼마나 빨리 차는지(충전 속도)가 보여요.": "The hero stats window now shows how fast the ability charges (charge speed).",
+ "주사위 꾸미기마다 전용 그림이 생겼어요.": "Every dice skin now has its own artwork.",
+ "로비의 영웅 타일 이름이 '편성'으로 바뀌었어요.": "The Heroes tile in the lobby is now called 'Formation'.",
+ "버전 번호가 업데이트할 때마다 저절로 올라가요. 새 버전이 나왔는데도 예전 번호가 보이던 문제를 고쳤어요.": "The version number now goes up automatically with each update. Fixed the old number showing after a new version.",
+ "하루 한 번 · 매일 상대와 맵이 바뀌어요": "Once a day · opponent and map change daily",
+ "오늘 완료": "Done today",
+ "도전하기": "Challenge",
+ "상대 영웅 Lv.%d · 이기면 %s": "Enemy heroes Lv.%d · Win for %s",
+ "오늘의 도전을 이겼어요! 내일 또 와요.": "You won today's challenge! Come back tomorrow.",
+ "로비 메뉴가 편성·목록·도감·상점으로 바뀌었어요. 시즌 패스는 상점 안에, 오늘의 도전은 미션 안에 있어요.": "The lobby menu is now Formation · List · Collection · Shop. The Season Pass is inside the Shop, and Today's Challenge is inside Missions."
 }

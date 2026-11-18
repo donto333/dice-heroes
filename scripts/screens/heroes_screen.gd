@@ -11,6 +11,11 @@ const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const CardPanels := preload("res://scripts/ui/card_panels.gd")
 const GameData := preload("res://scripts/game_data.gd")
 
+## 왼쪽 판 묶음(2026-11-18 사용자 결정: 로비 메뉴 편성·목록·도감)
+const LIST_RAIL := [["list", "영웅 목록", "heroes"], ["cards", "카드 목록", "card"]]
+const FORM_RAIL := [["party", "파티 편성", "swords"], ["deck", "카드 편성", "todo"]]
+const ALBUM_RAIL := [["album", "영웅 도감", "album"], ["card_album", "카드 도감", "book"]]
+
 ## 분류 → 알약 색
 const CATEGORY_PILLS := {"": "blue", "영웅": "red", "위인": "blue", "신화": "purple", "근현대": "green"}
 const STAT_NAMES := [["move", "이동"], ["attack", "공격"], ["defense", "방어"], ["intellect", "지력"]]
@@ -27,14 +32,33 @@ var _count_label: Label
 func setup(main_app, params: Dictionary) -> void:
 	app = main_app
 	_filter = str(params.get("filter", ""))
-	# 시안식 틀: 왼쪽 세로 판에 영웅 목록·앨범·파티 편성, 오른쪽 큰 금테 판.
-	# 왼쪽 판(2026-11-18 사용자 결정): 영웅 목록 · 카드 목록 · 영웅 앨범 · 파티 편성 · 카드 편성
-	# 2026-11-18 사용자 결정: 앨범 두 개(영웅·카드)는 맨 아래.
-	var rail := [["list", "영웅 목록", "heroes"], ["cards", "카드 목록", "card"],
-		["party", "파티 편성", "swords"], ["deck", "카드 편성", "todo"],
-		["album", "영웅 앨범", "album"], ["card_album", "카드 앨범", "book"]]
-	# 카드 목록(view == "cards")·카드 편성(view == "deck")은 영웅 메뉴 안에서 보여 준다.
+	# 2026-11-18 사용자 결정: 로비 메뉴가 편성·목록·도감으로 나뉘어, 이 화면은 셋 중 하나로 쓰인다.
+	# 목록(view ""·"cards"): 영웅 목록·카드 목록 / 편성(view "deck", 파티 편성은 파티 화면): 파티 편성·카드 편성
+	# 도감(view "album"·"card_album"): 영웅 도감·카드 도감
 	var view := str(params.get("view", ""))
+	var rail: Array = LIST_RAIL
+	set_meta("title_spec", ["목록", "heroes"])
+	if view == "deck":
+		rail = FORM_RAIL
+		set_meta("title_spec", ["편성", "swords"])
+	elif view == "album" or view == "card_album":
+		rail = ALBUM_RAIL
+		set_meta("title_spec", ["도감", "album"])
+		var album_column := MenuArt.frame(self, app, "ui/bg_heroes", rail, view, _on_rail, _summary_card())
+		var album_scroll := ScrollContainer.new()
+		album_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		album_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		album_column.add_child(album_scroll)
+		var album_body := Kit.vbox(10)
+		Kit.expand(album_body)
+		album_scroll.add_child(album_body)
+		if view == "card_album":
+			_open_card_album(true, album_body)
+		else:
+			_open_album(true, album_body)
+		MenuArt.skin_buttons(album_column)
+		return
+	# 카드 목록(view == "cards")·카드 편성(view == "deck")은 이 화면 안에서 보여 준다.
 	if view == "cards" or view == "deck":
 		var panels := CardPanels.new()
 		add_child(panels)
@@ -55,7 +79,7 @@ func setup(main_app, params: Dictionary) -> void:
 	header.add_child(Kit.expand(_count_label))
 	var all_up := MenuArt.pill_button("일괄 강화", "green", "m")
 	all_up.custom_minimum_size = Vector2(150, 52)
-	all_up.disabled = not bool(app.badges().get("heroes", false))
+	all_up.disabled = not bool(app.badges().get("list", false))
 	all_up.pressed.connect(_upgrade_all)
 	header.add_child(all_up)
 	_owned_button = MenuArt.pill_button("보유만 보기", "blue", "m")
@@ -374,15 +398,19 @@ func _upgrade(id: String) -> void:
 
 ## 수집 앨범: 분류마다 모은 수와 단계 보상
 ## 수집 앨범 창(UI 개편 2단계: 너비 780, 본문 18~24, 받기는 금테 알약). 분류 4개를 2×2 카드로.
-func _open_album(quiet := false) -> void:
+## into가 있으면 창 대신 그 칸(도감 화면의 큰 판)에 그린다.
+func _open_album(quiet := false, into: Control = null) -> void:
 	if not quiet:
 		app.play("click")
+	if into == null:
+		# 도감은 이제 화면(영웅 도감)으로 본다.
+		app.go("heroes", {"view": "album"})
+		return
 	var body := Kit.vbox(10)
 	body.add_child(Kit.para("분류마다 영웅을 모으면 보상을 받아요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var steps: Array = app.eco["album"]["steps"]
 	var rewards: Array = app.eco["album"]["rewards"]
 	var characters: Array = app.data["characters"]
-	var window: Control = null
 	var claims: Array = []
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -433,9 +461,9 @@ func _open_album(quiet := false) -> void:
 			step.add_child(Kit.label("%d명 %s" % [int(steps[index]), Kit.reward_line(rewards[index])], 18, Kit.MUTED if got else Kit.GOLD))
 			marks.add_child(step)
 		grid.add_child(card)
-	window = app.dialog("수집 앨범", body, [["닫기", Kit.PANEL_LIGHT]], 780)
+	into.add_child(body)
 	for pair in claims:
-		(pair[0] as Button).pressed.connect(_claim_album.bind(str(pair[1]), window.get_instance_id()))
+		(pair[0] as Button).pressed.connect(_claim_album.bind(str(pair[1]), 0))
 
 
 func _claim_album(category: String, window_id: int) -> void:
@@ -444,20 +472,22 @@ func _claim_album(category: String, window_id: int) -> void:
 		return
 	app.save()
 	app.play("upgrade")
-	var window := instance_from_id(window_id)
-	if is_instance_valid(window):
-		window.call("close")
+	if window_id != 0:
+		var window := instance_from_id(window_id)
+		if is_instance_valid(window):
+			window.call("close")
 	MenuArt.fly_reward(app, null, reward)
-	app.go("heroes", {"filter": _filter})
-	# 받은 뒤에도 앨범 창을 그대로 띄워 둔다(다른 분류도 이어서 받을 수 있게).
-	app.current_screen.call("_open_album", true)
-	app.toast("앨범 보상: %s" % Kit.reward_line(reward))
+	app.go("heroes", {"view": "album"})
+	app.toast("도감 보상: %s" % Kit.reward_line(reward))
 
 
 ## 카드 앨범 창(2026-11-18): 등급 3개(★★★·★★·★)마다 모은 카드 수와 단계 보상. 영웅 앨범과 같은 모양.
-func _open_card_album(quiet := false) -> void:
+func _open_card_album(quiet := false, into: Control = null) -> void:
 	if not quiet:
 		app.play("click")
+	if into == null:
+		app.go("heroes", {"view": "card_album"})
+		return
 	var cards: Dictionary = app.data.get("cards", {})
 	var table: Dictionary = app.eco.get("card_album", {})
 	var body := Kit.vbox(10)
@@ -508,9 +538,9 @@ func _open_card_album(quiet := false) -> void:
 			step.add_child(Kit.label("%d장 %s" % [int(steps[index]), Kit.reward_line(rewards[index]) if index < rewards.size() else ""], 18, Kit.MUTED if got else Kit.GOLD))
 			marks.add_child(step)
 		list.add_child(card)
-	var window: Control = app.dialog("카드 앨범", body, [["닫기", Kit.PANEL_LIGHT]], 820)
+	into.add_child(body)
 	for pair in claims:
-		(pair[0] as Button).pressed.connect(_claim_card_album.bind(int(pair[1]), window.get_instance_id()))
+		(pair[0] as Button).pressed.connect(_claim_card_album.bind(int(pair[1]), 0))
 
 
 func _claim_card_album(grade: int, window_id: int) -> void:
@@ -519,13 +549,13 @@ func _claim_card_album(grade: int, window_id: int) -> void:
 		return
 	app.save()
 	app.play("upgrade")
-	var window := instance_from_id(window_id)
-	if is_instance_valid(window):
-		window.call("close")
+	if window_id != 0:
+		var window := instance_from_id(window_id)
+		if is_instance_valid(window):
+			window.call("close")
 	MenuArt.fly_reward(app, null, reward)
-	app.go("heroes", {"filter": _filter})
-	app.current_screen.call("_open_card_album", true)
-	app.toast("카드 앨범 보상: %s" % Kit.reward_line(reward))
+	app.go("heroes", {"view": "card_album"})
+	app.toast("카드 도감 보상: %s" % Kit.reward_line(reward))
 
 
 ## 강화할 수 있는 영웅을 한꺼번에 올린다(파티원 먼저).
@@ -557,16 +587,12 @@ func _on_owned_toggle() -> void:
 	_rebuild()
 
 
-## 왼쪽 세로 판: 영웅 목록은 지금 화면, 앨범은 창, 파티 편성은 파티 화면.
+## 왼쪽 세로 판: 목록·도감·카드 편성은 이 화면의 다른 보기, 파티 편성은 파티 화면.
 func _on_rail(id: String) -> void:
 	match id:
-		"album":
-			_open_album()
-		"card_album":
-			_open_card_album()
 		"party":
 			_on_edit_party()
-		"cards", "deck":
+		"cards", "deck", "album", "card_album":
 			app.play("tab")
 			app.go("heroes", {"view": id})
 		"list":

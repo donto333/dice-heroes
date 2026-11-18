@@ -155,6 +155,9 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	top_holder.add_child(head)
 	head.add_child(_home_button(app))
 	var spec: Array = TITLES.get(str(app.current_name), ["", ""])
+	# 한 화면이 여러 메뉴로 쓰일 때(영웅 화면 = 목록·편성·도감) 화면 메타 title_spec으로 제목을 바꾼다.
+	if screen.has_meta("title_spec"):
+		spec = screen.get_meta("title_spec")
 	var plate := title_plate(str(spec[0]), Kit.icon(str(spec[1]), 40.0).texture)
 	if plate != null:
 		# 높이를 그림 원래 높이(64)로 둬서 동그란 자리가 세로로 늘어나 타원이 되지 않게 한다.

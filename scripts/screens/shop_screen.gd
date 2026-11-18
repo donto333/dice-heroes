@@ -13,6 +13,7 @@ const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const CardPanels := preload("res://scripts/ui/card_panels.gd")
+const PassPanel := preload("res://scripts/ui/pass_panel.gd")
 
 const BANNER := ["zeus", "lubu", "sejong", "nightingale"]
 
@@ -23,7 +24,7 @@ var app
 const TABS := [["summon", "소환"], ["grow", "성장"], ["look", "꾸미기"], ["gems", "보석"]]
 ## 왼쪽 세로 판 항목: [id, 글자, 아이콘]
 ## 2026-11-18 사용자 결정: 영웅 소환 바로 아래에 카드 뽑기를 따로 둔다.
-const RAIL := [["summon", "영웅 소환", "summon"], ["cards", "카드 뽑기", "card"], ["grow", "성장", "upgrade"], ["look", "주사위", "dice"], ["gems", "보석", "gem"]]
+const RAIL := [["summon", "영웅 소환", "summon"], ["cards", "카드 뽑기", "card"], ["grow", "성장", "upgrade"], ["look", "주사위", "dice"], ["gems", "보석", "gem"], ["pass", "시즌 패스", "pass"]]
 var _tab := "summon"
 
 
@@ -43,6 +44,13 @@ func setup(main_app, _params: Dictionary) -> void:
 		summary = MenuArt.summary("card", "무료 뽑기 %d회" % Profile.free_card_draws_left(app.profile, app.eco), "★★★ 확정까지 %d회" % card_pity_left)
 	var column := MenuArt.frame(self, app, "ui/bg_shop", RAIL, _tab, _on_shop_tab, summary)
 
+	if _tab == "pass":
+		# 시즌 패스(2026-11-18 사용자 결정: 상점 안 메뉴). 패스 판이 스스로 스크롤을 만든다.
+		var pass_panel := PassPanel.new()
+		add_child(pass_panel)
+		pass_panel.build(app, column)
+		MenuArt.skin_buttons(column)
+		return
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
