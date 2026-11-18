@@ -14,7 +14,7 @@ const ART := "res://assets/ui_menu/"
 
 ## 화면 이름 → [제목, 아이콘]. 위 띠 왼쪽 제목 명판에 쓴다.
 const TITLES := {
-	"heroes": ["영웅", "heroes"],
+	"heroes": ["편성", "heroes"],
 	"shop": ["상점", "shop"],
 	"missions": ["미션", "missions"],
 	"settings": ["설정", "settings"],

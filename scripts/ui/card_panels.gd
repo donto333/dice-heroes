@@ -1,6 +1,6 @@
 extends Node
 ## 카드 덱·카드 뽑기 판(2026-11-18). 화면에 붙여 쓰는 도우미:
-## 영웅 화면의 '카드 덱'(build_deck)과 상점 영웅 소환 탭 아래의 '카드 뽑기'(build_gacha)가 함께 쓴다.
+## 영웅 화면의 '카드 목록'(build_list)·'카드 편성'(build_deck)과 상점의 '카드 뽑기'(build_gacha)가 함께 쓴다.
 ## 카드는 등급(★ 일반 · ★★ 희귀 · ★★★ 전설)이 있고, 판에서는 덱에 넣은 카드만 뽑힌다.
 ## 규칙은 scripts/rules/profile.gd(draw_cards·toggle_deck·deck_error), 수치는 economy.json의 card_gacha·card_deck.
 ## 쓰는 법: var panels := CardPanels.new(); add_child(panels); panels.init(app, "heroes", {"view": "cards"})
@@ -42,42 +42,106 @@ func _cards() -> Dictionary:
 
 # ---------------------------------------------------------------- 덱
 
+## 카드 목록(영웅 메뉴 '카드 목록'): 33종 전부, 가진 카드는 또렷하게, 없는 카드는 자물쇠. 덱에 든 카드는 '덱' 표시.
+func build_list(column: VBoxContainer) -> void:
+	var cards := _cards()
+	var deck: Array = Profile.battle_deck(app.profile, cards, app.eco)
+	var owned: int = (app.profile.get("cards", []) as Array).size()
+	var head := Kit.hbox(10)
+	column.add_child(head)
+	head.add_child(Kit.label("카드 목록 %d / %d" % [owned, cards.size()], 28, Kit.GOLD))
+	var hint := Kit.para("카드는 상점의 '카드 뽑기'에서 모아요. 덱은 '카드 편성'에서 짜요.", 15, Kit.MUTED)
+	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(Kit.expand(hint))
+	column.add_child(_filter_tabs())
+	var grid := _scroll_grid(column)
+	var ids: Array = cards.keys()
+	ids.sort_custom(func(a, b) -> bool:
+		var oa := Profile.owns_card(app.profile, str(a))
+		var ob := Profile.owns_card(app.profile, str(b))
+		if oa != ob:
+			return oa
+		return Profile.card_grade(cards, str(a)) > Profile.card_grade(cards, str(b)))
+	for id in ids:
+		if _filter != 0 and Profile.card_grade(cards, str(id)) != _filter:
+			continue
+		var tile := card_tile(cards, str(id), Profile.owns_card(app.profile, str(id)), deck.has(id), 220.0)
+		tile.pressed.connect(_on_list_card.bind(str(id)))
+		grid.add_child(tile)
+
+
+## 카드 편성(영웅 메뉴 '카드 편성'): 15자리(★★★ 3 · ★★ 5 · ★ 7). 아래 가진 카드를 누르면 넣고 빼요.
 func build_deck(column: VBoxContainer) -> void:
 	var cards := _cards()
 	var rule: Dictionary = app.eco.get("card_deck", {})
+	var per_grade: Dictionary = rule.get("per_grade", {})
 	# 덱이 망가져 있으면(예전 저장) 처음 덱으로 맞춘다.
 	var deck: Array = Profile.battle_deck(app.profile, cards, app.eco)
-	var legends := 0
-	for id in deck:
-		if Profile.card_grade(cards, str(id)) >= 3:
-			legends += 1
 
 	var head := Kit.hbox(10)
 	column.add_child(head)
-	head.add_child(Kit.label("내 덱 %d / %d" % [deck.size(), int(rule.get("size", 10))], 28, Kit.GOLD))
-	var hint := Kit.para("카드를 누르면 덱에 넣거나 빼요. 판에서는 덱에 넣은 카드만 나와요.", 15, Kit.MUTED)
+	head.add_child(Kit.label("카드 편성 %d / %d" % [deck.size(), int(rule.get("size", 15))], 28, Kit.GOLD))
+	var hint := Kit.para("아래 카드를 누르면 넣고, 위 칸을 누르면 빼요. 판에서는 편성한 카드만 나와요.", 15, Kit.MUTED)
 	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(Kit.expand(hint))
-	head.add_child(MenuArt.capsule("★★★ %d / %d장" % [legends, int(rule.get("max_grade3", 2))], "", 18))
 	head.add_child(MenuArt.capsule("최소 %d장" % int(rule.get("min", 6)), "", 18))
 
-	# 덱에 든 카드: 작은 이름표 10칸(빈칸은 흐리게)
-	var strip := GridContainer.new()
-	strip.columns = 5
-	strip.add_theme_constant_override("h_separation", 6)
-	strip.add_theme_constant_override("v_separation", 6)
-	column.add_child(strip)
-	for index in int(rule.get("size", 10)):
-		strip.add_child(_deck_chip(str(deck[index]) if index < deck.size() else ""))
+	# 등급별 자리: ★★★ 3칸 · ★★ 5칸 · ★ 7칸(빈칸은 흐리게)
+	var slots := Kit.vbox(4)
+	column.add_child(slots)
+	for grade in [3, 2, 1]:
+		var line := Kit.hbox(6)
+		slots.add_child(line)
+		var mine: Array = []
+		for id in deck:
+			if Profile.card_grade(cards, str(id)) == grade:
+				mine.append(str(id))
+		var limit := int(per_grade.get(str(grade), 0))
+		var tag := Kit.label("%s  %d/%d" % ["★".repeat(grade), mine.size(), limit], 17, Kit.GRADE_COLORS[grade])
+		tag.custom_minimum_size = Vector2(108, 0)
+		tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		line.add_child(tag)
+		for index in 7:
+			if index < limit:
+				line.add_child(_deck_chip(mine[index] if index < mine.size() else "", grade))
+			else:
+				# 자리가 7칸보다 적은 줄은 빈 공간으로 너비를 맞춘다.
+				var spacer := Control.new()
+				spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				line.add_child(spacer)
 
+	column.add_child(_filter_tabs())
+	var grid := _scroll_grid(column)
+	# 편성한 카드부터, 높은 등급부터. 가진 카드만 보인다.
+	var ids: Array = []
+	for id in cards:
+		if Profile.owns_card(app.profile, str(id)):
+			ids.append(id)
+	ids.sort_custom(func(a, b) -> bool:
+		var da := deck.has(a)
+		var db := deck.has(b)
+		if da != db:
+			return da
+		return Profile.card_grade(cards, str(a)) > Profile.card_grade(cards, str(b)))
+	for id in ids:
+		if _filter != 0 and Profile.card_grade(cards, str(id)) != _filter:
+			continue
+		var tile := card_tile(cards, str(id), true, deck.has(id), 190.0)
+		tile.pressed.connect(_on_card.bind(str(id)))
+		grid.add_child(tile)
+
+
+func _filter_tabs() -> Control:
 	var filters := Kit.hbox(6)
-	column.add_child(filters)
 	for spec in [[0, "전체"], [3, "★★★ 전설"], [2, "★★ 희귀"], [1, "★ 일반"]]:
 		var tab := Kit.button(str(spec[1]), Kit.PANEL, 17, 40)
 		MenuArt.tab(tab, int(spec[0]) == _filter)
 		tab.pressed.connect(_on_filter.bind(int(spec[0])))
 		filters.add_child(Kit.expand(tab))
+	return filters
 
+
+func _scroll_grid(column: VBoxContainer) -> GridContainer:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -88,40 +152,32 @@ func build_deck(column: VBoxContainer) -> void:
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
 	scroll.add_child(grid)
-	# 높은 등급부터, 가진 카드부터
-	var ids: Array = cards.keys()
-	var rank := func(id) -> int:
-		if deck.has(id):
-			return 0
-		return 1 if Profile.owns_card(app.profile, str(id)) else 2
-	ids.sort_custom(func(a, b) -> bool:
-		var ra: int = rank.call(a)
-		var rb: int = rank.call(b)
-		if ra != rb:
-			return ra < rb
-		return Profile.card_grade(cards, str(a)) > Profile.card_grade(cards, str(b)))
-	for id in ids:
-		if _filter != 0 and Profile.card_grade(cards, str(id)) != _filter:
-			continue
-		var tile := card_tile(cards, str(id), Profile.owns_card(app.profile, str(id)), deck.has(id), 210.0)
-		tile.pressed.connect(_on_card.bind(str(id)))
-		grid.add_child(tile)
+	return grid
 
 
-func _deck_chip(id: String) -> Control:
-	var chip := PanelContainer.new()
-	chip.custom_minimum_size = Vector2(0, 32)
+## 편성 자리 한 칸. 카드가 있으면 누르면 뺀다.
+func _deck_chip(id: String, grade: int) -> Control:
+	var chip := Button.new()
+	chip.flat = true
+	chip.focus_mode = Control.FOCUS_NONE
+	chip.custom_minimum_size = Vector2(0, 34)
 	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var body := PanelContainer.new()
+	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chip.add_child(body)
 	if id == "":
-		chip.add_theme_stylebox_override("panel", Kit.box(Color(0, 0, 0, 0.25), Color(1, 1, 1, 0.15), 2, 10, 4))
-		chip.add_child(Kit.label("빈칸", 16, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		body.add_theme_stylebox_override("panel", Kit.box(Color(0, 0, 0, 0.25), Kit.GRADE_COLORS[grade].darkened(0.4), 2, 10, 2))
+		body.add_child(Kit.label("빈칸", 15, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		chip.disabled = true
 		return chip
 	var cards := _cards()
-	var grade := Profile.card_grade(cards, id)
-	chip.add_theme_stylebox_override("panel", Kit.box(GRADE_FILLS[grade], Kit.GRADE_COLORS[grade], 2, 10, 4))
-	var text := Kit.label("%s %s" % ["★".repeat(grade), str(cards[id]["name"])], 16, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	body.add_theme_stylebox_override("panel", Kit.box(GRADE_FILLS[grade], Kit.GRADE_COLORS[grade], 2, 10, 2))
+	var text := Kit.label(str(cards[id]["name"]), 15, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	text.clip_text = true
-	chip.add_child(text)
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_child(text)
+	chip.pressed.connect(_on_card.bind(id))
 	return chip
 
 
@@ -215,6 +271,16 @@ func _on_card(id: String) -> void:
 	_back({"grade": _filter})
 
 
+## 카드 목록에서 누르면: 없는 카드는 얻는 곳 안내, 가진 카드는 편성 안내.
+func _on_list_card(id: String) -> void:
+	if not Profile.owns_card(app.profile, id):
+		app.play("denied")
+		app.toast("아직 없는 카드예요. 상점의 '카드 뽑기'에서 얻을 수 있어요.")
+		return
+	app.play("click")
+	app.toast("[%s] %s" % [str(_cards()[id]["name"]), str(_cards()[id].get("text", ""))])
+
+
 func _on_filter(grade: int) -> void:
 	if grade == _filter:
 		return
@@ -273,7 +339,7 @@ func build_gacha(body: VBoxContainer) -> void:
 	buttons.add_child(Kit.expand(ten))
 	Kit.shimmer(ten)
 	body.add_child(_gold_panel())
-	body.add_child(Kit.para("뽑은 카드는 영웅 메뉴의 '카드 덱'에서 덱에 넣어야 판에 나와요.", 17, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	body.add_child(Kit.para("뽑은 카드는 영웅 메뉴의 '카드 편성'에서 넣어야 판에 나와요.", 17, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
 
 ## 골드 카드 뽑기(2026-11-18 사용자 요청): ★·★★ 카드만 나온다. ★★★ 보장 횟수는 세지 않는다.

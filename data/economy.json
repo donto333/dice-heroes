@@ -47,9 +47,9 @@
       "mirror_shield",
       "charm",
       "war_drum",
-      "scout",
-      "prayer",
-      "inspiration"
+      "inspiration",
+      "guide_star",
+      "sage_ring"
     ]
   },
   "summon": {
@@ -105,10 +105,14 @@
     }
   },
   "card_deck": {
-    "_comment": "카드 덱: 판에서는 덱에 넣은 카드만 뽑힌다. size장까지, 최소 min장, ★★★은 max_grade3장까지.",
-    "size": 10,
+    "_comment": "카드 편성(2026-11-18 사용자 결정): 판에서는 덱에 넣은 카드만 뽑힌다. 모두 size장(15장) 자리이고 등급별 자리는 per_grade(★★★ 3·★★ 5·★ 7). 같은 카드는 한 장, 최소 min장.",
+    "size": 15,
     "min": 6,
-    "max_grade3": 2
+    "per_grade": {
+      "3": 3,
+      "2": 5,
+      "1": 7
+    }
   },
   "upgrade": {
     "_comment": "레벨 1→2, 2→3, 3→4, 4→5에 드는 조각과 골드. 전투 보너스는 data/rules.json의 level_battle_bonus.",

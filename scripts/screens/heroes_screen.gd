@@ -27,16 +27,22 @@ func setup(main_app, params: Dictionary) -> void:
 	app = main_app
 	_filter = str(params.get("filter", ""))
 	# 시안식 틀: 왼쪽 세로 판에 영웅 목록·앨범·파티 편성, 오른쪽 큰 금테 판.
-	var rail := [["list", "영웅 목록", "heroes"], ["album", "영웅 앨범", "album"], ["party", "파티 편성", "swords"], ["cards", "카드 덱", "card"]]
-	# 카드 덱(2026-11-18 사용자 요청): 영웅 메뉴 안에서 덱을 짠다(params.view == "cards").
-	if str(params.get("view", "")) == "cards":
+	# 왼쪽 판(2026-11-18 사용자 결정): 영웅 목록 · 카드 목록 · 영웅 앨범 · 파티 편성 · 카드 편성
+	var rail := [["list", "영웅 목록", "heroes"], ["cards", "카드 목록", "card"], ["album", "영웅 앨범", "album"],
+		["party", "파티 편성", "swords"], ["deck", "카드 편성", "todo"]]
+	# 카드 목록(view == "cards")·카드 편성(view == "deck")은 영웅 메뉴 안에서 보여 준다.
+	var view := str(params.get("view", ""))
+	if view == "cards" or view == "deck":
 		var panels := CardPanels.new()
 		add_child(panels)
-		panels.init(app, "heroes", {"view": "cards", "grade": int(params.get("grade", 0))})
+		panels.init(app, "heroes", {"view": view, "grade": int(params.get("grade", 0))})
 		var lines: Array = panels.summary_text()
-		var deck_column := MenuArt.frame(self, app, "ui/bg_heroes", rail, "cards", _on_rail, MenuArt.summary("card", str(lines[0]), str(lines[1])))
-		panels.build_deck(deck_column)
-		MenuArt.skin_buttons(deck_column)
+		var card_column := MenuArt.frame(self, app, "ui/bg_heroes", rail, view, _on_rail, MenuArt.summary("card", str(lines[0]), str(lines[1])))
+		if view == "deck":
+			panels.build_deck(card_column)
+		else:
+			panels.build_list(card_column)
+		MenuArt.skin_buttons(card_column)
 		return
 	var column := MenuArt.frame(self, app, "ui/bg_heroes", rail, "list", _on_rail, _summary_card())
 
@@ -476,9 +482,9 @@ func _on_rail(id: String) -> void:
 			_open_album()
 		"party":
 			_on_edit_party()
-		"cards":
+		"cards", "deck":
 			app.play("tab")
-			app.go("heroes", {"view": "cards"})
+			app.go("heroes", {"view": id})
 		"list":
 			app.play("tab")
 			app.go("heroes")

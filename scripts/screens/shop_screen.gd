@@ -22,7 +22,8 @@ var app
 ## 상점 탭: 소환(소환·특가) / 성장(유물·골드 교환) / 꾸미기(주사위) / 보석(마일리지·보석 상점)
 const TABS := [["summon", "소환"], ["grow", "성장"], ["look", "꾸미기"], ["gems", "보석"]]
 ## 왼쪽 세로 판 항목: [id, 글자, 아이콘]
-const RAIL := [["summon", "영웅 소환", "summon"], ["grow", "성장", "upgrade"], ["look", "주사위", "dice"], ["gems", "보석", "gem"]]
+## 2026-11-18 사용자 결정: 영웅 소환 바로 아래에 카드 뽑기를 따로 둔다.
+const RAIL := [["summon", "영웅 소환", "summon"], ["cards", "카드 뽑기", "card"], ["grow", "성장", "upgrade"], ["look", "주사위", "dice"], ["gems", "보석", "gem"]]
 var _tab := "summon"
 
 
@@ -33,6 +34,13 @@ func setup(main_app, _params: Dictionary) -> void:
 	var summon_table: Dictionary = app.eco.get("summon", {})
 	var pity_left: int = maxi(int(summon_table.get("pity_3", 0)) - int(app.profile.get("pity", 0)), 1)
 	var summary := MenuArt.summary("summon", "무료 소환 %d회" % Profile.free_summons_left(app.profile, app.eco), "★★★ 확정까지 %d회" % pity_left)
+	var card_panels: Node = null
+	if _tab == "cards":
+		card_panels = CardPanels.new()
+		add_child(card_panels)
+		card_panels.init(app, "shop", {"tab": "cards"})
+		var card_pity_left: int = maxi(int(app.eco.get("card_gacha", {}).get("pity_3", 0)) - int(app.profile.get("card_pity", 0)), 1)
+		summary = MenuArt.summary("card", "무료 뽑기 %d회" % Profile.free_card_draws_left(app.profile, app.eco), "★★★ 확정까지 %d회" % card_pity_left)
 	var column := MenuArt.frame(self, app, "ui/bg_shop", RAIL, _tab, _on_shop_tab, summary)
 
 	var scroll := ScrollContainer.new()
@@ -51,15 +59,11 @@ func setup(main_app, _params: Dictionary) -> void:
 		"gems":
 			body.add_child(_mileage_panel())
 			body.add_child(_gem_pack_panel())
+		"cards":
+			card_panels.build_gacha(body)
 		_:
 			body.add_child(_summon_panel())
 			body.add_child(_gold_summon_panel())
-			# 카드 뽑기(2026-11-18 사용자 요청): 영웅 뽑기 바로 아래
-			body.add_child(MenuArt.section("카드 뽑기", "card", "아이템 카드를 모아 덱을 짜요"))
-			var panels := CardPanels.new()
-			add_child(panels)
-			panels.init(app, "shop", {"tab": "summon"})
-			panels.build_gacha(body)
 			body.add_child(_deals_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	# 남은 버튼도 모두 금테 알약으로(UI 개편 1단계)

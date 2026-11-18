@@ -2066,29 +2066,31 @@ func _test_card_deck() -> void:
 	_check(int(Profile.draw_cards(pity_profile, cards, eco, 1, rng)[0]["grade"]) == 3, "카드 뽑기 보장이 ★★★이 아님")
 	# 무료 뽑기 하루 1회
 	_check(Profile.use_free_card_draw(profile, eco) and not Profile.use_free_card_draw(profile, eco), "무료 카드 뽑기가 하루 1회가 아님")
-	# 덱 규칙: 최대 장수, ★★★ 장수, 최소 장수, 같은 카드 한 장
+	# 덱 규칙(카드 편성): 15장 = ★★★ 3 · ★★ 5 · ★ 7, 최소 장수, 같은 카드 한 장
 	var rule: Dictionary = eco["card_deck"]
-	var legends: Array = []
+	var per_grade: Dictionary = rule["per_grade"]
+	_check(int(rule["size"]) == 15 and int(per_grade["3"]) == 3 and int(per_grade["2"]) == 5 and int(per_grade["1"]) == 7, "카드 편성이 15장(3·5·7)이 아님")
+	var by_grade := {1: [], 2: [], 3: []}
 	for id in cards:
-		if int(cards[id]["grade"]) == 3:
-			legends.append(id)
-			if not Profile.owns_card(profile, id):
-				profile["cards"].append(id)
-	var deck: Array = (profile["deck"] as Array).duplicate()
-	while deck.size() > int(rule["size"]) - 3:
-		deck.pop_back()
-	for i in int(rule["max_grade3"]) + 1:
-		deck.append(legends[i])
-	_check(Profile.deck_error(profile, cards, eco, deck) != "", "★★★ 카드 제한이 안 걸림")
+		by_grade[int(cards[id]["grade"])].append(id)
+		if not Profile.owns_card(profile, id):
+			profile["cards"].append(id)
+	var full: Array = []
+	for grade in [3, 2, 1]:
+		for i in int(per_grade[str(grade)]):
+			full.append(by_grade[grade][i])
+	_check(full.size() == 15 and Profile.deck_error(profile, cards, eco, full) == "", "15장(3·5·7) 덱이 통과하지 못함: " + Profile.deck_error(profile, cards, eco, full))
+	var over_one: Array = full.duplicate()
+	over_one.append(by_grade[1][int(per_grade["1"])])
+	_check(Profile.deck_error(profile, cards, eco, over_one) != "", "★ 8장째가 들어감")
+	var over_three: Array = full.duplicate()
+	over_three.pop_back()
+	over_three.append(by_grade[3][int(per_grade["3"])])
+	_check(Profile.deck_error(profile, cards, eco, over_three) != "", "★★★ 4장째가 들어감")
 	_check(Profile.deck_error(profile, cards, eco, ["tailwind", "tailwind", "banner", "fortress", "charm", "scout"]) != "", "같은 카드 두 장이 덱에 들어감")
 	_check(Profile.deck_error(profile, cards, eco, ["tailwind"]) != "", "최소 장수보다 적은 덱이 통과함")
-	var full: Array = (profile["deck"] as Array).duplicate()
-	for id in profile["cards"]:
-		if not full.has(id) and int(cards[id]["grade"]) < 3:
-			full.append(id)
-		if full.size() > int(rule["size"]):
-			break
-	_check(Profile.deck_error(profile, cards, eco, full) != "", "덱 최대 장수를 넘어도 통과함")
+	var counts := Profile.deck_counts(cards, full)
+	_check(int(counts[3]) == 3 and int(counts[2]) == 5 and int(counts[1]) == 7, "덱 등급별 장수 세기가 틀림")
 	# 넣고 빼기
 	var before: int = profile["deck"].size()
 	_check(Profile.toggle_deck(profile, cards, eco, str(profile["deck"][0])) == "" and profile["deck"].size() == before - 1, "덱에서 카드 빼기가 안 됨")
