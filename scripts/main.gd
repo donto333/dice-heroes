@@ -39,7 +39,7 @@ const SCREEN_MOODS := {
 	"lobby": Color("3b2f9e"), "shop": Color("1f3a82"), "heroes": Color("1f3a82"), "missions": Color("1f3a82"),
 	"settings": Color("1f3a82"), "adventure": Color("1f3a82"), "pass": Color("1f3a82"), "help": Color("1f3a82"),
 }
-const VERSION := "0.29.0"
+const VERSION := "0.29.1"
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -429,7 +429,7 @@ func badges() -> Dictionary:
 	return {
 		"missions": Profile.has_claimable(profile, eco) or Profile.can_check_in(profile, today()) or Profile.has_claimable_achievement(profile, data) or Profile.guide_claimable(profile, data),
 		"shop": Profile.free_summons_left(profile, eco) > 0 or not Profile.mileage_claimable(profile, eco).is_empty(),
-		"heroes": _any_upgradable() or Profile.album_has_claimable(profile, eco, data["characters"]),
+		"heroes": _any_upgradable() or Profile.album_has_claimable(profile, eco, data["characters"]) or Profile.card_album_has_claimable(profile, eco, data.get("cards", {})),
 	}
 
 

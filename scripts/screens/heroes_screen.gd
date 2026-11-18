@@ -28,8 +28,10 @@ func setup(main_app, params: Dictionary) -> void:
 	_filter = str(params.get("filter", ""))
 	# 시안식 틀: 왼쪽 세로 판에 영웅 목록·앨범·파티 편성, 오른쪽 큰 금테 판.
 	# 왼쪽 판(2026-11-18 사용자 결정): 영웅 목록 · 카드 목록 · 영웅 앨범 · 파티 편성 · 카드 편성
-	var rail := [["list", "영웅 목록", "heroes"], ["cards", "카드 목록", "card"], ["album", "영웅 앨범", "album"],
-		["party", "파티 편성", "swords"], ["deck", "카드 편성", "todo"]]
+	# 2026-11-18 사용자 결정: 앨범 두 개(영웅·카드)는 맨 아래.
+	var rail := [["list", "영웅 목록", "heroes"], ["cards", "카드 목록", "card"],
+		["party", "파티 편성", "swords"], ["deck", "카드 편성", "todo"],
+		["album", "영웅 앨범", "album"], ["card_album", "카드 앨범", "book"]]
 	# 카드 목록(view == "cards")·카드 편성(view == "deck")은 영웅 메뉴 안에서 보여 준다.
 	var view := str(params.get("view", ""))
 	if view == "cards" or view == "deck":
@@ -446,6 +448,80 @@ func _claim_album(category: String, window_id: int) -> void:
 	app.toast("앨범 보상: %s" % Kit.reward_line(reward))
 
 
+## 카드 앨범 창(2026-11-18): 등급 3개(★★★·★★·★)마다 모은 카드 수와 단계 보상. 영웅 앨범과 같은 모양.
+func _open_card_album(quiet := false) -> void:
+	if not quiet:
+		app.play("click")
+	var cards: Dictionary = app.data.get("cards", {})
+	var table: Dictionary = app.eco.get("card_album", {})
+	var body := Kit.vbox(10)
+	body.add_child(Kit.para("등급마다 카드를 모으면 보상을 받아요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var claims: Array = []
+	var list := Kit.vbox(10)
+	body.add_child(list)
+	for grade in [3, 2, 1]:
+		var steps: Array = table.get("steps", {}).get(str(grade), [])
+		var rewards: Array = table.get("rewards", {}).get(str(grade), [])
+		if steps.is_empty():
+			continue
+		var owned := Profile.card_album_count(app.profile, cards, grade)
+		var goal := int(steps[steps.size() - 1])
+		var color: Color = Kit.GRADE_COLORS[grade]
+		var card := MenuArt.row(10)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var column := Kit.vbox(6)
+		card.add_child(column)
+		var top := Kit.hbox(8)
+		column.add_child(top)
+		var mark: TextureRect = Kit.icon("card", 40.0)
+		mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		top.add_child(mark)
+		top.add_child(Kit.label("%s %s" % ["★".repeat(grade), str({1: "일반", 2: "희귀", 3: "전설"}[grade])], 24, color))
+		var count := Kit.label("%d / %d" % [owned, goal], 22, Kit.GOLD)
+		TextStyle.number(count, 5)
+		top.add_child(Kit.expand(count))
+		var ready: Array = Profile.card_album_claimable(app.profile, app.eco, cards, grade)
+		var claim := MenuArt.pill_button("받기" if not ready.is_empty() else "모으는 중", "gold" if not ready.is_empty() else "gray", "s")
+		claim.custom_minimum_size = Vector2(112, 44)
+		claim.disabled = ready.is_empty()
+		claim.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		claims.append([claim, grade])
+		top.add_child(claim)
+		column.add_child(Kit.bar(float(owned) / float(goal), color, 12))
+		var marks := Kit.hbox(10)
+		column.add_child(marks)
+		for index in steps.size():
+			var got := Profile.card_album_claimed(app.profile, grade, index)
+			var step := Kit.hbox(4)
+			step.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var tick: TextureRect = Kit.icon("m_check" if got else "star", 22.0)
+			tick.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			if not got and owned < int(steps[index]):
+				tick.modulate = Color(0.6, 0.65, 0.8)
+			step.add_child(tick)
+			step.add_child(Kit.label("%d장 %s" % [int(steps[index]), Kit.reward_line(rewards[index]) if index < rewards.size() else ""], 18, Kit.MUTED if got else Kit.GOLD))
+			marks.add_child(step)
+		list.add_child(card)
+	var window: Control = app.dialog("카드 앨범", body, [["닫기", Kit.PANEL_LIGHT]], 820)
+	for pair in claims:
+		(pair[0] as Button).pressed.connect(_claim_card_album.bind(int(pair[1]), window.get_instance_id()))
+
+
+func _claim_card_album(grade: int, window_id: int) -> void:
+	var reward := Profile.claim_card_album(app.profile, app.eco, app.data.get("cards", {}), grade)
+	if reward.is_empty():
+		return
+	app.save()
+	app.play("upgrade")
+	var window := instance_from_id(window_id)
+	if is_instance_valid(window):
+		window.call("close")
+	MenuArt.fly_reward(app, null, reward)
+	app.go("heroes", {"filter": _filter})
+	app.current_screen.call("_open_card_album", true)
+	app.toast("카드 앨범 보상: %s" % Kit.reward_line(reward))
+
+
 ## 강화할 수 있는 영웅을 한꺼번에 올린다(파티원 먼저).
 func _upgrade_all() -> void:
 	var count := Profile.upgrade_all(app.profile, app.eco)
@@ -480,6 +556,8 @@ func _on_rail(id: String) -> void:
 	match id:
 		"album":
 			_open_album()
+		"card_album":
+			_open_card_album()
 		"party":
 			_on_edit_party()
 		"cards", "deck":
