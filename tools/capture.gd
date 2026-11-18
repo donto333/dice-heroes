@@ -442,7 +442,15 @@ func _run() -> void:
 	})
 	await _wait(1.2)
 	await _shot("16a_battle_rolling")
-	await _wait(2.3)
+	# 부딪칠 때 움직이는 모형이 베는 장면(공격 동작)
+	var swing_wait := 0.0
+	var overlay = match_screen._battle_overlay
+	while swing_wait < 4.0 and str((overlay._anim_sides[0] as Dictionary).get("kind", "")) != "slash":
+		await _wait(0.05)
+		swing_wait += 0.05
+	await _wait(0.2)
+	await _shot("16b_battle_slash")
+	await _wait(0.6)
 	await _shot("16_battle")
 	await _wait(2.4)
 

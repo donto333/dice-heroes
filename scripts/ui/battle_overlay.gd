@@ -16,6 +16,13 @@ const WIN_COLOR := Color("7ee081")
 const LOSE_COLOR := Color("ff6b6b")
 const ROLL_TIME := 0.9
 const HOLD_TIME := 1.6
+## 움직이는 모형(assets/standees_anim, 6칸×2줄 12장): 가만히는 1초에 10장, 베기는 0.6초에 12장.
+const ANIM_FRAMES := 12
+const ANIM_COLUMNS := 6
+const IDLE_FPS := 10.0
+const SLASH_TIME := 0.6
+## 한 칸에서 모형이 있는 부분만 잘라 보여 준다(발은 칸의 81.25% 높이).
+const ANIM_CROP := Rect2(0.1, 0.06, 0.8, 0.8)
 
 var sfx: Node = null
 
@@ -24,6 +31,8 @@ var _sides: Array = []
 var _verdict: Label
 var _hint: Label
 var _skip := false
+## 쪽마다 움직이는 모형 상태: {"sheets": {종류: 그림}, "kind": 지금 동작, "time": 동작 시작부터 흐른 시간}
+var _anim_sides: Array = [{}, {}]
 
 
 func _ready() -> void:
@@ -138,6 +147,57 @@ func _ready() -> void:
 	column.add_child(_verdict)
 	_hint = _label("화면을 누르면 넘어갑니다", 18, Color(1, 1, 1, 0.45))
 	column.add_child(_hint)
+
+
+func _process(delta: float) -> void:
+	if not visible:
+		return
+	for index in _anim_sides.size():
+		var state: Dictionary = _anim_sides[index]
+		if state.is_empty():
+			continue
+		state["time"] = float(state["time"]) + delta
+		var kind := str(state["kind"])
+		var frame := 0
+		if kind == "slash":
+			frame = int(float(state["time"]) / SLASH_TIME * ANIM_FRAMES)
+			if frame >= ANIM_FRAMES:
+				# 한 번 베고 나면 가만히로 돌아간다.
+				state["kind"] = "idle"
+				state["time"] = 0.0
+				kind = "idle"
+				frame = 0
+		if kind != "slash":
+			frame = int(float(state["time"]) * IDLE_FPS) % ANIM_FRAMES
+		_set_anim_frame(index, kind, frame)
+
+
+## 움직이는 모형의 한 장면을 보여 준다.
+func _set_anim_frame(index: int, kind: String, frame: int) -> void:
+	var state: Dictionary = _anim_sides[index]
+	var sheets: Dictionary = state["sheets"]
+	var sheet: Texture2D = sheets.get(kind, sheets.get("idle"))
+	var figure: TextureRect = _sides[index]["figure"]
+	var atlas := figure.texture as AtlasTexture
+	if atlas == null or sheet == null:
+		return
+	atlas.atlas = sheet
+	var sheet_size := sheet.get_size()
+	var one_row := sheet_size.x >= sheet_size.y * float(ANIM_FRAMES) - 0.5
+	var cell := sheet_size.y if one_row else sheet_size.x / float(ANIM_COLUMNS)
+	var origin := Vector2((frame % ANIM_COLUMNS) * cell, floorf(float(frame) / float(ANIM_COLUMNS)) * cell)
+	if one_row:
+		origin = Vector2(frame * cell, 0)
+	atlas.region = Rect2(origin + ANIM_CROP.position * cell, ANIM_CROP.size * cell)
+
+
+## 공격(베기) 동작을 한 번 한다. 동작 그림이 없으면 아무것도 안 한다.
+func _swing(index: int) -> void:
+	var state: Dictionary = _anim_sides[index]
+	if state.is_empty() or not (state["sheets"] as Dictionary).has("slash"):
+		return
+	state["kind"] = "slash"
+	state["time"] = 0.0
 
 
 ## 글자 칸을 꽉 채우는 로고 그림
@@ -260,6 +320,12 @@ func _clash(left_face: Control, right_face: Control, attacker_won: bool) -> void
 		return
 	var left_home := left_face.position
 	var right_home := right_face.position
+	# 움직이는 모형이면 두 쪽이 함께 칼을 휘두르고, 칼이 내려오는 순간(12장 중 5장째쯤)에 부딪친다.
+	# 트리포 웹 모형의 베기(chop)는 몸을 깊이 숙이는 장면이 있어, 그때 번쩍임이 덮이게 맞춘다.
+	if not _anim_sides[0].is_empty() or not _anim_sides[1].is_empty():
+		_swing(0)
+		_swing(1)
+		await get_tree().create_timer(SLASH_TIME * 0.17).timeout
 	var dash := create_tween().set_parallel(true)
 	dash.tween_property(left_face, "position:x", left_home.x + 90.0, 0.12).set_ease(Tween.EASE_IN)
 	dash.tween_property(right_face, "position:x", right_home.x - 90.0, 0.12).set_ease(Tween.EASE_IN)
@@ -449,7 +515,19 @@ func _show_portrait(side: Dictionary, character: Dictionary, fallback_name: Stri
 	var portrait = side["portrait"]
 	var figure: TextureRect = side["figure"]
 	var model: Texture2D = GameData.enemy_standee(fallback_name) if character.is_empty() else GameData.standee(str(character.get("id", "")))
+	var index := _sides.find(side)
+	if index >= 0:
+		_anim_sides[index] = {}
+	var sheets: Dictionary = {} if character.is_empty() else GameData.standee_anims(str(character.get("id", "")))
+	if sheets.has("idle") and index >= 0:
+		# 3D 모형을 찍은 움직이는 그림: 가만히 서 있다가 부딪칠 때 벤다.
+		var atlas := AtlasTexture.new()
+		atlas.atlas = sheets["idle"]
+		model = atlas
+		_anim_sides[index] = {"sheets": sheets, "kind": "idle", "time": randf() * 1.0}
 	figure.texture = model
+	if index >= 0 and not _anim_sides[index].is_empty():
+		_set_anim_frame(index, "idle", 0)
 	figure.visible = model != null
 	side["pedestal"].visible = model != null
 	figure.modulate = Color.WHITE
