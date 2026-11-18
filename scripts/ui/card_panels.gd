@@ -278,6 +278,7 @@ static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool,
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# 칸이 좁으면 이름·등급 글자를 칸 너비에 맞춰 줄인다(잘려 보이지 않게, 2026-11-18 사용자 지적).
 	Kit.squeeze_text(name_label, 17 if small else 20, 10)
+	stars.clip_text = true
 	Kit.squeeze_text(stars, 13 if small else 15, 9)
 	if in_deck:
 		var mark := Kit.label("덱", 15, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)

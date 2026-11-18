@@ -530,7 +530,13 @@ static func fit_text(label: Label, holder: Control, reserve: float, base_size: i
 static func squeeze_text(label: Label, largest: int, smallest: int) -> void:
 	if not label.has_meta("fit_hooked"):
 		label.set_meta("fit_hooked", true)
-		label.resized.connect(func() -> void: _refit(label, largest, smallest))
+		# 글자 크기를 바꾸면 높이가 바뀌어 resized가 다시 오므로, 너비가 바뀔 때만 다시 맞춘다(무한 반복 방지).
+		label.resized.connect(func() -> void:
+			if absf(float(label.get_meta("fit_width", -1.0)) - label.size.x) < 0.5:
+				return
+			label.set_meta("fit_width", label.size.x)
+			_refit(label, largest, smallest))
+	label.set_meta("fit_width", label.size.x)
 	_refit(label, largest, smallest)
 
 
