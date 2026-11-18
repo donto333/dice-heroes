@@ -1801,5 +1801,8 @@
  "도전하기": "Challenge",
  "상대 영웅 Lv.%d · 이기면 %s": "Enemy heroes Lv.%d · Win for %s",
  "오늘의 도전을 이겼어요! 내일 또 와요.": "You won today's challenge! Come back tomorrow.",
- "로비 메뉴가 편성·목록·도감·상점으로 바뀌었어요. 시즌 패스는 상점 안에, 오늘의 도전은 미션 안에 있어요.": "The lobby menu is now Formation · List · Collection · Shop. The Season Pass is inside the Shop, and Today's Challenge is inside Missions."
+ "로비 메뉴가 편성·목록·도감·상점으로 바뀌었어요. 시즌 패스는 상점 안에, 오늘의 도전은 미션 안에 있어요.": "The lobby menu is now Formation · List · Collection · Shop. The Season Pass is inside the Shop, and Today's Challenge is inside Missions.",
+ "오른쪽 보유 카드를 누르면 넣고, 왼쪽 덱 카드를 누르면 빼요.": "Tap an owned card on the right to add it, tap a deck card on the left to remove it.",
+ "보유 카드 %d / %d": "Owned cards %d / %d",
+ "카드 편성 화면이 바뀌었어요: 왼쪽에 등급별 덱(전설·희귀·일반), 오른쪽에 보유 카드.": "The Card Deck screen is new: your deck by grade (Legendary · Rare · Common) on the left, owned cards on the right."
 }
