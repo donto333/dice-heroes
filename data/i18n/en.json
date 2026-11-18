@@ -1820,5 +1820,7 @@
  "★★★ 전설 카드": "★★★ Legendary Card",
  "전투에서 영웅 모형이 움직여요. 서 있을 때는 숨 쉬듯 움직이고, 부딪칠 때 무기를 휘둘러요.": "Hero figures now move in battle: they breathe while standing and swing their weapons on impact.",
  "판 위의 파티 세 명이 서로 가리지 않게 벌려 섰고, 서 있을 때 고개가 흔들리지 않고 숨만 쉬어요.": "Your three party members now stand apart on the board so none are hidden, and idle heroes just breathe instead of turning their heads.",
- "이제 영웅 48명 모두 스킬 컷인에 전용 스킬 장면 그림이 나와요.": "All 48 heroes now have their own skill scene art in the skill cut-in."
+ "이제 영웅 48명 모두 스킬 컷인에 전용 스킬 장면 그림이 나와요.": "All 48 heroes now have their own skill scene art in the skill cut-in.",
+ "처음 2턴 동안 공격 합계 +1": "Attack total +1 for the first 2 turns",
+ "어빌리티 게이지 10%로 시작": "Start with 10% ability gauge"
 }

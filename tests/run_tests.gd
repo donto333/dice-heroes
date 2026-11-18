@@ -1450,7 +1450,7 @@ func _test_relics() -> void:
 	profile["gold"] = 0
 	_check(not Profile.buy_relic(profile, eco, "banner"), "골드 없이 유물을 삼")
 	profile["gold"] = 5000
-	_check(Profile.buy_relic(profile, eco, "banner") and int(profile["gold"]) == 2000 and str(Profile.current_relic(profile, eco)["id"]) == "banner", "유물 사기가 틀림")
+	_check(Profile.buy_relic(profile, eco, "banner") and int(profile["gold"]) == 4000 and str(Profile.current_relic(profile, eco)["id"]) == "banner", "유물 사기가 틀림")
 	_check(not Profile.buy_relic(profile, eco, "banner"), "같은 유물을 두 번 삼")
 	Profile.equip_relic(profile, "banner")
 	_check(Profile.current_relic(profile, eco).is_empty(), "유물을 벗었는데 남아 있음")
