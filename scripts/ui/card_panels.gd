@@ -15,8 +15,8 @@ const GRADE_NAMES := {1: "일반", 2: "희귀", 3: "전설"}
 ## 등급별 카드 바탕색
 const GRADE_FILLS := {1: Color("2a4a7a"), 2: Color("1f5f8f"), 3: Color("6a3fa8")}
 ## 카드 편성 칸 크기: 덱 줄의 카드, 보유 카드 칸 높이
-const DECK_TILE := Vector2(98, 118)
-const OWNED_TILE_HEIGHT := 118.0
+const DECK_TILE := Vector2(96, 112)
+const OWNED_TILE_HEIGHT := 112.0
 ## 뽑기 판에 보여 줄 전설 카드
 const SHOWCASE := ["war_god", "silence_bell", "spirit_drain", "iron_will"]
 
@@ -111,7 +111,8 @@ func build_deck(column: VBoxContainer) -> void:
 		left.add_child(frame)
 		var row_scroll := ScrollContainer.new()
 		row_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		row_scroll.custom_minimum_size = Vector2(0, DECK_TILE.y + 10)
+		# 옆 스크롤 막대가 카드 이름을 가리지 않게 아래로 여유를 둔다.
+		row_scroll.custom_minimum_size = Vector2(0, DECK_TILE.y + 16)
 		frame.add_child(row_scroll)
 		var row := Kit.hbox(6)
 		row_scroll.add_child(row)
@@ -228,7 +229,10 @@ static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool,
 	body.add_child(column)
 	var picture := ArtView.new()
 	picture.show_art("cards/" + id)
-	picture.custom_minimum_size = Vector2(0, height * (0.42 if show_text else 0.6))
+	# 작은 칸(카드 편성, 150 미만)은 그림을 줄이고 글자를 작게 해서 이름이 칸 밖으로 넘치지 않게 한다.
+	var small := height < 150.0
+	var art_height := height * 0.42 if show_text else (height - 58.0 if small else height * 0.6)
+	picture.custom_minimum_size = Vector2(0, art_height)
 	picture.focus_y = 0.5
 	picture.corner_radius = 8.0
 	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -236,7 +240,7 @@ static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool,
 		# 그림이 아직 없는 카드: 등급색 판 위에 카드 아이콘
 		picture.free()
 		var holder := CenterContainer.new()
-		holder.custom_minimum_size = Vector2(0, height * (0.42 if show_text else 0.6))
+		holder.custom_minimum_size = Vector2(0, art_height)
 		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var back := PanelContainer.new()
 		back.add_theme_stylebox_override("panel", Kit.box(Kit.GRADE_COLORS[grade].darkened(0.45), Kit.GRADE_COLORS[grade], 2, 8, 6))
@@ -246,9 +250,9 @@ static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool,
 		column.add_child(holder)
 	else:
 		column.add_child(picture)
-	var stars := Kit.label("★".repeat(grade) + "  " + str(GRADE_NAMES[grade]), 15, Kit.GRADE_COLORS[grade], HORIZONTAL_ALIGNMENT_CENTER)
+	var stars := Kit.label("★".repeat(grade) + "  " + str(GRADE_NAMES[grade]), 13 if small else 15, Kit.GRADE_COLORS[grade], HORIZONTAL_ALIGNMENT_CENTER)
 	column.add_child(stars)
-	var name_label := Kit.label(str(card.get("name", id)), 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	var name_label := Kit.label(str(card.get("name", id)), 17 if small else 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	name_label.clip_text = true
 	column.add_child(name_label)
 	var text := Kit.para(str(card.get("text", "")), 14, Color(0.9, 0.93, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
