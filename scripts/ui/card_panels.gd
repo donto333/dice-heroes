@@ -14,6 +14,9 @@ const ArtView := preload("res://scripts/ui/art_view.gd")
 const GRADE_NAMES := {1: "일반", 2: "희귀", 3: "전설"}
 ## 등급별 카드 바탕색
 const GRADE_FILLS := {1: Color("2a4a7a"), 2: Color("1f5f8f"), 3: Color("6a3fa8")}
+## 카드 편성 칸 크기: 덱 줄의 카드, 보유 카드 칸 높이
+const DECK_TILE := Vector2(98, 118)
+const OWNED_TILE_HEIGHT := 118.0
 ## 뽑기 판에 보여 줄 전설 카드
 const SHOWCASE := ["war_god", "silence_bell", "spirit_drain", "iron_will"]
 
@@ -70,7 +73,8 @@ func build_list(column: VBoxContainer) -> void:
 		grid.add_child(tile)
 
 
-## 카드 편성(영웅 메뉴 '카드 편성'): 15자리(★★★ 3 · ★★ 5 · ★ 7). 아래 가진 카드를 누르면 넣고 빼요.
+## 카드 편성(2026-11-18 사용자 결정 배치): 위 제목 줄, 왼쪽은 등급별 덱 줄 세 개(전설 3 · 희귀 5 · 일반 7, 줄마다 옆으로 스크롤),
+## 오른쪽은 '보유 카드'(2칸 세로 스크롤, 등급 거름). 오른쪽 카드를 누르면 넣고 빼며, 왼쪽 덱 카드를 누르면 뺀다.
 func build_deck(column: VBoxContainer) -> void:
 	var cards := _cards()
 	var rule: Dictionary = app.eco.get("card_deck", {})
@@ -81,54 +85,101 @@ func build_deck(column: VBoxContainer) -> void:
 	var head := Kit.hbox(10)
 	column.add_child(head)
 	head.add_child(Kit.label("카드 편성 %d / %d" % [deck.size(), int(rule.get("size", 15))], 28, Kit.GOLD))
-	var hint := Kit.para("아래 카드를 누르면 넣고, 위 칸을 누르면 빼요. 판에서는 편성한 카드만 나와요.", 15, Kit.MUTED)
+	var hint := Kit.para("오른쪽 보유 카드를 누르면 넣고, 왼쪽 덱 카드를 누르면 빼요.", 15, Kit.MUTED)
 	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(Kit.expand(hint))
 	head.add_child(MenuArt.capsule("최소 %d장" % int(rule.get("min", 6)), "", 18))
 
-	# 등급별 자리: ★★★ 3칸 · ★★ 5칸 · ★ 7칸(빈칸은 흐리게)
-	var slots := Kit.vbox(4)
-	column.add_child(slots)
+	var body := Kit.hbox(12)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(body)
+
+	# 왼쪽: 등급별 덱 줄
+	var left := Kit.vbox(4)
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.size_flags_stretch_ratio = 1.75
+	body.add_child(left)
 	for grade in [3, 2, 1]:
-		var line := Kit.hbox(6)
-		slots.add_child(line)
 		var mine: Array = []
 		for id in deck:
 			if Profile.card_grade(cards, str(id)) == grade:
 				mine.append(str(id))
 		var limit := int(per_grade.get(str(grade), 0))
-		var tag := Kit.label("%s  %d/%d" % ["★".repeat(grade), mine.size(), limit], 17, Kit.GRADE_COLORS[grade])
-		tag.custom_minimum_size = Vector2(108, 0)
-		tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		line.add_child(tag)
-		for index in 7:
-			if index < limit:
-				line.add_child(_deck_chip(mine[index] if index < mine.size() else "", grade))
+		left.add_child(Kit.label("%s %d / %d" % [str(GRADE_NAMES[grade]), mine.size(), limit], 20, Kit.GRADE_COLORS[grade]))
+		var frame := PanelContainer.new()
+		frame.add_theme_stylebox_override("panel", Kit.box(Color(0, 0, 0, 0.22), Kit.GRADE_COLORS[grade].darkened(0.35), 2, 12, 6))
+		left.add_child(frame)
+		var row_scroll := ScrollContainer.new()
+		row_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		row_scroll.custom_minimum_size = Vector2(0, DECK_TILE.y + 10)
+		frame.add_child(row_scroll)
+		var row := Kit.hbox(6)
+		row_scroll.add_child(row)
+		for index in limit:
+			if index < mine.size():
+				var tile := card_tile(cards, mine[index], true, false, DECK_TILE.y, false)
+				tile.custom_minimum_size = DECK_TILE
+				tile.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+				tile.pressed.connect(_on_card.bind(mine[index]))
+				row.add_child(tile)
 			else:
-				# 자리가 7칸보다 적은 줄은 빈 공간으로 너비를 맞춘다.
-				var spacer := Control.new()
-				spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				line.add_child(spacer)
+				row.add_child(_empty_slot(grade))
 
-	column.add_child(_filter_tabs())
-	var grid := _scroll_grid(column)
-	# 편성한 카드부터, 높은 등급부터. 가진 카드만 보인다.
-	var ids: Array = []
+	# 오른쪽: 보유 카드
+	var right := Kit.vbox(6)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(right)
+	var owned_ids: Array = []
 	for id in cards:
 		if Profile.owns_card(app.profile, str(id)):
-			ids.append(id)
-	ids.sort_custom(func(a, b) -> bool:
+			owned_ids.append(id)
+	right.add_child(Kit.label("보유 카드 %d / %d" % [owned_ids.size(), cards.size()], 20, Kit.GOLD))
+	var filters := Kit.hbox(4)
+	right.add_child(filters)
+	for spec in [[0, "전체"], [3, "★★★"], [2, "★★"], [1, "★"]]:
+		var tab := Kit.button(str(spec[1]), Kit.PANEL, 15, 36)
+		MenuArt.tab(tab, int(spec[0]) == _filter)
+		tab.pressed.connect(_on_filter.bind(int(spec[0])))
+		filters.add_child(Kit.expand(tab))
+	var owned_frame := PanelContainer.new()
+	owned_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	owned_frame.add_theme_stylebox_override("panel", Kit.box(Color(0, 0, 0, 0.22), Kit.GOLD.darkened(0.4), 2, 12, 6))
+	right.add_child(owned_frame)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	owned_frame.add_child(scroll)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	scroll.add_child(grid)
+	# 덱에 없는 카드부터, 높은 등급부터
+	owned_ids.sort_custom(func(a, b) -> bool:
 		var da := deck.has(a)
 		var db := deck.has(b)
 		if da != db:
-			return da
+			return db
 		return Profile.card_grade(cards, str(a)) > Profile.card_grade(cards, str(b)))
-	for id in ids:
+	for id in owned_ids:
 		if _filter != 0 and Profile.card_grade(cards, str(id)) != _filter:
 			continue
-		var tile := card_tile(cards, str(id), true, deck.has(id), 190.0)
+		var tile := card_tile(cards, str(id), true, deck.has(id), OWNED_TILE_HEIGHT, false)
 		tile.pressed.connect(_on_card.bind(str(id)))
 		grid.add_child(tile)
+
+
+## 비어 있는 덱 자리(등급색 점선 느낌의 흐린 칸)
+func _empty_slot(grade: int) -> Control:
+	var slot := PanelContainer.new()
+	slot.custom_minimum_size = DECK_TILE
+	slot.add_theme_stylebox_override("panel", Kit.box(Color(1, 1, 1, 0.05), Kit.GRADE_COLORS[grade].darkened(0.3), 2, 12, 4))
+	var inside := Kit.vbox(2)
+	inside.alignment = BoxContainer.ALIGNMENT_CENTER
+	slot.add_child(inside)
+	inside.add_child(Kit.label("★".repeat(grade), 16, Kit.GRADE_COLORS[grade].darkened(0.2), HORIZONTAL_ALIGNMENT_CENTER))
+	inside.add_child(Kit.label("빈칸", 16, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	return slot
 
 
 func _filter_tabs() -> Control:
@@ -153,32 +204,6 @@ func _scroll_grid(column: VBoxContainer) -> GridContainer:
 	grid.add_theme_constant_override("v_separation", 8)
 	scroll.add_child(grid)
 	return grid
-
-
-## 편성 자리 한 칸. 카드가 있으면 누르면 뺀다.
-func _deck_chip(id: String, grade: int) -> Control:
-	var chip := Button.new()
-	chip.flat = true
-	chip.focus_mode = Control.FOCUS_NONE
-	chip.custom_minimum_size = Vector2(0, 34)
-	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var body := PanelContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	chip.add_child(body)
-	if id == "":
-		body.add_theme_stylebox_override("panel", Kit.box(Color(0, 0, 0, 0.25), Kit.GRADE_COLORS[grade].darkened(0.4), 2, 10, 2))
-		body.add_child(Kit.label("빈칸", 15, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-		chip.disabled = true
-		return chip
-	var cards := _cards()
-	body.add_theme_stylebox_override("panel", Kit.box(GRADE_FILLS[grade], Kit.GRADE_COLORS[grade], 2, 10, 2))
-	var text := Kit.label(str(cards[id]["name"]), 15, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
-	text.clip_text = true
-	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.add_child(text)
-	chip.pressed.connect(_on_card.bind(id))
-	return chip
 
 
 ## 카드 한 장 모양(카드 덱 화면과 뽑기 결과가 함께 씀): 그림(없으면 등급색 바탕), 등급 별, 이름, 효과.

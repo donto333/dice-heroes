@@ -1801,5 +1801,8 @@
  "도전하기": "Thử thách",
  "상대 영웅 Lv.%d · 이기면 %s": "Anh hùng đối thủ Lv.%d · Thắng nhận %s",
  "오늘의 도전을 이겼어요! 내일 또 와요.": "Bạn đã thắng thử thách hôm nay! Ngày mai quay lại nhé.",
- "로비 메뉴가 편성·목록·도감·상점으로 바뀌었어요. 시즌 패스는 상점 안에, 오늘의 도전은 미션 안에 있어요.": "Menu sảnh giờ là Đội hình · Danh sách · Bộ sưu tập · Cửa hàng. Thẻ mùa nằm trong Cửa hàng, Thử thách hôm nay nằm trong Nhiệm vụ."
+ "로비 메뉴가 편성·목록·도감·상점으로 바뀌었어요. 시즌 패스는 상점 안에, 오늘의 도전은 미션 안에 있어요.": "Menu sảnh giờ là Đội hình · Danh sách · Bộ sưu tập · Cửa hàng. Thẻ mùa nằm trong Cửa hàng, Thử thách hôm nay nằm trong Nhiệm vụ.",
+ "오른쪽 보유 카드를 누르면 넣고, 왼쪽 덱 카드를 누르면 빼요.": "Chạm thẻ sở hữu bên phải để thêm, chạm thẻ trong bộ bên trái để bỏ.",
+ "보유 카드 %d / %d": "Thẻ sở hữu %d / %d",
+ "카드 편성 화면이 바뀌었어요: 왼쪽에 등급별 덱(전설·희귀·일반), 오른쪽에 보유 카드.": "Màn hình Xếp bộ bài đã đổi: bên trái là bộ bài theo cấp (Huyền thoại · Hiếm · Thường), bên phải là thẻ sở hữu."
 }
