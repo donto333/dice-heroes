@@ -108,7 +108,7 @@ func build_deck(column: VBoxContainer) -> void:
 		left.add_child(Kit.label("%s %d / %d" % [str(GRADE_NAMES[grade]), mine.size(), limit], 20, Kit.GRADE_COLORS[grade]))
 		var frame := PanelContainer.new()
 		# 덱 줄 판 그림(assets/ui_menu/deck_row_frame_N.png, 가운데만 늘림). 없으면 단색 테두리.
-		var row_art = MenuArt.style("deck_row_frame_%d" % grade, Vector4(48, 40, 48, 40), Vector4(14, 10, 14, 6))
+		var row_art = MenuArt.style("deck_row_frame_%d" % grade, Vector4(90, 32, 90, 32), Vector4(18, 12, 18, 8))
 		frame.add_theme_stylebox_override("panel", row_art if row_art != null else Kit.box(Color(0, 0, 0, 0.22), Kit.GRADE_COLORS[grade].darkened(0.35), 2, 12, 6))
 		left.add_child(frame)
 		var row_scroll := ScrollContainer.new()
@@ -146,7 +146,7 @@ func build_deck(column: VBoxContainer) -> void:
 		filters.add_child(Kit.expand(tab))
 	var owned_frame := PanelContainer.new()
 	owned_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var owned_art = MenuArt.style("deck_owned_frame", Vector4(48, 48, 48, 48), Vector4(14, 14, 14, 14))
+	var owned_art = MenuArt.style("deck_owned_frame", Vector4(44, 44, 44, 44), Vector4(16, 16, 16, 16))
 	owned_frame.add_theme_stylebox_override("panel", owned_art if owned_art != null else Kit.box(Color(0, 0, 0, 0.22), Kit.GOLD.darkened(0.4), 2, 12, 6))
 	right.add_child(owned_frame)
 	var scroll := ScrollContainer.new()
@@ -182,7 +182,7 @@ func _empty_slot(grade: int) -> Control:
 		picture.texture = art
 		picture.custom_minimum_size = DECK_TILE
 		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		picture.stretch_mode = TextureRect.STRETCH_SCALE
 		return picture
 	var slot := PanelContainer.new()
 	slot.custom_minimum_size = DECK_TILE
