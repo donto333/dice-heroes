@@ -1681,8 +1681,9 @@ static func draw_cards(profile: Dictionary, cards: Dictionary, eco: Dictionary, 
 ## 덱이 규칙에 맞는지. 맞으면 "", 아니면 이유.
 static func deck_error(profile: Dictionary, cards: Dictionary, eco: Dictionary, deck: Array) -> String:
 	var rule: Dictionary = eco.get("card_deck", {})
+	var per_grade: Dictionary = rule.get("per_grade", {})
 	var seen := {}
-	var legend := 0
+	var counts := {1: 0, 2: 0, 3: 0}
 	for id in deck:
 		if not cards.has(str(id)):
 			return "없는 카드가 있어요."
@@ -1691,15 +1692,26 @@ static func deck_error(profile: Dictionary, cards: Dictionary, eco: Dictionary, 
 		if seen.has(str(id)):
 			return "같은 카드는 한 장만 넣을 수 있어요."
 		seen[str(id)] = true
-		if card_grade(cards, str(id)) >= 3:
-			legend += 1
-	if deck.size() > int(rule.get("size", 10)):
-		return "덱에는 %d장까지 넣을 수 있어요." % int(rule.get("size", 10))
+		var grade := card_grade(cards, str(id))
+		counts[grade] = int(counts.get(grade, 0)) + 1
+	if deck.size() > int(rule.get("size", 15)):
+		return "덱에는 %d장까지 넣을 수 있어요." % int(rule.get("size", 15))
+	for grade in [3, 2, 1]:
+		var limit := int(per_grade.get(str(grade), 99))
+		if int(counts[grade]) > limit:
+			return "%s 카드는 %d장까지 넣을 수 있어요." % ["★".repeat(grade), limit]
 	if deck.size() < int(rule.get("min", 1)):
 		return "덱에는 %d장 이상 있어야 해요." % int(rule.get("min", 1))
-	if legend > int(rule.get("max_grade3", 99)):
-		return "★★★ 카드는 %d장까지 넣을 수 있어요." % int(rule.get("max_grade3", 99))
 	return ""
+
+
+## 덱에 든 등급별 장수 {3: n, 2: n, 1: n}
+static func deck_counts(cards: Dictionary, deck: Array) -> Dictionary:
+	var counts := {1: 0, 2: 0, 3: 0}
+	for id in deck:
+		var grade := card_grade(cards, str(id))
+		counts[grade] = int(counts.get(grade, 0)) + 1
+	return counts
 
 
 ## 카드 한 장을 덱에 넣거나 뺀다. 되면 "", 안 되면 이유.
