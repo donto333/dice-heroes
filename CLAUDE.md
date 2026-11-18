@@ -65,6 +65,7 @@
 - 주사위 꾸미기 그림(2026-11-18, 기획서는 프로젝트 문서 `claude/주사위영웅전_GPT그림활용기획.md` 1단계): 스킨마다 `assets/dice/<스킨 id>_<눈>.png`(180×200, 기본 주사위는 white, 황금은 gold)를 `GameData.skin_die_face(스킨, 눈)`으로 찾아 굴리는 큰 주사위(`big_dice.gd`)와 상점 미리보기(`die_preview.gd`)에 색 입히지 않고 그대로 그린다. 없으면 흰 주사위에 스킨 색을 입혀 대신한다. 주문서 `codex_work/job_dice.md`(분홍·보라 스킨은 초록 바탕), 넣는 도구 `tools/import_dice.py <out/dice>`(3×2 한 장 또는 `<스킨>_<눈>.png` 낱장, 바탕 자홍·초록 자동 판별).
 - 어빌리티 아이콘(2026-11-18, GPT 그림 활용 기획 2단계): 48개 스킬마다 금테 메달 아이콘 `assets/ability_icons/<어빌리티 id>.png`(256, 고리 색 빨강 공격·파랑 방어·초록 이동·보라 방해·금 지원). `GameData.ability_icon(id)`·`ability_icon_rect(id, 크기)`로 불러 대전 스킬 카드(초상화 귀퉁이 메달, 버튼 메타 badge)·스킬 설명 창·스킬 알림 띠·컷인(`cutin.gd`의 _icon)·영웅 상세 어빌리티 칸에 쓴다. ChatGPT 웹(크롬, 대화 '아이콘 제작')에서 4칸×3줄 판 4장으로 그려 `tools/import_ability_icons.py <판 폴더>`(sheet1~4.png, abilities.json 순서, 메달을 덩어리로 찾아 자름)로 넣었다.
 - ★★★ 스킬 장면 그림(2026-11-18, GPT 그림 활용 기획 3단계): `assets/cutins/<영웅 id>.png`(512 정사각, 바탕 없는 상반신)가 있으면 컷인(`cutin.gd`의 _hero_art)이 초상화 대신 띠 위로 튀어나오게 그린다(`GameData.cutin_art`). 주문서 `codex_jobs/job_cutin.md`, 넣는 도구 `tools/import_cutins.py <그림 폴더>`.
+- 업적 아이콘(2026-11-18, GPT 그림 활용 기획 4단계): 업적 종류(stat)별 금테 메달 12종 `assets/ui_icons/ach_*.png`(192), 미션 화면 업적 줄이 `missions_screen.gd`의 ACHIEVEMENT_ICONS로 고른다(없으면 trophy). Codex 웹에서 4×3 판 한 장으로 그려 `tools/import_icon_sheet.py <판> <폴더> <이름들> [크기]`(아이콘 판을 덩어리로 잘라 넣는 공용 도구)로 넣었다.
 - 매일 바뀌는 것(날짜 씨앗): 오늘의 미션 6개(`Profile.active_missions`), 오늘의 특가, 오늘의 도전(상대·맵). 하루 기록은 `profile["daily"]`.
 
 ## 게임 요약

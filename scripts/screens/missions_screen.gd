@@ -222,9 +222,24 @@ func _achievement_row(achievement: Dictionary) -> Control:
 	button.custom_minimum_size = Vector2(120, 56)
 	button.disabled = claimed or not done
 	button.pressed.connect(_on_achievement.bind(str(achievement["id"]), button))
-	var words := MenuArt.list_row(holder, "trophy", str(achievement["text"]), "", _reward_and(achievement["reward"], button), claimed)
+	var words := MenuArt.list_row(holder, _achievement_icon(str(achievement["stat"])), str(achievement["text"]), "", _reward_and(achievement["reward"], button), claimed)
 	words.add_child(_progress(value, goal, done))
 	return holder
+
+
+## 업적 종류(stat)별 메달 아이콘(assets/ui_icons/ach_*.png, GPT 그림 활용 기획 4단계). 그림이 없으면 트로피.
+const ACHIEVEMENT_ICONS := {
+	"wins": "ach_wins", "adventure_stars": "ach_adventure", "battle_wins_total": "ach_battle",
+	"owned": "ach_heroes", "chapters_cleared": "ach_chapter", "best_trophies": "ach_trophy",
+	"rank_wins": "ach_rank", "cards_total": "ach_cards", "summons_total": "ach_summon",
+	"level": "ach_level", "gates_total": "ach_gate", "upgrades_total": "ach_upgrade",
+	"max_level_heroes": "ach_upgrade",
+}
+
+
+func _achievement_icon(stat: String) -> String:
+	var name := str(ACHIEVEMENT_ICONS.get(stat, "trophy"))
+	return name if ResourceLoader.exists("res://assets/ui_icons/%s.png" % name) else "trophy"
 
 
 func _on_achievement(id: String, from: Control = null) -> void:

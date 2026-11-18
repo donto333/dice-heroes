@@ -1805,5 +1805,6 @@
  "오른쪽 보유 카드를 누르면 넣고, 왼쪽 덱 카드를 누르면 빼요.": "Chạm thẻ sở hữu bên phải để thêm, chạm thẻ trong bộ bên trái để bỏ.",
  "보유 카드 %d / %d": "Thẻ sở hữu %d / %d",
  "카드 편성 화면이 바뀌었어요: 왼쪽에 등급별 덱(전설·희귀·일반), 오른쪽에 보유 카드.": "Màn hình Xếp bộ bài đã đổi: bên trái là bộ bài theo cấp (Huyền thoại · Hiếm · Thường), bên phải là thẻ sở hữu.",
- "★★★ 영웅 12명의 스킬 컷인에 전용 스킬 장면 그림이 생겼어요.": "12 anh hùng ★★★ đã có hình minh họa chiêu thức riêng khi tung kỹ năng."
+ "★★★ 영웅 12명의 스킬 컷인에 전용 스킬 장면 그림이 생겼어요.": "12 anh hùng ★★★ đã có hình minh họa chiêu thức riêng khi tung kỹ năng.",
+ "업적마다 종류별 메달 아이콘이 생겼어요.": "Mỗi thành tích giờ có huy chương riêng theo loại."
 }
