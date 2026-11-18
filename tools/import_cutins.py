@@ -1,7 +1,7 @@
 """★★★ 스킬 장면 그림 넣기: Codex가 그린 자홍 바탕 그림을 assets/cutins/<영웅 id>.png로 넣는다.
 
 쓰는 법: python tools/import_cutins.py <그림 폴더>
-- 파일 이름은 <영웅 id>.png (예: lubu.png). 자홍(#FF00FF)을 지우고 사람만 잘라 긴 변 768로 맞춘다.
+- 파일 이름은 <영웅 id>.png (예: lubu.png). 자홍(#FF00FF)을 지우고 사람만 잘라 긴 변 512로 맞춘다.
 - 아래쪽은 띠에 잘려 들어가므로 정사각형으로 맞출 때 아래를 기준으로 붙인다.
 """
 import sys
@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image
 
 OUT = Path(__file__).resolve().parent.parent / "assets" / "cutins"
-SIDE = 768
+SIDE = 512
 
 
 def cut_magenta(image: Image.Image) -> Image.Image:
