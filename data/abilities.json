@@ -3,13 +3,13 @@
   "abilities": {
     "unique_lubu": {
       "name": "천하무쌍",
-      "text": "2턴간 공격 주사위 +1개, 이번 턴 공격 주사위에 6이 나오면 하나마다 +2",
+      "text": "2턴간 공격 주사위 +2개, 이번 턴 공격 주사위에 6이 나오면 하나마다 +2",
       "effect": {
         "type": "multi",
         "effects": [
           {
             "type": "atk_dice",
-            "amount": 1,
+            "amount": 2,
             "turns": 2
           },
           {
@@ -248,7 +248,7 @@
     },
     "unique_sejong": {
       "name": "훈민정음",
-      "text": "이번 이동 +2칸, 카드 1장 획득, 2턴간 공격·방어 합계 +3, 2턴간 게이지가 50% 더 참",
+      "text": "이번 이동 +1칸, 카드 1장 획득, 2턴간 공격·방어 합계 +3, 2턴간 게이지가 50% 더 참",
       "effect": {
         "type": "multi",
         "effects": [
@@ -273,7 +273,7 @@
           },
           {
             "type": "move_plus",
-            "amount": 2,
+            "amount": 1,
             "turns": 1
           }
         ]
@@ -407,7 +407,7 @@
     },
     "skill_libai": {
       "name": "취중 시선",
-      "text": "맵 속성을 내 ATTACK 캐릭터의 분류로 바꾸고, 우리 팀 게이지 +20%",
+      "text": "이번 이동 +2칸, 맵 속성을 내 ATTACK 캐릭터의 분류로 바꾸고, 우리 팀 게이지 +20%",
       "effect": {
         "type": "multi",
         "effects": [
@@ -417,6 +417,11 @@
           {
             "type": "gauge_team",
             "amount": 20
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
+            "turns": 1
           }
         ]
       }
@@ -449,7 +454,7 @@
     },
     "skill_seohui": {
       "name": "담판",
-      "text": "상대의 다음 이동 주사위 -1개, 우리 팀 게이지 +20%",
+      "text": "이번 이동 +2칸, 상대의 다음 이동 주사위 -1개, 우리 팀 게이지 +20%",
       "effect": {
         "type": "multi",
         "effects": [
@@ -460,6 +465,11 @@
           {
             "type": "gauge_team",
             "amount": 20
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
+            "turns": 1
           }
         ]
       }
@@ -656,7 +666,7 @@
     },
     "skill_haetae": {
       "name": "불막이",
-      "text": "다음 내 차례까지 방어 합계 +4, 저주 해제",
+      "text": "이번 이동 +2칸, 다음 내 차례까지 방어 합계 +4, 저주 해제",
       "effect": {
         "type": "multi",
         "effects": [
@@ -667,6 +677,11 @@
           },
           {
             "type": "cure"
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
+            "turns": 1
           }
         ]
       }
@@ -863,7 +878,7 @@
     },
     "skill_houdini": {
       "name": "탈출 마술",
-      "text": "이번 이동 +2칸, 저주·쉬기 해제, 2턴 안에 지면 한 번은 거점으로 돌아가지 않음",
+      "text": "저주·쉬기 해제, 2턴 안에 지면 한 번은 거점으로 돌아가지 않음",
       "effect": {
         "type": "multi",
         "effects": [
@@ -874,11 +889,6 @@
             "type": "stand_ground",
             "amount": 1,
             "turns": 2
-          },
-          {
-            "type": "move_plus",
-            "amount": 2,
-            "turns": 1
           }
         ]
       }
