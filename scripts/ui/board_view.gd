@@ -123,6 +123,12 @@ const ANIM_COLUMNS := 6
 
 
 ## 움직이는 그림에서 frame번째 칸의 자리. 한 줄짜리 예전 그림과 두 줄짜리 새 그림을 모두 읽는다.
+## 서 있는 모형의 숨쉬기: 발을 기준으로 아주 살짝 위아래로 늘었다 줄었다 한다(말마다 박자를 엇갈림).
+func _breath(seed: int) -> Vector2:
+	var wave := sin(_anim_time * 2.2 + float(seed) * 1.7)
+	return Vector2(1.0 - 0.008 * wave, 1.0 + 0.02 * wave)
+
+
 func _anim_region(sheet: Texture2D, frame: int) -> Rect2:
 	var sheet_size := sheet.get_size()
 	if sheet_size.x >= sheet_size.y * float(ANIM_FRAMES) - 0.5:
@@ -855,20 +861,23 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 			if follower == null:
 				continue
 			var side := -1.0 if follow_index == 0 else 1.0
-			var small_height := height * 0.8
+			var small_height := height * 0.78
 			var small_width := small_height * float(follower.get_width()) / maxf(float(follower.get_height()), 1.0)
 			var delay := 0.0
 			if hop_t >= 0.0:
 				# 한 박자 늦게 따라 뛴다.
 				delay = -sin(clampf(hop_t - 0.18 * (follow_index + 1), 0.0, 1.0) * PI) * cell * HOP_HEIGHT * 0.8 + lift
-			var spot := base + Vector2(side * cell * 0.3 - facing * cell * 0.1, -cell * 0.13 + delay)
-			draw_set_transform(spot, 0.0, Vector2(facing, 1.0))
+			# 선봉에 가려지지 않게 뒤쪽 양옆으로 넉넉히 벌려 세운다(2026-11-18: 세 명이 다 보이게).
+			var spot := base + Vector2(side * cell * 0.46 - facing * cell * 0.08, -cell * 0.22 + delay)
+			var follow_breath := _breath(player_index * 3 + follow_index + 1) if hop_t < 0.0 else Vector2.ONE
+			draw_set_transform(spot, 0.0, Vector2(facing * follow_breath.x, follow_breath.y))
 			var follow_anims: Dictionary = {}
 			if player_index < party_anims.size() and follow_index < party_anims[player_index].size():
 				follow_anims = party_anims[player_index][follow_index]
 			var follow_sheet: Texture2D = follow_anims.get("walk" if hop_t >= 0.0 else "idle", follow_anims.get("idle"))
 			if follow_sheet != null:
-				var follow_frame := int(_anim_time * (16.0 if hop_t >= 0.0 else 6.0) + follow_index * 4 + 2) % ANIM_FRAMES
+				# 서 있을 때는 첫 장면에 멈추고 숨쉬기만 한다(대기 동작은 고개를 두리번거려 목이 흔들려 보였다).
+				var follow_frame := (int(_anim_time * 16.0) + follow_index * 4 + 2) % ANIM_FRAMES if hop_t >= 0.0 else 0
 				var follow_box := small_height * 1.08 / ANIM_BODY
 				draw_texture_rect_region(follow_sheet, Rect2(-follow_box / 2.0, -follow_box * ANIM_FOOT, follow_box, follow_box),
 					_anim_region(follow_sheet, follow_frame), Color(0.9, 0.9, 0.95))
@@ -884,10 +893,11 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 		var sheet: Texture2D = anims.get("walk" if hop_t >= 0.0 else "idle", anims.get("idle"))
 		if sheet != null:
 			# 움직이는 모형: 이동 중에는 걷는 그림을 빠르게, 서 있을 때는 숨 쉬는 그림을 천천히 넘긴다. 통통 튀는 늘림은 쓰지 않는다.
-			var speed := 16.0 if hop_t >= 0.0 else 6.0
-			var frame := int(_anim_time * speed + player_index * 5) % ANIM_FRAMES
+			# 서 있을 때는 첫 장면에 멈추고 숨쉬기만 한다(대기 동작은 고개를 두리번거려 목이 흔들려 보였다).
+			var frame := (int(_anim_time * 16.0) + player_index * 5) % ANIM_FRAMES if hop_t >= 0.0 else 0
 			var box := height * 1.08 / ANIM_BODY
-			draw_set_transform(base, 0.0, Vector2(facing, 1.0))
+			var breath := _breath(player_index * 3) if hop_t < 0.0 else Vector2.ONE
+			draw_set_transform(base, 0.0, Vector2(facing * breath.x, breath.y))
 			draw_texture_rect_region(sheet, Rect2(-box / 2.0, -box * ANIM_FOOT, box, box), _anim_region(sheet, frame))
 		else:
 			draw_set_transform(base, 0.0, Vector2(stretch.x * facing, stretch.y))

@@ -16,10 +16,9 @@ const WIN_COLOR := Color("7ee081")
 const LOSE_COLOR := Color("ff6b6b")
 const ROLL_TIME := 0.9
 const HOLD_TIME := 1.6
-## 움직이는 모형(assets/standees_anim, 6칸×2줄 12장): 가만히는 1초에 10장, 베기는 0.6초에 12장.
+## 움직이는 모형(assets/standees_anim, 6칸×2줄 12장): 가만히는 첫 장면에 숨쉬기만, 베기는 0.6초에 12장.
 const ANIM_FRAMES := 12
 const ANIM_COLUMNS := 6
-const IDLE_FPS := 10.0
 const SLASH_TIME := 0.6
 ## 한 칸에서 모형이 있는 부분만 잘라 보여 준다(발은 칸의 81.25% 높이).
 const ANIM_CROP := Rect2(0.1, 0.06, 0.8, 0.8)
@@ -167,8 +166,15 @@ func _process(delta: float) -> void:
 				state["time"] = 0.0
 				kind = "idle"
 				frame = 0
+		var figure: TextureRect = _sides[index]["figure"]
 		if kind != "slash":
-			frame = int(float(state["time"]) * IDLE_FPS) % ANIM_FRAMES
+			# 서 있을 때는 첫 장면에 멈추고 숨쉬기만 한다(대기 동작은 고개를 두리번거려 목이 흔들려 보였다).
+			frame = 0
+			var wave := sin(float(state["time"]) * 2.2 + index * 1.7)
+			figure.pivot_offset = Vector2(figure.size.x * 0.5, figure.size.y * 0.94)
+			figure.scale = Vector2(1.0 - 0.008 * wave, 1.0 + 0.02 * wave)
+		else:
+			figure.scale = Vector2.ONE
 		_set_anim_frame(index, kind, frame)
 
 
