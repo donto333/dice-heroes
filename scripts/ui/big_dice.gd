@@ -193,8 +193,13 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, DIE * 0.48 * (1.0 - hop / 400.0), Color(0, 0, 0, 0.3))
 		draw_set_transform(ground - Vector2(0, hop), float(pose[2]), Vector2(scale_now, scale_now))
 		var face_value := clampi(int(_faces[index]), 1, 6)
+		var own: Texture2D = GameData.skin_die_face(skin, face_value)
 		var solid: Texture2D = GameData.die_face(face_value)
-		if solid != null:
+		if own != null:
+			# 스킨 전용 그림이 있으면 색을 입히지 않고 그대로 그린다.
+			var own_size := DIE * 1.25
+			draw_texture_rect(own, Rect2(-own_size / 2.0, -own_size / 2.0, own_size, own_size), false)
+		elif solid != null:
 			# 입체 주사위 그림. 산 주사위 모양(스킨)의 몸통 색을 살짝 입힌다.
 			var body_tint := Color(str(skin.get("body", "ffffff"))).lerp(Color.WHITE, 0.35)
 			var solid_size := DIE * 1.25

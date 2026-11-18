@@ -1,5 +1,7 @@
 extends Control
-## 주사위 스킨 미리보기: 스킨 색으로 주사위 한 개를 그린다. (상점·설정용)
+## 주사위 스킨 미리보기: 스킨 전용 그림이 있으면 그것을, 없으면 스킨 색으로 주사위 한 개를 그린다. (상점·설정용)
+
+const GameData := preload("res://scripts/game_data.gd")
 
 const PIPS := {
 	1: [Vector2(0.5, 0.5)],
@@ -22,6 +24,11 @@ func _ready() -> void:
 
 func _draw() -> void:
 	var side: float = min(size.x, size.y - 8.0)
+	var own: Texture2D = GameData.skin_die_face(skin, face)
+	if own != null and str(skin.get("id", "classic")) != "classic":
+		var box := side * 1.15
+		draw_texture_rect(own, Rect2((size.x - box) / 2.0, (size.y - box) / 2.0, box, box), false)
+		return
 	draw_set_transform(Vector2(size.x * 0.5, size.y * 0.5 - 2.0), -0.12, Vector2.ONE)
 	draw_die(self, side, face, skin)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
