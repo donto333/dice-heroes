@@ -188,6 +188,20 @@ func _run() -> void:
 	_app.go("cards", {"tab": "gacha"})
 	await _wait(0.4)
 	await _shot("09g_cards_gacha")
+	var gacha_scroll := _find_scroll(_app.current_screen)
+	if gacha_scroll != null:
+		gacha_scroll.scroll_vertical = 100000
+		await _wait(0.2)
+	await _shot("09i_cards_gold")
+	_app.go("shop")
+	await _wait(0.4)
+	var shop_scroll := _find_scroll(_app.current_screen)
+	if shop_scroll != null:
+		shop_scroll.scroll_vertical = 330
+		await _wait(0.2)
+	await _shot("09j_shop_gold")
+	_app.go("cards", {"tab": "gacha"})
+	await _wait(0.4)
 	_app.profile["gems"] = int(_app.profile.get("gems", 0)) + 1000
 	_app.current_screen._on_paid_draw(10)
 	await _wait(0.6)

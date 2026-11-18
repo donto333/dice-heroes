@@ -68,6 +68,7 @@ func _init() -> void:
 	_test_checkpoints()
 	_test_cards()
 	_test_card_deck()
+	_test_gold_gacha()
 	_test_pass_by_fight()
 	_test_balance()
 	_test_full_games()
@@ -2105,3 +2106,24 @@ func _test_card_deck() -> void:
 	var broken := Profile.new_profile("망가짐", eco)
 	broken["deck"] = ["없는카드"]
 	_check(Profile.deck_error(broken, cards, eco, Profile.battle_deck(broken, cards, eco)) == "", "망가진 덱을 되돌리지 못함")
+
+
+## 골드 소환·골드 카드 뽑기(2026-11-18): ★·★★만 나오고 ★★★ 보장 횟수는 그대로.
+func _test_gold_gacha() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("골드", eco)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 21
+	profile["pity"] = 5
+	profile["card_pity"] = 3
+	var heroes := Profile.summon(profile, _data["characters"], eco, 10, rng, true)
+	var cards := Profile.draw_cards(profile, _data["cards"], eco, 10, rng, true)
+	for round_index in 30:
+		heroes.append_array(Profile.summon(profile, _data["characters"], eco, 10, rng, true))
+		cards.append_array(Profile.draw_cards(profile, _data["cards"], eco, 10, rng, true))
+	for entry in heroes:
+		_check(int(entry["grade"]) <= 2, "골드 소환에서 ★★★이 나옴")
+	for entry in cards:
+		_check(int(entry["grade"]) <= 2, "골드 카드 뽑기에서 ★★★이 나옴")
+	_check(int(profile["pity"]) == 5 and int(profile["card_pity"]) == 3, "골드 뽑기가 ★★★ 보장 횟수를 바꿈")
+	_check(int(eco["summon"]["gold"]["cost_one"]) > 0 and int(eco["card_gacha"]["gold"]["cost_one"]) > 0, "골드 뽑기 값이 없음")

@@ -278,7 +278,42 @@ func _build_gacha(column: VBoxContainer) -> void:
 	ten.pressed.connect(_on_paid_draw.bind(10))
 	buttons.add_child(Kit.expand(ten))
 	Kit.shimmer(ten)
+	body.add_child(_gold_panel())
 	body.add_child(Kit.para("뽑은 카드는 '카드 덱'에서 덱에 넣어야 판에 나와요.", 17, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+
+
+## 골드 카드 뽑기(2026-11-18 사용자 요청): ★·★★ 카드만 나온다. ★★★ 보장 횟수는 세지 않는다.
+func _gold_panel() -> Control:
+	var table: Dictionary = app.eco.get("card_gacha", {}).get("gold", {})
+	var rates: Dictionary = table.get("rates", {})
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("골드 뽑기", "gold", "★★ %d%% · ★ %d%%  (★★★ 없음)" % [int(rates.get("2", 0)), int(rates.get("1", 0))]))
+	var line := MenuArt.row(12)
+	group.add_child(line)
+	var inside := Kit.hbox(10)
+	line.add_child(inside)
+	var words := Kit.vbox(2)
+	words.add_child(Kit.label("★·★★ 카드 뽑기", 24, Color.WHITE))
+	words.add_child(Kit.para("골드로 뽑아요. 10회는 ★★ 이상 1장 보장.", 17, Kit.MUTED))
+	inside.add_child(Kit.expand(words))
+	for count in [1, 10]:
+		var cost := int(table.get("cost_ten" if count >= 10 else "cost_one", 500))
+		var button := MenuArt.pill_button("%d회  %s" % [count, Kit.money_text("gold", cost)], "green" if count == 1 else "gold", "m")
+		button.custom_minimum_size = Vector2(200, 60)
+		button.disabled = not Profile.can_pay(app.profile, "gold", cost)
+		button.pressed.connect(_on_gold_draw.bind(count))
+		inside.add_child(button)
+	return group
+
+
+func _on_gold_draw(count: int) -> void:
+	var table: Dictionary = app.eco.get("card_gacha", {}).get("gold", {})
+	var cost := int(table.get("cost_ten" if count >= 10 else "cost_one", 500))
+	if not Profile.pay(app.profile, "gold", cost):
+		app.play("denied")
+		app.toast("골드가 모자라요.")
+		return
+	_pull(count, true)
 
 
 func _on_free_draw() -> void:
@@ -298,15 +333,15 @@ func _on_paid_draw(count: int) -> void:
 
 
 ## 결과는 뽑는 순간 정해져 저장된다. 창에 카드를 한 장씩 뒤집듯 보여 준다.
-func _pull(count: int) -> void:
+func _pull(count: int, gold: bool = false) -> void:
 	var cards := _cards()
-	var results := Profile.draw_cards(app.profile, cards, app.eco, count, app.rng)
+	var results := Profile.draw_cards(app.profile, cards, app.eco, count, app.rng, gold)
 	app.save()
 	var best := 1
-	var gold := 0
+	var refund := 0
 	for entry in results:
 		best = maxi(best, int(entry["grade"]))
-		gold += int(entry["gold"])
+		refund += int(entry["gold"])
 	app.play("summon_%d" % best)
 	var body := Kit.vbox(10)
 	var grid := GridContainer.new()
@@ -325,8 +360,8 @@ func _pull(count: int) -> void:
 		holder.add_child(Kit.label(note, 18, Kit.GOLD if bool(entry["new"]) else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 		grid.add_child(holder)
 		tiles.append(holder)
-	if gold > 0:
-		body.add_child(Kit.para("겹친 카드는 골드로 바뀌었어요: %s" % Kit.money_text("gold", gold), 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	if refund > 0:
+		body.add_child(Kit.para("겹친 카드는 골드로 바뀌었어요: %s" % Kit.money_text("gold", refund), 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var host = app
 	host.dialog("카드 뽑기 결과", body, [["확인", Kit.PRIMARY, func() -> void: host.go("cards", {"tab": "gacha"})]], 900.0 if results.size() > 1 else 420.0)
 	# 한 장씩 차례로 나타나게(자동 사진·저사양 모드면 곧바로)

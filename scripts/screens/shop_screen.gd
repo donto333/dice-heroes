@@ -52,6 +52,7 @@ func setup(main_app, _params: Dictionary) -> void:
 			body.add_child(_gem_pack_panel())
 		_:
 			body.add_child(_summon_panel())
+			body.add_child(_gold_summon_panel())
 			body.add_child(_deals_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	# 남은 버튼도 모두 금테 알약으로(UI 개편 1단계)
@@ -109,6 +110,41 @@ func _summon_panel() -> Control:
 	buttons.add_child(Kit.expand(ten))
 	Kit.shimmer(ten)
 	return card
+
+
+## 골드 소환(2026-11-18 사용자 요청): ★·★★ 영웅만 나온다. ★★★ 보장 횟수는 세지 않는다.
+func _gold_summon_panel() -> Control:
+	var table: Dictionary = app.eco.get("summon", {}).get("gold", {})
+	var group := Kit.vbox(8)
+	var rates: Dictionary = table.get("rates", {})
+	group.add_child(MenuArt.section("골드 소환", "gold", "★★ %d%% · ★ %d%%  (★★★ 없음)" % [int(rates.get("2", 0)), int(rates.get("1", 0))]))
+	var line := MenuArt.row(12)
+	group.add_child(line)
+	var inside := Kit.hbox(10)
+	line.add_child(inside)
+	var words := Kit.vbox(2)
+	words.add_child(Kit.label("★·★★ 영웅 소환", 24, Color.WHITE))
+	words.add_child(Kit.para("골드로 소환해요. 10회는 ★★ 이상 1명 보장.", 17, Kit.MUTED))
+	inside.add_child(Kit.expand(words))
+	for count in [1, 10]:
+		var cost := int(table.get("cost_ten" if count >= 10 else "cost_one", 1000))
+		var button := MenuArt.pill_button("%d회  %s" % [count, Kit.comma(cost)], "green" if count == 1 else "gold", "m")
+		button.custom_minimum_size = Vector2(200, 60)
+		_money_icon(button, "gold")
+		button.disabled = not Profile.can_pay(app.profile, "gold", cost)
+		button.pressed.connect(_on_gold.bind(count))
+		inside.add_child(button)
+	return group
+
+
+func _on_gold(count: int) -> void:
+	var table: Dictionary = app.eco.get("summon", {}).get("gold", {})
+	var cost := int(table.get("cost_ten" if count >= 10 else "cost_one", 1000))
+	if not Profile.pay(app.profile, "gold", cost):
+		app.play("denied")
+		app.toast("골드가 모자라요.")
+		return
+	_summon(count, cost, true)
 
 
 ## 오늘의 특가: 가진 영웅의 강화 조각을 골드로. 매일 바뀐다.
@@ -409,19 +445,23 @@ func _on_paid(count: int) -> void:
 	_summon(count, cost)
 
 
-func _summon(count: int, again_cost: int = 0) -> void:
-	var results := Profile.summon(app.profile, app.data["characters"], app.eco, count, app.rng)
+func _summon(count: int, again_cost: int = 0, gold: bool = false) -> void:
+	var results := Profile.summon(app.profile, app.data["characters"], app.eco, count, app.rng, gold)
 	app.save()
 	# 결과는 이미 정해져 저장됐다. 소환 연출(제단 → 운명의 주사위 → 카드 뒤집기)로 보여 준다.
 	# 연출이 끝나면 이 화면은 새로 그려지므로(app.go) 그 뒤에는 self를 쓰지 않는다.
 	var host = app
 	var tab := _tab
 	var show := SummonShow.new()
+	show.again_currency = "gold" if gold else "gems"
 	host.add_child(show)
 	var again: bool = await show.play(host, results, again_cost)
 	host.go("shop", {"tab": tab})
 	if again:
-		host.current_screen._on_paid(count)
+		if gold:
+			host.current_screen._on_gold(count)
+		else:
+			host.current_screen._on_paid(count)
 
 
 func _on_exchange(index: int) -> void:
