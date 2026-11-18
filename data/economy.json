@@ -950,24 +950,24 @@
     {
       "id": "banner",
       "name": "출정의 깃발",
-      "text": "처음 5턴 동안 공격 합계 +1",
+      "text": "처음 2턴 동안 공격 합계 +1",
       "effect": {
         "atk_bonus": 1,
-        "turns": 5
+        "turns": 2
       },
       "cost": {
-        "gold": 3000
+        "gold": 1000
       }
     },
     {
       "id": "scroll",
       "name": "지혜의 두루마리",
-      "text": "어빌리티 게이지 20%로 시작",
+      "text": "어빌리티 게이지 10%로 시작",
       "effect": {
-        "gauge": 20
+        "gauge": 10
       },
       "cost": {
-        "gold": 3000
+        "gold": 1000
       }
     },
     {
@@ -978,7 +978,7 @@
         "charm": true
       },
       "cost": {
-        "gems": 200
+        "gems": 5
       }
     },
     {
@@ -991,7 +991,7 @@
         "gauge": 15
       },
       "cost": {
-        "gems": 600
+        "gems": 10
       }
     }
   ],
