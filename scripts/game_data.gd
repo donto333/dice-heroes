@@ -122,6 +122,28 @@ static func skin_die_face(skin: Dictionary, value: int) -> Texture2D:
 	return die_face(value, "white" if id == "classic" or id == "" else id)
 
 
+## 어빌리티(스킬) 아이콘(assets/ability_icons/<어빌리티 id>.png, 금테 메달). 없으면 null.
+static func ability_icon(ability_id: String) -> Texture2D:
+	if ability_id == "":
+		return null
+	return _cached_texture("ability/" + ability_id, "res://assets/ability_icons/%s.png" % ability_id)
+
+
+## 아이콘 그림 칸 하나(TextureRect). 그림이 없으면 null.
+static func ability_icon_rect(ability_id: String, side: float) -> TextureRect:
+	var texture := ability_icon(ability_id)
+	if texture == null:
+		return null
+	var rect := TextureRect.new()
+	rect.texture = texture
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rect.custom_minimum_size = Vector2(side, side)
+	rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rect
+
+
 ## 판 위 물건 그림(굴리기 버튼, 받침대, 보물상자, 깃발...). 없으면 null.
 static func object(name: String) -> Texture2D:
 	return _cached_texture("object/" + name, OBJECT_PATH % name)

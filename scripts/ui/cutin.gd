@@ -4,6 +4,7 @@ extends Control
 
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const Fx := preload("res://scripts/ui/fx.gd")
+const GameData := preload("res://scripts/game_data.gd")
 
 const IN_TIME := 0.2
 const HOLD_TIME := 1.0
@@ -14,6 +15,8 @@ var _style: StyleBoxFlat
 var _face: Control
 var _title: Label
 var _note: Label
+## 어빌리티 아이콘(금테 메달). 기술 설명 오른쪽에 둔다.
+var _icon: TextureRect
 ## 띠 안에서 빛나는 것들(속도선·빛살·별빛)을 그리는 더하기 섞기 층
 var _streaks: Control
 var _tint := Color.WHITE
@@ -72,6 +75,13 @@ func _ready() -> void:
 	_note.custom_minimum_size = Vector2(410, 0)
 	_note.size = Vector2(410, 80)
 	_band.add_child(_note)
+	_icon = TextureRect.new()
+	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_icon.position = Vector2(770, 22)
+	_icon.size = Vector2(166, 166)
+	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_band.add_child(_icon)
 
 
 func _process(delta: float) -> void:
@@ -123,6 +133,8 @@ func play(character: Dictionary, title: String, note: String, color: Color) -> v
 	_title.text = title
 	_title.add_theme_color_override("font_color", Color("ffcf4d"))
 	_note.text = note
+	_icon.texture = GameData.ability_icon(str(character.get("ability", "")))
+	_icon.visible = _icon.texture != null
 	modulate.a = 0.0
 	visible = true
 	await get_tree().process_frame
