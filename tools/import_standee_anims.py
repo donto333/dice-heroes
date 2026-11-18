@@ -58,7 +58,7 @@ def main() -> None:
 	for folder in sys.argv[1:]:
 		for path in sorted(Path(folder).rglob("render/*_*.png")):
 			name, kind = path.stem.rsplit("_", 1)
-			if kind not in ("idle", "walk") or name.startswith(("turn", "probe")):
+			if kind not in ("idle", "walk", "slash") or name.startswith(("turn", "probe")):
 				continue
 			sheet = ground(Image.open(path).convert("RGBA"))
 			sheet.quantize(256, method=Image.Quantize.FASTOCTREE).save(target / f"{name}_{kind}.png", optimize=True)
