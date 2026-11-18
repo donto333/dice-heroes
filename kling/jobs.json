@@ -6,14 +6,112 @@
   "common": "Game sprite animation of this exact chibi character, same design, colors and proportions. The camera is completely fixed: no camera movement, no zoom, no pan, no cut. The character stays in the same spot in the center of the frame and does not travel. The background stays solid pure green (#00FF00) the whole time, no shadow, no floor, no effects on the background. The motion is a seamless loop: it ends in the same pose as the starting image.",
   "jobs": [
     {
-      "id": "gumiho",
-      "image": "kling/ref/gumiho.png",
+      "id": "lubu",
+      "image": "kling/ref/lubu.png",
       "kinds": {
-        "idle": "Idle animation: she stands in place breathing gently, her nine fluffy tails sway softly, her long hair and sleeves move slightly, she blinks once, the small blue fox fire in her hand flickers.",
-        "walk": "Walk-in-place animation (like on a treadmill): she walks facing right with light cute steps, legs and sleeves moving, tails swaying with each step, while staying in the same place.",
-        "slash": "Attack animation: she thrusts her open palm forward to the right and releases a quick burst of blue fox fire, her tails flare out, then she returns smoothly to the starting pose."
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he swings the halberd in a powerful slash to the right, red plumes and cape whipping, then returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "yisunsin",
+      "image": "kling/ref/yisunsin.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he draws the sword and makes a sharp slash to the right, cape flaring, then sheathes it and returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "alexander",
+      "image": "kling/ref/alexander.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he lunges forward with a quick sword thrust to the right, cape flaring, then returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "sejong",
+      "image": "kling/ref/sejong.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he raises the open book and a burst of small golden Hangul-like glowing light symbols flies out to the right, then he returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "zhugeliang",
+      "image": "kling/ref/zhugeliang.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he sweeps the feather fan to the right releasing a small gust of wind with a few swirling leaves, then returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "davinci",
+      "image": "kling/ref/davinci.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he flicks the quill and a small glowing golden sketch of a flying machine shoots out to the right, then he returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "zeus",
+      "image": "kling/ref/zeus.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he raises the golden lightning bolt and hurls a small crackling bolt of lightning to the right, then returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "wukong",
+      "image": "kling/ref/wukong.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he spins the golden staff and strikes forward to the right with a small golden flash, then returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "dangun",
+      "image": "kling/ref/dangun.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he raises the bronze mirror which flashes with warm sacred light toward the right, then he returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "tesla",
+      "image": "kling/ref/tesla.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he points the copper device to the right and a short arc of blue-white electricity crackles out, then he returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "nightingale",
+      "image": "kling/ref/nightingale.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: she lifts the lantern and a soft wave of warm healing light pulses out to the right, then she returns smoothly to the starting pose."
+      }
+    },
+    {
+      "id": "edison",
+      "image": "kling/ref/edison.png",
+      "kinds": {
+        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
+        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
+        "slash": "Attack animation: he thrusts the light bulb forward and it flashes brightly toward the right, then he returns smoothly to the starting pose."
       }
     }
-  ],
-  "recover": true
+  ]
 }
