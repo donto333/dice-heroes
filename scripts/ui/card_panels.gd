@@ -17,7 +17,7 @@ const GRADE_NAMES := {1: "일반", 2: "희귀", 3: "전설"}
 const GRADE_FILLS := {1: Color("2a4a7a"), 2: Color("1f5f8f"), 3: Color("6a3fa8")}
 ## 카드 편성 칸 크기: 덱 줄의 카드, 보유 카드 칸 높이
 const DECK_TILE := Vector2(96, 112)
-const OWNED_TILE_HEIGHT := 112.0
+const OWNED_TILE_HEIGHT := 146.0
 ## 뽑기 판에 보여 줄 전설 카드
 const SHOWCASE := ["war_god", "silence_bell", "spirit_drain", "iron_will"]
 
