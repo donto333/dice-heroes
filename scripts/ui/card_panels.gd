@@ -107,7 +107,9 @@ func build_deck(column: VBoxContainer) -> void:
 		var limit := int(per_grade.get(str(grade), 0))
 		left.add_child(Kit.label("%s %d / %d" % [str(GRADE_NAMES[grade]), mine.size(), limit], 20, Kit.GRADE_COLORS[grade]))
 		var frame := PanelContainer.new()
-		frame.add_theme_stylebox_override("panel", Kit.box(Color(0, 0, 0, 0.22), Kit.GRADE_COLORS[grade].darkened(0.35), 2, 12, 6))
+		# 덱 줄 판 그림(assets/ui_menu/deck_row_frame_N.png, 가운데만 늘림). 없으면 단색 테두리.
+		var row_art = MenuArt.style("deck_row_frame_%d" % grade, Vector4(48, 40, 48, 40), Vector4(14, 10, 14, 6))
+		frame.add_theme_stylebox_override("panel", row_art if row_art != null else Kit.box(Color(0, 0, 0, 0.22), Kit.GRADE_COLORS[grade].darkened(0.35), 2, 12, 6))
 		left.add_child(frame)
 		var row_scroll := ScrollContainer.new()
 		row_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -144,7 +146,8 @@ func build_deck(column: VBoxContainer) -> void:
 		filters.add_child(Kit.expand(tab))
 	var owned_frame := PanelContainer.new()
 	owned_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	owned_frame.add_theme_stylebox_override("panel", Kit.box(Color(0, 0, 0, 0.22), Kit.GOLD.darkened(0.4), 2, 12, 6))
+	var owned_art = MenuArt.style("deck_owned_frame", Vector4(48, 48, 48, 48), Vector4(14, 14, 14, 14))
+	owned_frame.add_theme_stylebox_override("panel", owned_art if owned_art != null else Kit.box(Color(0, 0, 0, 0.22), Kit.GOLD.darkened(0.4), 2, 12, 6))
 	right.add_child(owned_frame)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -172,6 +175,15 @@ func build_deck(column: VBoxContainer) -> void:
 
 ## 비어 있는 덱 자리(등급색 점선 느낌의 흐린 칸)
 func _empty_slot(grade: int) -> Control:
+	# 빈 카드 자리 그림(assets/ui_menu/deck_slot_empty_N.png)이 있으면 그것만 보여 준다.
+	var art := MenuArt.tex("deck_slot_empty_%d" % grade)
+	if art != null:
+		var picture := TextureRect.new()
+		picture.texture = art
+		picture.custom_minimum_size = DECK_TILE
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		return picture
 	var slot := PanelContainer.new()
 	slot.custom_minimum_size = DECK_TILE
 	slot.add_theme_stylebox_override("panel", Kit.box(Color(1, 1, 1, 0.05), Kit.GRADE_COLORS[grade].darkened(0.3), 2, 12, 4))
