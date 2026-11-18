@@ -1813,5 +1813,9 @@
  "편성은 로비의 '편성' 메뉴에서 바꿀 수 있어요.": "Có thể đổi đội hình ở menu Đội hình tại sảnh.",
  "파티 편성 · 소환 포인트 %d / %d": "Đội hình · Điểm triệu hồi %d / %d",
  "카드 편성이 맞지 않아 기본 덱으로 시작해요.": "Bộ bài chưa hợp lệ nên sẽ dùng bộ bài cơ bản.",
- "소환 포인트 %d 안에서 파티를 먼저 짜 주세요.": "Hãy lập đội trong giới hạn %d điểm triệu hồi trước."
+ "소환 포인트 %d 안에서 파티를 먼저 짜 주세요.": "Hãy lập đội trong giới hạn %d điểm triệu hồi trước.",
+ "카드 뽑기에도 소환처럼 주사위·카드 뒤집기 연출이 생겼어요. ★★★ 전설 카드는 등장 장면이 나와요.": "Rút thẻ giờ có hiệu ứng xúc xắc và lật thẻ như triệu hồi. Thẻ ★★★ Huyền thoại có cảnh xuất hiện riêng.",
+ "화면을 눌러 뽑기": "Chạm để rút",
+ "★★★ 전설 카드!": "★★★ Thẻ Huyền thoại!",
+ "★★★ 전설 카드": "★★★ Thẻ Huyền thoại"
 }

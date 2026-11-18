@@ -219,7 +219,31 @@ func _run() -> void:
 		card_panels._on_paid_draw(10)
 		await _wait(0.6)
 		await _shot("09h_cards_result")
+	# 카드 뽑기 연출(전체 화면)을 닫는다.
+	for child in _app.get_children():
+		if child.has_method("_card_cut"):
+			child._close(false)
+	await _wait(0.4)
 	_close_dialogs()
+	# 카드 뽑기 연출을 처음부터(★★★ 전설 카드 등장 컷 포함): 정해 둔 결과로 연출만 돌려 찍는다.
+	var card_show = load("res://scripts/ui/summon_show.gd").new()
+	card_show.kind = "card"
+	_app.add_child(card_show)
+	_app.instant = false
+	card_show.play(_app, [
+		{"id": "war_god", "grade": 3, "new": true, "gold": 0},
+		{"id": "keen_blade", "grade": 2, "new": false, "gold": 300},
+		{"id": "herb", "grade": 1, "new": true, "gold": 0},
+	], 30)
+	await _wait(5.5)
+	await _shot("09m_card_show_cards")
+	await _wait(1.5)
+	await _shot("09n_card_show_legend")
+	card_show._on_skip()
+	await _wait(1.0)
+	await _shot("09o_card_show_result")
+	_app.instant = true
+	card_show._close(false)
 	await _wait(0.3)
 
 	_app.go("missions")
