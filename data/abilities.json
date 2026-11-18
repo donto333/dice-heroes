@@ -832,7 +832,7 @@
     },
     "unique_edison": {
       "name": "발명",
-      "text": "카드 2장 획득, 이번 턴 이동 주사위 +1개, 2턴간 게이지가 50% 더 참",
+      "text": "이번 이동 +1칸, 카드 2장 획득, 이번 턴 이동 주사위 +1개, 2턴간 게이지가 50% 더 참",
       "effect": {
         "type": "multi",
         "effects": [
@@ -849,6 +849,11 @@
             "type": "gauge_boost",
             "amount": 50,
             "turns": 2
+          },
+          {
+            "type": "move_plus",
+            "amount": 1,
+            "turns": 1
           }
         ]
       }
