@@ -10,6 +10,7 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const Confetti := preload("res://scripts/ui/confetti.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const GameData := preload("res://scripts/game_data.gd")
+const ArtView := preload("res://scripts/ui/art_view.gd")
 
 const ART := "res://assets/ui_summon/"
 const GRADE_KEYS := {1: "blue", 2: "purple", 3: "gold"}
@@ -28,6 +29,8 @@ var _best := 1
 var _again_cost := 0
 ## '한 번 더' 값의 재화: "gems"(보석 소환) 또는 "gold"(골드 소환)
 var again_currency := "gems"
+## "hero"(영웅 소환) 또는 "card"(카드 뽑기, 2026-11-18). 카드면 앞면에 카드 그림, ★★★는 전설 카드 등장 컷.
+var kind := "hero"
 var _skip := false
 var _tapped := false
 var _finished := false
@@ -120,7 +123,7 @@ func _build() -> void:
 	_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fx.quiet = GameData.low_gfx
 	add_child(_fx)
-	_hint = Kit.label("화면을 눌러 소환", 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	_hint = Kit.label("화면을 눌러 뽑기" if kind == "card" else "화면을 눌러 소환", 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	_outline(_hint, 8)
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	_hint.offset_top = -96
@@ -382,7 +385,10 @@ func _run() -> void:
 			await _wait(0.2)
 			if _skip:
 				break
-			await _hero_cut(entry)
+			if kind == "card":
+				await _card_cut(entry)
+			else:
+				await _hero_cut(entry)
 			if _skip:
 				break
 		await _flip(card)
@@ -413,7 +419,10 @@ func _finish() -> void:
 		card.scale = Vector2.ONE
 		card.modulate.a = 1.0
 		_open_card(card)
-	_title.text = "★★★ 등장!" if _best >= 3 else "소환 결과"
+	if kind == "card":
+		_title.text = "★★★ 전설 카드!" if _best >= 3 else "카드 뽑기 결과"
+	else:
+		_title.text = "★★★ 등장!" if _best >= 3 else "소환 결과"
 	_title.visible = true
 	_buttons.visible = true
 	_buttons.modulate.a = 0.0
@@ -445,7 +454,7 @@ func _make_cards() -> void:
 	var card_size := _card_size()
 	for entry in _results:
 		var grade := clampi(int(entry["grade"]), 1, 3)
-		var character: Dictionary = _app.character(str(entry["id"]))
+		var character: Dictionary = _app.character(str(entry["id"])) if kind == "hero" else _card_info(str(entry["id"]))
 		var card := Control.new()
 		card.size = card_size
 		card.pivot_offset = card_size / 2.0
@@ -461,14 +470,15 @@ func _make_cards() -> void:
 		front.visible = false
 		card.add_child(front)
 		var window := _window_of(grade)
-		var face := Portrait.new()
-		face.hd = _results.size() <= 5
-		face.border_width = 0.0
+		var face = _card_picture(str(entry["id"]), grade) if kind == "card" else Portrait.new()
 		face.anchor_left = float(window[0])
 		face.anchor_top = float(window[1])
 		face.anchor_right = float(window[2])
 		face.anchor_bottom = float(window[3])
-		face.show_character(character, Kit.CATEGORY_COLORS.get(character.get("category", ""), Kit.LINE))
+		if kind == "hero":
+			face.hd = _results.size() <= 5
+			face.border_width = 0.0
+			face.show_character(character, Kit.CATEGORY_COLORS.get(character.get("category", ""), Kit.LINE))
 		front.add_child(face)
 		var frame_tex := art("card_front_" + GRADE_KEYS[grade])
 		if frame_tex != null:
@@ -479,7 +489,7 @@ func _make_cards() -> void:
 			frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			front.add_child(frame)
-		else:
+		elif kind == "hero":
 			face.border = Kit.GRADE_COLORS[grade]
 			face.border_width = 4.0
 		var small := _results.size() > 5
@@ -520,7 +530,8 @@ func _make_cards() -> void:
 			word.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			front.add_child(word)
 		else:
-			var shards := Kit.label("조각 +%d" % int(entry["shards"]), 13 if small else 18, Kit.GEM, HORIZONTAL_ALIGNMENT_CENTER)
+			var note := "+%s" % Kit.money_text("gold", int(entry.get("gold", 0))) if kind == "card" else "조각 +%d" % int(entry.get("shards", 0))
+			var shards := Kit.label(note, 13 if small else 18, Kit.GOLD if kind == "card" else Kit.GEM, HORIZONTAL_ALIGNMENT_CENTER)
 			_outline(shards, 5)
 			shards.anchor_left = 0.0
 			shards.anchor_right = 1.0
@@ -651,6 +662,126 @@ func _hero_cut(entry: Dictionary) -> void:
 		_app.play("summon_3")
 		_app.say(str(character.get("id", "")), "select")
 		_fx.shake(self, 12.0, 0.25)
+		if not GameData.low_gfx:
+			confetti.start()
+		create_tween().tween_property(words, "modulate:a", 1.0, 0.2)
+		await _wait(0.4)
+		await _wait_tap(1.6)
+	var leave := cut.create_tween()
+	leave.tween_property(cut, "modulate:a", 0.0, 0.2)
+	await leave.finished
+	cut.queue_free()
+
+
+# ---------------------------------------------------------------- 카드 뽑기
+
+func _card_info(id: String) -> Dictionary:
+	return (_app.data.get("cards", {}) as Dictionary).get(id, {})
+
+
+## 카드 앞면 그림(assets/art/cards/<id>). 없으면 등급색 판에 카드 아이콘.
+func _card_picture(id: String, grade: int) -> Control:
+	var picture := ArtView.new()
+	picture.show_art("cards/" + id)
+	picture.focus_y = 0.5
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if picture.has_art():
+		return picture
+	picture.free()
+	var plain := PanelContainer.new()
+	plain.add_theme_stylebox_override("panel", Kit.box((GRADE_TINTS[grade] as Color).darkened(0.5), Color.TRANSPARENT, 0, 4, 4))
+	plain.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var holder := CenterContainer.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(Kit.icon("card", 64.0))
+	plain.add_child(holder)
+	return plain
+
+
+## ★★★ 전설 카드 등장 컷: 금빛 바탕에 카드 그림이 크게 돌며 나타나고 이름·설명이 뜬다.
+func _card_cut(entry: Dictionary) -> void:
+	var info := _card_info(str(entry["id"]))
+	var cut := Control.new()
+	cut.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cut.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(cut)
+	move_child(cut, _skip_button.get_index())
+	var glory := TextureRect.new()
+	glory.texture = art("bg_glory")
+	glory.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	glory.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	glory.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	glory.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cut.add_child(glory)
+	if glory.texture == null:
+		var plain := ColorRect.new()
+		plain.color = Color(0.25, 0.16, 0.02)
+		plain.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		plain.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cut.add_child(plain)
+	# 큰 카드: 틀(card_front_gold) 안 창 자리에 카드 그림
+	var tall := size.y * 0.62
+	var card := Control.new()
+	card.size = Vector2(tall * CARD_RATIO, tall)
+	card.position = Vector2((size.x - card.size.x) / 2.0, size.y * 0.05)
+	card.pivot_offset = card.size / 2.0
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cut.add_child(card)
+	var window := _window_of(3)
+	var picture := _card_picture(str(entry["id"]), 3)
+	picture.anchor_left = float(window[0])
+	picture.anchor_top = float(window[1])
+	picture.anchor_right = float(window[2])
+	picture.anchor_bottom = float(window[3])
+	card.add_child(picture)
+	var frame_tex := art("card_front_gold")
+	if frame_tex != null:
+		var frame := TextureRect.new()
+		frame.texture = frame_tex
+		frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		frame.stretch_mode = TextureRect.STRETCH_SCALE
+		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(frame)
+	var stars := Kit.label("★★★ 전설 카드", 34, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_outline(stars, 10)
+	var name_label := Kit.label(str(info.get("name", "")), 50, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	_outline(name_label, 14)
+	var text_label := Kit.label(str(info.get("text", "")), 22, Color("fff3c0"), HORIZONTAL_ALIGNMENT_CENTER)
+	_outline(text_label, 7)
+	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var words := VBoxContainer.new()
+	words.add_theme_constant_override("separation", -2)
+	words.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	words.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	words.offset_top = -size.y * 0.31
+	words.offset_bottom = -10
+	words.offset_left = size.x * 0.15
+	words.offset_right = -size.x * 0.15
+	words.add_child(stars)
+	words.add_child(name_label)
+	if str(info.get("text", "")) != "":
+		words.add_child(text_label)
+	cut.add_child(words)
+	var confetti := Confetti.new()
+	confetti.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	confetti.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cut.add_child(confetti)
+	# 뒷면이 보이게 돌아 들어와 번쩍하며 앞면으로 바뀐다.
+	cut.modulate.a = 0.0
+	card.modulate = Color(0, 0, 0)
+	card.scale = Vector2(0.05, 0.7)
+	words.modulate.a = 0.0
+	var enter := cut.create_tween().set_parallel(true)
+	enter.tween_property(cut, "modulate:a", 1.0, 0.2)
+	enter.tween_property(card, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	await _wait(0.55)
+	if not _skip:
+		_white(0.9, 0.35, Color("fff3c0"))
+		card.modulate = Color.WHITE
+		_app.play("summon_3")
+		_fx.shake(self, 12.0, 0.25)
+		_fx.burst(card.position + card.size / 2.0, "star", 30, 1.6)
 		if not GameData.low_gfx:
 			confetti.start()
 		create_tween().tween_property(words, "modulate:a", 1.0, 0.2)

@@ -10,6 +10,7 @@ const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
+const SummonShow := preload("res://scripts/ui/summon_show.gd")
 
 const GRADE_NAMES := {1: "일반", 2: "희귀", 3: "전설"}
 ## 등급별 카드 바탕색
@@ -23,6 +24,7 @@ const SHOWCASE := ["war_god", "silence_bell", "spirit_drain", "iron_will"]
 var app
 var back_screen := "heroes"
 var back_params: Dictionary = {}
+var _free_pull := false
 var _filter := 0
 
 
@@ -420,6 +422,7 @@ func _on_gold_draw(count: int) -> void:
 func _on_free_draw() -> void:
 	if not Profile.use_free_card_draw(app.profile, app.eco):
 		return
+	_free_pull = true
 	_pull(1)
 
 
@@ -433,46 +436,45 @@ func _on_paid_draw(count: int) -> void:
 	_pull(count)
 
 
-## 결과는 뽑는 순간 정해져 저장된다. 창에 카드를 한 장씩 뒤집듯 보여 준다.
+## 결과는 뽑는 순간 정해져 저장된다. 소환과 같은 연출(제단 → 운명의 주사위 → 카드 뒤집기, ★★★는 전설 카드 등장 컷)로 보여 준다.
+## 연출이 끝나면 화면을 새로 그리므로(app.go) 그 뒤에는 self를 쓰지 않는다.
 func _pull(count: int, gold: bool = false) -> void:
-	var cards := _cards()
-	var results := Profile.draw_cards(app.profile, cards, app.eco, count, app.rng, gold)
+	var results := Profile.draw_cards(app.profile, _cards(), app.eco, count, app.rng, gold)
 	app.save()
-	var best := 1
-	var refund := 0
-	for entry in results:
-		best = maxi(best, int(entry["grade"]))
-		refund += int(entry["gold"])
-	app.play("summon_%d" % best)
-	var body := Kit.vbox(10)
-	var grid := GridContainer.new()
-	grid.columns = mini(5, maxi(results.size(), 1))
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 8)
-	body.add_child(grid)
-	var tiles: Array = []
-	for entry in results:
-		var holder := Kit.vbox(4)
-		holder.custom_minimum_size = Vector2(150, 0)
-		var tile := card_tile(cards, str(entry["id"]), true, false, 160.0, false)
-		tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		holder.add_child(tile)
-		var note := "NEW!" if bool(entry["new"]) else "+%s" % Kit.money_text("gold", int(entry["gold"]))
-		holder.add_child(Kit.label(note, 18, Kit.GOLD if bool(entry["new"]) else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-		grid.add_child(holder)
-		tiles.append(holder)
-	if refund > 0:
-		body.add_child(Kit.para("겹친 카드는 골드로 바뀌었어요: %s" % Kit.money_text("gold", refund), 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var table: Dictionary = app.eco.get("card_gacha", {})
+	if gold:
+		table = table.get("gold", {})
+	var key := "cost_ten" if count >= 10 else "cost_one"
+	var again_cost := int(table.get(key, 0))
+	var currency := "gold" if gold else "gems"
+	# 무료 뽑기 뒤나, 한 번 더 할 돈이 없으면 '한 번 더' 버튼을 감춘다.
+	if _free_pull or not Profile.can_pay(app.profile, currency, again_cost):
+		again_cost = 0
+	_free_pull = false
 	var host = app
 	var screen_name := back_screen
 	var params := back_params.duplicate()
-	host.dialog("카드 뽑기 결과", body, [["확인", Kit.PRIMARY, func() -> void: host.go(screen_name, params)]], 900.0 if results.size() > 1 else 420.0)
-	# 한 장씩 차례로 나타나게(자동 사진·저사양 모드면 곧바로)
-	if MenuArt.calm(app):
-		return
-	for index in tiles.size():
-		var holder: Control = tiles[index]
-		holder.modulate.a = 0.0
-		var tween := holder.create_tween()
-		tween.tween_interval(0.25 + 0.08 * index)
-		tween.tween_property(holder, "modulate:a", 1.0, 0.2)
+	var show := SummonShow.new()
+	show.kind = "card"
+	show.again_currency = currency
+	host.add_child(show)
+	var again: bool = await show.play(host, results, again_cost)
+	host.go(screen_name, params)
+	if again:
+		var panels = find_in(host.current_screen)
+		if panels != null:
+			if gold:
+				panels._on_gold_draw(count)
+			else:
+				panels._on_paid_draw(count)
+
+
+## 화면 안에 붙어 있는 카드 도우미(CardPanels)를 찾는다.
+static func find_in(node: Node) -> Node:
+	for child in node.get_children():
+		if child.has_method("build_gacha"):
+			return child
+		var deeper = find_in(child)
+		if deeper != null:
+			return deeper
+	return null

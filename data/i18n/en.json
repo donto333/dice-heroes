@@ -1813,5 +1813,9 @@
  "편성은 로비의 '편성' 메뉴에서 바꿀 수 있어요.": "You can change your lineup in the lobby's Formation menu.",
  "파티 편성 · 소환 포인트 %d / %d": "Party · Summon Points %d / %d",
  "카드 편성이 맞지 않아 기본 덱으로 시작해요.": "Your deck isn't valid, so the starter deck will be used.",
- "소환 포인트 %d 안에서 파티를 먼저 짜 주세요.": "Please build a party within %d summon points first."
+ "소환 포인트 %d 안에서 파티를 먼저 짜 주세요.": "Please build a party within %d summon points first.",
+ "카드 뽑기에도 소환처럼 주사위·카드 뒤집기 연출이 생겼어요. ★★★ 전설 카드는 등장 장면이 나와요.": "Card draws now have a dice and card-flip show like summons. ★★★ Legendary cards get a reveal scene.",
+ "화면을 눌러 뽑기": "Tap to draw",
+ "★★★ 전설 카드!": "★★★ Legendary Card!",
+ "★★★ 전설 카드": "★★★ Legendary Card"
 }
