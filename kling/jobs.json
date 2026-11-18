@@ -1,0 +1,19 @@
+{
+  "_comment": "클링 API로 판 위 말 동작 영상을 만드는 주문서(2026-11-18 사용자 결정: Kling 4.0 Flash, 3초, 720p). claude/kling으로 시작하는 브랜치에 올리면 .github/workflows/kling.yml이 만들고 결과 mp4를 kling/out/에 올린다. Flash는 첫 장면만 받으므로 반복은 프롬프트로 부탁한다. recover: true면 최근 끝난 작업 중 받지 못한 영상을 kling/out/recovered_<작업 id>.mp4로 먼저 받는다.",
+  "model": "kling-4.0-flash",
+  "resolution": "720p",
+  "duration": 3,
+  "common": "Game sprite animation of this exact chibi character, same design, colors and proportions. The camera is completely fixed: no camera movement, no zoom, no pan, no cut. The character stays in the same spot in the center of the frame and does not travel. The background stays solid pure green (#00FF00) the whole time, no shadow, no floor, no effects on the background. The motion is a seamless loop: it ends in the same pose as the starting image.",
+  "jobs": [
+    {
+      "id": "gumiho",
+      "image": "kling/ref/gumiho.png",
+      "kinds": {
+        "idle": "Idle animation: she stands in place breathing gently, her nine fluffy tails sway softly, her long hair and sleeves move slightly, she blinks once, the small blue fox fire in her hand flickers.",
+        "walk": "Walk-in-place animation (like on a treadmill): she walks facing right with light cute steps, legs and sleeves moving, tails swaying with each step, while staying in the same place.",
+        "slash": "Attack animation: she thrusts her open palm forward to the right and releases a quick burst of blue fox fire, her tails flare out, then she returns smoothly to the starting pose."
+      }
+    }
+  ],
+  "recover": true
+}
