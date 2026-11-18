@@ -1,19 +1,16 @@
-extends Control
-## 시즌 패스 화면. 판을 하고 미션을 깨면 패스 경험치가 쌓이고, 레벨마다 보상이 있다.
+extends Node
+## 시즌 패스 판(2026-11-18 사용자 결정: 로비 타일 대신 상점 안의 '시즌 패스' 메뉴). 상점 화면에 붙여 build(app, 큰 판)으로 그린다. 판을 하고 미션을 깨면 패스 경험치가 쌓이고, 레벨마다 보상이 있다.
 ## 왼쪽은 누구나 받는 무료 보상, 오른쪽은 유료 줄(아직 결제가 없어 잠겨 있고 무엇이 있는지만 보여 준다).
 
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
-const TopBar := preload("res://scripts/ui/top_bar.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 
 var app
 
 
-func setup(main_app, _params: Dictionary) -> void:
+func build(main_app, column: VBoxContainer) -> void:
 	app = main_app
-	# 시안식 틀: 왼쪽 세로 판 없이 큰 금테 판 하나(위 홈 버튼으로 로비).
-	var column := MenuArt.frame(self, app, "ui/bg_pass", [], "", func(_id: String) -> void: pass)
 	var table: Dictionary = app.eco.get("pass", {})
 	var levels: Array = table.get("levels", [])
 	var level := Profile.pass_level(app.profile, app.eco)
@@ -89,7 +86,7 @@ func _on_claim(number: int, from: Control = null) -> void:
 	app.play("reward")
 	app.toast("패스 보상: %s" % Kit.reward_line(reward))
 	MenuArt.fly_reward(app, from, reward)
-	app.go("pass")
+	app.go("shop", {"tab": "pass"})
 
 
 func _on_claim_all(from: Control = null) -> void:
@@ -100,9 +97,4 @@ func _on_claim_all(from: Control = null) -> void:
 	app.play("reward")
 	app.toast("패스 보상 %d개: %s" % [int(total["count"]), Kit.reward_line({"gold": int(total["gold"]), "gems": int(total["gems"])})])
 	MenuArt.fly_reward(app, from, {"gold": int(total["gold"]), "gems": int(total["gems"])})
-	app.go("pass")
-
-
-func _on_back() -> void:
-	app.play("click")
-	app.go("lobby")
+	app.go("shop", {"tab": "pass"})

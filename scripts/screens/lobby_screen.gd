@@ -439,7 +439,8 @@ func _add_tiles(badges: Dictionary) -> void:
 	var modes := [
 		["AI전", "AI BATTLE", "ic_ai", "최근 %s" % difficulty["name"], false, _choose_difficulty],
 		["친구 대전", "FRIEND MATCH", "ic_friend_match", "한 기기 2인", false, _on_mode.bind("local")],
-		["오늘의 도전", "TODAY'S CHALLENGE", "ic_challenge", "오늘 완료!" if done else "하루 한 번", not done, _on_mode.bind("challenge")],
+		# 미션 + 오늘의 도전(2026-11-18 사용자 결정: 하나로 합침). 도전은 미션 화면 맨 위에 있다.
+		["미션", "MISSION · CHALLENGE", "ic_mission_board", "도전 완료!" if done else "오늘의 도전", not done or bool(badges.get("missions", false)), _on_tab.bind("missions")],
 	]
 	for spec in modes:
 		row2.add_child(_white_tile(spec))
@@ -450,11 +451,12 @@ func _add_tiles(badges: Dictionary) -> void:
 	row3.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(row3)
 	var free_summon := Profile.free_summons_left(app.profile, app.eco) > 0
+	# 2026-11-18 사용자 결정: 편성(파티·카드 편성) · 목록(영웅·카드 목록) · 도감(영웅·카드 도감) · 상점(시즌 패스 포함)
 	var menus := [
-		["편성", "FORMATION", "ic_heroes_helmet", "" if not bool(badges.get("heroes", false)) else "dot", "heroes"],
+		["편성", "FORMATION", "swords", "", "party", {"purpose": "edit"}],
+		["목록", "LIST", "ic_heroes_helmet", "dot" if bool(badges.get("list", false)) else "", "heroes"],
+		["도감", "COLLECTION", "album", "dot" if bool(badges.get("album", false)) else "", "heroes", {"view": "album"}],
 		["상점", "SHOP", "ic_shop_stall", "무료 소환" if free_summon else ("dot" if bool(badges.get("shop", false)) else ""), "shop"],
-		["미션", "MISSION", "ic_mission_board", "dot" if bool(badges.get("missions", false)) else "", "missions"],
-		["시즌 패스", "SEASON PASS", "ic_pass_ticket", "dot" if Profile.pass_claimable_count(app.profile, app.eco) > 0 else "", "pass"],
 	]
 	for spec in menus:
 		row3.add_child(_navy_tile(spec))
@@ -596,7 +598,7 @@ func _white_tile(spec: Array) -> Button:
 func _navy_tile(spec: Array) -> Button:
 	var tile := _art_button(_slice("tile_navy", 34, Color("17398a")))
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tile.pressed.connect(_on_tab.bind(str(spec[4])))
+	tile.pressed.connect(_on_tab.bind(str(spec[4]), spec[5] if spec.size() > 5 else {}))
 	# 좌우 여백을 같게 해야 아이콘+글자 묶음이 가운데에 온다(> 표시는 아래쪽이라 글자와 겹치지 않는다).
 	var inner := _inner(tile, 10, 8, 10, 10)
 	var row := Kit.hbox(4)
@@ -805,7 +807,7 @@ func _todo_items() -> Array:
 		["오늘의 도전", "이기면 보석", Profile.challenge_done(profile), _on_mode.bind("challenge")],
 		["일일 미션", "%d / %d 달성" % [missions_done, missions.size()], missions_done >= missions.size() and Profile.claimable_mission_count(profile, app.eco) == 0, _on_tab.bind("missions")],
 		["우편함", "안 받은 우편 %d통" % Profile.unclaimed_mail_count(profile), Profile.unclaimed_mail_count(profile) == 0, open_mailbox],
-		["시즌 패스", "받을 보상 %d개" % Profile.pass_claimable_count(profile, app.eco), Profile.pass_claimable_count(profile, app.eco) == 0, _on_tab.bind("pass")],
+		["시즌 패스", "받을 보상 %d개" % Profile.pass_claimable_count(profile, app.eco), Profile.pass_claimable_count(profile, app.eco) == 0, _on_tab.bind("shop", {"tab": "pass"})],
 		["모험 소탕", "오늘 %d번 남음 (별 3개로 깬 곳만)" % sweeps, sweeps <= 0 or Profile.three_star_count(profile) == 0, _on_mode.bind("adventure")],
 	]
 
@@ -1051,6 +1053,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"로비 메뉴가 편성·목록·도감·상점으로 바뀌었어요. 시즌 패스는 상점 안에, 오늘의 도전은 미션 안에 있어요.",
 	"영웅 능력치 창에 어빌리티가 얼마나 빨리 차는지(충전 속도)가 보여요.",
 	"주사위 꾸미기마다 전용 그림이 생겼어요.",
 	"로비의 영웅 타일 이름이 '편성'으로 바뀌었어요.",
@@ -1326,8 +1329,8 @@ func _on_mode(mode: String) -> void:
 	app.start_mode(mode)
 
 
-func _on_tab(screen_name: String) -> void:
+func _on_tab(screen_name: String, params: Dictionary = {}) -> void:
 	if screen_name == "lobby":
 		return
 	app.play("click")
-	app.go(screen_name)
+	app.go(screen_name, params)

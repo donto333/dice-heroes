@@ -39,7 +39,9 @@ func setup(main_app, params: Dictionary) -> void:
 	# 시안식 틀: 파티 편성은 영웅 화면과 같은 왼쪽 항목 판, 대전 전 파티 확인은 큰 판만.
 	var rail: Array = []
 	if purpose == "edit":
-		rail = [["list", "영웅 목록", "heroes"], ["album", "영웅 앨범", "album"], ["party", "파티 편성", "swords"]]
+		# 로비 '편성' 메뉴(2026-11-18 사용자 결정): 파티 편성 · 카드 편성
+		rail = [["party", "파티 편성", "swords"], ["deck", "카드 편성", "todo"]]
+		set_meta("title_spec", ["편성", "swords"])
 	var holder := MenuArt.frame(self, app, "ui/bg_party", rail, "party", _on_rail)
 	var select := PartySelect.new()
 	select.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -79,8 +81,8 @@ func setup(main_app, params: Dictionary) -> void:
 func _on_rail(id: String) -> void:
 	if id == "party":
 		return
-	app.play("click")
-	app.go("heroes")
+	app.play("tab")
+	app.go("heroes", {"view": "deck"})
 
 
 func _on_preset_saved(index: int, party: Dictionary) -> void:
@@ -98,7 +100,7 @@ func _on_confirmed(party: Dictionary) -> void:
 			app.profile["party"] = party.duplicate()
 			app.save()
 			app.toast("파티를 저장했어요.")
-		app.go("heroes")
+		app.go("party", {"purpose": "edit"})
 		return
 	if mode == "local":
 		if int(_params.get("player", 1)) == 1:
@@ -246,7 +248,7 @@ func _random_map() -> int:
 func _on_cancelled() -> void:
 	app.play("click")
 	if str(_params.get("purpose", "edit")) == "edit":
-		app.go("heroes")
+		app.go("lobby")
 	elif str(_params.get("mode", "")) == "adventure":
 		app.go("adventure")
 	else:

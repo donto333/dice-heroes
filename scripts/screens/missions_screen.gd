@@ -1,5 +1,5 @@
 extends Control
-## 미션 화면: 7일 출석표와 오늘의 일일 미션. 다 깨면 모든 미션 완료 보상.
+## 미션 화면: 오늘의 도전, 7일 출석표와 오늘의 일일 미션. 다 깨면 모든 미션 완료 보상.
 ## 미션은 매일 자정(기기 날짜 기준)에 새로 시작한다.
 
 const Kit := preload("res://scripts/ui/kit.gd")
@@ -55,10 +55,34 @@ func setup(main_app, _params: Dictionary) -> void:
 	if _tab == "achievements":
 		body.add_child(_achievements_panel())
 	else:
+		# 오늘의 도전(2026-11-18 사용자 결정: 로비 '오늘의 도전'을 미션에 합침)
+		body.add_child(_challenge_panel())
 		if not Profile.guide_current(app.profile, app.data).is_empty():
 			body.add_child(_guide_panel())
 		body.add_child(_attendance_panel())
 		body.add_child(_missions_panel())
+
+
+## 오늘의 도전: 하루 한 번, 상대 영웅이 나보다 조금 강하다. 이기면 보상(economy.json rewards.challenge).
+func _challenge_panel() -> Control:
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("오늘의 도전", "attend", "하루 한 번 · 매일 상대와 맵이 바뀌어요"))
+	var done := Profile.challenge_done(app.profile)
+	var win: Dictionary = app.eco.get("rewards", {}).get("challenge", {}).get("win", {})
+	var button := MenuArt.pill_button("오늘 완료" if done else "도전하기", "gray" if done else "gold", "m")
+	button.custom_minimum_size = Vector2(170, 56)
+	button.disabled = done
+	button.pressed.connect(_on_challenge)
+	var note := "상대 영웅 Lv.%d · 이기면 %s" % [Profile.challenge_level(app.profile, app.eco), Kit.reward_line({"gold": int(win.get("gold", 0)), "gems": int(win.get("gems", 0))})]
+	if done:
+		note = "오늘의 도전을 이겼어요! 내일 또 와요."
+	MenuArt.list_row(group, "flag", "오늘의 도전", note, button)
+	return group
+
+
+func _on_challenge() -> void:
+	app.play("click")
+	app.start_mode("challenge")
 
 
 func _on_mission_tab(id: String) -> void:

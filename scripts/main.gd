@@ -32,7 +32,6 @@ const SCREENS := {
 	"match": preload("res://scripts/screens/match_screen.gd"),
 	"help": preload("res://scripts/screens/help_screen.gd"),
 	"adventure": preload("res://scripts/screens/adventure_screen.gd"),
-	"pass": preload("res://scripts/screens/pass_screen.gd"),
 }
 ## 화면마다 다른 판 색(분위기). 시안식 틀을 쓰는 메뉴 화면(영웅·상점·미션·설정·모험·패스)은 시안처럼 모두 남색(2026-11-17).
 const SCREEN_MOODS := {
@@ -431,8 +430,11 @@ func badges() -> Dictionary:
 		return {}
 	return {
 		"missions": Profile.has_claimable(profile, eco) or Profile.can_check_in(profile, today()) or Profile.has_claimable_achievement(profile, data) or Profile.guide_claimable(profile, data),
-		"shop": Profile.free_summons_left(profile, eco) > 0 or not Profile.mileage_claimable(profile, eco).is_empty(),
+		"shop": Profile.free_summons_left(profile, eco) > 0 or not Profile.mileage_claimable(profile, eco).is_empty() or Profile.pass_claimable_count(profile, eco) > 0 or Profile.free_card_draws_left(profile, eco) > 0,
 		"heroes": _any_upgradable() or Profile.album_has_claimable(profile, eco, data["characters"]) or Profile.card_album_has_claimable(profile, eco, data.get("cards", {})),
+		## 로비 메뉴별(2026-11-18): 목록 = 강화할 영웅, 도감 = 받을 도감 보상
+		"list": _any_upgradable(),
+		"album": Profile.album_has_claimable(profile, eco, data["characters"]) or Profile.card_album_has_claimable(profile, eco, data.get("cards", {})),
 	}
 
 
