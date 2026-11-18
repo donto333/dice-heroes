@@ -221,8 +221,8 @@ func _scroll_grid(column: VBoxContainer) -> GridContainer:
 	return grid
 
 
-## 카드 한 장 모양(카드 덱 화면과 뽑기 결과가 함께 씀): 그림(없으면 등급색 바탕), 등급 별, 이름, 효과.
-## owned가 false면 어둡게, in_deck이면 초록 띠 '덱'.
+## 카드 한 장(2026-11-18 사용자 결정 A안 '그림 가득'): 그림이 칸을 가득 채우고, 왼쪽 위에 별 딱지,
+## 아래에 어두운 반투명 띠 위 이름. 테두리는 등급색(덱에 든 카드는 초록). show_text면 그림 아래에 설명.
 static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool, height: float = 236.0, show_text: bool = true) -> Button:
 	var card: Dictionary = cards.get(id, {})
 	var grade := Profile.card_grade(cards, id)
@@ -235,67 +235,99 @@ static func card_tile(cards: Dictionary, id: String, owned: bool, in_deck: bool,
 	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var border: Color = Color("5fe08a") if in_deck else Kit.GRADE_COLORS[grade]
-	body.add_theme_stylebox_override("panel", Kit.box(GRADE_FILLS[grade], border, 4 if in_deck else 3, 14, 6))
+	body.add_theme_stylebox_override("panel", Kit.box(GRADE_FILLS[grade], border, 4 if in_deck else 3, 12, 3))
 	tile.add_child(body)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 2)
+	column.add_theme_constant_override("separation", 4)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_child(column)
+	var small := height < 150.0
+	# 그림 칸: 설명이 없으면 칸 전체, 있으면 위쪽 62%
+	var art_box := Control.new()
+	art_box.clip_contents = true
+	art_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art_box.custom_minimum_size = Vector2(0, height * 0.62 if show_text else 0.0)
+	art_box.size_flags_vertical = Control.SIZE_FILL if show_text else Control.SIZE_EXPAND_FILL
+	column.add_child(art_box)
 	var picture := ArtView.new()
 	picture.show_art("cards/" + id)
-	# 작은 칸(카드 편성, 150 미만)은 그림을 줄이고 글자를 작게 해서 이름이 칸 밖으로 넘치지 않게 한다.
-	var small := height < 150.0
-	var art_height := height * 0.42 if show_text else (height - 58.0 if small else height * 0.6)
-	picture.custom_minimum_size = Vector2(0, art_height)
-	picture.focus_y = 0.5
-	picture.corner_radius = 8.0
+	picture.focus_y = 0.45
+	picture.corner_radius = 9.0
 	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if not picture.has_art():
+	picture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	if picture.has_art():
+		art_box.add_child(picture)
+	else:
 		# 그림이 아직 없는 카드: 등급색 판 위에 카드 아이콘
 		picture.free()
-		var holder := CenterContainer.new()
-		holder.custom_minimum_size = Vector2(0, art_height)
-		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var back := PanelContainer.new()
-		back.add_theme_stylebox_override("panel", Kit.box(Kit.GRADE_COLORS[grade].darkened(0.45), Kit.GRADE_COLORS[grade], 2, 8, 6))
-		back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		back.add_child(Kit.icon("card", height * 0.3))
-		holder.add_child(back)
-		column.add_child(holder)
-	else:
-		column.add_child(picture)
-	var stars := Kit.label("★".repeat(grade) + "  " + str(GRADE_NAMES[grade]), 13 if small else 15, Kit.GRADE_COLORS[grade], HORIZONTAL_ALIGNMENT_CENTER)
-	column.add_child(stars)
-	var name_label := Kit.label(str(card.get("name", id)), 17 if small else 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		var plain := PanelContainer.new()
+		plain.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		plain.add_theme_stylebox_override("panel", Kit.box(Kit.GRADE_COLORS[grade].darkened(0.5), Color.TRANSPARENT, 0, 9, 4))
+		plain.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var center := CenterContainer.new()
+		center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		center.add_child(Kit.icon("card", height * 0.28))
+		plain.add_child(center)
+		art_box.add_child(plain)
+	# 아래 이름 띠: 어두운 반투명 띠 위 흰 글자
+	var name_size := 16 if small else 20
+	var banner := PanelContainer.new()
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var banner_style := Kit.box(Color(0.02, 0.03, 0.12, 0.74), Color.TRANSPARENT, 0, 0, 2)
+	banner_style.corner_radius_bottom_left = 9
+	banner_style.corner_radius_bottom_right = 9
+	banner.add_theme_stylebox_override("panel", banner_style)
+	banner.anchor_left = 0.0
+	banner.anchor_right = 1.0
+	banner.anchor_top = 1.0
+	banner.anchor_bottom = 1.0
+	banner.offset_top = -(name_size + 12)
+	art_box.add_child(banner)
+	var name_label := Kit.label(str(card.get("name", id)), name_size, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	name_label.clip_text = true
-	column.add_child(name_label)
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_label.add_theme_constant_override("outline_size", 4)
+	name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	banner.add_child(name_label)
+	# 왼쪽 위 별 딱지
+	var badge := PanelContainer.new()
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.add_theme_stylebox_override("panel", Kit.box(Color(0.02, 0.03, 0.12, 0.78), Kit.GRADE_COLORS[grade].darkened(0.1), 1, 9, 2))
+	badge.position = Vector2(4, 4)
+	var stars := Kit.label("★".repeat(grade), 12 if small else 15, Kit.GRADE_COLORS[grade], HORIZONTAL_ALIGNMENT_CENTER)
+	stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.add_child(stars)
+	art_box.add_child(badge)
 	var text := Kit.para(str(card.get("text", "")), 14, Color(0.9, 0.93, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
 	text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	text.visible = show_text
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(text)
-	for child in [stars, name_label, text]:
-		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# 칸이 좁으면 이름·등급 글자를 칸 너비에 맞춰 줄인다(잘려 보이지 않게, 2026-11-18 사용자 지적).
-	Kit.squeeze_text(name_label, 17 if small else 20, 10)
-	stars.clip_text = true
-	Kit.squeeze_text(stars, 13 if small else 15, 9)
+	# 칸이 좁으면 이름을 칸 너비에 맞춰 줄인다(잘려 보이지 않게).
+	Kit.squeeze_text(name_label, name_size, 9)
 	if in_deck:
-		var mark := Kit.label("덱", 15, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
-		var badge := PanelContainer.new()
-		badge.add_theme_stylebox_override("panel", Kit.box(Color("2fa85a"), Color.WHITE, 2, 10, 2))
-		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		badge.add_child(mark)
-		badge.custom_minimum_size = Vector2(44, 26)
-		badge.position = Vector2(6, 6)
-		tile.add_child(badge)
+		# 덱 표시는 오른쪽 위(왼쪽 위는 별 딱지)
+		var mark := Kit.label("덱", 13 if small else 15, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		var deck_badge := PanelContainer.new()
+		deck_badge.add_theme_stylebox_override("panel", Kit.box(Color("2fa85a"), Color.WHITE, 2, 10, 2))
+		deck_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		deck_badge.add_child(mark)
+		deck_badge.custom_minimum_size = Vector2(36 if small else 44, 22 if small else 26)
+		deck_badge.anchor_left = 1.0
+		deck_badge.anchor_right = 1.0
+		deck_badge.offset_left = -(42 if small else 50)
+		deck_badge.offset_right = -6
+		deck_badge.offset_top = 6
+		tile.add_child(deck_badge)
 	if not owned:
 		body.modulate = Color(0.45, 0.45, 0.5, 1.0)
-		# 자물쇠는 그림 자리 한가운데(글자를 가리지 않게)
+		# 자물쇠는 그림 자리 한가운데
 		var lock_holder := CenterContainer.new()
 		lock_holder.anchor_right = 1.0
 		lock_holder.offset_top = 6.0
-		lock_holder.offset_bottom = 6.0 + height * 0.42
+		lock_holder.offset_bottom = 6.0 + height * (0.6 if show_text else 0.8)
 		lock_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		lock_holder.add_child(Kit.icon("m_lock", 44.0))
 		tile.add_child(lock_holder)

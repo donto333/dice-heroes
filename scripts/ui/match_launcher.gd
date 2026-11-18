@@ -139,7 +139,7 @@ func _deck_column() -> Control:
 				ids.append(str(id))
 		column.add_child(Kit.label("%s %d / %d" % [CardPanels.GRADE_NAMES[grade], ids.size(), int(per_grade.get(str(grade), 0))], 14, Kit.GRADE_COLORS[grade]))
 		var row := Kit.hbox(6)
-		row.custom_minimum_size = Vector2(0, 74)
+		row.custom_minimum_size = Vector2(0, 78)
 		for id in ids:
 			row.add_child(_mini_card(cards, id, grade))
 		if ids.is_empty():
@@ -148,36 +148,13 @@ func _deck_column() -> Control:
 	return column
 
 
-## 작은 카드: 그림과 이름만.
-func _mini_card(cards: Dictionary, id: String, grade: int) -> Control:
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(76, 74)
-	panel.tooltip_text = str(cards.get(id, {}).get("text", ""))
-	panel.add_theme_stylebox_override("panel", Kit.box(CardPanels.GRADE_FILLS[grade], Kit.GRADE_COLORS[grade], 2, 8, 3))
-	var column := Kit.vbox(1)
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(column)
-	var picture := ArtView.new()
-	picture.show_art("cards/" + id)
-	picture.custom_minimum_size = Vector2(0, 46)
-	picture.focus_y = 0.5
-	picture.corner_radius = 6.0
-	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if picture.has_art():
-		column.add_child(picture)
-	else:
-		picture.free()
-		var holder := CenterContainer.new()
-		holder.custom_minimum_size = Vector2(0, 46)
-		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		holder.add_child(Kit.icon("card", 30))
-		column.add_child(holder)
-	var name_label := Kit.label(str(cards.get(id, {}).get("name", id)), 12, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
-	name_label.clip_text = true
-	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(name_label)
-	Kit.squeeze_text(name_label, 12, 8)
-	return panel
+## 작은 카드: 카드 편성과 같은 모양(그림 가득·별 딱지·이름 띠)을 작게.
+func _mini_card(cards: Dictionary, id: String, _grade: int) -> Control:
+	var tile: Button = CardPanels.card_tile(cards, id, true, false, 78.0, false)
+	tile.custom_minimum_size = Vector2(70, 78)
+	tile.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	tile.tooltip_text = str(cards.get(id, {}).get("text", ""))
+	return tile
 
 
 # ---------------------------------------------------------------- 시작
