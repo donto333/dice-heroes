@@ -1780,5 +1780,9 @@
  "카드 편성 %d / %d": "Xếp bộ bài %d / %d",
  "아래 카드를 누르면 넣고, 위 칸을 누르면 빼요. 판에서는 편성한 카드만 나와요.": "Chạm thẻ bên dưới để thêm, chạm ô bên trên để bỏ. Trong trận chỉ ra thẻ đã xếp.",
  "아직 없는 카드예요. 상점의 '카드 뽑기'에서 얻을 수 있어요.": "Bạn chưa có thẻ này. Hãy nhận ở 'Rút thẻ' trong cửa hàng.",
- "뽑은 카드는 영웅 메뉴의 '카드 편성'에서 넣어야 판에 나와요.": "Thêm thẻ đã rút ở Anh hùng → 'Xếp bộ bài' để dùng trong trận."
+ "뽑은 카드는 영웅 메뉴의 '카드 편성'에서 넣어야 판에 나와요.": "Thêm thẻ đã rút ở Anh hùng → 'Xếp bộ bài' để dùng trong trận.",
+ "카드 앨범": "Album thẻ",
+ "등급마다 카드를 모으면 보상을 받아요.": "Thu thập thẻ mỗi cấp để nhận thưởng.",
+ "%d장 %s": "%d thẻ %s",
+ "카드 앨범 보상: %s": "Thưởng album thẻ: %s"
 }

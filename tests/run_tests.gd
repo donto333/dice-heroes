@@ -69,6 +69,7 @@ func _init() -> void:
 	_test_cards()
 	_test_card_deck()
 	_test_gold_gacha()
+	_test_card_album()
 	_test_pass_by_fight()
 	_test_balance()
 	_test_full_games()
@@ -2132,3 +2133,23 @@ func _test_gold_gacha() -> void:
 		_check(int(entry["grade"]) <= 2, "골드 카드 뽑기에서 ★★★이 나옴")
 	_check(int(profile["pity"]) == 5 and int(profile["card_pity"]) == 3, "골드 뽑기가 ★★★ 보장 횟수를 바꿈")
 	_check(int(eco["summon"]["gold"]["cost_one"]) > 0 and int(eco["card_gacha"]["gold"]["cost_one"]) > 0, "골드 뽑기 값이 없음")
+
+
+## 카드 앨범(2026-11-18): 등급별 모은 수에 따라 보상, 한 번만 받음.
+func _test_card_album() -> void:
+	var eco: Dictionary = _data["economy"]
+	var cards: Dictionary = _data["cards"]
+	var table: Dictionary = eco["card_album"]
+	for grade in [1, 2, 3]:
+		var steps: Array = table["steps"][str(grade)]
+		_check(steps.size() == (table["rewards"][str(grade)] as Array).size(), "카드 앨범 단계와 보상 수가 다름")
+		_check(int(steps.back()) <= Profile.card_album_total(cards, grade), "카드 앨범 마지막 단계가 카드 수보다 큼")
+	var profile := Profile.new_profile("앨범", eco)
+	profile["cards"] = []
+	for id in cards:
+		profile["cards"].append(id)
+	var gems_before := int(profile["gems"])
+	var reward := Profile.claim_card_album(profile, eco, cards, 3)
+	_check(int(reward.get("gems", 0)) > 0 and int(profile["gems"]) > gems_before, "★★★ 카드 앨범 보상을 받지 못함")
+	_check(Profile.claim_card_album(profile, eco, cards, 3).is_empty(), "카드 앨범 보상을 두 번 받음")
+	_check(Profile.card_album_has_claimable(profile, eco, cards), "★·★★ 카드 앨범 보상이 남았는데 없다고 함")

@@ -1415,6 +1415,63 @@ static func claim_album(profile: Dictionary, eco: Dictionary, characters: Array,
 	return total
 
 
+# ---------------------------------------------------------------- 카드 앨범(2026-11-18)
+## 등급마다 가진 카드 수가 economy.json card_album.steps에 닿으면 보상. 받은 단계는 profile["card_album"]에 "등급:순번".
+
+static func card_album_count(profile: Dictionary, cards: Dictionary, grade: int) -> int:
+	var count := 0
+	for id in profile.get("cards", []):
+		if cards.has(str(id)) and card_grade(cards, str(id)) == grade:
+			count += 1
+	return count
+
+
+static func card_album_total(cards: Dictionary, grade: int) -> int:
+	var count := 0
+	for id in cards:
+		if card_grade(cards, str(id)) == grade:
+			count += 1
+	return count
+
+
+static func card_album_claimed(profile: Dictionary, grade: int, index: int) -> bool:
+	return (profile.get("card_album", []) as Array).has("%d:%d" % [grade, index])
+
+
+static func card_album_claimable(profile: Dictionary, eco: Dictionary, cards: Dictionary, grade: int) -> Array:
+	var result: Array = []
+	var steps: Array = eco.get("card_album", {}).get("steps", {}).get(str(grade), [])
+	var owned := card_album_count(profile, cards, grade)
+	for index in steps.size():
+		if owned >= int(steps[index]) and not card_album_claimed(profile, grade, index):
+			result.append(index)
+	return result
+
+
+static func card_album_has_claimable(profile: Dictionary, eco: Dictionary, cards: Dictionary) -> bool:
+	for grade in [1, 2, 3]:
+		if not card_album_claimable(profile, eco, cards, grade).is_empty():
+			return true
+	return false
+
+
+## 그 등급의 받을 수 있는 카드 앨범 보상을 모두 받는다. 합친 보상(없으면 {}).
+static func claim_card_album(profile: Dictionary, eco: Dictionary, cards: Dictionary, grade: int) -> Dictionary:
+	var total := {}
+	var claimed: Array = profile.get("card_album", [])
+	var rewards: Array = eco.get("card_album", {}).get("rewards", {}).get(str(grade), [])
+	for index in card_album_claimable(profile, eco, cards, grade):
+		if index >= rewards.size():
+			continue
+		var reward: Dictionary = rewards[index]
+		grant(profile, reward)
+		claimed.append("%d:%d" % [grade, index])
+		for key in reward:
+			total[key] = int(total.get(key, 0)) + int(reward[key])
+	profile["card_album"] = claimed
+	return total
+
+
 # ---------------------------------------------------------------- 유물(장착 아이템)
 
 static func relic(eco: Dictionary, id: String) -> Dictionary:

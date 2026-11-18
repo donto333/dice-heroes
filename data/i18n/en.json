@@ -1780,5 +1780,9 @@
  "카드 편성 %d / %d": "Card Deck %d / %d",
  "아래 카드를 누르면 넣고, 위 칸을 누르면 빼요. 판에서는 편성한 카드만 나와요.": "Tap a card below to add it, tap a slot above to remove it. Only deck cards appear in matches.",
  "아직 없는 카드예요. 상점의 '카드 뽑기'에서 얻을 수 있어요.": "You don't have this card yet. Get it from 'Card Draw' in the shop.",
- "뽑은 카드는 영웅 메뉴의 '카드 편성'에서 넣어야 판에 나와요.": "Add drawn cards in Heroes → 'Card Deck' to use them in matches."
+ "뽑은 카드는 영웅 메뉴의 '카드 편성'에서 넣어야 판에 나와요.": "Add drawn cards in Heroes → 'Card Deck' to use them in matches.",
+ "카드 앨범": "Card Album",
+ "등급마다 카드를 모으면 보상을 받아요.": "Collect cards of each grade to earn rewards.",
+ "%d장 %s": "%d cards %s",
+ "카드 앨범 보상: %s": "Card album reward: %s"
 }
