@@ -122,6 +122,13 @@ static func skin_die_face(skin: Dictionary, value: int) -> Texture2D:
 	return die_face(value, "white" if id == "classic" or id == "" else id)
 
 
+## ★★★ 영웅 스킬 장면 그림(assets/cutins/<영웅 id>.png, 바탕 없는 상반신). 없으면 null.
+static func cutin_art(hero_id: String) -> Texture2D:
+	if hero_id == "":
+		return null
+	return _cached_texture("cutin/" + hero_id, "res://assets/cutins/%s.png" % hero_id)
+
+
 ## 어빌리티(스킬) 아이콘(assets/ability_icons/<어빌리티 id>.png, 금테 메달). 없으면 null.
 static func ability_icon(ability_id: String) -> Texture2D:
 	if ability_id == "":
