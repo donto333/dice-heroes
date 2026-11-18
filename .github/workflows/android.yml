@@ -90,7 +90,11 @@ jobs:
 
       - name: 버전 적기
         run: |
-          name=$(grep -oP 'const VERSION := "\K[^"]+' scripts/main.gd)
+          # 웹과 같은 번호: data/version.json의 base + Build 실행 번호(직접 돌릴 때는 이 실행 번호).
+          build="${{ github.event.workflow_run.run_number || github.run_number }}"
+          base=$(python3 -c "import json;print(json.load(open('data/version.json'))['base'])")
+          name="${base}.${build}"
+          python3 -c "import json;p='data/version.json';d=json.load(open(p));d['build']=int('${build}');json.dump(d,open(p,'w'))"
           code=$((1000 + ${GITHUB_RUN_NUMBER}))
           sed -i "s/^version\/code=.*/version\/code=${code}/; s/^version\/name=.*/version\/name=\"${name}\"/" export_presets.cfg
           echo "APP_VERSION=${name}" >> "$GITHUB_ENV"

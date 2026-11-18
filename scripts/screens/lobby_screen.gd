@@ -65,7 +65,7 @@ func setup(main_app, params: Dictionary) -> void:
 	_maybe_idle_reward()
 	if bool(params.get("welcome", false)):
 		# 처음 온 사람은 새 소식을 따로 띄우지 않는다.
-		app.profile["seen_version"] = app.VERSION
+		app.profile["seen_version"] = _news_key()
 		app.save()
 		var text := Kit.para("%s님, 주사위 영웅전에 오신 것을 환영해요.\n\n영웅 12명이 함께합니다. 랭크전에서 트로피를 모으고, 상점에서 새 영웅을 소환해 보세요.\n처음이라면 게임 방법부터 보면 좋아요." % app.profile["nickname"], 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		app.dialog("환영합니다!", text, [["게임 방법 보기", Color("6f43a6"), _on_help], ["바로 시작", Kit.ACCENT, _maybe_attendance]])
@@ -1051,6 +1051,10 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"영웅 능력치 창에 어빌리티가 얼마나 빨리 차는지(충전 속도)가 보여요.",
+	"주사위 꾸미기마다 전용 그림이 생겼어요.",
+	"로비의 영웅 타일 이름이 '편성'으로 바뀌었어요.",
+	"버전 번호가 업데이트할 때마다 저절로 올라가요. 새 버전이 나왔는데도 예전 번호가 보이던 문제를 고쳤어요.",
 	"새 카드 13종에 그림이 생겼어요: 전고·약초·척후병·기도·창벽·회오리·질풍보·명검·봉인 두루마리·군신의 가호·침묵의 종·기운 흡수·불굴.",
 	"새 소환 연출: 별빛 제단에 운명의 주사위가 내려와 파랑→보라→금으로 바뀌고, 카드가 뒤집혀요. ★★★는 등장 장면이 따로 나와요.",
 	"파티 자동 추천이 강화를 따져요: 레벨이 높은 영웅을 더 잘 골라요. 자리 카드에 전투 보너스(+n)도 보여요.",
@@ -1187,11 +1191,16 @@ func _on_odd_even(guess: String) -> void:
 			Kit.reward_line(result["reward"]), Profile.odd_even_left(app.profile, app.eco)]
 
 
+## 새 소식 창은 버전 번호가 아니라 NEWS 글이 바뀌었을 때만 띄운다(버전은 배포마다 저절로 오른다).
+func _news_key() -> String:
+	return "news-%d" % hash(NEWS)
+
+
 func _maybe_news() -> void:
-	if str(app.profile.get("seen_version", "")) == app.VERSION:
+	if str(app.profile.get("seen_version", "")) == _news_key():
 		_maybe_attendance()
 		return
-	app.profile["seen_version"] = app.VERSION
+	app.profile["seen_version"] = _news_key()
 	app.save()
 	var body := Kit.vbox(8)
 	for line in NEWS:

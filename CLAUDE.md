@@ -14,6 +14,8 @@
   Build가 통과하면 `.github/workflows/auto-merge.yml`이 자동으로 합치고 배포한다. 사용자가 승인할 필요는 없다.
   Build가 실패하면 합쳐지지 않으므로, 실패 원인을 고쳐 같은 브랜치에 다시 올린다.
 
+- 버전(2026-11-18): `main.gd`의 VERSION을 손으로 올리지 않는다. `data/version.json`의 base(예: 0.29)에 CI(`build.yml`·`android.yml`)가 Build 실행 번호를 붙여 "0.29.512"가 된다. 큰 변화일 때만 base를 올린다. 로비의 새 소식 창은 버전이 아니라 `lobby_screen.gd`의 NEWS 글이 바뀔 때 뜨므로, 사용자에게 알릴 변화는 NEWS 맨 위에 한 줄 더한다.
+
 ## 구조
 
 - `scripts/main.gd`: 화면 전환 틀(app). `scripts/screens/`: 타이틀·로그인·로비·영웅·상점·미션·설정·파티·대전 화면.
