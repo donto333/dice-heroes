@@ -338,7 +338,9 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	var grade := _band_label(grade_text, 16, 0.6, 0.69)
 	grade.add_theme_color_override("font_color", GOLD)
 	button.add_child(grade)
-	var stats := _band_label("이동%d 공%d 방%d 지%d" % [int(character["move"]), int(character["attack"]), int(character["defense"]), int(character["intellect"])], 16, 0.69, 0.775)
+	var stats := _band_label("이동%d 공%d 방%d 지%d 충%d" % [int(character["move"]), int(character["attack"]), int(character["defense"]), int(character["intellect"]), 100 + int(character.get("charge", 0))], 15, 0.69, 0.775)
+	stats.offset_left = 4
+	stats.offset_right = -4
 	button.add_child(stats)
 	# 이름은 틀 아래쪽 남색 이름 칸(그림 높이의 78.5%~91%) 가운데에. 영웅 화면과 같은 자리.
 	var name_label := _band_label(str(character["name"]), 18, 0.785, 0.91)
@@ -470,10 +472,11 @@ func _card_text(character: Dictionary) -> String:
 	var level_text := ""
 	if levels.has(character["id"]):
 		level_text = " Lv%d" % int(levels[character["id"]])
-	return "%s %s%s\n%s · %s\n이동%d 공%d 방%d 지%d" % [
+	return "%s %s%s\n%s · %s\n이동%d 공%d 방%d 지%d · 충전 속도 %d%%" % [
 		"★".repeat(int(character["grade"])), character["name"], level_text,
 		character["category"], ability.get("name", "-"),
-		int(character["move"]), int(character["attack"]), int(character["defense"]), int(character["intellect"])]
+		int(character["move"]), int(character["attack"]), int(character["defense"]), int(character["intellect"]),
+		100 + int(character.get("charge", 0))]
 
 
 func points() -> int:
@@ -684,7 +687,8 @@ func _slot_score(character: Dictionary, slot: String, weights: Dictionary = {}) 
 	var w_intellect := float(weights.get("intellect", 1.0))
 	var level := _level_of(character)
 	var battle := float(_from_table(_level_battle, level))
-	var charge := float(_from_table(_level_gauge, level)) / 100.0
+	# 영웅마다 다른 충전 속도(charge)도 같이 센다.
+	var charge := (float(_from_table(_level_gauge, level)) + float(character.get("charge", 0))) / 100.0
 	match slot:
 		"attack":
 			return float(character["attack"]) * 3.5 * 3.0 * w_attack + float(character["move"]) * 2.0 * 3.5 * w_move + battle * 3.0 + charge * 4.0

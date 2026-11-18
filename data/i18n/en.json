@@ -1765,5 +1765,9 @@
  "이번 이동 +2칸, 부적 1장, 저주·쉬기 해제, 2턴간 방어 주사위 +1개": "Move +2 spaces this turn; 1 talisman; removes curse and rest; defense dice +1 for 2 turns",
  "이번 이동 +2칸, 이번 턴 전투에서 지면 한 번 다시 굴림": "Move +2 spaces this turn; reroll once if you lose a battle this turn",
  "이번 이동 +1칸, 지금 칸과 바로 뒤 칸에 덫 2개": "Move +1 spaces this turn; 2 traps: on this space and the one behind",
- "우리 팀 게이지 +60%": "Team gauge +60%"
+ "우리 팀 게이지 +60%": "Team gauge +60%",
+ "충전 속도": "Charge Speed",
+ "이동%d 공%d 방%d 지%d 충%d": "Mv%d Atk%d Def%d Int%d Chg%d",
+ "이동%d 공%d 방%d 지%d · 충전 속도 %d%%": "Mv%d Atk%d Def%d Int%d · Charge %d%%",
+ "아이템 카드는 손에 3장까지, 판 왼쪽에 세워져 있어요. 카드를 누르면 설명이 나오고 '사용'을 누르면 써요(내 차례, 주사위를 굴리기 전에만). 어빌리티는 게이지가 100%가 되면 한 턴에 하나 쓸 수 있어요. SUPPORT의 지력이 높을수록 게이지가 빨리 차고, 영웅마다 충전 속도(100%가 보통)가 달라 높은 영웅일수록 어빌리티를 자주 써요. 넘친 게이지는 모여서 카드가 돼요.": "You can hold up to 3 item cards; they stand on the left of the board. Tap a card to see what it does and tap 'Use' to play it (on your turn, before rolling). An ability can be used once per turn when its gauge reaches 100%. The higher your SUPPORT hero's Intellect, the faster gauges fill, and each hero has its own Charge Speed (100% is normal), so heroes with higher Charge Speed use abilities more often. Overflowing gauge builds up into cards."
 }

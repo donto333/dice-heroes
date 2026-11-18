@@ -1765,5 +1765,9 @@
  "이번 이동 +2칸, 부적 1장, 저주·쉬기 해제, 2턴간 방어 주사위 +1개": "Lượt này di chuyển thêm 2 ô; 1 bùa hộ mệnh, giải nguyền rủa và nghỉ lượt, xúc xắc phòng thủ +1 trong 2 lượt",
  "이번 이동 +2칸, 이번 턴 전투에서 지면 한 번 다시 굴림": "Lượt này di chuyển thêm 2 ô; nếu thua trận trong lượt này, được gieo lại một lần",
  "이번 이동 +1칸, 지금 칸과 바로 뒤 칸에 덫 2개": "Lượt này di chuyển thêm 1 ô; đặt 2 bẫy: ô này và ô ngay phía sau",
- "우리 팀 게이지 +60%": "Thanh năng lượng đội ta +60%"
+ "우리 팀 게이지 +60%": "Thanh năng lượng đội ta +60%",
+ "충전 속도": "Tốc độ nạp",
+ "이동%d 공%d 방%d 지%d 충%d": "DC%d TC%d PT%d TL%d N%d",
+ "이동%d 공%d 방%d 지%d · 충전 속도 %d%%": "DC%d TC%d PT%d TL%d · Nạp %d%%",
+ "아이템 카드는 손에 3장까지, 판 왼쪽에 세워져 있어요. 카드를 누르면 설명이 나오고 '사용'을 누르면 써요(내 차례, 주사위를 굴리기 전에만). 어빌리티는 게이지가 100%가 되면 한 턴에 하나 쓸 수 있어요. SUPPORT의 지력이 높을수록 게이지가 빨리 차고, 영웅마다 충전 속도(100%가 보통)가 달라 높은 영웅일수록 어빌리티를 자주 써요. 넘친 게이지는 모여서 카드가 돼요.": "Bạn giữ tối đa 3 thẻ vật phẩm, đặt ở bên trái bàn cờ. Chạm vào thẻ để xem công dụng và chạm 'Dùng' để sử dụng (trong lượt của bạn, trước khi gieo xúc xắc). Kỹ năng dùng được một lần mỗi lượt khi thanh năng lượng đạt 100%. Trí lực của tướng SUPPORT càng cao thì thanh năng lượng càng nhanh đầy, và mỗi tướng có Tốc độ nạp riêng (100% là bình thường), tướng có Tốc độ nạp cao sẽ dùng kỹ năng thường xuyên hơn. Năng lượng tràn ra sẽ dồn lại thành thẻ."
 }

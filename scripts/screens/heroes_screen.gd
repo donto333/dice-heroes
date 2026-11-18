@@ -277,6 +277,15 @@ func show_hero(id: String) -> void:
 		stat_row.add_child(Kit.label(str(value), 20))
 		stat_row.add_child(Kit.icon("dice", 24.0))
 		info.add_child(stat_row)
+	# 어빌리티 게이지가 차는 속도(100%가 보통, characters.json의 charge).
+	var charge_percent := 100 + int(character.get("charge", 0))
+	var charge_row := Kit.hbox(8)
+	charge_row.add_child(Kit.label("충전 속도", 20, Kit.MUTED))
+	var charge_bar := Kit.bar(float(charge_percent) / 200.0, Kit.GOLD, 14)
+	charge_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	charge_row.add_child(Kit.expand(charge_bar))
+	charge_row.add_child(Kit.label("%d%%" % charge_percent, 20))
+	info.add_child(charge_row)
 	var ability_box := Kit.panel(Color("13458f"), Kit.LINE, 12)
 	var ability_text := Kit.label("어빌리티 [%s]%s\n%s" % [ability.get("name", "-"), "  (★★★ 전용)" if str(character.get("ability", "")).begins_with("unique_") else "", ability.get("text", "")], 21)
 	ability_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
