@@ -1990,6 +1990,9 @@ func _check_battle_effects() -> void:
 	var fast = _skill_table(3, "lubu")
 	fast._apply_effect({"type": "gauge_boost", "amount": 50, "turns": 2}, 0)
 	for game in [slow, fast]:
+		# 충전 속도가 빠른 영웅도 가득 차지 않게 빈 게이지에서 잰다.
+		for slot in ["attack", "defense", "support"]:
+			game.players[0]["gauge"][slot] = 0
 		game.end_turn()
 		game.begin_turn()
 		game.end_turn()

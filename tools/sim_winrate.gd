@@ -3,6 +3,7 @@ extends SceneTree
 ##   godot --headless --script res://tools/sim_winrate.gd
 ## 환경 변수: LIMIT(소환 포인트 한도, 기본 6) · GAMES(조합마다 돌릴 판 수, 기본 150) ·
 ##   SHARD/SHARDS(여러 서버가 나눠 돌릴 때 내 몫) · OUT(결과 json을 쓸 경로)
+## MODE=duel 이면 영웅마다 표준 대결 승률(_run_duels)을 낸다. GAMES는 자리마다 돌릴 판 수(기본 3000).
 ## 조합 = 세 명(포인트 합이 한도 또는 한도-1)을 AI.best_placement로 자리에 앉힌 파티.
 ## 상대는 같은 조합 목록에서 무작위, 맵 9종을 무작위로, 선·후공을 번갈아 한다. 영웅 레벨은 모두 1.
 
@@ -16,7 +17,131 @@ func _env_int(name: String, fallback: int) -> int:
 	return int(text) if text != "" else fallback
 
 
+## 기준 영웅(표준 대결용, 게임에는 없음): 어빌리티 없이 자리마다 보통 능력치만 가진다.
+const DUMMIES := {
+	"attack": {"id": "_ref_attack", "name": "기준 공격", "category": "", "grade": 1, "move": 1, "attack": 3, "defense": 2, "intellect": 1, "ability": ""},
+	"defense": {"id": "_ref_defense", "name": "기준 방어", "category": "", "grade": 1, "move": 1, "attack": 1, "defense": 3, "intellect": 1, "ability": ""},
+	"support": {"id": "_ref_support", "name": "기준 지력", "category": "", "grade": 1, "move": 1, "attack": 1, "defense": 1, "intellect": 3, "ability": ""},
+}
+
+
+## 표준 대결: 영웅 한 명을 한 자리에 앉히고 나머지 두 자리는 기준 영웅으로 채워, 기준 영웅 셋과 싸운 승률.
+## 영웅끼리 서로 영향을 주지 않아서 영웅 한 명의 세기만 잰다. 기준 영웅 자신은 50%.
+func _duel_rate(datas: Array, hero_id: String, slot: String, games: int, rng: RandomNumberGenerator) -> float:
+	var score := 0.0
+	for index in games:
+		var mine := {"name": "A", "attack": "_ref_attack", "defense": "_ref_defense", "support": "_ref_support"}
+		mine[slot] = hero_id
+		var other := {"name": "B", "attack": "_ref_attack", "defense": "_ref_defense", "support": "_ref_support"}
+		var mine_first := index % 2 == 0
+		var game = Game.new()
+		game.setup(datas[rng.randi_range(0, datas.size() - 1)], [mine, other] if mine_first else [other, mine], rng.randi() & 0x7fffffff)
+		var steps := 0
+		while game.winner < 0 and steps < 400:
+			AI.take_turn(game)
+			steps += 1
+		if game.winner < 0:
+			score += 0.5
+		elif (game.winner == 0) == mine_first:
+			score += 1.0
+	return score / float(games)
+
+
+func _run_duels() -> void:
+	var games := _env_int("GAMES", 3000)
+	var shard := _env_int("SHARD", 0)
+	var shards := maxi(1, _env_int("SHARDS", 1))
+	var data: Dictionary = GameData.load_all()
+	var chars: Array = data["characters"].duplicate()
+	var hero_count := chars.size()
+	for slot in DUMMIES:
+		chars.append(DUMMIES[slot])
+	var datas: Array = []
+	for board in data["boards"]:
+		var copy := data.duplicate()
+		copy["board"] = board
+		copy["characters"] = chars
+		datas.append(copy)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 777 + shard * 7919
+	var result := {}
+	for index in hero_count:
+		if index % shards != shard:
+			continue
+		var rates := {}
+		for slot in ["attack", "defense", "support"]:
+			rates[slot] = snappedf(_duel_rate(datas, str(chars[index]["id"]), slot, games, rng) * 100.0, 0.1)
+		result[str(chars[index]["id"])] = rates
+		print("DUEL %s %s" % [chars[index]["id"], JSON.stringify(rates)])
+	var out_path := OS.get_environment("OUT")
+	if out_path != "":
+		var file := FileAccess.open(out_path, FileAccess.WRITE)
+		file.store_string(JSON.stringify({"mode": "duel", "games": games, "duels": result}))
+		file.close()
+	quit(0)
+
+
+## 무제한 무작위: 소환 포인트와 상관없이 아무 세 명(AI가 자리 배치)끼리 붙인 승률.
+## 포인트 한도가 있으면 ★ 영웅이 ★★★와 한 팀이 되어 승률이 따라 올라가므로, 영웅 한 명의 세기는 이 방식으로 잰다.
+## 영웅 전체의 평균은 늘 50%다. GAMES는 서버 한 대가 돌릴 판 수(기본 40000).
+func _run_free() -> void:
+	var games := _env_int("GAMES", 40000)
+	var shard := _env_int("SHARD", 0)
+	var data: Dictionary = GameData.load_all()
+	var chars: Array = data["characters"]
+	var datas: Array = []
+	for board in data["boards"]:
+		var copy := data.duplicate()
+		copy["board"] = board
+		datas.append(copy)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242 + shard * 7919
+	var stats := {}
+	for index in games:
+		var parties: Array = []
+		for side in 2:
+			var picks: Array = []
+			while picks.size() < 3:
+				var pick: Dictionary = chars[rng.randi_range(0, chars.size() - 1)]
+				if not picks.has(pick):
+					picks.append(pick)
+			var party: Dictionary = AI.best_placement(picks)["party"].duplicate()
+			party["name"] = "A" if side == 0 else "B"
+			parties.append(party)
+		var game = Game.new()
+		game.setup(datas[rng.randi_range(0, datas.size() - 1)], parties, rng.randi() & 0x7fffffff)
+		var steps := 0
+		while game.winner < 0 and steps < 400:
+			AI.take_turn(game)
+			steps += 1
+		var first_score := 0.5
+		if game.winner == 0:
+			first_score = 1.0
+		elif game.winner == 1:
+			first_score = 0.0
+		for side in 2:
+			for slot in ["attack", "defense", "support"]:
+				var key := "%s|%s" % [parties[side][slot], slot]
+				if not stats.has(key):
+					stats[key] = [0, 0.0]
+				stats[key][0] += 1
+				stats[key][1] += first_score if side == 0 else 1.0 - first_score
+	var out_path := OS.get_environment("OUT")
+	if out_path != "":
+		var file := FileAccess.open(out_path, FileAccess.WRITE)
+		file.store_string(JSON.stringify({"mode": "free", "games": games, "heroes": stats}))
+		file.close()
+	print("끝: 무제한 무작위 %d판" % games)
+	quit(0)
+
+
 func _init() -> void:
+	if OS.get_environment("MODE") == "duel":
+		_run_duels()
+		return
+	if OS.get_environment("MODE") == "free":
+		_run_free()
+		return
 	var limit := _env_int("LIMIT", 6)
 	var games := _env_int("GAMES", 150)
 	var shard := _env_int("SHARD", 0)
