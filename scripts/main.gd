@@ -39,7 +39,10 @@ const SCREEN_MOODS := {
 	"lobby": Color("3b2f9e"), "shop": Color("1f3a82"), "heroes": Color("1f3a82"), "missions": Color("1f3a82"),
 	"settings": Color("1f3a82"), "adventure": Color("1f3a82"), "pass": Color("1f3a82"), "help": Color("1f3a82"),
 }
-const VERSION := "0.29.1"
+## 게임 버전(2026-11-18): 손으로 올리지 않는다. data/version.json의 base(예: 0.29)에
+## 빌드 번호(GitHub Actions의 Build 실행 번호, 빌드할 때 CI가 적음)를 붙여 "0.29.512"처럼 만든다.
+## 여러 작업이 동시에 합쳐져도 번호가 겹치거나 뒤로 가지 않는다. 큰 변화가 있을 때만 base를 올린다.
+var VERSION: String = _read_version()
 
 var data: Dictionary = {}
 var eco: Dictionary = {}
@@ -620,3 +623,15 @@ func _scroll_at(point: Vector2) -> ScrollContainer:
 		for child in children:
 			stack.append(child)
 	return found
+
+
+static func _read_version() -> String:
+	var file := FileAccess.open("res://data/version.json", FileAccess.READ)
+	if file == null:
+		return "0.0"
+	var info = JSON.parse_string(file.get_as_text())
+	if typeof(info) != TYPE_DICTIONARY:
+		return "0.0"
+	var base := str(info.get("base", "0.0"))
+	var build := int(info.get("build", 0))
+	return "%s.%d" % [base, build] if build > 0 else base

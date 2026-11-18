@@ -83,6 +83,20 @@ jobs:
           path: ${{ runner.temp }}/screenshots
           if-no-files-found: ignore
 
+      - name: 버전 번호 적기
+        # 게임 버전 = data/version.json의 base + 이 Build 실행 번호(배포마다 저절로 오름).
+        run: |
+          python3 - <<'PY'
+          import json, os, datetime
+          path = "data/version.json"
+          info = json.load(open(path, encoding="utf-8"))
+          info["build"] = int(os.environ["GITHUB_RUN_NUMBER"])
+          info["commit"] = os.environ["GITHUB_SHA"][:7]
+          info["time"] = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).strftime("%Y-%m-%d %H:%M")
+          json.dump(info, open(path, "w", encoding="utf-8"), ensure_ascii=False)
+          print("버전", info["base"] + "." + str(info["build"]), info)
+          PY
+
       - name: 웹 버전 내보내기
         run: |
           mkdir -p build/web
@@ -92,6 +106,8 @@ jobs:
           cp web/manifest.webmanifest build/web/
           cp assets/app_icon/icon_192.png build/web/app-icon-192.png
           cp assets/app_icon/icon_512.png build/web/app-icon-512.png
+          # Cloudflare Pages: 시작 파일(index.html)은 브라우저가 기억해 두지 말고 늘 새로 받게 한다.
+          printf '/\n  Cache-Control: no-cache\n/index.html\n  Cache-Control: no-cache\n' > build/web/_headers
 
       - name: 새 버전이 바로 보이게 파일 이름 바꾸기
         # 브라우저가 예전 게임 파일(index.pck)을 기억해 두는 문제를 막는다.
