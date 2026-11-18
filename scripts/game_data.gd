@@ -251,6 +251,33 @@ static func standee(id: String) -> Texture2D:
 
 ## 움직이는 모형: 3D 모델(트리포)을 블렌더로 찍은 12칸짜리 가로 그림. 종류는 idle(가만히)·walk(걷기)·slash(베기).
 ## 있는 종류만 담은 사전을 돌려준다(없으면 빈 사전 → 멈춘 그림 모형을 쓴다).
+## 움직이는 그림 한 장에 든 장 수. 6칸씩 줄지은 그림은 줄 수×6, 예전 한 줄 그림은 가로÷세로.
+static func anim_frame_count(sheet: Texture2D) -> int:
+	if sheet == null:
+		return 1
+	var sheet_size := sheet.get_size()
+	if sheet_size.x >= sheet_size.y * 12.0 - 0.5:
+		return maxi(1, int(round(sheet_size.x / sheet_size.y)))
+	var cell := sheet_size.x / 6.0
+	return maxi(1, int(round(sheet_size.y / cell)) * 6)
+
+
+## 대기 그림이 24장 이상이면(클링 영상으로 만든 것) 서 있을 때 그대로 돌려 보여 준다.
+## 12장짜리(트리포 3D)는 고개를 두리번거려 첫 장면에 멈추고 숨쉬기만 한다.
+static func live_idle(sheet: Texture2D) -> bool:
+	return anim_frame_count(sheet) > 12
+
+
+## 대기 그림을 앞으로 갔다 뒤로 돌아오게(끝과 처음이 튀지 않게) 돌릴 때 지금 보여 줄 장.
+static func idle_frame(sheet: Texture2D, time: float, fps: float = 8.0) -> int:
+	var count := anim_frame_count(sheet)
+	if count <= 1:
+		return 0
+	var span := count * 2 - 2
+	var step := int(time * fps) % span
+	return step if step < count else span - step
+
+
 static func standee_anims(id: String) -> Dictionary:
 	var result := {}
 	if id == "":

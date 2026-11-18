@@ -158,17 +158,23 @@ func _process(delta: float) -> void:
 		state["time"] = float(state["time"]) + delta
 		var kind := str(state["kind"])
 		var frame := 0
+		var sheets: Dictionary = state["sheets"]
 		if kind == "slash":
-			frame = int(float(state["time"]) / SLASH_TIME * ANIM_FRAMES)
-			if frame >= ANIM_FRAMES:
+			var slash_count := GameData.anim_frame_count(sheets.get("slash"))
+			frame = int(float(state["time"]) / SLASH_TIME * slash_count)
+			if frame >= slash_count:
 				# 한 번 베고 나면 가만히로 돌아간다.
 				state["kind"] = "idle"
 				state["time"] = 0.0
 				kind = "idle"
 				frame = 0
 		var figure: TextureRect = _sides[index]["figure"]
-		if kind != "slash":
-			# 서 있을 때는 첫 장면에 멈추고 숨쉬기만 한다(대기 동작은 고개를 두리번거려 목이 흔들려 보였다).
+		if kind != "slash" and GameData.live_idle(sheets.get("idle")):
+			# 클링 영상으로 만든 대기 그림은 그대로 돌려 숨 쉬고 옷자락이 흔들리게 한다.
+			frame = GameData.idle_frame(sheets.get("idle"), float(state["time"]))
+			figure.scale = Vector2.ONE
+		elif kind != "slash":
+			# 서 있을 때는 첫 장면에 멈추고 숨쉬기만 한다(트리포 대기 동작은 고개를 두리번거려 목이 흔들려 보였다).
 			frame = 0
 			var wave := sin(float(state["time"]) * 2.2 + index * 1.7)
 			figure.pivot_offset = Vector2(figure.size.x * 0.5, figure.size.y * 0.94)

@@ -877,7 +877,11 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 			var follow_sheet: Texture2D = follow_anims.get("walk" if hop_t >= 0.0 else "idle", follow_anims.get("idle"))
 			if follow_sheet != null:
 				# 서 있을 때는 첫 장면에 멈추고 숨쉬기만 한다(대기 동작은 고개를 두리번거려 목이 흔들려 보였다).
-				var follow_frame := (int(_anim_time * 16.0) + follow_index * 4 + 2) % ANIM_FRAMES if hop_t >= 0.0 else 0
+				var follow_frame := (int(_anim_time * 16.0) + follow_index * 4 + 2) % GameData.anim_frame_count(follow_sheet) if hop_t >= 0.0 else 0
+				if hop_t < 0.0 and GameData.live_idle(follow_sheet):
+					# 클링 영상으로 만든 대기 그림은 그대로 돌려 숨 쉬고 옷자락이 흔들리게 한다.
+					follow_frame = GameData.idle_frame(follow_sheet, _anim_time + follow_index * 0.7 + 0.4)
+					draw_set_transform(spot, 0.0, Vector2(facing, 1.0))
 				var follow_box := small_height * 1.08 / ANIM_BODY
 				draw_texture_rect_region(follow_sheet, Rect2(-follow_box / 2.0, -follow_box * ANIM_FOOT, follow_box, follow_box),
 					_anim_region(follow_sheet, follow_frame), Color(0.9, 0.9, 0.95))
@@ -894,9 +898,13 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 		if sheet != null:
 			# 움직이는 모형: 이동 중에는 걷는 그림을 빠르게, 서 있을 때는 숨 쉬는 그림을 천천히 넘긴다. 통통 튀는 늘림은 쓰지 않는다.
 			# 서 있을 때는 첫 장면에 멈추고 숨쉬기만 한다(대기 동작은 고개를 두리번거려 목이 흔들려 보였다).
-			var frame := (int(_anim_time * 16.0) + player_index * 5) % ANIM_FRAMES if hop_t >= 0.0 else 0
+			var frame := (int(_anim_time * 16.0) + player_index * 5) % GameData.anim_frame_count(sheet) if hop_t >= 0.0 else 0
 			var box := height * 1.08 / ANIM_BODY
 			var breath := _breath(player_index * 3) if hop_t < 0.0 else Vector2.ONE
+			if hop_t < 0.0 and GameData.live_idle(sheet):
+				# 클링 영상으로 만든 대기 그림은 그대로 돌린다(숨쉬기·옷자락이 그림에 들어 있어 늘림은 안 씀).
+				frame = GameData.idle_frame(sheet, _anim_time + player_index * 0.9)
+				breath = Vector2.ONE
 			draw_set_transform(base, 0.0, Vector2(facing * breath.x, breath.y))
 			draw_texture_rect_region(sheet, Rect2(-box / 2.0, -box * ANIM_FOOT, box, box), _anim_region(sheet, frame))
 		else:

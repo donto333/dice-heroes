@@ -1,11 +1,12 @@
 """영상(클링 등)으로 만든 영웅 동작을 판 위 말 그림으로 넣는다.
 
-쓰는 법: python tools/import_video_standee.py <영상.mp4> <영웅 id> <동작> <처음 장면> <끝 장면> [키 비율]
+쓰는 법: python tools/import_video_standee.py <영상.mp4> <영웅 id> <동작> <처음 장면> <끝 장면> [키 비율] [장 수]
 예: python tools/import_video_standee.py kling.mp4 gumiho walk 1 36
 - 영상을 장면별로 뜯는다. 바탕이 초록 단색(클링 주문서 kling/jobs.json으로 만든 영상)이면 초록을 지우고,
   아니면 인공지능 배경 지우기(rembg, isnet-anime, pip install "rembg[cpu]")로 인물만 남긴다.
 - 끝 장면 번호에 0을 주면 영상 끝까지.
-- 장면 범위 안에서 고르게 12장을 골라 6칸×2줄(칸 384) 그림으로 만든다.
+- 장면 범위 안에서 고르게 12장(장 수를 주면 그만큼, 6의 배수)을 골라 6칸씩 줄지어(칸 384) 그림으로 만든다.
+  대기 동작은 24장으로 넣으면 게임이 서 있을 때 그대로 돌려 보여 준다(12장 그림은 첫 장면에 멈추고 숨쉬기만).
 - 떨림 방지: 크기·가운데·발 높이를 장면마다 따로 재지 않고, 범위 전체에 걸쳐 부드럽게 이은 값(2차 곡선)으로 맞춘다.
 - 키 비율(기본 0.66)은 칸 높이에 대한 인물 전체(꼬리 포함) 높이. 발은 칸의 81.25% 땅선에 둔다.
 - 결과는 256색으로 줄여 assets/standees_anim/<id>_<동작>.png로 저장한다.
@@ -37,12 +38,12 @@ def _key_green(image: Image.Image) -> Image.Image:
 fixed = [False]
 
 
-def _cut(video: str, first: int, last: int) -> list:
+def _cut(video: str, first: int, last: int, count: int = 12) -> list:
 	work = Path(tempfile.mkdtemp())
 	subprocess.run(["ffmpeg", "-v", "error", "-i", video, str(work / "%03d.png")], check=True)
 	if last <= 0:
 		last = len(list(work.glob("*.png")))
-	picks = np.linspace(first, last, FRAMES).round().astype(int)
+	picks = np.linspace(first, last, count).round().astype(int)
 	red, green, blue = Image.open(work / "001.png").convert("RGB").getpixel((4, 4))
 	session = None
 	if not (green > 180 and red < 120 and blue < 120):
@@ -87,7 +88,7 @@ def build(frames: list, height_ratio: float, fixed: bool = False) -> Image.Image
 	target = CELL * height_ratio
 	# 가장 넓은 장면도 칸 안에 들어가게 줄인다.
 	shrink = min(1.0, min((CELL / 2 - 4) / max(1.0, max(c - b[0], b[2] - c) * target / h) for b, c, h in zip(boxes, centers, heights)), min((CELL * FOOT - 4) / max(1.0, (bt - b[1]) * target / h) for b, bt, h in zip(boxes, bottoms, heights)))
-	sheet = Image.new("RGBA", (CELL * COLUMNS, CELL * (FRAMES // COLUMNS)), (0, 0, 0, 0))
+	sheet = Image.new("RGBA", (CELL * COLUMNS, CELL * ((len(frames) + COLUMNS - 1) // COLUMNS)), (0, 0, 0, 0))
 	for index, image in enumerate(frames):
 		scale = target / heights[index] * shrink
 		big = image.resize((max(1, int(image.width * scale)), max(1, int(image.height * scale))), Image.LANCZOS)
@@ -103,7 +104,8 @@ def main() -> None:
 		sys.exit(1)
 	video, hero, kind, first, last = sys.argv[1:6]
 	ratio = float(sys.argv[6]) if len(sys.argv) > 6 else 0.66
-	frames = _cut(video, int(first), int(last))
+	count = int(sys.argv[7]) if len(sys.argv) > 7 else FRAMES
+	frames = _cut(video, int(first), int(last), count)
 	sheet = build(frames, ratio, fixed[0])
 	out = ROOT / "assets" / "standees_anim" / ("%s_%s.png" % (hero, kind))
 	sheet.quantize(256, method=Image.Quantize.FASTOCTREE).save(out, optimize=True)
