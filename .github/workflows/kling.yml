@@ -22,7 +22,7 @@ jobs:
       - name: 준비
         run: pip install --quiet requests
       - name: 클링으로 영상 만들기
-        run: python3 tools/kling_run.py
+        run: python3 -u tools/kling_run.py
       - name: 영상 올리기
         if: always()
         run: |
