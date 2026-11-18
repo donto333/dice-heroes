@@ -18,9 +18,13 @@ CELL = int(ARGS[1]) if len(ARGS) > 1 else 256
 FRAMES = 12
 VIEWS = {}
 TURN_FIX = {}
+## 찍을 동작 종류(주문서의 "kinds", 없으면 가만히·걷기). 트리포의 베기 동작(chop·slash)은 "slash"로 찍는다.
+KINDS = ["idle", "walk"]
 try:
 	import json
-	for job in json.loads((Path(__file__).resolve().parent.parent / "tripo" / "jobs.json").read_text())["jobs"]:
+	_order = json.loads((Path(__file__).resolve().parent.parent / "tripo" / "jobs.json").read_text())
+	KINDS = list(_order.get("kinds", KINDS))
+	for job in _order["jobs"]:
 		VIEWS[job["name"]] = job.get("view", 90.0)
 		TURN_FIX[job["name"]] = job.get("turn_fix", 0.0)
 except Exception as error:
@@ -400,7 +404,9 @@ def render_folder(folder: Path) -> None:
 				pivot.rotation_euler = (0, 0, math.atan2(moved.y, moved.x) + math.radians(90.0 - TURN_RIGHT + extra))
 			label = "".join(ch if ch.isalnum() else "_" for ch in action.name.lower())[:24]
 			kind = action.name.split("_")[0].lower()
-			if kind not in ("idle", "walk"):
+			if kind in ("chop", "slash", "attack"):
+				kind = "slash"
+			if kind not in KINDS:
 				continue
 			# 정면에서 35도 돌린 비스듬한 앞모습 한 방향만 찍는다(반대 방향은 게임이 뒤집어 그린다).
 			shots = []

@@ -1,378 +1,375 @@
 {
- "설명": "트리포(Tripo)로 만들 3D 모델 주문서. GitHub Actions(tripo.yml)가 읽는다. model_task·rig_task에 이미 만든 작업 번호를 적어 두면 다시 만들지 않는다(크레딧 절약).",
- "시험": 28,
- "jobs": [
-  {
-   "name": "alexander",
-   "image": "assets/standees/alexander.png",
-   "local": "tripo/web/alexander.glb",
-   "view": -15
-  },
-  {
-   "name": "amundsen",
-   "image": "assets/standees/amundsen.png",
-   "local": "tripo/web/amundsen.glb",
-   "view": -15
-  },
-  {
-   "name": "anubis",
-   "image": "assets/standees/anubis.png",
-   "local": "tripo/web/anubis.glb",
-   "view": 25
-  },
-  {
-   "name": "archimedes",
-   "image": "assets/standees/archimedes.png",
-   "local": "tripo/web/archimedes.glb",
-   "view": 20
-  },
-  {
-   "name": "bangjeonghwan",
-   "image": "assets/standees/bangjeonghwan.png",
-   "local": "tripo/web/bangjeonghwan.glb",
-   "view": 65
-  },
-  {
-   "name": "dangun",
-   "image": "assets/standees/dangun.png",
-   "local": "tripo/web/dangun.glb",
-   "view": -15
-  },
-  {
-   "name": "davinci",
-   "image": "assets/standees/davinci.png",
-   "local": "tripo/web/davinci.glb",
-   "view": 10
-  },
-  {
-   "name": "earhart",
-   "image": "assets/standees/earhart.png",
-   "local": "tripo/web/earhart.glb",
-   "view": -15
-  },
-  {
-   "name": "edison",
-   "image": "assets/standees/edison.png",
-   "local": "tripo/web/edison.glb",
-   "view": -15
-  },
-  {
-   "name": "eulji",
-   "image": "assets/standees/eulji.png",
-   "local": "tripo/web/eulji.glb",
-   "view": -15
-  },
-  {
-   "name": "fabre",
-   "image": "assets/standees/fabre.png",
-   "local": "tripo/web/fabre.glb",
-   "view": -15
-  },
-  {
-   "name": "gumiho",
-   "image": "assets/standees/gumiho.png",
-   "local": "tripo/web/gumiho.glb",
-   "view": -45
-  },
-  {
-   "name": "gyebaek",
-   "image": "assets/standees/gyebaek.png",
-   "local": "tripo/web/gyebaek.glb",
-   "view": 115
-  },
-  {
-   "name": "hanxin",
-   "image": "assets/standees/hanxin.png",
-   "local": "tripo/web/hanxin.glb",
-   "view": -15
-  },
-  {
-   "name": "heracles",
-   "image": "assets/standees/heracles.png",
-   "local": "tripo/web/heracles.glb",
-   "view": -15
-  },
-  {
-   "name": "houdini",
-   "image": "assets/standees/houdini.png",
-   "local": "tripo/web/houdini.glb",
-   "view": 75
-  },
-  {
-   "name": "hypatia",
-   "image": "assets/standees/hypatia.png",
-   "local": "tripo/web/hypatia.glb",
-   "view": -15
-  },
-  {
-   "name": "isis",
-   "image": "assets/standees/isis.png",
-   "local": "tripo/web/isis.glb",
-   "view": -15
-  },
-  {
-   "name": "jangyeongsil",
-   "image": "assets/standees/jangyeongsil.png",
-   "local": "tripo/web/jangyeongsil.glb",
-   "view": 25
-  },
-  {
-   "name": "leonidas",
-   "image": "assets/standees/leonidas.png",
-   "local": "tripo/web/leonidas.glb",
-   "view": 25
-  },
-  {
-   "name": "machao",
-   "image": "assets/standees/machao.png",
-   "local": "tripo/web/machao.glb",
-   "view": -15,
-   "turn_fix": -20
-  },
-  {
-   "name": "marcopolo",
-   "image": "assets/standees/marcopolo.png",
-   "local": "tripo/web/marcopolo.glb",
-   "view": -15
-  },
-  {
-   "name": "mulan",
-   "image": "assets/standees/mulan.png",
-   "local": "tripo/web/mulan.glb",
-   "view": 20
-  },
-  {
-   "name": "nightingale",
-   "image": "assets/standees/nightingale.png",
-   "local": "tripo/web/nightingale.glb",
-   "view": -15
-  },
-  {
-   "name": "pasteur",
-   "image": "assets/standees/pasteur.png",
-   "local": "tripo/web/pasteur.glb",
-   "view": 5,
-   "turn_fix": -35
-  },
-  {
-   "name": "perseus",
-   "image": "assets/standees/perseus.png",
-   "local": "tripo/web/perseus.glb",
-   "view": -15
-  },
-  {
-   "name": "robinhood",
-   "image": "assets/standees/robinhood.png",
-   "local": "tripo/web/robinhood.glb",
-   "view": -15
-  },
-  {
-   "name": "sejong",
-   "image": "assets/standees/sejong.png",
-   "local": "tripo/web/sejong.glb",
-   "view": -15
-  },
-  {
-   "name": "seohui",
-   "image": "assets/standees/seohui.png",
-   "local": "tripo/web/seohui.glb",
-   "view": -15
-  },
-  {
-   "name": "sunwu",
-   "image": "assets/standees/sunwu.png",
-   "local": "tripo/web/sunwu.glb",
-   "view": -15
-  },
-  {
-   "name": "tengu",
-   "image": "assets/standees/tengu.png",
-   "local": "tripo/web/tengu.glb",
-   "view": -15
-  },
-  {
-   "name": "tesla",
-   "image": "assets/standees/tesla.png",
-   "local": "tripo/web/tesla.glb",
-   "view": 20
-  },
-  {
-   "name": "twain",
-   "image": "assets/standees/twain.png",
-   "local": "tripo/web/twain.glb",
-   "view": -15
-  },
-  {
-   "name": "verne",
-   "image": "assets/standees/verne.png",
-   "local": "tripo/web/verne.glb",
-   "view": -15
-  },
-  {
-   "name": "wright",
-   "image": "assets/standees/wright.png",
-   "local": "tripo/web/wright.glb",
-   "view": 25
-  },
-  {
-   "name": "wukong",
-   "image": "assets/standees/wukong.png",
-   "local": "tripo/web/wukong.glb",
-   "view": -15
-  },
-  {
-   "name": "zeus",
-   "image": "assets/standees/zeus.png",
-   "local": "tripo/web/zeus.glb",
-   "view": -15
-  },
-  {
-   "name": "zhugeliang",
-   "image": "assets/standees/zhugeliang.png",
-   "local": "tripo/web/zhugeliang.glb",
-   "view": 25
-  },
-  {
-   "name": "yisunsin",
-   "image": "assets/standees/yisunsin.png",
-   "local": "tripo/web/yisunsin.glb",
-   "view": -15
-  },
-  {
-   "name": "lubu",
-   "image": "assets/standees/lubu.png",
-   "rig": true,
-   "animations": [
-    "preset:idle",
-    "preset:walk",
-    "preset:slash"
-   ],
-   "model_task": "3df8eb52-d621-48a3-927b-490265e8ef35",
-   "rig_task": "7d3a22f7-a7de-48ce-b4c2-2aef5f169014",
-   "anim_task": "ee94f502-7106-4010-9761-44e6cc98403a",
-   "view": 75
-  },
-  {
-   "name": "athena",
-   "image": "assets/standees/athena.png",
-   "rig": true,
-   "animations": [
-    "preset:idle",
-    "preset:walk",
-    "preset:slash"
-   ],
-   "model_task": "d89fb46f-5c0a-42f2-96bc-f4ba469609a9",
-   "rig_task": "2134313f-a48b-4242-812e-3d87a37eda9c",
-   "anim_task": "c5260c51-8b1f-49a9-9342-d9310a24b51d",
-   "view": 110
-  },
-  {
-   "name": "zhouyu",
-   "image": "assets/standees/zhouyu.png",
-   "rig": true,
-   "animations": [
-    "preset:idle",
-    "preset:walk",
-    "preset:slash"
-   ],
-   "model_task": "75f7bdeb-d2b1-493b-b406-9cadbcc5bdab",
-   "rig_task": "94ec9688-fe80-4b31-b4d5-b30e0b8aef25",
-   "anim_task": "4d4b1be5-7273-4732-ab4e-f6e1ad8d53f6",
-   "view": 140
-  },
-  {
-   "name": "choichiwon",
-   "image": "assets/standees/choichiwon.png",
-   "rig": true,
-   "animations": [
-    "preset:idle",
-    "preset:walk",
-    "preset:slash"
-   ],
-   "model_task": "2cd253cd-7771-42d3-913d-5975de607cc9",
-   "rig_task": "bee5a56d-56b6-4249-a1de-5a1ed8e5ae75",
-   "anim_task": "383ae34d-3b6c-44a6-a7f6-9f78859ff18e",
-   "view": 80,
-   "turn_fix": -40
-  },
-  {
-   "name": "ganning",
-   "image": "assets/standees/ganning.png",
-   "rig": true,
-   "animations": [
-    "preset:idle",
-    "preset:walk",
-    "preset:slash"
-   ],
-   "model_task": "c24818b1-746f-4f96-a3a7-91e52e289c9d",
-   "rig_task": "00df101b-a1cd-413c-9fc2-565a39af3f91",
-   "anim_task": "314bf6d9-1a0e-4588-a79b-63d8faddd2fd",
-   "view": 80,
-   "turn_fix": -25
-  },
-  {
-   "name": "choiyoung",
-   "image": "assets/standees/choiyoung.png",
-   "rig": true,
-   "animations": [
-    "preset:idle",
-    "preset:walk",
-    "preset:slash"
-   ],
-   "model_task": "6d85ec7b-5d3b-4204-a05a-635650140ebd",
-   "rig_task": "a56f27b6-cab5-4ed7-8fc2-4834015b2157",
-   "anim_task": "934dbb02-e128-4da2-b04b-602ce144052b",
-   "view": 80,
-   "turn_fix": -35
-  },
-  {
-   "name": "dokkaebi",
-   "image": "assets/standees/dokkaebi.png",
-   "rig": true,
-   "animations": [
-    "preset:idle",
-    "preset:walk",
-    "preset:slash"
-   ],
-   "model_task": "9ec08144-9b87-4712-844b-1d9399090be1",
-   "rig_task": "ff8fd876-5b0f-4f3f-8f97-58118ee25aff",
-   "anim_task": "f83c21d7-9e09-47ba-884f-3e22a322e297",
-   "view": 85
-  },
-  {
-   "name": "haetae",
-   "image": "assets/standees/haetae.png",
-   "rig": true,
-   "animations": [
-    "preset:idle",
-    "preset:walk",
-    "preset:slash"
-   ],
-   "model_task": "16ff4cbe-9aa4-4b7d-9153-2d07c49a67b0",
-   "rig_task": "8553283d-2ea8-4dea-b0da-f0dbebcf499b",
-   "anim_task": "db69e0cd-a25a-4ec3-a74f-058f624ca9d4",
-   "view": 75
-  },
-  {
-   "name": "libai",
-   "image": "assets/standees/libai.png",
-   "rig": true,
-   "animations": [
-    "preset:idle",
-    "preset:walk",
-    "preset:slash"
-   ],
-   "model_task": "3d662f62-11d7-4499-b0db-b457f00ec9ee",
-   "rig_task": "ac86b8ac-a320-4138-b8f4-e45c1be9301d",
-   "anim_task": "035834a7-5c72-4ca1-9711-cdecf9ae4724",
-   "view": 105
-  }
- ],
- "note": "2026-11-18: 방향 보정 4명 다시",
- "only": [
-  "choiyoung",
-  "pasteur",
-  "ganning",
-  "machao"
- ]
+	"설명": "트리포(Tripo)로 만들 3D 모델 주문서. GitHub Actions(tripo.yml)가 읽는다. model_task·rig_task에 이미 만든 작업 번호를 적어 두면 다시 만들지 않는다(크레딧 절약).",
+	"시험": 28,
+	"jobs": [
+		{
+			"name": "alexander",
+			"image": "assets/standees/alexander.png",
+			"local": "tripo/web/alexander.glb",
+			"view": -15
+		},
+		{
+			"name": "amundsen",
+			"image": "assets/standees/amundsen.png",
+			"local": "tripo/web/amundsen.glb",
+			"view": -15
+		},
+		{
+			"name": "anubis",
+			"image": "assets/standees/anubis.png",
+			"local": "tripo/web/anubis.glb",
+			"view": 25
+		},
+		{
+			"name": "archimedes",
+			"image": "assets/standees/archimedes.png",
+			"local": "tripo/web/archimedes.glb",
+			"view": 20
+		},
+		{
+			"name": "bangjeonghwan",
+			"image": "assets/standees/bangjeonghwan.png",
+			"local": "tripo/web/bangjeonghwan.glb",
+			"view": 65
+		},
+		{
+			"name": "dangun",
+			"image": "assets/standees/dangun.png",
+			"local": "tripo/web/dangun.glb",
+			"view": -15
+		},
+		{
+			"name": "davinci",
+			"image": "assets/standees/davinci.png",
+			"local": "tripo/web/davinci.glb",
+			"view": 10
+		},
+		{
+			"name": "earhart",
+			"image": "assets/standees/earhart.png",
+			"local": "tripo/web/earhart.glb",
+			"view": -15
+		},
+		{
+			"name": "edison",
+			"image": "assets/standees/edison.png",
+			"local": "tripo/web/edison.glb",
+			"view": -15
+		},
+		{
+			"name": "eulji",
+			"image": "assets/standees/eulji.png",
+			"local": "tripo/web/eulji.glb",
+			"view": -15
+		},
+		{
+			"name": "fabre",
+			"image": "assets/standees/fabre.png",
+			"local": "tripo/web/fabre.glb",
+			"view": -15
+		},
+		{
+			"name": "gumiho",
+			"image": "assets/standees/gumiho.png",
+			"local": "tripo/web/gumiho.glb",
+			"view": -45
+		},
+		{
+			"name": "gyebaek",
+			"image": "assets/standees/gyebaek.png",
+			"local": "tripo/web/gyebaek.glb",
+			"view": 115
+		},
+		{
+			"name": "hanxin",
+			"image": "assets/standees/hanxin.png",
+			"local": "tripo/web/hanxin.glb",
+			"view": -15
+		},
+		{
+			"name": "heracles",
+			"image": "assets/standees/heracles.png",
+			"local": "tripo/web/heracles.glb",
+			"view": -15
+		},
+		{
+			"name": "houdini",
+			"image": "assets/standees/houdini.png",
+			"local": "tripo/web/houdini.glb",
+			"view": 75
+		},
+		{
+			"name": "hypatia",
+			"image": "assets/standees/hypatia.png",
+			"local": "tripo/web/hypatia.glb",
+			"view": -15
+		},
+		{
+			"name": "isis",
+			"image": "assets/standees/isis.png",
+			"local": "tripo/web/isis.glb",
+			"view": -15
+		},
+		{
+			"name": "jangyeongsil",
+			"image": "assets/standees/jangyeongsil.png",
+			"local": "tripo/web/jangyeongsil.glb",
+			"view": 25
+		},
+		{
+			"name": "leonidas",
+			"image": "assets/standees/leonidas.png",
+			"local": "tripo/web/leonidas.glb",
+			"view": 25
+		},
+		{
+			"name": "machao",
+			"image": "assets/standees/machao.png",
+			"local": "tripo/web/machao.glb",
+			"view": -15,
+			"turn_fix": -20
+		},
+		{
+			"name": "marcopolo",
+			"image": "assets/standees/marcopolo.png",
+			"local": "tripo/web/marcopolo.glb",
+			"view": -15
+		},
+		{
+			"name": "mulan",
+			"image": "assets/standees/mulan.png",
+			"local": "tripo/web/mulan.glb",
+			"view": 20
+		},
+		{
+			"name": "nightingale",
+			"image": "assets/standees/nightingale.png",
+			"local": "tripo/web/nightingale.glb",
+			"view": -15
+		},
+		{
+			"name": "pasteur",
+			"image": "assets/standees/pasteur.png",
+			"local": "tripo/web/pasteur.glb",
+			"view": 5,
+			"turn_fix": -35
+		},
+		{
+			"name": "perseus",
+			"image": "assets/standees/perseus.png",
+			"local": "tripo/web/perseus.glb",
+			"view": -15
+		},
+		{
+			"name": "robinhood",
+			"image": "assets/standees/robinhood.png",
+			"local": "tripo/web/robinhood.glb",
+			"view": -15
+		},
+		{
+			"name": "sejong",
+			"image": "assets/standees/sejong.png",
+			"local": "tripo/web/sejong.glb",
+			"view": -15
+		},
+		{
+			"name": "seohui",
+			"image": "assets/standees/seohui.png",
+			"local": "tripo/web/seohui.glb",
+			"view": -15
+		},
+		{
+			"name": "sunwu",
+			"image": "assets/standees/sunwu.png",
+			"local": "tripo/web/sunwu.glb",
+			"view": -15
+		},
+		{
+			"name": "tengu",
+			"image": "assets/standees/tengu.png",
+			"local": "tripo/web/tengu.glb",
+			"view": -15
+		},
+		{
+			"name": "tesla",
+			"image": "assets/standees/tesla.png",
+			"local": "tripo/web/tesla.glb",
+			"view": 20
+		},
+		{
+			"name": "twain",
+			"image": "assets/standees/twain.png",
+			"local": "tripo/web/twain.glb",
+			"view": -15
+		},
+		{
+			"name": "verne",
+			"image": "assets/standees/verne.png",
+			"local": "tripo/web/verne.glb",
+			"view": -15
+		},
+		{
+			"name": "wright",
+			"image": "assets/standees/wright.png",
+			"local": "tripo/web/wright.glb",
+			"view": 25
+		},
+		{
+			"name": "wukong",
+			"image": "assets/standees/wukong.png",
+			"local": "tripo/web/wukong.glb",
+			"view": -15
+		},
+		{
+			"name": "zeus",
+			"image": "assets/standees/zeus.png",
+			"local": "tripo/web/zeus.glb",
+			"view": -15
+		},
+		{
+			"name": "zhugeliang",
+			"image": "assets/standees/zhugeliang.png",
+			"local": "tripo/web/zhugeliang.glb",
+			"view": 25
+		},
+		{
+			"name": "yisunsin",
+			"image": "assets/standees/yisunsin.png",
+			"local": "tripo/web/yisunsin.glb",
+			"view": -15
+		},
+		{
+			"name": "lubu",
+			"image": "assets/standees/lubu.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "3df8eb52-d621-48a3-927b-490265e8ef35",
+			"rig_task": "7d3a22f7-a7de-48ce-b4c2-2aef5f169014",
+			"anim_task": "ee94f502-7106-4010-9761-44e6cc98403a",
+			"view": 75
+		},
+		{
+			"name": "athena",
+			"image": "assets/standees/athena.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "d89fb46f-5c0a-42f2-96bc-f4ba469609a9",
+			"rig_task": "2134313f-a48b-4242-812e-3d87a37eda9c",
+			"anim_task": "c5260c51-8b1f-49a9-9342-d9310a24b51d",
+			"view": 110
+		},
+		{
+			"name": "zhouyu",
+			"image": "assets/standees/zhouyu.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "75f7bdeb-d2b1-493b-b406-9cadbcc5bdab",
+			"rig_task": "94ec9688-fe80-4b31-b4d5-b30e0b8aef25",
+			"anim_task": "4d4b1be5-7273-4732-ab4e-f6e1ad8d53f6",
+			"view": 140
+		},
+		{
+			"name": "choichiwon",
+			"image": "assets/standees/choichiwon.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "2cd253cd-7771-42d3-913d-5975de607cc9",
+			"rig_task": "bee5a56d-56b6-4249-a1de-5a1ed8e5ae75",
+			"anim_task": "383ae34d-3b6c-44a6-a7f6-9f78859ff18e",
+			"view": 80,
+			"turn_fix": -40
+		},
+		{
+			"name": "ganning",
+			"image": "assets/standees/ganning.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "c24818b1-746f-4f96-a3a7-91e52e289c9d",
+			"rig_task": "00df101b-a1cd-413c-9fc2-565a39af3f91",
+			"anim_task": "314bf6d9-1a0e-4588-a79b-63d8faddd2fd",
+			"view": 80,
+			"turn_fix": -25
+		},
+		{
+			"name": "choiyoung",
+			"image": "assets/standees/choiyoung.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "6d85ec7b-5d3b-4204-a05a-635650140ebd",
+			"rig_task": "a56f27b6-cab5-4ed7-8fc2-4834015b2157",
+			"anim_task": "934dbb02-e128-4da2-b04b-602ce144052b",
+			"view": 80,
+			"turn_fix": -35
+		},
+		{
+			"name": "dokkaebi",
+			"image": "assets/standees/dokkaebi.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "9ec08144-9b87-4712-844b-1d9399090be1",
+			"rig_task": "ff8fd876-5b0f-4f3f-8f97-58118ee25aff",
+			"anim_task": "f83c21d7-9e09-47ba-884f-3e22a322e297",
+			"view": 85
+		},
+		{
+			"name": "haetae",
+			"image": "assets/standees/haetae.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "16ff4cbe-9aa4-4b7d-9153-2d07c49a67b0",
+			"rig_task": "8553283d-2ea8-4dea-b0da-f0dbebcf499b",
+			"anim_task": "db69e0cd-a25a-4ec3-a74f-058f624ca9d4",
+			"view": 75
+		},
+		{
+			"name": "libai",
+			"image": "assets/standees/libai.png",
+			"rig": true,
+			"animations": [
+				"preset:idle",
+				"preset:walk",
+				"preset:slash"
+			],
+			"model_task": "3d662f62-11d7-4499-b0db-b457f00ec9ee",
+			"rig_task": "ac86b8ac-a320-4138-b8f4-e45c1be9301d",
+			"anim_task": "035834a7-5c72-4ca1-9711-cdecf9ae4724",
+			"view": 105
+		}
+	],
+	"note": "2026-11-18: 48명 공격(베기) 동작만 찍기. 가만히·걷기는 그대로 둔다.",
+	"kinds": [
+		"slash"
+	]
 }
