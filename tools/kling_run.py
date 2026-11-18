@@ -60,7 +60,8 @@ def main() -> None:
 	only = set(order.get("only", []))
 	if order.get("recover"):
 		_recover(headers)
-	tasks = {}
+	# 할 일 목록을 만들고, 클링이 한 번에 받는 수(parallel, 기본 4)만큼만 올려 두고 끝나면 다음 것을 올린다.
+	queue = []
 	for job in order["jobs"]:
 		image = base64.b64encode((ROOT / job["image"]).read_bytes()).decode()
 		for kind, motion in job["kinds"].items():
@@ -70,41 +71,58 @@ def main() -> None:
 			if (OUT / (name + ".mp4")).exists() and not order.get("redo"):
 				print("이미 있음:", name)
 				continue
+			contents = [{"type": "prompt", "text": motion + " " + order["common"]}, {"type": "first_frame", "url": image}]
+			if "flash" not in order.get("model", ""):
+				contents.append({"type": "last_frame", "url": image})
+			queue.append((name, contents, int(job.get("duration", order.get("duration", 3)))))
+	limit = int(order.get("parallel", 4))
+	tasks = {}
+	tries = {}
+	deadline = time.time() + 50 * 60
+	while (queue or tasks) and time.time() < deadline:
+		while queue and len(tasks) < limit:
+			name, contents, seconds = queue[0]
 			body = {
-				"contents": [
-					{"type": "prompt", "text": motion + " " + order["common"]},
-					{"type": "first_frame", "url": image},
-				] + ([] if "flash" in order.get("model", "") else [{"type": "last_frame", "url": image}]),
-				"settings": {"resolution": order.get("resolution", "720p"), "duration": int(job.get("duration", order.get("duration", 3)))},
+				"contents": contents,
+				"settings": {"resolution": order.get("resolution", "720p"), "duration": seconds},
 				"options": {"watermark_info": {"enabled": False}, "external_task_id": "%s_%d" % (name, int(time.time()))},
 			}
 			reply = requests.post("%s/image-to-video/%s" % (BASE, order.get("model", "kling-4.0")), headers=headers, json=body, timeout=120)
 			data = reply.json() if reply.headers.get("content-type", "").startswith("application/json") else {}
-			print("올림:", name, reply.status_code, json.dumps(data, ensure_ascii=False)[:400])
 			task = (data.get("data") or {}).get("id")
 			if task:
-				tasks[task] = name
-	deadline = time.time() + 40 * 60
-	while tasks and time.time() < deadline:
-		time.sleep(20)
+				queue.pop(0)
+				tasks[task] = (name, contents, seconds)
+				print("올림:", name)
+			elif data.get("code") == 1303:
+				break  # 한 번에 받는 수가 찼다. 하나 끝날 때까지 기다린다.
+			else:
+				queue.pop(0)
+				print("올리기 실패:", name, reply.status_code, json.dumps(data, ensure_ascii=False)[:300])
+		if not tasks:
+			time.sleep(15)
+			continue
+		time.sleep(15)
 		reply = requests.get("%s/tasks" % BASE, headers=headers, params={"task_ids": ",".join(tasks)}, timeout=60)
 		for item in (reply.json().get("data") or []):
-			name = tasks.get(item.get("id"))
+			entry = tasks.get(item.get("id"))
 			status = item.get("status")
-			if not name or status not in ("succeeded", "failed"):
+			if not entry or status not in ("succeeded", "failed"):
 				continue
 			del tasks[item["id"]]
+			name = entry[0]
 			if status == "failed":
-				print("실패:", name, json.dumps(item, ensure_ascii=False)[:600])
+				tries[name] = tries.get(name, 0) + 1
+				print("실패:", name, str(item.get("message", ""))[:200])
+				if tries[name] < 3:
+					queue.append(entry)
 				continue
 			videos = [o for o in item.get("outputs", []) if o.get("type") == "video"]
-			if not videos:
-				print("영상 없음:", name, json.dumps(item, ensure_ascii=False)[:600])
-				continue
-			_download(videos[0]["url"], headers, OUT / (name + ".mp4"))
-		print("남은 작업:", len(tasks))
-	if tasks:
-		print("시간 안에 끝나지 않은 작업:", tasks)
+			if videos:
+				_download(videos[0]["url"], headers, OUT / (name + ".mp4"))
+		print("남은 작업:", len(queue) + len(tasks))
+	if tasks or queue:
+		print("시간 안에 끝나지 않은 작업:", [t[0] for t in tasks.values()] + [q[0] for q in queue])
 
 
 if __name__ == "__main__":
