@@ -200,7 +200,13 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 		rail.add_child(list)
 		for entry in tabs:
 			var item := _rail_button(entry, str(entry[0]) == active, on_tab, tabs.size() > 5)
-			if tabs.size() > 5:
+			if tabs.size() == 6:
+				# 6칸(편성 화면 등): 요약 카드 위 자리를 고르게 채우는 높이(2026-11-18 사용자 요청 '메뉴 칸 맞추기').
+				list.add_theme_constant_override("separation", 8)
+				item.custom_minimum_size = Vector2(0, 64)
+				item.add_theme_font_size_override("font_size", 23)
+				item.clip_text = true
+			elif tabs.size() > 6:
 				# 항목이 많으면(모험 장 목록 등) 낮고 작은 글자로 다 들어가게 한다.
 				list.add_theme_constant_override("separation", 6)
 				item.custom_minimum_size = Vector2(0, 50)
