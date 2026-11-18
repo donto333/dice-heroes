@@ -26,6 +26,8 @@ var _app
 var _results: Array = []
 var _best := 1
 var _again_cost := 0
+## '한 번 더' 값의 재화: "gems"(보석 소환) 또는 "gold"(골드 소환)
+var again_currency := "gems"
 var _skip := false
 var _tapped := false
 var _finished := false
@@ -147,9 +149,9 @@ func _build() -> void:
 	ok.pressed.connect(_close.bind(false))
 	_buttons.add_child(ok)
 	if _again_cost > 0:
-		var more: Button = MenuArt.pill_button("한 번 더  %d" % _again_cost, "gold", "m")
+		var more: Button = MenuArt.pill_button("한 번 더  %s" % Kit.comma(_again_cost), "gold", "m")
 		more.custom_minimum_size = Vector2(260, 60)
-		var gem: TextureRect = Kit.icon("gem", 28.0)
+		var gem: TextureRect = Kit.icon("gold" if again_currency == "gold" else "gem", 28.0)
 		if gem.texture != null:
 			more.icon = gem.texture
 			more.add_theme_constant_override("icon_max_width", 28)

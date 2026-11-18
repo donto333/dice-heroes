@@ -202,6 +202,24 @@ static func _grade_of(characters: Array, id: String) -> int:
 
 # ---------------------------------------------------------------- 소환
 
+## 확률표 {"3": %, "2": %, "1": %}로 등급 하나. 골드 뽑기(★·★★만)에 쓴다.
+static func roll_rates(rates: Dictionary, rng: RandomNumberGenerator, guarantee_two: bool) -> int:
+	var total := 0.0
+	for key in ["3", "2", "1"]:
+		total += float(rates.get(key, 0))
+	var roll := rng.randf() * maxf(total, 0.001)
+	var grade := 1
+	var acc := 0.0
+	for key in ["3", "2", "1"]:
+		acc += float(rates.get(key, 0))
+		if roll < acc:
+			grade = int(key)
+			break
+	if guarantee_two and grade < 2:
+		grade = 2
+	return grade
+
+
 ## 소환 한 번의 등급. 보장(pity)이 차면 ★★★, guarantee_two면 ★★ 이상.
 static func roll_grade(profile: Dictionary, eco: Dictionary, rng: RandomNumberGenerator, guarantee_two: bool) -> int:
 	var summon: Dictionary = eco.get("summon", {})
@@ -224,17 +242,22 @@ static func roll_grade(profile: Dictionary, eco: Dictionary, rng: RandomNumberGe
 
 ## 영웅을 count번 소환한다. 비용은 먼저 치러야 한다(pay 또는 무료 소환).
 ## 돌려주는 값: [{"id", "grade", "new": 처음 얻었는지, "shards": 중복이면 받은 조각}]
-static func summon(profile: Dictionary, characters: Array, eco: Dictionary, count: int, rng: RandomNumberGenerator) -> Array:
+## gold: true면 골드 소환(economy.json의 summon.gold 확률, ★·★★만, ★★★ 보장은 세지 않음).
+static func summon(profile: Dictionary, characters: Array, eco: Dictionary, count: int, rng: RandomNumberGenerator, gold: bool = false) -> Array:
 	var summon_table: Dictionary = eco.get("summon", {})
 	var shard_table: Dictionary = summon_table.get("shards_on_duplicate", {})
 	var results: Array = []
 	for index in count:
 		var guarantee_two := count >= 10 and index == count - 1 and not _has_grade_at_least(results, 2)
-		var grade := roll_grade(profile, eco, rng, guarantee_two)
-		if grade == 3:
-			profile["pity"] = 0
+		var grade := 1
+		if gold:
+			grade = roll_rates(summon_table.get("gold", {}).get("rates", {"1": 100}), rng, guarantee_two)
 		else:
-			profile["pity"] = int(profile.get("pity", 0)) + 1
+			grade = roll_grade(profile, eco, rng, guarantee_two)
+			if grade == 3:
+				profile["pity"] = 0
+			else:
+				profile["pity"] = int(profile.get("pity", 0)) + 1
 		var pool: Array = []
 		for character in characters:
 			if int(character["grade"]) == grade:
@@ -1618,18 +1641,23 @@ static func roll_card_grade(profile: Dictionary, eco: Dictionary, rng: RandomNum
 
 ## 카드를 count장 뽑는다. 비용은 먼저 치러야 한다(pay 또는 무료 뽑기).
 ## 돌려주는 값: [{"id", "grade", "new": 처음 얻었는지, "gold": 중복이라 바뀐 골드}]
-static func draw_cards(profile: Dictionary, cards: Dictionary, eco: Dictionary, count: int, rng: RandomNumberGenerator) -> Array:
+## gold: true면 골드 뽑기(card_gacha.gold 확률, ★·★★만, ★★★ 보장은 세지 않음).
+static func draw_cards(profile: Dictionary, cards: Dictionary, eco: Dictionary, count: int, rng: RandomNumberGenerator, gold: bool = false) -> Array:
 	var dupe_gold: Dictionary = eco.get("card_gacha", {}).get("dupe_gold", {})
 	if not profile.has("cards"):
 		profile["cards"] = []
 	var results: Array = []
 	for index in count:
 		var guarantee_two := count >= 10 and index == count - 1 and not _has_grade_at_least(results, 2)
-		var grade := roll_card_grade(profile, eco, rng, guarantee_two)
-		if grade == 3:
-			profile["card_pity"] = 0
+		var grade := 1
+		if gold:
+			grade = roll_rates(eco.get("card_gacha", {}).get("gold", {}).get("rates", {"1": 100}), rng, guarantee_two)
 		else:
-			profile["card_pity"] = int(profile.get("card_pity", 0)) + 1
+			grade = roll_card_grade(profile, eco, rng, guarantee_two)
+			if grade == 3:
+				profile["card_pity"] = 0
+			else:
+				profile["card_pity"] = int(profile.get("card_pity", 0)) + 1
 		var pool: Array = []
 		for key in cards:
 			if card_grade(cards, str(key)) == grade:
@@ -1639,9 +1667,9 @@ static func draw_cards(profile: Dictionary, cards: Dictionary, eco: Dictionary, 
 		var id: String = pool[rng.randi_range(0, pool.size() - 1)]
 		var entry := {"id": id, "grade": grade, "new": false, "gold": 0}
 		if owns_card(profile, id):
-			var gold := int(dupe_gold.get(str(grade), 100))
-			grant(profile, {"gold": gold})
-			entry["gold"] = gold
+			var refund := int(dupe_gold.get(str(grade), 100))
+			grant(profile, {"gold": refund})
+			entry["gold"] = refund
 		else:
 			profile["cards"].append(id)
 			entry["new"] = true

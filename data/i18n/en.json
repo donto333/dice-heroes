@@ -1726,5 +1726,15 @@
  "상대 팀 게이지를 30% 빼앗음": "Steals 30% of the opponent's team gauge",
  "불굴": "Iron Will",
  "앞으로 내 3턴 동안 거점으로 돌아갈 일을 한 번 막음": "For your next 3 turns, blocks one return to checkpoint",
- "카드 뽑기와 카드 덱이 생겼어요! 새 카드 13종을 모아 나만의 덱을 짜 보세요.": "Card Draw and Card Decks are here! Collect 13 new cards and build your own deck."
+ "카드 뽑기와 카드 덱이 생겼어요! 새 카드 13종을 모아 나만의 덱을 짜 보세요.": "Card Draw and Card Decks are here! Collect 13 new cards and build your own deck.",
+ "골드 뽑기": "Gold Draw",
+ "★★ %d%% · ★ %d%%  (★★★ 없음)": "★★ %d%% · ★ %d%%  (no ★★★)",
+ "★·★★ 카드 뽑기": "★·★★ Card Draw",
+ "골드로 뽑아요. 10회는 ★★ 이상 1장 보장.": "Draw with gold. 10 draws guarantee one ★★ or better.",
+ "%d회  %s": "x%d  %s",
+ "골드가 모자라요.": "Not enough gold.",
+ "골드 소환": "Gold Summon",
+ "★·★★ 영웅 소환": "★·★★ Hero Summon",
+ "골드로 소환해요. 10회는 ★★ 이상 1명 보장.": "Summon with gold. 10 summons guarantee one ★★ or better.",
+ "한 번 더  %s": "Again  %s"
 }
