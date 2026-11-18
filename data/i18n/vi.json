@@ -1736,5 +1736,7 @@
  "골드 소환": "Triệu hồi bằng vàng",
  "★·★★ 영웅 소환": "Triệu hồi anh hùng ★·★★",
  "골드로 소환해요. 10회는 ★★ 이상 1명 보장.": "Triệu hồi bằng vàng. 10 lần đảm bảo 1 anh hùng ★★ trở lên.",
- "한 번 더  %s": "Thêm lần nữa  %s"
+ "한 번 더  %s": "Thêm lần nữa  %s",
+ "아이템 카드를 모아 덱을 짜요": "Thu thập thẻ vật phẩm và xây bộ bài",
+ "뽑은 카드는 영웅 메뉴의 '카드 덱'에서 덱에 넣어야 판에 나와요.": "Thêm thẻ đã rút vào bộ bài ở Anh hùng → 'Bộ bài' để dùng trong trận."
 }

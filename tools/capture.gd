@@ -181,18 +181,10 @@ func _run() -> void:
 	summon_show._close(false)
 	await _wait(0.3)
 
-	# 카드 화면(2026-11-18): 덱 편성, 카드 뽑기, 10장 뽑기 결과
-	_app.go("cards")
+	# 카드(2026-11-18): 영웅 메뉴의 카드 덱, 상점 영웅 소환 아래의 골드 소환·카드 뽑기, 10장 뽑기 결과
+	_app.go("heroes", {"view": "cards"})
 	await _wait(0.4)
 	await _shot("09f_cards_deck")
-	_app.go("cards", {"tab": "gacha"})
-	await _wait(0.4)
-	await _shot("09g_cards_gacha")
-	var gacha_scroll := _find_scroll(_app.current_screen)
-	if gacha_scroll != null:
-		gacha_scroll.scroll_vertical = 100000
-		await _wait(0.2)
-	await _shot("09i_cards_gold")
 	_app.go("shop")
 	await _wait(0.4)
 	var shop_scroll := _find_scroll(_app.current_screen)
@@ -200,12 +192,23 @@ func _run() -> void:
 		shop_scroll.scroll_vertical = 330
 		await _wait(0.2)
 	await _shot("09j_shop_gold")
-	_app.go("cards", {"tab": "gacha"})
-	await _wait(0.4)
+	if shop_scroll != null:
+		shop_scroll.scroll_vertical = 640
+		await _wait(0.2)
+	await _shot("09g_cards_gacha")
+	if shop_scroll != null:
+		shop_scroll.scroll_vertical = 100000
+		await _wait(0.2)
+	await _shot("09i_cards_gold")
 	_app.profile["gems"] = int(_app.profile.get("gems", 0)) + 1000
-	_app.current_screen._on_paid_draw(10)
-	await _wait(0.6)
-	await _shot("09h_cards_result")
+	var card_panels: Node = null
+	for child in _app.current_screen.get_children():
+		if child.has_method("build_gacha"):
+			card_panels = child
+	if card_panels != null:
+		card_panels._on_paid_draw(10)
+		await _wait(0.6)
+		await _shot("09h_cards_result")
 	_close_dialogs()
 	await _wait(0.3)
 

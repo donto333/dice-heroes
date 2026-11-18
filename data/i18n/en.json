@@ -1736,5 +1736,7 @@
  "골드 소환": "Gold Summon",
  "★·★★ 영웅 소환": "★·★★ Hero Summon",
  "골드로 소환해요. 10회는 ★★ 이상 1명 보장.": "Summon with gold. 10 summons guarantee one ★★ or better.",
- "한 번 더  %s": "Again  %s"
+ "한 번 더  %s": "Again  %s",
+ "아이템 카드를 모아 덱을 짜요": "Collect item cards and build your deck",
+ "뽑은 카드는 영웅 메뉴의 '카드 덱'에서 덱에 넣어야 판에 나와요.": "Add drawn cards to your deck in Heroes → 'Card Deck' to use them in matches."
 }

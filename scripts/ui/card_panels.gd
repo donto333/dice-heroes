@@ -1,39 +1,39 @@
-extends Control
-## 카드 화면(2026-11-18): 아이템 카드 모음·덱 편성과 카드 뽑기.
+extends Node
+## 카드 덱·카드 뽑기 판(2026-11-18). 화면에 붙여 쓰는 도우미:
+## 영웅 화면의 '카드 덱'(build_deck)과 상점 영웅 소환 탭 아래의 '카드 뽑기'(build_gacha)가 함께 쓴다.
 ## 카드는 등급(★ 일반 · ★★ 희귀 · ★★★ 전설)이 있고, 판에서는 덱에 넣은 카드만 뽑힌다.
 ## 규칙은 scripts/rules/profile.gd(draw_cards·toggle_deck·deck_error), 수치는 economy.json의 card_gacha·card_deck.
-## params: {"tab": "deck" | "gacha"}
+## 쓰는 법: var panels := CardPanels.new(); add_child(panels); panels.init(app, "heroes", {"view": "cards"})
+## 덱을 고치거나 뽑기가 끝나면 back_screen(back_params)으로 다시 그린다.
 
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 
-const RAIL := [["deck", "카드 덱", "card"], ["gacha", "카드 뽑기", "summon"]]
 const GRADE_NAMES := {1: "일반", 2: "희귀", 3: "전설"}
 ## 등급별 카드 바탕색
 const GRADE_FILLS := {1: Color("2a4a7a"), 2: Color("1f5f8f"), 3: Color("6a3fa8")}
-## 뽑기 화면에 보여 줄 전설 카드
+## 뽑기 판에 보여 줄 전설 카드
 const SHOWCASE := ["war_god", "silence_bell", "spirit_drain", "iron_will"]
 
 var app
-var _tab := "deck"
+var back_screen := "heroes"
+var back_params: Dictionary = {}
 var _filter := 0
 
 
-func setup(main_app, params: Dictionary) -> void:
+func init(main_app, screen_name: String, params: Dictionary) -> void:
 	app = main_app
-	_tab = str(params.get("tab", "deck"))
+	back_screen = screen_name
+	back_params = params.duplicate()
 	_filter = int(params.get("grade", 0))
-	var cards := _cards()
+
+
+## 카드 수·무료 뽑기 요약(왼쪽 판 아래 요약 카드용)
+func summary_text() -> Array:
 	var owned: int = (app.profile.get("cards", []) as Array).size()
-	var summary := MenuArt.summary("card", "카드 %d / %d" % [owned, cards.size()], "무료 뽑기 %d회" % Profile.free_card_draws_left(app.profile, app.eco))
-	var column := MenuArt.frame(self, app, "ui/bg_heroes", RAIL, _tab, _on_rail, summary)
-	if _tab == "gacha":
-		_build_gacha(column)
-	else:
-		_build_deck(column)
-	MenuArt.skin_buttons(column)
+	return ["카드 %d / %d" % [owned, _cards().size()], "무료 뽑기 %d회" % Profile.free_card_draws_left(app.profile, app.eco)]
 
 
 func _cards() -> Dictionary:
@@ -42,7 +42,7 @@ func _cards() -> Dictionary:
 
 # ---------------------------------------------------------------- 덱
 
-func _build_deck(column: VBoxContainer) -> void:
+func build_deck(column: VBoxContainer) -> void:
 	var cards := _cards()
 	var rule: Dictionary = app.eco.get("card_deck", {})
 	# 덱이 망가져 있으면(예전 저장) 처음 덱으로 맞춘다.
@@ -212,35 +212,29 @@ func _on_card(id: String) -> void:
 		return
 	app.save()
 	app.play("click" if was_in else "good")
-	app.go("cards", {"tab": "deck", "grade": _filter})
+	_back({"grade": _filter})
 
 
 func _on_filter(grade: int) -> void:
 	if grade == _filter:
 		return
 	app.play("tab")
-	app.go("cards", {"tab": "deck", "grade": grade})
+	_back({"grade": grade})
 
 
-func _on_rail(id: String) -> void:
-	if id == _tab:
-		return
-	app.play("tab")
-	app.go("cards", {"tab": id})
+## 원래 화면을 다시 그린다(덱을 고친 뒤·뽑기가 끝난 뒤).
+func _back(extra: Dictionary = {}) -> void:
+	var params := back_params.duplicate()
+	params.merge(extra, true)
+	app.go(back_screen, params)
 
 
 # ---------------------------------------------------------------- 뽑기
 
-func _build_gacha(column: VBoxContainer) -> void:
+## body: 이미 스크롤 안에 있는 세로 줄(상점 소환 탭). 보석 뽑기 판 + 골드 뽑기 줄 + 안내 글을 붙인다.
+func build_gacha(body: VBoxContainer) -> void:
 	var table: Dictionary = app.eco.get("card_gacha", {})
 	var cards := _cards()
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	column.add_child(scroll)
-	var body := Kit.vbox(12)
-	Kit.expand(body)
-	scroll.add_child(body)
 	var panel := Kit.panel(Color("4a2a9a"), Kit.GOLD, 16)
 	body.add_child(panel)
 	var inner := Kit.vbox(12)
@@ -279,7 +273,7 @@ func _build_gacha(column: VBoxContainer) -> void:
 	buttons.add_child(Kit.expand(ten))
 	Kit.shimmer(ten)
 	body.add_child(_gold_panel())
-	body.add_child(Kit.para("뽑은 카드는 '카드 덱'에서 덱에 넣어야 판에 나와요.", 17, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	body.add_child(Kit.para("뽑은 카드는 영웅 메뉴의 '카드 덱'에서 덱에 넣어야 판에 나와요.", 17, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
 
 ## 골드 카드 뽑기(2026-11-18 사용자 요청): ★·★★ 카드만 나온다. ★★★ 보장 횟수는 세지 않는다.
@@ -363,7 +357,9 @@ func _pull(count: int, gold: bool = false) -> void:
 	if refund > 0:
 		body.add_child(Kit.para("겹친 카드는 골드로 바뀌었어요: %s" % Kit.money_text("gold", refund), 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var host = app
-	host.dialog("카드 뽑기 결과", body, [["확인", Kit.PRIMARY, func() -> void: host.go("cards", {"tab": "gacha"})]], 900.0 if results.size() > 1 else 420.0)
+	var screen_name := back_screen
+	var params := back_params.duplicate()
+	host.dialog("카드 뽑기 결과", body, [["확인", Kit.PRIMARY, func() -> void: host.go(screen_name, params)]], 900.0 if results.size() > 1 else 420.0)
 	# 한 장씩 차례로 나타나게(자동 사진·저사양 모드면 곧바로)
 	if MenuArt.calm(app):
 		return

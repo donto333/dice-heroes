@@ -8,6 +8,7 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
+const CardPanels := preload("res://scripts/ui/card_panels.gd")
 
 ## 분류 → 알약 색
 const CATEGORY_PILLS := {"": "blue", "영웅": "red", "위인": "blue", "신화": "purple", "근현대": "green"}
@@ -27,6 +28,16 @@ func setup(main_app, params: Dictionary) -> void:
 	_filter = str(params.get("filter", ""))
 	# 시안식 틀: 왼쪽 세로 판에 영웅 목록·앨범·파티 편성, 오른쪽 큰 금테 판.
 	var rail := [["list", "영웅 목록", "heroes"], ["album", "영웅 앨범", "album"], ["party", "파티 편성", "swords"], ["cards", "카드 덱", "card"]]
+	# 카드 덱(2026-11-18 사용자 요청): 영웅 메뉴 안에서 덱을 짠다(params.view == "cards").
+	if str(params.get("view", "")) == "cards":
+		var panels := CardPanels.new()
+		add_child(panels)
+		panels.init(app, "heroes", {"view": "cards", "grade": int(params.get("grade", 0))})
+		var lines: Array = panels.summary_text()
+		var deck_column := MenuArt.frame(self, app, "ui/bg_heroes", rail, "cards", _on_rail, MenuArt.summary("card", str(lines[0]), str(lines[1])))
+		panels.build_deck(deck_column)
+		MenuArt.skin_buttons(deck_column)
+		return
 	var column := MenuArt.frame(self, app, "ui/bg_heroes", rail, "list", _on_rail, _summary_card())
 
 	var header := Kit.hbox(10)
@@ -457,8 +468,11 @@ func _on_rail(id: String) -> void:
 		"party":
 			_on_edit_party()
 		"cards":
-			app.play("click")
-			app.go("cards")
+			app.play("tab")
+			app.go("heroes", {"view": "cards"})
+		"list":
+			app.play("tab")
+			app.go("heroes")
 
 
 func _on_tab(screen_name: String) -> void:
