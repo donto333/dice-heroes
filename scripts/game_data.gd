@@ -115,6 +115,13 @@ static func die_face(value: int, kind: String = "white") -> Texture2D:
 	return _cached_texture("die/%s_%d" % [kind, value], "res://assets/dice/%s_%d.png" % [kind, clampi(value, 1, 6)])
 
 
+## 주사위 꾸미기(스킨) 전용 그림(assets/dice/<스킨 id>_<눈>.png). 기본 주사위는 white 그림.
+## 전용 그림이 없으면 null이고, 부르는 쪽은 흰 주사위 그림에 스킨 색을 입혀 대신한다.
+static func skin_die_face(skin: Dictionary, value: int) -> Texture2D:
+	var id := str(skin.get("id", "classic"))
+	return die_face(value, "white" if id == "classic" or id == "" else id)
+
+
 ## 판 위 물건 그림(굴리기 버튼, 받침대, 보물상자, 깃발...). 없으면 null.
 static func object(name: String) -> Texture2D:
 	return _cached_texture("object/" + name, OBJECT_PATH % name)
