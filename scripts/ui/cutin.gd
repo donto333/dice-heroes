@@ -13,6 +13,8 @@ const OUT_TIME := 0.18
 var _band: Panel
 var _style: StyleBoxFlat
 var _face: Control
+## ★★★ 영웅의 스킬 장면 그림(assets/cutins/<id>.png, 바탕 없는 상반신). 있으면 초상화 대신 띠 위로 크게 튀어나오게 그린다.
+var _hero_art: TextureRect
 var _title: Label
 var _note: Label
 ## 어빌리티 아이콘(금테 메달). 기술 설명 오른쪽에 둔다.
@@ -66,6 +68,14 @@ func _ready() -> void:
 	_face.position = Vector2(60, -44)
 	_face.size = Vector2(260, 298)
 	_band.add_child(_face)
+	_hero_art = TextureRect.new()
+	_hero_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_hero_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_hero_art.position = Vector2(-10, -150)
+	_hero_art.size = Vector2(380, 380)
+	_hero_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hero_art.visible = false
+	_band.add_child(_hero_art)
 	_title = _label(64, 16)
 	_title.position = Vector2(340, 34)
 	_band.add_child(_title)
@@ -130,6 +140,9 @@ func play(character: Dictionary, title: String, note: String, color: Color) -> v
 	_time = 0.0
 	_face.border = color
 	_face.show_character(character, color.darkened(0.5))
+	_hero_art.texture = GameData.cutin_art(str(character.get("id", "")))
+	_hero_art.visible = _hero_art.texture != null
+	_face.visible = not _hero_art.visible
 	_title.text = title
 	_title.add_theme_color_override("font_color", Color("ffcf4d"))
 	_note.text = note
