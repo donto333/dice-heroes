@@ -451,7 +451,7 @@ func _add_tiles(badges: Dictionary) -> void:
 	column.add_child(row3)
 	var free_summon := Profile.free_summons_left(app.profile, app.eco) > 0
 	var menus := [
-		["영웅", "HEROES", "ic_heroes_helmet", "" if not bool(badges.get("heroes", false)) else "dot", "heroes"],
+		["편성", "FORMATION", "ic_heroes_helmet", "" if not bool(badges.get("heroes", false)) else "dot", "heroes"],
 		["상점", "SHOP", "ic_shop_stall", "무료 소환" if free_summon else ("dot" if bool(badges.get("shop", false)) else ""), "shop"],
 		["미션", "MISSION", "ic_mission_board", "dot" if bool(badges.get("missions", false)) else "", "missions"],
 		["시즌 패스", "SEASON PASS", "ic_pass_ticket", "dot" if Profile.pass_claimable_count(app.profile, app.eco) > 0 else "", "pass"],
