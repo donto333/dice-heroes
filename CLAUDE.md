@@ -66,6 +66,7 @@
 - 어빌리티 아이콘(2026-11-18, GPT 그림 활용 기획 2단계): 48개 스킬마다 금테 메달 아이콘 `assets/ability_icons/<어빌리티 id>.png`(256, 고리 색 빨강 공격·파랑 방어·초록 이동·보라 방해·금 지원). `GameData.ability_icon(id)`·`ability_icon_rect(id, 크기)`로 불러 대전 스킬 카드(초상화 귀퉁이 메달, 버튼 메타 badge)·스킬 설명 창·스킬 알림 띠·컷인(`cutin.gd`의 _icon)·영웅 상세 어빌리티 칸에 쓴다. ChatGPT 웹(크롬, 대화 '아이콘 제작')에서 4칸×3줄 판 4장으로 그려 `tools/import_ability_icons.py <판 폴더>`(sheet1~4.png, abilities.json 순서, 메달을 덩어리로 찾아 자름)로 넣었다.
 - ★★★ 스킬 장면 그림(2026-11-18, GPT 그림 활용 기획 3단계): `assets/cutins/<영웅 id>.png`(512 정사각, 바탕 없는 상반신)가 있으면 컷인(`cutin.gd`의 _hero_art)이 초상화 대신 띠 위로 튀어나오게 그린다(`GameData.cutin_art`). 주문서 `codex_jobs/job_cutin.md`, 넣는 도구 `tools/import_cutins.py <그림 폴더>`.
 - 업적 아이콘(2026-11-18, GPT 그림 활용 기획 4단계): 업적 종류(stat)별 금테 메달 12종 `assets/ui_icons/ach_*.png`(192), 미션 화면 업적 줄이 `missions_screen.gd`의 ACHIEVEMENT_ICONS로 고른다(없으면 trophy). Codex 웹에서 4×3 판 한 장으로 그려 `tools/import_icon_sheet.py <판> <폴더> <이름들> [크기]`(아이콘 판을 덩어리로 잘라 넣는 공용 도구)로 넣었다.
+- 기다림 화면 도움말 그림(2026-11-18, GPT 그림 활용 기획 5단계): `loading_overlay.gd`의 TIPS 12개와 같은 순서의 그림 `assets/art/tips/tip_01~12.png`(`GameData.tip_art`). 도움말을 보여 줄 때 그림은 왼쪽 아래, 글은 그 오른쪽. TIPS를 바꾸거나 늘리면 그림도 같은 번호로 맞춘다. Codex 웹에서 4×3 판 한 장으로 그려 잘라 넣음.
 - 매일 바뀌는 것(날짜 씨앗): 오늘의 미션 6개(`Profile.active_missions`), 오늘의 특가, 오늘의 도전(상대·맵). 하루 기록은 `profile["daily"]`.
 
 ## 게임 요약

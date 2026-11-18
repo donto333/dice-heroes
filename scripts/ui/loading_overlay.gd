@@ -24,6 +24,8 @@ const TIPS := [
 
 var _message: Label
 var _tip: Label
+## 도움말 그림(assets/art/tips/tip_NN.png, TIPS와 같은 순서). 그림이 있으면 왼쪽 아래에 보이고 도움말 글은 그 오른쪽에 둔다.
+var _tip_art: TextureRect
 var _rng := RandomNumberGenerator.new()
 var _shows := 0
 ## 바탕 그림과 가운데 돌아가는 금테 주사위 문양(wait_backdrop.gd).
@@ -55,6 +57,19 @@ func _ready() -> void:
 	_tip.anchor_bottom = 0.8
 	_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_tip)
+	_tip_art = TextureRect.new()
+	_tip_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_tip_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_tip_art.anchor_left = 0.04
+	_tip_art.anchor_right = 0.04
+	_tip_art.anchor_top = 1.0
+	_tip_art.anchor_bottom = 1.0
+	_tip_art.offset_right = 250
+	_tip_art.offset_top = -240
+	_tip_art.offset_bottom = -26
+	_tip_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_art.visible = false
+	add_child(_tip_art)
 
 
 ## message를 seconds초 동안 보여 주고 사라진다. 끝날 때까지 기다릴 수 있다.
@@ -63,7 +78,16 @@ func show_for(message: String, seconds: float, with_tip: bool = false) -> void:
 	_shows += 1
 	var ticket := _shows
 	_message.text = message
-	_tip.text = "도움말 · %s" % TIPS[_rng.randi_range(0, TIPS.size() - 1)] if with_tip else ""
+	var tip_index := _rng.randi_range(0, TIPS.size() - 1)
+	_tip.text = "도움말 · %s" % TIPS[tip_index] if with_tip else ""
+	var picture: Texture2D = GameData.tip_art(tip_index + 1) if with_tip else null
+	_tip_art.texture = picture
+	_tip_art.visible = picture != null
+	# 그림이 있으면 도움말 글을 그림 오른쪽 아래로 옮긴다.
+	_tip.anchor_left = 0.26 if picture != null else 0.08
+	_tip.anchor_top = 0.84 if picture != null else 0.8
+	_tip.anchor_bottom = _tip.anchor_top
+	_tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if picture != null else HORIZONTAL_ALIGNMENT_CENTER
 	get_parent().move_child(self, get_parent().get_child_count() - 1)
 	modulate.a = 0.0
 	visible = true
