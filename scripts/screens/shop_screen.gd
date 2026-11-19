@@ -14,6 +14,7 @@ const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const OddsWindow := preload("res://scripts/ui/odds_window.gd")
 const PurchaseWindows := preload("res://scripts/ui/purchase_windows.gd")
+const AdPlayer := preload("res://scripts/ui/ad_player.gd")
 const CardPanels := preload("res://scripts/ui/card_panels.gd")
 const PassPanel := preload("res://scripts/ui/pass_panel.gd")
 
@@ -408,6 +409,24 @@ func _gem_pack_panel() -> Control:
 	history.custom_minimum_size = Vector2(132, 40)
 	history.pressed.connect(func() -> void: PurchaseWindows.history(app))
 	wallet.add_child(history)
+	# 보상형 광고: 보고 나면 보석(2026-11-19 사용자 결정 100개)
+	var ad_gems := int((app.eco.get("ads", {}).get("placements", {}).get("gems", {}) as Dictionary).get("reward", {}).get("gems", 0))
+	if ad_gems > 0:
+		var ad_line := MenuArt.row(10)
+		group.add_child(ad_line)
+		var ad_row := Kit.hbox(10)
+		ad_line.add_child(ad_row)
+		ad_row.add_child(Kit.icon("gem", 44.0))
+		var ad_words := Kit.vbox(2)
+		ad_row.add_child(Kit.expand(ad_words))
+		ad_words.add_child(Kit.label("광고 보고 보석 %d개" % ad_gems, 22, Color.WHITE))
+		ad_words.add_child(Kit.label("오늘 %d번 남음" % Profile.ads_left(app.profile, app.eco, "gems"), 16, Kit.MUTED))
+		var ad_button := MenuArt.pill_button("광고 보기", "purple", "m")
+		ad_button.custom_minimum_size = Vector2(160, 52)
+		ad_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		ad_button.disabled = Profile.ads_left(app.profile, app.eco, "gems") <= 0
+		ad_button.pressed.connect(_on_ad_gems.bind(ad_button))
+		ad_row.add_child(ad_button)
 	if not open:
 		group.add_child(Kit.para("정식 버전에서 열릴 상품이에요. 지금은 살 수 없고, 보석은 출석·미션·업적·패스·우편으로 모을 수 있어요.", 18, Kit.MUTED))
 	var grid := GridContainer.new()
@@ -456,6 +475,27 @@ func _gem_pack_panel() -> Control:
 		row.add_child(soon)
 		group.add_child(line)
 	return group
+
+
+func _on_ad_gems(button: Button) -> void:
+	if Profile.ads_left(app.profile, app.eco, "gems") <= 0:
+		app.toast("오늘 볼 수 있는 광고를 다 봤어요.")
+		return
+	app.play("click")
+	var host = app
+	var ad := AdPlayer.new()
+	host.add_child(ad)
+	if not await ad.play(host):
+		return
+	var reward := Profile.watch_ad(host.profile, host.eco, "gems")
+	host.save()
+	if reward.is_empty():
+		return
+	host.play("reward")
+	if is_instance_valid(button):
+		MenuArt.fly_reward(host, button, reward)
+	host.toast("광고 보상: %s" % Kit.reward_line(reward))
+	host.go("shop", {"tab": "gems"})
 
 
 func _exchange_panel() -> Control:

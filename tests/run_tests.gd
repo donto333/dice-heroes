@@ -73,6 +73,7 @@ func _init() -> void:
 	_test_paid_gems()
 	_test_pickup()
 	_test_pass_premium_double()
+	_test_ads()
 	_test_card_album()
 	_test_pass_by_fight()
 	_test_balance()
@@ -2266,6 +2267,36 @@ func _test_pickup() -> void:
 	var first: Dictionary = odds["groups"][0]["items"][0]
 	_check(bool(first["pickup"]) and str(first["id"]) == pickup, "확률표 맨 위가 픽업 영웅이 아님")
 	_check(absf(float(first["rate"]) - float(eco["summon"]["rates"]["3"]) * float(table["share"]) / 100.0) < 0.001, "픽업 영웅 확률이 틀림")
+
+
+## 보상형 광고(2026-11-19): 자리별·하루 전체 한도, 보석 100개, 2배 보상, 다음 날 초기화.
+func _test_ads() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("광고", eco)
+	Profile.ensure_daily(profile, "2026-11-19")
+	var gems := int(profile["gems"])
+	_check(Profile.ads_left(profile, eco, "gems") == 1, "보석 광고가 하루 1번이 아님")
+	var reward := Profile.watch_ad(profile, eco, "gems")
+	_check(int(reward.get("gems", 0)) == 100 and int(profile["gems"]) == gems + 100, "광고 보석 100개가 들어오지 않음")
+	_check(Profile.free_gems(profile) == int(profile["gems"]), "광고 보석은 무료 보석이어야 함")
+	_check(Profile.watch_ad(profile, eco, "gems").is_empty(), "보석 광고를 하루 한도보다 더 봄")
+	var gold := int(profile["gold"])
+	var double := Profile.watch_ad(profile, eco, "gold_double", {"gold": 120})
+	_check(int(double.get("gold", 0)) == 120 and int(profile["gold"]) == gold + 120, "골드 2배 광고 보상이 틀림")
+	_check(Profile.watch_ad(profile, eco, "없는자리").is_empty(), "없는 광고 자리가 보상을 줌")
+	var spins := Profile.roulette_spins(profile)
+	_check(not Profile.spin_roulette(profile, eco, RandomNumberGenerator.new(), true).is_empty(), "광고 룰렛이 돌지 않음")
+	_check(Profile.roulette_spins(profile) == spins, "광고 룰렛이 하루 룰렛 횟수를 씀")
+	# 하루 전체 한도
+	var seen := 0
+	for placement in ["gold_double", "gold_double", "roulette", "idle_double", "card_draw", "gold_double"]:
+		if Profile.ads_left(profile, eco, placement) > 0:
+			Profile.watch_ad(profile, eco, placement)
+	for placement in eco["ads"]["placements"]:
+		seen += int(profile["daily"]["ads"].get(placement, 0))
+	_check(seen <= int(eco["ads"]["daily_max"]), "광고를 하루 전체 한도보다 많이 봄")
+	Profile.ensure_daily(profile, "2026-11-20")
+	_check(Profile.ads_left(profile, eco, "gems") == 1, "다음 날 광고 횟수가 초기화되지 않음")
 
 
 ## 카드 앨범(2026-11-18): 등급별 모은 수에 따라 보상, 한 번만 받음.

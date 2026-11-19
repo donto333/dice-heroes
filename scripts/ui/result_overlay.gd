@@ -6,6 +6,8 @@ extends Control
 signal retry_pressed
 ## 왼쪽 버튼(로비로)
 signal change_party_pressed
+## 보상형 광고 버튼(골드 2배, 2026-11-19)
+signal ad_pressed
 
 const Kit := preload("res://scripts/ui/kit.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
@@ -24,6 +26,7 @@ var _title: Label
 var _subtitle: Label
 var _panel: PanelContainer
 var _confetti: Control
+var _ad: Button
 var _again: Button
 var _mvp_box: Control
 var _mvp_face: Control
@@ -171,12 +174,24 @@ func _ready() -> void:
 	change.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	change.pressed.connect(_on_change_pressed)
 	buttons.add_child(change)
+	_ad = MenuArt.pill_button("", "purple", "l")
+	_ad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_ad.size_flags_stretch_ratio = 1.4
+	_ad.visible = false
+	_ad.pressed.connect(func() -> void: ad_pressed.emit())
+	buttons.add_child(_ad)
 	var again := MenuArt.pill_button("다시 하기", "gold", "l")
 	_again = again
 	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.size_flags_stretch_ratio = 1.5
 	again.pressed.connect(_on_again_pressed)
 	buttons.add_child(again)
+
+
+## 광고를 보고 보상을 받은 뒤 버튼을 끈다.
+func ad_done(text: String) -> void:
+	_ad.text = text
+	_ad.disabled = true
 
 
 func _label(font_size: int) -> Label:
@@ -197,6 +212,9 @@ func _label(font_size: int) -> Label:
 ##   "mvp": 캐릭터, "mvp_note": "ATTACK · 전투 3승", "again_text": 오른쪽 버튼 글
 func show_result(outcome: String, subtitle: String, details: PackedStringArray, extras: Dictionary = {}) -> void:
 	_again.text = str(extras.get("again_text", "다시 하기"))
+	_ad.text = str(extras.get("ad_text", ""))
+	_ad.visible = _ad.text != ""
+	_ad.disabled = false
 	var mvp: Dictionary = extras.get("mvp", {})
 	_mvp_box.visible = not mvp.is_empty()
 	if not mvp.is_empty():

@@ -628,7 +628,7 @@ static func _add_stat(profile: Dictionary, key: String, amount: int) -> void:
 static func ensure_daily(profile: Dictionary, today: String) -> bool:
 	if str(profile["daily"].get("date", "")) == today:
 		return false
-	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false, "sweeps": 0, "free_card_draws": 0}
+	profile["daily"] = {"date": today, "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false, "sweeps": 0, "free_card_draws": 0, "ads": {}}
 	return true
 
 
@@ -1009,9 +1009,10 @@ static func can_spin_free(profile: Dictionary, eco: Dictionary) -> bool:
 
 
 ## 룰렛을 돌린다. 못 돌리면 {}. 돌리면 {"index": 걸린 칸, "reward": 보상, "cost": 낸 보석}
-static func spin_roulette(profile: Dictionary, eco: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+## by_ad: 광고를 보고 돌리는 한 번(보석·하루 횟수와 상관없음, 광고 횟수는 watch_ad로 따로 셈).
+static func spin_roulette(profile: Dictionary, eco: Dictionary, rng: RandomNumberGenerator, by_ad: bool = false) -> Dictionary:
 	var slots: Array = eco.get("roulette", {}).get("slots", [])
-	var cost := roulette_cost(profile, eco)
+	var cost := 0 if by_ad else roulette_cost(profile, eco)
 	if slots.is_empty() or cost < 0:
 		return {}
 	if cost > 0 and not pay(profile, "gems", cost):
@@ -1026,10 +1027,43 @@ static func spin_roulette(profile: Dictionary, eco: Dictionary, rng: RandomNumbe
 		if roll <= 0:
 			index = slot_index
 			break
-	profile["daily"]["roulette_spins"] = roulette_spins(profile) + 1
+	if not by_ad:
+		profile["daily"]["roulette_spins"] = roulette_spins(profile) + 1
 	add_progress(profile, eco, "roulette", 1)
 	grant(profile, slots[index]["reward"])
 	return {"index": index, "reward": slots[index]["reward"], "cost": cost}
+
+
+# ---------------------------------------------------------------- 보상형 광고(2026-11-19)
+
+## 오늘 이 자리(economy.json ads.placements)에서 광고를 더 볼 수 있는 횟수. 하루 전체 한도도 함께 본다.
+static func ads_left(profile: Dictionary, eco: Dictionary, placement: String) -> int:
+	var table: Dictionary = eco.get("ads", {})
+	var spot: Dictionary = table.get("placements", {}).get(placement, {})
+	if spot.is_empty():
+		return 0
+	var seen: Dictionary = profile.get("daily", {}).get("ads", {})
+	var total := 0
+	for key in seen:
+		total += int(seen[key])
+	var spot_left := int(spot.get("per_day", 0)) - int(seen.get(placement, 0))
+	var day_left := int(table.get("daily_max", 0)) - total
+	return maxi(mini(spot_left, day_left), 0)
+
+
+## 광고를 끝까지 본 뒤 부른다. 횟수를 세고, 그 자리 보상(placements의 reward 또는 extra)을 준다.
+## extra: 판 끝 골드 2배·원정 2배처럼 그때그때 정해지는 보상. 못 보면(한도) {}.
+static func watch_ad(profile: Dictionary, eco: Dictionary, placement: String, extra: Dictionary = {}) -> Dictionary:
+	if ads_left(profile, eco, placement) <= 0:
+		return {}
+	if not profile["daily"].has("ads"):
+		profile["daily"]["ads"] = {}
+	profile["daily"]["ads"][placement] = int(profile["daily"]["ads"].get(placement, 0)) + 1
+	var reward: Dictionary = (eco.get("ads", {}).get("placements", {}).get(placement, {}) as Dictionary).get("reward", {}).duplicate()
+	for key in extra:
+		reward[key] = int(reward.get(key, 0)) + int(extra[key])
+	grant(profile, reward)
+	return reward
 
 
 # ---------------------------------------------------------------- 연습 리그 순위표

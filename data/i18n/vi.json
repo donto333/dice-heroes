@@ -1940,5 +1940,20 @@
  "픽업 소환이 생겼어요: 2주마다 ★★★ 영웅 한 명의 확률이 올라가고, ★★★ 확정도 그 영웅으로 나와요.": "Đã có Triệu hồi tăng tỉ lệ: mỗi 2 tuần một anh hùng ★★★ được tăng tỉ lệ, và ★★★ bảo đảm sẽ là anh hùng đó.",
  "시즌 패스 혜택: 보상 %d배 (광고 없이)": "Quyền lợi Thẻ mùa: phần thưởng x%d (không cần xem quảng cáo)",
  "프리미엄 패스 혜택: 오른쪽 줄 보상을 모두 받고, 판이 끝날 때 골드·경험치를 광고 없이 %d배로 받아요.": "Quyền lợi Thẻ cao cấp: nhận mọi phần thưởng ở cột bên phải, và nhận vàng, kinh nghiệm x%d sau mỗi trận mà không cần xem quảng cáo.",
- "프리미엄 패스를 사용 중이에요.": "Thẻ cao cấp của bạn đang hoạt động."
+ "프리미엄 패스를 사용 중이에요.": "Thẻ cao cấp của bạn đang hoạt động.",
+ "광고 보고 한 번 더 (오늘 %d회)": "Xem quảng cáo quay thêm (còn %d hôm nay)",
+ "광고를 보면 골드 %d을 한 번 더 받아요.": "Xem quảng cáo để nhận thêm %d vàng.",
+ "원정 보상": "Phần thưởng viễn chinh",
+ "광고 보고 2배": "Xem quảng cáo x2",
+ "광고 보상: %s": "Thưởng quảng cáo: %s",
+ "광고 보고 골드 +%s": "Xem quảng cáo: vàng +%s",
+ "골드 +%s 받았어요": "Đã nhận vàng +%s",
+ "광고 보고 보석 %d개": "Xem quảng cáo nhận %d ngọc",
+ "광고 보기": "Xem quảng cáo",
+ "오늘 볼 수 있는 광고를 다 봤어요.": "Bạn đã xem hết quảng cáo hôm nay.",
+ "광고": "Quảng cáo",
+ "시험 광고예요. 정식 출시 때는 여기에 진짜 광고가 나와요.": "Đây là quảng cáo thử. Khi ra mắt sẽ có quảng cáo thật ở đây.",
+ "%d초 뒤에 보상을 받아요": "Nhận thưởng sau %d giây",
+ "광고 보고 무료 뽑기 (오늘 %d회)": "Xem quảng cáo rút miễn phí (còn %d hôm nay)",
+ "보상형 광고가 생겼어요: 광고를 보면 보석 100개, 판 끝 골드 2배, 룰렛·카드 뽑기 한 번 더, 원정 골드 2배를 받아요(지금은 시험 광고).": "Đã có quảng cáo có thưởng: xem để nhận 100 ngọc, x2 vàng sau trận, thêm lượt quay/rút thẻ và x2 vàng viễn chinh (hiện là quảng cáo thử)."
 }
