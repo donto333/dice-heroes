@@ -118,6 +118,7 @@ func _init() -> void:
 	_test_presets()
 	_test_coupon_and_backup()
 	_test_lang()
+	_test_forward_spacing()
 	if _failures.is_empty():
 		print("모든 검사 통과")
 		quit(0)
@@ -2362,3 +2363,27 @@ func _test_card_album() -> void:
 	_check(int(reward.get("gems", 0)) > 0 and int(profile["gems"]) > gems_before, "★★★ 카드 앨범 보상을 받지 못함")
 	_check(Profile.claim_card_album(profile, eco, cards, 3).is_empty(), "카드 앨범 보상을 두 번 받음")
 	_check(Profile.card_album_has_claimable(profile, eco, cards), "★·★★ 카드 앨범 보상이 남았는데 없다고 함")
+
+
+## 맵: 전진 칸에서 5칸 안에(어느 갈래로든) 또 전진 칸이 있으면 안 된다(연달아 날아가는 구조 금지).
+func _test_forward_spacing() -> void:
+	var paths := ["res://data/board.json"]
+	for file in DirAccess.get_files_at("res://data/boards"):
+		if file.ends_with(".json"):
+			paths.append("res://data/boards/" + file)
+	for path in paths:
+		var board = JSON.parse_string(FileAccess.get_file_as_string(path))
+		var nodes := {}
+		for node in board["nodes"]:
+			nodes[int(node["id"])] = node
+		for id in nodes:
+			if nodes[id].get("type", "") != "forward":
+				continue
+			var frontier: Array = [id]
+			for step in 5:
+				var ahead: Array = []
+				for cur in frontier:
+					for nxt in nodes[cur].get("next", []):
+						ahead.append(int(nxt))
+						_check(nodes[int(nxt)].get("type", "") != "forward", "전진 칸이 연달아 있음: %s %d→%d" % [path, id, int(nxt)])
+				frontier = ahead
