@@ -465,11 +465,11 @@ func _test_checkpoints() -> void:
 	_check(int(game.players[0]["pos"]) == 12, "험한 길에서 4칸 물러나면 12번이어야 함")
 
 
-## 카드 33종이 모두 알려진 효과를 쓰고, 써도 판이 깨지지 않는지 확인한다.
+## 카드 58종이 모두 알려진 효과를 쓰고, 써도 판이 깨지지 않는지 확인한다.
 func _test_cards() -> void:
 	var known := EFFECT_TYPES
 	var cards: Dictionary = _data["cards"]
-	_check(cards.size() == 33, "카드가 33종이 아님: %d" % cards.size())
+	_check(cards.size() == 58, "카드가 58종이 아님: %d" % cards.size())
 	for card_id in cards:
 		var card: Dictionary = cards[card_id]
 		_check(int(card.get("grade", 0)) in [1, 2, 3], "카드 등급이 1~3이 아님: " + card_id)

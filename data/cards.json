@@ -1,5 +1,5 @@
 {
-  "_comment": "아이템 카드 33종. grade: 1=★ 일반, 2=★★ 희귀, 3=★★★ 전설(카드 뽑기 확률·덱 제한에 씀). effect.type은 scripts/rules/game.gd의 _apply_effect()에서 처리한다.",
+  "_comment": "아이템 카드 58종. grade: 1=★ 일반, 2=★★ 희귀, 3=★★★ 전설(카드 뽑기 확률·덱 제한에 씀). effect.type은 scripts/rules/game.gd의 _apply_effect()에서 처리한다.",
   "cards": {
     "swift_horse": {
       "name": "천리마",
@@ -323,6 +323,367 @@
         "amount": 1,
         "turns": 3
       }
+    },
+    "counter_stance": {
+      "name": "반격 자세",
+      "text": "다음 내 차례까지 방어에 성공하면 상대를 3칸 더 물러나게 함",
+      "effect": {
+        "type": "counter",
+        "amount": 1,
+        "turns": 1
+      },
+      "grade": 1
+    },
+    "chase_horn": {
+      "name": "추격 나팔",
+      "text": "이번 턴 전투에서 이기면 3칸 더 전진",
+      "effect": {
+        "type": "chase",
+        "amount": 1,
+        "turns": 1
+      },
+      "grade": 1
+    },
+    "smoke_screen": {
+      "name": "연막",
+      "text": "이번 턴 상대(관문지기·적 포함)의 전투 주사위 -1개",
+      "effect": {
+        "type": "enemy_dice_minus",
+        "amount": 1,
+        "turns": 1
+      },
+      "grade": 1
+    },
+    "dagger": {
+      "name": "단검",
+      "text": "이번 턴 공격 주사위 눈이 최소 2",
+      "effect": {
+        "type": "atk_floor",
+        "amount": 2,
+        "turns": 1
+      },
+      "grade": 1
+    },
+    "meditation": {
+      "name": "명상",
+      "text": "2턴 동안 게이지가 50% 더 빨리 참",
+      "effect": {
+        "type": "gauge_boost",
+        "amount": 50,
+        "turns": 2
+      },
+      "grade": 1
+    },
+    "leap": {
+      "name": "도약",
+      "text": "지금 바로 2칸 앞으로",
+      "effect": {
+        "type": "advance",
+        "amount": 2
+      },
+      "grade": 1
+    },
+    "shove": {
+      "name": "밀치기",
+      "text": "상대를 2칸 뒤로 밀어냄",
+      "effect": {
+        "type": "push_enemy",
+        "amount": 2
+      },
+      "grade": 1
+    },
+    "leather_shield": {
+      "name": "가죽 방패",
+      "text": "내 다음다음 차례까지 방어 합계 +2",
+      "effect": {
+        "type": "def_bonus",
+        "amount": 2,
+        "turns": 2
+      },
+      "grade": 1
+    },
+    "plunder": {
+      "name": "약탈",
+      "text": "이번 턴 상대 말과 싸워 이기면 상대 팀 게이지 20% 빼앗음",
+      "effect": {
+        "type": "drain",
+        "amount": 20,
+        "turns": 1
+      },
+      "grade": 1
+    },
+    "messenger": {
+      "name": "전령",
+      "text": "카드 1장 받기",
+      "effect": {
+        "type": "draw_card",
+        "amount": 1
+      },
+      "grade": 1
+    },
+    "twin_snare": {
+      "name": "쌍덫",
+      "text": "지금 칸과 바로 지나온 칸에 덫 2개. 상대가 멈추면 1턴 쉬기",
+      "effect": {
+        "type": "trap",
+        "amount": 2
+      },
+      "grade": 2
+    },
+    "chariot": {
+      "name": "전차",
+      "text": "이번 턴 이동 주사위 +1개, 이동 +2칸",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "move_dice",
+            "amount": 1,
+            "turns": 1
+          },
+          {
+            "type": "move_plus",
+            "amount": 2,
+            "turns": 1
+          }
+        ]
+      },
+      "grade": 2
+    },
+    "tower_shield": {
+      "name": "대방패",
+      "text": "다음 내 차례까지 방어 주사위 +1개, 방어 합계 +2",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "def_dice",
+            "amount": 1,
+            "turns": 1
+          },
+          {
+            "type": "def_bonus",
+            "amount": 2,
+            "turns": 1
+          }
+        ]
+      },
+      "grade": 2
+    },
+    "poison_arrow": {
+      "name": "독화살",
+      "text": "이번 턴 상대(관문지기·적 포함)의 전투 주사위 -2개",
+      "effect": {
+        "type": "enemy_dice_minus",
+        "amount": 2,
+        "turns": 1
+      },
+      "grade": 2
+    },
+    "hawk_eye": {
+      "name": "매의 눈",
+      "text": "이동 주사위를 두 번 굴려 큰 쪽으로, 눈은 최소 2",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "move_best",
+            "amount": 1,
+            "turns": 1
+          },
+          {
+            "type": "move_floor",
+            "amount": 2,
+            "turns": 1
+          }
+        ]
+      },
+      "grade": 2
+    },
+    "cavalry_charge": {
+      "name": "기마 돌격",
+      "text": "이번 턴 공격 주사위 +1개, 이기면 3칸 더 전진",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "atk_dice",
+            "amount": 1,
+            "turns": 1
+          },
+          {
+            "type": "chase",
+            "amount": 1,
+            "turns": 1
+          }
+        ]
+      },
+      "grade": 2
+    },
+    "phalanx": {
+      "name": "방진",
+      "text": "다음 내 차례까지 방어 주사위 눈이 최소 2, 막아내면 상대를 3칸 더 물러나게 함",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "def_floor",
+            "amount": 2,
+            "turns": 1
+          },
+          {
+            "type": "counter",
+            "amount": 1,
+            "turns": 1
+          }
+        ]
+      },
+      "grade": 2
+    },
+    "quake": {
+      "name": "지진",
+      "text": "상대를 3칸 뒤로 밀고, 상대의 다음 이동 주사위 -1개",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "push_enemy",
+            "amount": 3
+          },
+          {
+            "type": "enemy_move_dice",
+            "amount": -1
+          }
+        ]
+      },
+      "grade": 2
+    },
+    "chi_gather": {
+      "name": "기 모으기",
+      "text": "우리 팀 게이지 +30%, 2턴 동안 게이지가 50% 더 빨리 참",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "gauge_team",
+            "amount": 30
+          },
+          {
+            "type": "gauge_boost",
+            "amount": 50,
+            "turns": 2
+          }
+        ]
+      },
+      "grade": 2
+    },
+    "sure_shot": {
+      "name": "백발백중",
+      "text": "이번 턴 공격 주사위 눈이 최소 3",
+      "effect": {
+        "type": "atk_floor",
+        "amount": 3,
+        "turns": 1
+      },
+      "grade": 2
+    },
+    "thunder_march": {
+      "name": "천둥 진군",
+      "text": "지금 바로 4칸 앞으로, 상대를 3칸 뒤로 밀어냄",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "advance",
+            "amount": 4
+          },
+          {
+            "type": "push_enemy",
+            "amount": 3
+          }
+        ]
+      },
+      "grade": 3
+    },
+    "aegis": {
+      "name": "불사의 방패",
+      "text": "내 다음다음 차례까지 방어 주사위 +2개, 그동안 거점으로 돌아갈 일을 한 번 막음",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "def_dice",
+            "amount": 2,
+            "turns": 2
+          },
+          {
+            "type": "stand_ground",
+            "amount": 1,
+            "turns": 2
+          }
+        ]
+      },
+      "grade": 3
+    },
+    "overlord": {
+      "name": "패왕의 기세",
+      "text": "이번 턴 공격 주사위 +2개, 6이 나오면 하나마다 +2, 이기면 3칸 더 전진",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "atk_dice",
+            "amount": 2,
+            "turns": 1
+          },
+          {
+            "type": "crit",
+            "amount": 2,
+            "turns": 1
+          },
+          {
+            "type": "chase",
+            "amount": 1,
+            "turns": 1
+          }
+        ]
+      },
+      "grade": 3
+    },
+    "grand_thief": {
+      "name": "대도",
+      "text": "상대 카드 1장과 상대 팀 게이지 20%를 빼앗음",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "steal_card"
+          },
+          {
+            "type": "steal_gauge",
+            "amount": 20
+          }
+        ]
+      },
+      "grade": 3
+    },
+    "divine_spark": {
+      "name": "신의 계시",
+      "text": "우리 팀 게이지 +60%, 카드 1장 받기",
+      "effect": {
+        "type": "multi",
+        "effects": [
+          {
+            "type": "gauge_team",
+            "amount": 60
+          },
+          {
+            "type": "draw_card",
+            "amount": 1
+          }
+        ]
+      },
+      "grade": 3
     }
   }
 }
