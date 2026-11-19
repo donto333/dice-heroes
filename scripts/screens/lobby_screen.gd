@@ -483,7 +483,8 @@ func _rank_tile() -> Button:
 	if streak >= 2:
 		note = "%d연승 중! · 트로피 %s" % [streak, Kit.comma(int(profile["trophies"]))]
 	stack.add_child(_bold(note, 18, Color("fff3c4"), Color("a3480a"), 5))
-	stack.add_child(Kit.expand(Control.new()))
+	# 세로로 늘어나는 빈칸: 아래 띠(캡슐)를 타일 바닥에 붙인다. Kit.expand는 가로로만 늘어나 아래가 비어 있었다.
+	stack.add_child(Kit.spacer())
 	# 진행 중 이벤트 띠(명일방주의 '작전' 버튼처럼 이벤트를 타일 안에 보여 준다)
 	var events: Array = Profile.active_events(app.data.get("events", {}), app.today())
 	var strip := Control.new()
@@ -521,7 +522,8 @@ func _adventure_tile() -> Button:
 	inner.add_child(stack)
 	stack.add_child(_bold("모험", 40, Color.WHITE, Color("0f5a2c"), 9))
 	stack.add_child(_bold("ADVENTURE", 13, Color.WHITE, Color("0f5a2c"), 4))
-	stack.add_child(Kit.expand(Control.new()))
+	# 세로로 늘어나는 빈칸: 아래 띠(캡슐)를 타일 바닥에 붙인다. Kit.expand는 가로로만 늘어나 아래가 비어 있었다.
+	stack.add_child(Kit.spacer())
 	var stars := Profile.total_stars(app.profile)
 	var most := _max_stars()
 	var ratio := float(stars) / float(max(most, 1))
