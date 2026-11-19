@@ -1998,7 +1998,7 @@
  "받은 뒤 설치 화면에서 '설치'를 누르면 기록은 그대로 남아요.": "Sau đó bấm 'Cài đặt' ở màn hình cài đặt. Dữ liệu chơi vẫn được giữ.",
  "전진 칸이지만 연달아 나아가지는 않습니다.": "Ô tiến lên, nhưng không tiến liên tiếp hai lần.",
  "안드로이드 앱 새 버전 알림. check_url의 app_version.json은 android.yml이 APK와 함께 릴리스에 올린다.": "",
- "프리미엄 패스를 가진 사람은 판이 끝날 때 받는 골드·경험치가 premium_reward_scale배(광고 없이). 대전 결과 화면에 알림이 뜬다.": "",
+ "프리미엄 패스를 가진 사람은 판이 끝날 때 받는 골드·경험치가 premium_reward_scale배(광고 없이). 대전 결과 화면에 알림이 뜬다.": "Người có thẻ cao cấp nhận vàng và EXP x premium_reward_scale sau mỗi trận (không cần quảng cáo).",
  "문지기 [%s]이(가) 길을 막습니다!": "Hộ vệ [%s] chặn đường!",
  "%s 승리! 문지기가 사라졌습니다.": "%s thắng! Hộ vệ đã biến mất.",
  "문지기를 세울 자리가 없습니다.": "Không có chỗ đặt hộ vệ.",
@@ -2017,5 +2017,18 @@
  "일반 모집 확률": "Tỉ lệ chiêu mộ thường",
  "· 픽업 모집과 일반 모집의 ★★★ 확정 횟수는 따로 쌓여요.": "· Chiêu mộ tiêu điểm và chiêu mộ thường tích lũy lượt bảo đảm ★★★ riêng.",
  "★★★ %d명 모두 같은 확률로 나와요. 이미 가진 영웅이 나오면 강화 조각으로 바뀌어요.": "Cả %d anh hùng ★★★ có tỉ lệ như nhau. Anh hùng đã có sẽ thành mảnh nâng cấp.",
- "상점의 영웅 소환이 '픽업 모집'과 '일반 모집'으로 나뉘었어요: 일반 모집은 ★★★ 모두 같은 확률이고, ★★★ 확정 횟수는 따로 쌓여요.": "Triệu hồi anh hùng trong cửa hàng nay chia thành 'Chiêu mộ tiêu điểm' và 'Chiêu mộ thường': chiêu mộ thường cho mọi ★★★ tỉ lệ như nhau, lượt bảo đảm ★★★ tính riêng."
+ "상점의 영웅 소환이 '픽업 모집'과 '일반 모집'으로 나뉘었어요: 일반 모집은 ★★★ 모두 같은 확률이고, ★★★ 확정 횟수는 따로 쌓여요.": "Triệu hồi anh hùng trong cửa hàng nay chia thành 'Chiêu mộ tiêu điểm' và 'Chiêu mộ thường': chiêu mộ thường cho mọi ★★★ tỉ lệ như nhau, lượt bảo đảm ★★★ tính riêng.",
+ "길잡이 끝! 기본을 모두 익혔어요. 보상: %s": "Hoàn thành hướng dẫn! Bạn đã nắm cơ bản. Thưởng: %s",
+ "먼저 쉬운 AI와 연습 한 판을 해 봐요. 길잡이가 차례로 안내해 드려요.": "Hãy bắt đầu bằng một trận luyện tập với AI dễ. Hướng dẫn sẽ dẫn bạn từng bước.",
+ "연습 한 판 시작": "Bắt đầu luyện tập",
+ "길잡이": "Hướng dẫn",
+ "길잡이 건너뛰기": "Bỏ qua hướng dẫn",
+ "반가워요! 먼저 쉬운 AI와 연습 한 판 해 봐요. 주사위를 굴려 앞으로 가고, 골의 수호자를 먼저 이기면 승리예요.": "Chào mừng! Hãy chơi một trận luyện tập với AI dễ. Đổ xúc xắc để tiến lên; đánh bại người giữ đích trước là thắng.",
+ "연습 시작": "Bắt đầu luyện tập",
+ "첫 판 수고했어요! 이제 새 영웅을 데려와 봐요. 상점을 눌러요.": "Trận đầu tốt lắm! Giờ hãy chiêu mộ anh hùng mới. Nhấn Cửa hàng.",
+ "하루 한 번은 무료로 소환할 수 있어요. 무료 소환을 눌러 봐요!": "Mỗi ngày được triệu hồi miễn phí một lần. Nhấn Triệu hồi miễn phí!",
+ "새 영웅을 파티에 넣어 봐요. 편성을 눌러요.": "Thêm anh hùng mới vào đội. Nhấn Đội hình.",
+ "영웅을 눌러 ATTACK·DEFENSE·SUPPORT 자리에 넣고 저장을 눌러요. ★ 합계가 소환 포인트 한도 안이어야 해요.": "Nhấn anh hùng để xếp vào ATTACK, DEFENSE, SUPPORT rồi nhấn Lưu. Tổng ★ phải nằm trong giới hạn điểm triệu hồi.",
+ "준비 끝! 랭크전에서 트로피를 모아 티어를 올려 봐요. 길잡이를 마치면 보석 300개를 드려요.": "Xong rồi! Thu thập cúp trong đấu xếp hạng để lên bậc. Hoàn thành hướng dẫn nhận 300 ngọc.",
+ "처음 하는 사람을 위한 길잡이가 생겼어요: 연습 한 판 → 무료 소환 → 파티 편성 → 랭크전을 차례로 안내하고 단계마다 보상을 줘요.": "Người mới giờ có hướng dẫn: trận luyện tập → triệu hồi miễn phí → xếp đội → đấu xếp hạng, mỗi bước đều có thưởng."
 }

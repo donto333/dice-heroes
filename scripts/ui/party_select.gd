@@ -251,6 +251,7 @@ func _build() -> void:
 	auto_button.pressed.connect(_on_auto_pressed)
 	bottom.add_child(auto_button)
 	_start_button = _plain_button(str(_options.get("confirm_text", "결정")), Color("2fb457"))
+	_start_button.set_meta("guide", "party_save")
 	_start_button.size_flags_stretch_ratio = 1.6
 	_start_button.pressed.connect(_on_start_pressed)
 	bottom.add_child(_start_button)

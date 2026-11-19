@@ -69,6 +69,26 @@ func _run() -> void:
 	await _wait(0.6)
 	await _shot("03_welcome")
 	_close_dialogs()
+	# 처음 하는 사람 길잡이(2026-11-19): 로비 → 상점 → 편성 말풍선을 찍고 끝낸 것으로 해 둔다.
+	await _wait(0.3)
+	await _shot("03b_guide_lobby")
+	_app.profile["guide_flow"] = 1
+	_app.go("shop")
+	await _wait(0.4)
+	await _shot("03c_guide_shop")
+	_app.profile["guide_flow"] = 2
+	_app.go("party", {"purpose": "edit"})
+	await _wait(0.4)
+	await _shot("03d_guide_party")
+	_app.profile["guide_flow"] = 3
+	_app.go("lobby")
+	await _wait(0.3)
+	_close_dialogs()
+	await _wait(0.2)
+	await _shot("03e_guide_rank")
+	_app.profile["guide_flow"] = 9999
+	_app.go("lobby")
+	await _wait(0.3)
 	_app.current_screen._maybe_attendance()
 	await _wait(0.6)
 	await _shot("04_attendance")

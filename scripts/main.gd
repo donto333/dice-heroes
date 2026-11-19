@@ -13,6 +13,7 @@ const Dialog := preload("res://scripts/ui/dialog.gd")
 const Toast := preload("res://scripts/ui/toast.gd")
 const Music := preload("res://scripts/ui/music.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
+const GuideOverlay := preload("res://scripts/ui/guide_overlay.gd")
 const MatchLauncher := preload("res://scripts/ui/match_launcher.gd")
 const ProfileCard := preload("res://scripts/ui/profile_card.gd")
 const LoadingOverlay := preload("res://scripts/ui/loading_overlay.gd")
@@ -483,6 +484,7 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 		enter.tween_property(screen, "scale", Vector2.ONE, 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	apply_volumes()
 	music.play_track(SCREEN_MUSIC.get(screen_name, "lobby"))
+	_refresh_guide()
 
 
 ## 잠시 기다리는 화면을 보여 준 뒤 화면을 바꾼다. 기다리는 동안 다시 눌러도 한 번만 넘어간다.
@@ -559,6 +561,45 @@ func message(title_text: String, text: String, button_text: String = "확인", c
 ## 대전 모드를 고르면 시작 확인 창(파티 편성 + 카드 편성, 확인·취소)을 띄우고 확인하면 바로 대전한다.
 ## mode: "rank"(랭크전), "ai"(AI 연습), "adventure"(모험, extra의 stage), "challenge"(오늘의 도전), "local"(한 기기 2인)
 ## 친구 대전만 두 사람이 파티를 고르는 화면으로 간다.
+# ---------------------------------------------------------------- 처음 하는 사람 길잡이(2026-11-19)
+
+var _guide: Control
+
+
+## 화면이 바뀔 때마다 길잡이 말풍선을 다시 맞춘다. 창들보다 아래, 화면보다 위에 둔다.
+func _refresh_guide() -> void:
+	if _guide == null:
+		_guide = GuideOverlay.new()
+		_guide.app = self
+		add_child(_guide)
+	move_child(_guide, _layer.get_index() + 1)
+	_guide.refresh()
+
+
+## 길잡이 단계의 일이 일어났다(match_end·summon·party·rank). 다음 단계로 가며 보상을 준다.
+func tutorial_event(event: String) -> void:
+	if not has_profile():
+		return
+	var result := Profile.tutorial_event(profile, data.get("guide", {}), event)
+	if result.is_empty():
+		return
+	save()
+	play("reward")
+	if bool(result["done"]):
+		toast("길잡이 끝! 기본을 모두 익혔어요. 보상: %s" % Kit.reward_line(result["reward"]))
+	else:
+		toast("길잡이 보상: %s" % Kit.reward_line(result["reward"]))
+	if _guide != null:
+		_guide.refresh()
+
+
+## 길잡이 첫 판: 쉬운 AI와 정해진 맵에서 바로 시작한다(시작 확인 창·맵 고르기 없음).
+func start_tutorial_match() -> void:
+	play("click")
+	var launcher = MatchLauncher.ask(self, "ai", {"tutorial": true})
+	launcher.confirm()
+
+
 func start_mode(mode: String, extra: Dictionary = {}) -> void:
 	if mode == "local":
 		go("party", {"purpose": "match", "mode": mode, "player": 1})

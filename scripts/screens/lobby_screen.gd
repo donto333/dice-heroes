@@ -69,8 +69,8 @@ func setup(main_app, params: Dictionary) -> void:
 		# 처음 온 사람은 새 소식을 따로 띄우지 않는다.
 		app.profile["seen_version"] = _news_key()
 		app.save()
-		var text := Kit.para("%s님, 주사위 영웅전에 오신 것을 환영해요.\n\n영웅 12명이 함께합니다. 랭크전에서 트로피를 모으고, 상점에서 새 영웅을 소환해 보세요.\n처음이라면 게임 방법부터 보면 좋아요." % app.profile["nickname"], 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
-		app.dialog("환영합니다!", text, [["게임 방법 보기", Color("6f43a6"), _on_help], ["바로 시작", Kit.ACCENT, _maybe_attendance]])
+		var text := Kit.para("%s님, 주사위 영웅전에 오신 것을 환영해요.\n\n먼저 쉬운 AI와 연습 한 판을 해 봐요. 길잡이가 차례로 안내해 드려요." % app.profile["nickname"], 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		app.dialog("환영합니다!", text, [["게임 방법 보기", Color("6f43a6"), _on_help], ["연습 한 판 시작", Kit.ACCENT, app.start_tutorial_match]])
 	else:
 		_maybe_news()
 	# 안드로이드 앱 새 버전 알림(있을 때만, 켤 때 한 번). 다른 창 위에 뜬다.
@@ -431,7 +431,9 @@ func _add_tiles(badges: Dictionary) -> void:
 	row1.size_flags_stretch_ratio = 1.63
 	row1.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(row1)
-	row1.add_child(_rank_tile())
+	var rank_tile := _rank_tile()
+	rank_tile.set_meta("guide", "rank")
+	row1.add_child(rank_tile)
 	row1.add_child(_adventure_tile())
 
 	# 2줄: 다른 대전 모드(흰 타일)
@@ -447,8 +449,12 @@ func _add_tiles(badges: Dictionary) -> void:
 		# 미션 + 오늘의 도전(2026-11-18 사용자 결정: 하나로 합침). 도전은 미션 화면 맨 위에 있다.
 		["미션", "MISSION · CHALLENGE", "ic_mission_board", "도전 완료!" if done else "오늘의 도전", not done or bool(badges.get("missions", false)), _on_tab.bind("missions")],
 	]
-	for spec in modes:
-		row2.add_child(_white_tile(spec))
+	var white_guides := ["ai", "", "missions"]
+	for index in modes.size():
+		var white := _white_tile(modes[index])
+		if str(white_guides[index]) != "":
+			white.set_meta("guide", white_guides[index])
+		row2.add_child(white)
 
 	# 3줄: 육성·운영(진파랑 타일)
 	var row3 := Kit.hbox(10)
@@ -463,8 +469,11 @@ func _add_tiles(badges: Dictionary) -> void:
 		["도감", "COLLECTION", "album", "dot" if bool(badges.get("album", false)) else "", "heroes", {"view": "album"}],
 		["상점", "SHOP", "ic_shop_stall", "무료 소환" if free_summon else ("dot" if bool(badges.get("shop", false)) else ""), "shop"],
 	]
-	for spec in menus:
-		row3.add_child(_navy_tile(spec))
+	var navy_guides := ["party", "list", "album", "shop"]
+	for index in menus.size():
+		var navy := _navy_tile(menus[index])
+		navy.set_meta("guide", navy_guides[index])
+		row3.add_child(navy)
 
 
 func _rank_tile() -> Button:
@@ -1093,6 +1102,7 @@ const NEWS := [
 	"상점의 영웅 소환이 '픽업 모집'과 '일반 모집'으로 나뉘었어요: 일반 모집은 ★★★ 모두 같은 확률이고, ★★★ 확정 횟수는 따로 쌓여요.",
 	"★★★ 새 카드 '분신 문지기': 상대 앞길에 내 ATTACK 영웅의 분신이 서서 길을 막아요. 상대는 이겨야 지나가요.",
 	"안드로이드 앱이 새 버전을 알려 줘요: 앱을 켤 때 새 버전이 있으면 '업데이트'를 눌러 바로 받을 수 있어요.",
+	"처음 하는 사람을 위한 길잡이가 생겼어요: 연습 한 판 → 무료 소환 → 파티 편성 → 랭크전을 차례로 안내하고 단계마다 보상을 줘요.",
 	"설정에 '고객 지원'이 생겼어요: 계정 번호 복사, 문의하기, 약관 보기.",
 	"꾸미기에 '발끝 효과'가 생겼어요: 내 말이 뛸 때마다 별빛·꽃잎·불씨 같은 효과가 발밑에 피어나요.",
 	"보상형 광고가 생겼어요: 광고를 보면 보석 100개, 판 끝 골드 2배, 룰렛·카드 뽑기 한 번 더, 원정 골드 2배를 받아요(지금은 시험 광고).",
@@ -1348,6 +1358,10 @@ func _on_help() -> void:
 
 ## AI 연습전 난이도 고르기: 쉬움·보통·어려움을 가로 카드 3장(이름, 상대 레벨, 보상 배수)으로.
 func _choose_difficulty() -> void:
+	# 길잡이 첫 단계에서는 난이도·맵을 고르지 않고 바로 연습 한 판.
+	if str(Profile.tutorial_step(app.profile, app.data.get("guide", {})).get("id", "")) == "first_match":
+		app.start_tutorial_match()
+		return
 	app.play("click")
 	var body := Kit.vbox(14)
 	body.add_child(Kit.para("어려울수록 상대 영웅 레벨이 높고 조합을 잘 짜요. 보상도 많아져요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))

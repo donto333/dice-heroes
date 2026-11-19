@@ -2391,6 +2391,8 @@ func _record(outcome: String) -> PackedStringArray:
 		elif int(result["reward"].get("gems", 0)) > 0:
 			lines.append("별 3개 보상: %s" % Kit.reward_line(result["reward"]))
 	app.save()
+	# 길잡이: 첫 판을 끝냈다(이기든 지든).
+	app.tutorial_event("match_end")
 	if _mode == "rank":
 		lines.append("트로피 %+d → %d (%s)" % [int(reward["trophies"]), int(app.profile["trophies"]), reward["tier_after"]])
 		if str(reward["tier_before"]) != str(reward["tier_after"]):
