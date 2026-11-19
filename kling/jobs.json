@@ -97,15 +97,6 @@
       }
     },
     {
-      "id": "gumiho",
-      "image": "kling/ref/gumiho.png",
-      "kinds": {
-        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
-        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
-        "slash": "Attack animation: he swings the halberd in a powerful slash to the right, red plumes and cape whipping, then returns smoothly to the starting pose."
-      }
-    },
-    {
       "id": "anubis",
       "image": "kling/ref/anubis.png",
       "kinds": {
