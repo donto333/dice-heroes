@@ -43,7 +43,7 @@
     {"id": 34, "type": "battle", "x": 24, "y": 3, "next": [35], "name": "굶주린 늑대", "dice": 2},
     {"id": 35, "type": "attr", "x": 24, "y": 4, "next": [36], "attr": "위인"},
     {"id": 36, "type": "luck", "x": 24, "y": 5, "next": [37]},
-    {"id": 37, "type": "forward", "x": 23, "y": 5, "next": [38], "amount": 3},
+    {"id": 37, "type": "normal", "x": 23, "y": 5, "next": [38]},
     {"id": 38, "type": "gate", "x": 22, "y": 5, "next": [39], "name": "관문지기 들개 무리", "dice": 3},
     {"id": 39, "type": "random", "x": 21, "y": 5, "next": [40]},
     {"id": 40, "type": "treasure", "x": 20, "y": 5, "next": [41]},

@@ -118,7 +118,7 @@
     {"id": 109, "type": "checkpoint", "x": 19, "y": 13, "next": [110]},
     {"id": 110, "type": "battle", "x": 18, "y": 13, "next": [111], "name": "바람 기사", "dice": 3},
     {"id": 111, "type": "treasure", "x": 17, "y": 13, "next": [112]},
-    {"id": 112, "type": "forward", "x": 16, "y": 13, "next": [113], "amount": 3},
+    {"id": 112, "type": "normal", "x": 16, "y": 13, "next": [113]},
     {"id": 113, "type": "fate", "x": 16, "y": 12, "next": [114]},
     {"id": 114, "type": "random", "x": 16, "y": 11, "next": [115]},
     {"id": 115, "type": "random", "x": 16, "y": 10, "next": [116]},
