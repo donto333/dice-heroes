@@ -83,7 +83,7 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 	plate.custom_minimum_size = Vector2(196, 64)
 	var back := NinePatchRect.new()
 	back.texture = texture
-	back.patch_margin_left = 66
+	back.patch_margin_left = 70
 	back.patch_margin_right = 26
 	back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -93,10 +93,10 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 		picture.texture = icon
 		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		# 명판 그림(178×64)의 동그란 구멍은 가운데 (29.5, 31.5), 지름 약 36픽셀이다.
-		# 아이콘이 금테를 덮지 않게 구멍보다 조금 작게(34) 정확히 가운데에 둔다.
-		picture.position = Vector2(29.5 - 17.0, 31.5 - 17.0)
-		picture.size = Vector2(34, 34)
+		# 명판 그림(178×64, 2026-11-19 A 스타일)의 동그란 자리는 가운데 (32, 32), 안쪽 지름 약 48픽셀이다.
+		# 아이콘이 금테를 덮지 않게 안쪽보다 조금 작게(40) 정확히 가운데에 둔다.
+		picture.position = Vector2(32.0 - 20.0, 32.0 - 20.0)
+		picture.size = Vector2(40, 40)
 		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		plate.add_child(picture)
 	var label := Label.new()
@@ -106,7 +106,7 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 	TextStyle.menu(label, Color(0, 0.05, 0.2), 7)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.offset_left = 70
+	label.offset_left = 74
 	label.offset_right = -16
 	label.offset_bottom = -2
 	label.clip_text = true
@@ -283,7 +283,7 @@ static func _enter(screen: Control, app, head: Control, rail_holder: Control, bo
 
 
 ## 세로 판의 항목 버튼: 고른 것은 금색, 나머지는 파란 알약.
-## 배치(2026-11-17 고침): 양 끝 금 장식(버튼 높이의 약 0.42배)은 비워 두고,
+## 배치(2026-11-17 고침, 2026-11-19 새 그림): 양 끝 금 장식(버튼 높이의 약 0.5배)은 비워 두고,
 ## 그 안쪽 왼쪽에 아이콘, 아이콘 뒤부터 오른쪽 장식 앞까지의 칸 가운데에 글자를 둔다.
 ## 글자가 칸보다 길면(번역 글 포함) 글자 크기를 줄여 장식에 닿지 않게 한다.
 static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool = false) -> Button:
@@ -300,7 +300,7 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool =
 	button.add_theme_font_size_override("font_size", FONT)
 	var art := tex("menu_on" if on else "menu_off")
 	# 양 끝 장식 너비(그림에서 장식은 높이의 약 0.42배). 그림이 없을 때는 둥근 끝만큼만 띄운다.
-	var ornament := HEIGHT * 0.42 if art != null else 14.0
+	var ornament := HEIGHT * 0.5 if art != null else 14.0
 	var box := 32.0 if small else 40.0
 	var text_left := ornament + 4.0
 	var text_right := ornament + 4.0
@@ -386,7 +386,8 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 	var capsule := PanelContainer.new()
 	capsule.custom_minimum_size = Vector2(230, 50)
 	capsule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var art = style("currency", Vector4(24, 0, 24, 0), Vector4(8, 2, 6, 2))
+	# 재화 칸 그림(143×46): 왼쪽 동그란 자리(지름 46)에 아이콘(34)이 가운데 오게 안쪽 여백 6
+	var art = style("currency", Vector4(50, 0, 22, 0), Vector4(6, 2, 6, 2))
 	capsule.add_theme_stylebox_override("panel", art if art != null else Kit.box(Color(0, 0.06, 0.22, 0.72), color.darkened(0.2), 2, 20, 4))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
@@ -843,7 +844,7 @@ static func result_row(icon_name: String, title: String, value: String, height: 
 	if art != null:
 		holder.resized.connect(holder.queue_redraw)
 		holder.draw.connect(func() -> void:
-			PillSkin.draw_slices(holder, art, Rect2(Vector2.ZERO, holder.size), 0.95, Color.WHITE, 0.3))
+			PillSkin.draw_slices(holder, art, Rect2(Vector2.ZERO, holder.size), 1.02, Color.WHITE, 0.4))
 	else:
 		var back := Panel.new()
 		back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

@@ -1476,8 +1476,10 @@ func _paint_pill(button: Button, kind: String, fallback: Color) -> void:
 		for state in ["normal", "hover", "pressed", "disabled"]:
 			var space := StyleBoxEmpty.new()
 			space.set_content_margin_all(8)
-			space.content_margin_left = 14
-			space.content_margin_right = 14
+			# 2026-11-19 새 알약 그림: 양 끝 보석(높이의 약 0.4배)에 글자·아이콘이 닿지 않게 띄운다.
+			var side := maxf(14.0, button.custom_minimum_size.y * 0.42)
+			space.content_margin_left = side
+			space.content_margin_right = side
 			space.content_margin_bottom = 10 if state != "pressed" else 8
 			button.add_theme_stylebox_override(state, space)
 	var holder: Control = button.get_meta("skin")
