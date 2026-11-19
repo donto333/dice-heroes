@@ -83,6 +83,7 @@ static func history(app) -> Control:
 		if bool(entry.get("refunded", false)):
 			line.add_child(Kit.label("환불됨", 18, Kit.MUTED))
 	body.add_child(Kit.para("결제한 스토어(구글 플레이)의 주문 내역에서도 확인할 수 있어요.", 16, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	body.add_child(Kit.para("결제 문의는 설정 → 고객 지원에서 계정 번호 %s와 함께 보내 주세요." % Profile.ensure_account_id(app.profile, app.rng), 16, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var window: Control = app.dialog("구매 내역", body, [["닫기", Kit.PANEL_LIGHT]], 760)
 	app.set_meta("purchase_window", window)
 	return window

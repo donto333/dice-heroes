@@ -72,6 +72,15 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 	}
 
 
+## 계정 번호(2026-11-19): 문의할 때 알려 주는 번호. 없으면 만들어 둔다. 예: DH-3F9A-0C21
+static func ensure_account_id(profile: Dictionary, rng: RandomNumberGenerator) -> String:
+	var id := str(profile.get("account_id", ""))
+	if id == "":
+		id = "DH-%04X-%04X" % [rng.randi_range(0, 0xFFFF), rng.randi_range(0, 0xFFFF)]
+		profile["account_id"] = id
+	return id
+
+
 ## 닉네임은 공백을 빼고 2~10글자.
 static func clean_nickname(text: String) -> String:
 	return text.strip_edges().left(10)

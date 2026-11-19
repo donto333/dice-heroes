@@ -326,6 +326,11 @@ func _run() -> void:
 	_app.go("settings")
 	await _wait(0.4)
 	await _shot("11_settings")
+	var settings_scroll := _find_scroll(_app.current_screen)
+	if settings_scroll != null:
+		settings_scroll.scroll_vertical = 100000
+		await _wait(0.2)
+		await _shot("11s_settings_support")
 	_app.go("adventure")
 	await _wait(0.4)
 	await _shot("11a_adventure")
