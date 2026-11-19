@@ -3,12 +3,12 @@
   "model": "kling-4.0-flash",
   "resolution": "720p",
   "duration": 3,
-  "parallel": 2,
+  "parallel": 4,
   "common": "Game sprite animation of this exact chibi character, same design, colors and proportions. The camera is completely fixed: no camera movement, no zoom, no pan, no cut. The character stays in the same spot in the center of the frame and does not travel. The background stays solid pure green (#00FF00) the whole time, no shadow, no floor, no effects on the background. The motion is a seamless loop: it ends in the same pose as the starting image.",
   "jobs": [
     {
-      "id": "machao",
-      "image": "kling/ref/machao.png",
+      "id": "ganning",
+      "image": "kling/ref/ganning.png",
       "kinds": {
         "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
         "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
@@ -16,8 +16,8 @@
       }
     },
     {
-      "id": "eulji",
-      "image": "kling/ref/eulji.png",
+      "id": "choiyoung",
+      "image": "kling/ref/choiyoung.png",
       "kinds": {
         "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
         "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
@@ -25,8 +25,8 @@
       }
     },
     {
-      "id": "leonidas",
-      "image": "kling/ref/leonidas.png",
+      "id": "robinhood",
+      "image": "kling/ref/robinhood.png",
       "kinds": {
         "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
         "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
@@ -34,8 +34,8 @@
       }
     },
     {
-      "id": "hanxin",
-      "image": "kling/ref/hanxin.png",
+      "id": "mulan",
+      "image": "kling/ref/mulan.png",
       "kinds": {
         "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
         "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
@@ -43,8 +43,8 @@
       }
     },
     {
-      "id": "zhouyu",
-      "image": "kling/ref/zhouyu.png",
+      "id": "gyebaek",
+      "image": "kling/ref/gyebaek.png",
       "kinds": {
         "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
         "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
@@ -52,8 +52,8 @@
       }
     },
     {
-      "id": "jangyeongsil",
-      "image": "kling/ref/jangyeongsil.png",
+      "id": "choichiwon",
+      "image": "kling/ref/choichiwon.png",
       "kinds": {
         "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
         "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
@@ -61,8 +61,8 @@
       }
     },
     {
-      "id": "archimedes",
-      "image": "kling/ref/archimedes.png",
+      "id": "libai",
+      "image": "kling/ref/libai.png",
       "kinds": {
         "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
         "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
@@ -70,8 +70,8 @@
       }
     },
     {
-      "id": "sunwu",
-      "image": "kling/ref/sunwu.png",
+      "id": "marcopolo",
+      "image": "kling/ref/marcopolo.png",
       "kinds": {
         "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
         "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
@@ -79,8 +79,8 @@
       }
     },
     {
-      "id": "athena",
-      "image": "kling/ref/athena.png",
+      "id": "hypatia",
+      "image": "kling/ref/hypatia.png",
       "kinds": {
         "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
         "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
@@ -88,64 +88,13 @@
       }
     },
     {
-      "id": "heracles",
-      "image": "kling/ref/heracles.png",
-      "kinds": {
-        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
-        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
-        "slash": "Attack animation: he swings the halberd in a powerful slash to the right, red plumes and cape whipping, then returns smoothly to the starting pose."
-      }
-    },
-    {
-      "id": "anubis",
-      "image": "kling/ref/anubis.png",
-      "kinds": {
-        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
-        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
-        "slash": "Attack animation: he swings the halberd in a powerful slash to the right, red plumes and cape whipping, then returns smoothly to the starting pose."
-      }
-    },
-    {
-      "id": "wright",
-      "image": "kling/ref/wright.png",
-      "kinds": {
-        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
-        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
-        "slash": "Attack animation: he swings the halberd in a powerful slash to the right, red plumes and cape whipping, then returns smoothly to the starting pose."
-      }
-    },
-    {
-      "id": "amundsen",
-      "image": "kling/ref/amundsen.png",
-      "kinds": {
-        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
-        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
-        "slash": "Attack animation: he swings the halberd in a powerful slash to the right, red plumes and cape whipping, then returns smoothly to the starting pose."
-      }
-    },
-    {
-      "id": "verne",
-      "image": "kling/ref/verne.png",
-      "kinds": {
-        "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
-        "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
-        "slash": "Attack animation: he swings the halberd in a powerful slash to the right, red plumes and cape whipping, then returns smoothly to the starting pose."
-      }
-    },
-    {
-      "id": "pasteur",
-      "image": "kling/ref/pasteur.png",
+      "id": "seohui",
+      "image": "kling/ref/seohui.png",
       "kinds": {
         "idle": "Idle animation: the character stands in place breathing gently, clothes, hair and accessories sway softly, blinks once, small natural weight shift.",
         "walk": "Walk-in-place animation (like on a treadmill): the character walks facing right with light steps, arms and clothes moving naturally, while staying in the same place.",
         "slash": "Attack animation: he swings the halberd in a powerful slash to the right, red plumes and cape whipping, then returns smoothly to the starting pose."
       }
     }
-  ],
-  "only": [
-    "eulji_slash",
-    "hanxin_walk",
-    "hanxin_slash",
-    "heracles_slash"
   ]
 }
