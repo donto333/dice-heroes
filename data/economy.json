@@ -644,6 +644,71 @@
       }
     }
   ],
+  "trails": [
+    {
+      "_comment": "발끝 효과(2026-11-19, 정식 출시 준비 6번, 유료 꾸미기): 내 말이 한 칸 뛸 때마다 발밑에 fx(fx.gd의 burst 종류)가 피어난다. cost의 paid_gems는 유료 보석으로만 살 수 있다는 뜻(유료 전용). 능력치에는 아무 영향 없다.",
+      "id": "none",
+      "name": "없음",
+      "fx": "",
+      "cost": {}
+    },
+    {
+      "id": "dust",
+      "name": "흙먼지",
+      "fx": "dust",
+      "cost": {
+        "gold": 3000
+      }
+    },
+    {
+      "id": "star",
+      "name": "별빛",
+      "fx": "star",
+      "cost": {
+        "gems": 300
+      }
+    },
+    {
+      "id": "petal",
+      "name": "꽃잎",
+      "fx": "petal",
+      "cost": {
+        "gems": 300
+      }
+    },
+    {
+      "id": "ice",
+      "name": "서리",
+      "fx": "ice",
+      "cost": {
+        "gems": 500
+      }
+    },
+    {
+      "id": "ember",
+      "name": "불씨",
+      "fx": "ember",
+      "cost": {
+        "paid_gems": 600
+      }
+    },
+    {
+      "id": "bolt",
+      "name": "번개",
+      "fx": "bolt",
+      "cost": {
+        "paid_gems": 800
+      }
+    },
+    {
+      "id": "coin",
+      "name": "황금",
+      "fx": "coin",
+      "cost": {
+        "paid_gems": 1200
+      }
+    }
+  ],
   "pass": {
     "_comment": "시즌 패스. 판을 하거나 미션 보상을 받으면 패스 경험치가 쌓인다. levels의 free는 누구나 받고, premium은 유료 줄(아직 결제가 없어 premium_open=false로 잠가 둔다).",
     "name": "시즌 1 · 첫 원정",

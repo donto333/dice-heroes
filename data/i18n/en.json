@@ -1952,5 +1952,17 @@
  "시험 광고예요. 정식 출시 때는 여기에 진짜 광고가 나와요.": "This is a test ad. Real ads will appear here at launch.",
  "%d초 뒤에 보상을 받아요": "Reward in %d seconds",
  "광고 보고 무료 뽑기 (오늘 %d회)": "Watch ad for a free draw (%d today)",
- "보상형 광고가 생겼어요: 광고를 보면 보석 100개, 판 끝 골드 2배, 룰렛·카드 뽑기 한 번 더, 원정 골드 2배를 받아요(지금은 시험 광고).": "Rewarded ads are here: watch for 100 gems, double match gold, an extra roulette spin or card draw, and double expedition gold (test ads for now)."
+ "보상형 광고가 생겼어요: 광고를 보면 보석 100개, 판 끝 골드 2배, 룰렛·카드 뽑기 한 번 더, 원정 골드 2배를 받아요(지금은 시험 광고).": "Rewarded ads are here: watch for 100 gems, double match gold, an extra roulette spin or card draw, and double expedition gold (test ads for now).",
+ "발끝 효과": "Step Effects",
+ "내 말이 뛸 때 발밑에 피어나요 · 능력치와는 상관없어요": "Blooms under your piece as it hops · no effect on stats",
+ "유료 보석 전용": "Paid gems only",
+ "발끝 효과 '%s'를 샀어요! 바로 쓸게요.": "Bought step effect '%s'! Equipped now.",
+ "유료 보석이 모자라요.": "Not enough paid gems.",
+ "흙먼지": "Dust",
+ "별빛": "Starlight",
+ "꽃잎": "Petals",
+ "서리": "Frost",
+ "불씨": "Embers",
+ "황금": "Gold",
+ "꾸미기에 '발끝 효과'가 생겼어요: 내 말이 뛸 때마다 별빛·꽃잎·불씨 같은 효과가 발밑에 피어나요.": "New cosmetic 'Step Effects': starlight, petals, embers and more bloom under your piece as it hops."
 }

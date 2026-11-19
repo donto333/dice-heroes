@@ -18,6 +18,7 @@ const AdPlayer := preload("res://scripts/ui/ad_player.gd")
 const CardPanels := preload("res://scripts/ui/card_panels.gd")
 const PassPanel := preload("res://scripts/ui/pass_panel.gd")
 
+const TRAIL_ICONS := {"none": "close", "dust": "speed", "star": "star", "petal": "gift", "ice": "orb_blue", "ember": "orb_gold", "bolt": "bolt", "coin": "gold"}
 const BANNER := ["zeus", "lubu", "sejong", "nightingale"]
 
 var app
@@ -27,7 +28,7 @@ var app
 const TABS := [["summon", "소환"], ["grow", "성장"], ["look", "꾸미기"], ["gems", "보석"]]
 ## 왼쪽 세로 판 항목: [id, 글자, 아이콘]
 ## 2026-11-18 사용자 결정: 영웅 소환 바로 아래에 카드 뽑기를 따로 둔다.
-const RAIL := [["summon", "영웅 소환", "summon"], ["cards", "카드 뽑기", "card"], ["grow", "성장", "upgrade"], ["look", "주사위", "dice"], ["gems", "보석", "gem"], ["pass", "시즌 패스", "pass"]]
+const RAIL := [["summon", "영웅 소환", "summon"], ["cards", "카드 뽑기", "card"], ["grow", "성장", "upgrade"], ["look", "꾸미기", "dice"], ["gems", "보석", "gem"], ["pass", "시즌 패스", "pass"]]
 var _tab := "summon"
 
 
@@ -67,6 +68,7 @@ func setup(main_app, _params: Dictionary) -> void:
 			body.add_child(_exchange_panel())
 		"look":
 			body.add_child(_dice_panel())
+			body.add_child(_trail_panel())
 		"gems":
 			body.add_child(_mileage_panel())
 			body.add_child(_gem_pack_panel())
@@ -376,6 +378,69 @@ func _dice_panel() -> Control:
 		cell.add_child(button)
 		grid.add_child(card)
 	return group
+
+
+## 발끝 효과(2026-11-19, 유료 꾸미기): 내 말이 한 칸 뛸 때마다 발밑에 피어나는 효과.
+func _trail_panel() -> Control:
+	var group := Kit.vbox(8)
+	group.add_child(MenuArt.section("발끝 효과", "star", "내 말이 뛸 때 발밑에 피어나요 · 능력치와는 상관없어요"))
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	group.add_child(grid)
+	var using := str(app.profile.get("trail", "none"))
+	if not Profile.owns_trail(app.profile, using):
+		using = "none"
+	for entry in app.eco.get("trails", []):
+		var id := str(entry["id"])
+		var card: PanelContainer = MenuArt.art_box("goods_card", 30.0, 12)
+		if card == null:
+			card = Kit.panel(Kit.INSET, Kit.LINE, 8)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var cell := Kit.vbox(4)
+		card.add_child(cell)
+		var icon: Control = Kit.icon(TRAIL_ICONS.get(id, "star"), 56.0)
+		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		cell.add_child(icon)
+		cell.add_child(Kit.label(str(entry["name"]), 20, Kit.GOLD if id == using else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+		var cost: Dictionary = entry.get("cost", {})
+		var paid_only := cost.has("paid_gems")
+		cell.add_child(Kit.label("유료 보석 전용" if paid_only else " ", 14, Kit.GEM if paid_only else Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		var button: Button
+		if id == using:
+			button = MenuArt.pill_button("사용 중", "gray", "s")
+			button.disabled = true
+		elif Profile.owns_trail(app.profile, id):
+			button = MenuArt.pill_button("쓰기", "green", "s")
+		else:
+			var currency := "gold"
+			for key in ["paid_gems", "gems", "gold"]:
+				if cost.has(key):
+					currency = key
+					break
+			button = MenuArt.pill_button(Kit.comma(int(cost.get(currency, 0))), "purple" if paid_only else "gold", "s")
+			_money_icon(button, "gold" if currency == "gold" else "gem")
+		button.pressed.connect(_on_trail.bind(id))
+		cell.add_child(button)
+		grid.add_child(card)
+	return group
+
+
+func _on_trail(id: String) -> void:
+	if Profile.owns_trail(app.profile, id):
+		Profile.equip_trail(app.profile, id)
+		app.play("click")
+	elif Profile.buy_trail(app.profile, app.eco, id):
+		app.play("purchase")
+		app.toast("발끝 효과 '%s'를 샀어요! 바로 쓸게요." % Profile.trail(app.eco, id)["name"])
+	else:
+		app.play("denied")
+		var cost: Dictionary = Profile.trail(app.eco, id).get("cost", {})
+		app.toast("유료 보석이 모자라요." if cost.has("paid_gems") else "골드나 보석이 모자라요.")
+		return
+	app.save()
+	app.go("shop", {"tab": _tab})
 
 
 func _on_dice_skin(id: String) -> void:
