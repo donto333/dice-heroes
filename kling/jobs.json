@@ -114,5 +114,15 @@
         "slash": "Attack animation: he thrusts the light bulb forward and it flashes brightly toward the right, then he returns smoothly to the starting pose."
       }
     }
+  ],
+  "only": [
+    "tesla_walk",
+    "tesla_slash",
+    "nightingale_idle",
+    "nightingale_walk",
+    "nightingale_slash",
+    "edison_idle",
+    "edison_walk",
+    "edison_slash"
   ]
 }
