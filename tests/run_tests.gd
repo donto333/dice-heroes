@@ -2491,12 +2491,12 @@ func _test_forward_spacing() -> void:
 				frontier = ahead
 
 
-## 쿠폰 목록: 코드는 대문자·숫자만, 이름과 보상(골드·보석만, 0보다 큼)이 있고, 한 번씩만 쓰인다.
+## 쿠폰 목록: 코드는 대문자·숫자·한글만, 이름과 보상(골드·보석만, 0보다 큼)이 있고, 한 번씩만 쓰인다.
 func _test_all_coupons() -> void:
 	var coupons: Dictionary = _data["coupons"]
 	var table: Dictionary = coupons["coupons"]
 	_check(table.size() >= 14, "쿠폰이 14개보다 적음: %d" % table.size())
-	var code_shape := RegEx.create_from_string("^[A-Z0-9]+$")
+	var code_shape := RegEx.create_from_string("^[A-Z0-9가-힣]+$")
 	var profile := Profile.new_profile("쿠폰", _data["economy"])
 	for code in table:
 		var entry: Dictionary = table[code]
