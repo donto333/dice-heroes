@@ -1995,5 +1995,8 @@
  "나중에": "Later",
  "새 버전 %s이 나왔어요. (지금 %s)": "Version %s is out. (You have %s)",
  "'업데이트'를 누르면 새 앱 파일을 내려받아요.": "Tap 'Update' to download the new app file.",
- "받은 뒤 설치 화면에서 '설치'를 누르면 기록은 그대로 남아요.": "Then tap 'Install' on the install screen. Your progress is kept."
+ "받은 뒤 설치 화면에서 '설치'를 누르면 기록은 그대로 남아요.": "Then tap 'Install' on the install screen. Your progress is kept.",
+ "전진 칸이지만 연달아 나아가지는 않습니다.": "An advance space, but you don't advance twice in a row.",
+ "안드로이드 앱 새 버전 알림. check_url의 app_version.json은 android.yml이 APK와 함께 릴리스에 올린다.": "",
+ "프리미엄 패스를 가진 사람은 판이 끝날 때 받는 골드·경험치가 premium_reward_scale배(광고 없이). 대전 결과 화면에 알림이 뜬다.": ""
 }
