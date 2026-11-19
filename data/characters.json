@@ -2,7 +2,7 @@
   "_comment": "캐릭터 48명 (분류마다 ★★★ 3, ★★ 4, ★ 5). 이름과 등급의 기준은 로스터 시트다. 수치는 tests/run_tests.gd의 밸런스 통계를 보며 조정한다.",
   "characters": [
     {"id": "lubu", "name": "여포", "category": "영웅", "grade": 3, "move": 1, "attack": 4, "defense": 2, "intellect": 1, "charge": 80, "ability": "unique_lubu", "title": "비장의 맹장", "bio": "후한 말 최강의 무용을 떨친 장수. 붉은 명마를 타고 방천화극을 휘둘렀다."},
-    {"id": "yisunsin", "name": "이순신", "category": "영웅", "grade": 3, "move": 1, "attack": 4, "defense": 5, "intellect": 3, "charge": 50, "ability": "unique_yisunsin", "title": "바다의 수호자", "bio": "조선 수군을 이끌고 임진왜란에서 연전연승한 장군. 판옥선과 거북선으로 바다를 지켰다."},
+    {"id": "yisunsin", "name": "이순신", "category": "영웅", "grade": 3, "move": 2, "attack": 4, "defense": 5, "intellect": 2, "charge": 50, "ability": "unique_yisunsin", "title": "바다의 수호자", "bio": "조선 수군을 이끌고 임진왜란에서 연전연승한 장군. 판옥선과 거북선으로 바다를 지켰다."},
     {"id": "alexander", "name": "알렉산더 대왕", "category": "영웅", "grade": 3, "move": 2, "attack": 3, "defense": 2, "intellect": 2, "ability": "unique_alexander", "title": "정복왕", "bio": "마케도니아의 왕. 젊은 나이에 그리스에서 인도 가까이까지 대제국을 세웠다."},
     {"id": "machao", "name": "마초", "category": "영웅", "grade": 2, "move": 2, "attack": 3, "defense": 1, "intellect": 1, "ability": "skill_machao", "title": "서량의 금마초", "bio": "서량 출신의 날랜 기병 장수. 빛나는 갑옷과 창술로 이름을 떨쳤다."},
     {"id": "eulji", "name": "을지문덕", "category": "영웅", "grade": 2, "move": 1, "attack": 3, "defense": 3, "intellect": 2, "charge": 50, "ability": "skill_eulji", "title": "살수의 지략가", "bio": "고구려의 장수. 수나라 대군을 살수까지 끌어들여 크게 무찔렀다."},
@@ -13,7 +13,7 @@
     {"id": "robinhood", "name": "로빈 후드", "category": "영웅", "grade": 1, "move": 1, "attack": 3, "defense": 1, "intellect": 2, "charge": -20, "ability": "skill_robinhood", "title": "셔우드의 명궁", "bio": "전설 속 숲의 의적. 백발백중의 활솜씨로 약한 이들을 도왔다."},
     {"id": "mulan", "name": "화목란", "category": "영웅", "grade": 1, "move": 2, "attack": 2, "defense": 1, "intellect": 1, "ability": "skill_mulan", "title": "아버지 대신 전장으로", "bio": "늙은 아버지를 대신해 남장을 하고 전쟁에 나선 전설의 여전사."},
     {"id": "gyebaek", "name": "계백", "category": "영웅", "grade": 1, "move": 1, "attack": 3, "defense": 2, "intellect": 1, "charge": 10, "ability": "skill_gyebaek", "title": "황산벌의 결사대", "bio": "백제의 장군. 오천 결사대를 이끌고 황산벌에서 마지막까지 싸웠다."},
-    {"id": "sejong", "name": "세종대왕", "category": "위인", "grade": 3, "move": 1, "attack": 1, "defense": 3, "intellect": 5, "charge": 20, "ability": "unique_sejong", "title": "백성을 위한 글자", "bio": "조선의 임금. 훈민정음을 만들고 과학과 음악을 크게 일으켰다."},
+    {"id": "sejong", "name": "세종대왕", "category": "위인", "grade": 3, "move": 1, "attack": 1, "defense": 3, "intellect": 5, "charge": 50, "ability": "unique_sejong", "title": "백성을 위한 글자", "bio": "조선의 임금. 훈민정음을 만들고 과학과 음악을 크게 일으켰다."},
     {"id": "zhugeliang", "name": "제갈량", "category": "위인", "grade": 3, "move": 1, "attack": 2, "defense": 2, "intellect": 5, "ability": "unique_zhuge", "title": "와룡", "bio": "촉한의 승상. 뛰어난 지략과 발명으로 나라를 이끈 전략가."},
     {"id": "davinci", "name": "레오나르도 다빈치", "category": "위인", "grade": 3, "move": 1, "attack": 2, "defense": 3, "intellect": 5, "ability": "unique_davinci", "title": "만능의 천재", "bio": "르네상스의 화가이자 발명가. 그림, 해부학, 기계 설계에 모두 능했다."},
     {"id": "zhouyu", "name": "주유", "category": "위인", "grade": 2, "move": 1, "attack": 3, "defense": 2, "intellect": 5, "ability": "skill_zhouyu", "title": "적벽의 불길", "bio": "오나라의 대도독. 적벽에서 화공으로 대군을 물리쳤다."},
