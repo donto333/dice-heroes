@@ -2009,5 +2009,6 @@
  "새 영웅을 파티에 넣어 봐요. 편성을 눌러요.": "Add your new hero to the party. Tap Formation.",
  "영웅을 눌러 ATTACK·DEFENSE·SUPPORT 자리에 넣고 저장을 눌러요. ★ 합계가 소환 포인트 한도 안이어야 해요.": "Tap heroes to place them in ATTACK, DEFENSE and SUPPORT, then tap Save. The total ★ must fit your summon point limit.",
  "준비 끝! 랭크전에서 트로피를 모아 티어를 올려 봐요. 길잡이를 마치면 보석 300개를 드려요.": "All set! Collect trophies in Ranked to climb tiers. Finish the guide to get 300 gems.",
- "처음 하는 사람을 위한 길잡이가 생겼어요: 연습 한 판 → 무료 소환 → 파티 편성 → 랭크전을 차례로 안내하고 단계마다 보상을 줘요.": "New players now get a guide: practice match → free summon → party setup → Ranked, with a reward at each step."
+ "처음 하는 사람을 위한 길잡이가 생겼어요: 연습 한 판 → 무료 소환 → 파티 편성 → 랭크전을 차례로 안내하고 단계마다 보상을 줘요.": "New players now get a guide: practice match → free summon → party setup → Ranked, with a reward at each step.",
+ "안드로이드 앱 새 버전 알림. check_url의 app_version.json은 android.yml이 APK와 함께 릴리스에 올린다.": ""
 }
