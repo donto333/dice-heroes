@@ -27,6 +27,7 @@ const SKILL_ART := {"attack": "skill_red", "defense": "skill_purple", "support":
 const CARD_CELLS := [[0.062, 0.31], [0.372, 0.614], [0.679, 0.924]]
 const PILL_OUTLINE := {"blue": Color("0b2f73"), "green": Color("0b4a1e"), "red": Color("6a1004")}
 const TurnBanner := preload("res://scripts/ui/turn_banner.gd")
+const AdPlayer := preload("res://scripts/ui/ad_player.gd")
 const ResultOverlay := preload("res://scripts/ui/result_overlay.gd")
 const BigDice := preload("res://scripts/ui/big_dice.gd")
 const AimBar := preload("res://scripts/ui/aim_bar.gd")
@@ -510,6 +511,7 @@ func _build_ui() -> void:
 	add_child(_result_overlay)
 	_result_overlay.retry_pressed.connect(_on_retry_pressed)
 	_result_overlay.change_party_pressed.connect(_on_change_party_pressed)
+	_result_overlay.ad_pressed.connect(_on_ad_gold)
 	_banner = TurnBanner.new()
 	add_child(_banner)
 	_cutin = Cutin.new()
@@ -2290,6 +2292,9 @@ func _show_game_over() -> void:
 		notes.append(str(line))
 	extras["rows"] = rows
 	extras["notes"] = notes
+	# 보상형 광고: 이번 판 골드를 한 번 더(2026-11-19)
+	if not _is_local() and app.has_profile() and int(_last_reward.get("gold", 0)) > 0 and Profile.ads_left(app.profile, app.eco, "gold_double") > 0:
+		extras["ad_text"] = "광고 보고 골드 +%s" % Kit.comma(int(_last_reward["gold"]))
 	# 칸 알림·말풍선이 결과 창을 가리지 않게 맨 앞으로
 	_close_hint()
 	move_child(_result_overlay, get_child_count() - 1)
@@ -2386,6 +2391,26 @@ func _record(outcome: String) -> PackedStringArray:
 		lines.append("업적 %d개 달성! 미션 화면에서 보상을 받으세요." % new_achievements)
 	_reward_lines = lines
 	return lines
+
+
+func _on_ad_gold() -> void:
+	var gold := int(_last_reward.get("gold", 0))
+	if gold <= 0 or Profile.ads_left(app.profile, app.eco, "gold_double") <= 0:
+		return
+	_play("click")
+	var ad := AdPlayer.new()
+	app.add_child(ad)
+	if not await ad.play(app):
+		return
+	if not is_inside_tree():
+		return
+	var reward := Profile.watch_ad(app.profile, app.eco, "gold_double", {"gold": gold})
+	app.save()
+	if reward.is_empty():
+		return
+	_play("reward")
+	_result_overlay.ad_done("골드 +%s 받았어요" % Kit.comma(gold))
+	app.toast("광고 보상: %s" % Kit.reward_line(reward))
 
 
 func _on_retry_pressed() -> void:

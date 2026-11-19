@@ -1142,5 +1142,30 @@
         "gems": 500
       }
     ]
+  },
+  "ads": {
+    "_comment": "보상형 광고(2026-11-19, 정식 출시 준비 5번): 광고를 끝까지 보면 보상. 하루 전체 daily_max번, 자리마다 per_day번. gems는 보석(사용자 결정 2026-11-19: 광고 한 번에 보석 100개), gold_double은 판 끝 골드를 한 번 더, roulette은 룰렛 무료 한 번 더, idle_double은 원정 골드를 한 번 더, card_draw는 무료 카드 뽑기 한 번 더. 진짜 광고(AdMob)가 붙기 전에는 시험 광고(test_seconds초)가 나온다. 광고 제거 상품과 상관없이 보상형 광고는 남는다.",
+    "daily_max": 8,
+    "test_seconds": 5,
+    "placements": {
+      "gems": {
+        "per_day": 1,
+        "reward": {
+          "gems": 100
+        }
+      },
+      "gold_double": {
+        "per_day": 3
+      },
+      "roulette": {
+        "per_day": 1
+      },
+      "idle_double": {
+        "per_day": 1
+      },
+      "card_draw": {
+        "per_day": 1
+      }
+    }
   }
 }
