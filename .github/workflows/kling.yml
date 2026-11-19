@@ -11,6 +11,12 @@ on:
 permissions:
   contents: write
 
+# 클링 계정은 모든 브랜치가 같이 쓴다. 한 번에 한 작업만 돌도록 전체를 한 줄로 세운다(중복 요금·커밋 충돌 방지).
+# cancel-in-progress를 끄면 진행 중인 작업을 멈추지 않고 뒤따르는 작업이 기다린다.
+concurrency:
+  group: kling-account
+  cancel-in-progress: false
+
 jobs:
   kling:
     runs-on: ubuntu-latest
