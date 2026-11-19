@@ -2370,6 +2370,8 @@ func _record(outcome: String) -> PackedStringArray:
 		lines.append("%d연승! 연승 보너스 골드 +%d" % [int(reward["streak"]), int(reward.get("streak_gold", 0))])
 	for event in Profile.active_events(app.data.get("events", {}), app.today()):
 		lines.append("이벤트 적용: %s" % event["name"])
+	if int(reward.get("pass_double", 0)) > 1:
+		lines.append("시즌 패스 혜택: 보상 %d배 (광고 없이)" % int(reward["pass_double"]))
 	if bool(reward["first_win"]):
 		lines.append("오늘 첫 승리 보너스!")
 	if int(reward["level_ups"]) > 0:

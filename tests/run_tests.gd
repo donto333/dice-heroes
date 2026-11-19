@@ -72,6 +72,7 @@ func _init() -> void:
 	_test_odds_table()
 	_test_paid_gems()
 	_test_pickup()
+	_test_pass_premium_double()
 	_test_card_album()
 	_test_pass_by_fight()
 	_test_balance()
@@ -750,6 +751,26 @@ func _test_level_bonus() -> void:
 	var attack_charge := int(game.char_of(1, "attack").get("charge", 0))
 	_check(int(game.players[1]["gauge"]["attack"]) == mini(100, 50 + int(50 * (int(charge[4]) + attack_charge) / 100.0)), "레벨 5 자리 게이지가 더 차지 않음")
 	_check(game.level_gauge_percent(1, "attack") > game.level_gauge_percent(1, "support") or int(charge[4]) == int(charge[0]), "레벨 높은 자리가 더 빨리 차지 않음")
+
+
+## 프리미엄 시즌 패스가 있으면 판 보상(골드·경험치)이 광고 없이 배수만큼 늘고, 보석은 그대로인지.
+func _test_pass_premium_double() -> void:
+	var eco: Dictionary = _data["economy"]
+	var scale := int(eco.get("pass", {}).get("premium_reward_scale", 1))
+	_check(scale >= 2, "premium_reward_scale이 2배 이상이 아님")
+	var plain := Profile.new_profile("무패스", eco)
+	var premium := Profile.new_profile("패스", eco)
+	premium["pass"]["premium"] = true
+	_check(not Profile.pass_premium(plain) and Profile.pass_premium(premium), "프리미엄 패스 여부가 틀림")
+	var a := Profile.record_match(plain, eco, "ai", "win", {})
+	var b := Profile.record_match(premium, eco, "ai", "win", {})
+	_check(int(b["gold"]) == int(a["gold"]) * scale, "패스 골드가 %d배가 아님: %d / %d" % [scale, int(b["gold"]), int(a["gold"])])
+	_check(int(b["exp"]) == int(a["exp"]) * scale, "패스 경험치가 %d배가 아님" % scale)
+	_check(int(b["gems"]) == int(a["gems"]), "패스가 보석까지 늘림")
+	_check(int(b.get("pass_double", 0)) == scale and not a.has("pass_double"), "결과 화면 표시 값(pass_double)이 틀림")
+	# 친구 대전(local)에는 적용하지 않는다
+	var local := Profile.record_match(premium, eco, "local", "win", {})
+	_check(not local.has("pass_double"), "친구 대전에 패스 배수가 붙음")
 
 
 func _test_profile_basics() -> void:

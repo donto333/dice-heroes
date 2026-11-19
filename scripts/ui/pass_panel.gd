@@ -54,7 +54,13 @@ func build(main_app, column: VBoxContainer) -> void:
 	scroll.add_child(body)
 	for index in levels.size():
 		body.add_child(_level_row(index + 1, levels[index], level))
-	column.add_child(Kit.para("프리미엄 패스는 아직 살 수 없어요. 정식 버전에서 열릴 예정이에요.", 17, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	# 프리미엄 패스 혜택 설명(배수는 economy.json pass.premium_reward_scale)
+	var scale := maxi(1, int(table.get("premium_reward_scale", 1)))
+	column.add_child(Kit.para("프리미엄 패스 혜택: 오른쪽 줄 보상을 모두 받고, 판이 끝날 때 골드·경험치를 광고 없이 %d배로 받아요." % scale, 18, Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	if Profile.pass_premium(app.profile):
+		column.add_child(Kit.para("프리미엄 패스를 사용 중이에요.", 17, Kit.ACCENT, HORIZONTAL_ALIGNMENT_CENTER))
+	else:
+		column.add_child(Kit.para("프리미엄 패스는 아직 살 수 없어요. 정식 버전에서 열릴 예정이에요.", 17, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
 
 func _level_row(number: int, entry: Dictionary, level: int) -> Control:
