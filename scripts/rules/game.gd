@@ -81,6 +81,9 @@ var traps: Dictionary = {}
 ## 관문(강제 전투 칸): 플레이어마다 이미 뚫은 관문 {칸 번호: true}, 진 횟수 {칸 번호: 횟수}
 var gates_cleared: Array = [{}, {}]
 var gate_fails: Array = [{}, {}]
+## 카드로 세운 문지기(2026-11-19, ★★★ 카드 '분신 문지기'). 칸 번호 → {owner, hero, name, dice, bonus}.
+## 주인의 ATTACK 영웅 모습·공격 주사위·레벨 보너스를 그대로 가진다. 주인이 아닌 쪽이 밟으면 멈춰 싸워야 한다.
+var wardens: Dictionary = {}
 ## 관문에서 한 번 질 때마다 그 관문지기의 주사위가 이만큼 줄어든다(끝없이 막히지 않게).
 var gate_weaken := 1
 ## 골의 수호자 주사위가 줄어드는 한계
@@ -181,6 +184,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	traps = {}
 	gates_cleared = [{}, {}]
 	gate_fails = [{}, {}]
+	wardens = {}
 	for index in players.size():
 		for i in START_HAND:
 			_draw_card(index, false)
@@ -749,11 +753,82 @@ func _walk(player_index: int, steps: int, interactive: bool) -> bool:
 		# 관문: 아직 뚫지 못했으면 지나갈 수 없다. 여기서 멈추고 싸운다(남은 칸은 버린다).
 		if gate_blocks(player_index, int(players[player_index]["pos"])):
 			return true
+		# 상대가 세운 문지기: 멈춰서 싸운다. 저절로 가는 이동(추격·날기)이면 바로 싸운다.
+		if warden_blocks(player_index, int(players[player_index]["pos"])):
+			if not interactive and player_index == current:
+				_battle_warden(int(players[player_index]["pos"]))
+			return true
 		# 가는 길에 상대를 지나치면 싸울지 고른다. 마지막 칸이면 도착해서 싸운다.
 		if interactive and remaining > 0 and _can_fight_passing(player_index):
 			pending_choice = {"kind": "fight", "options": [0, 1], "steps": remaining}
 			return false
 	return true
+
+
+## 이 칸에 이 플레이어를 막는(상대가 세운) 문지기가 있는가
+func warden_blocks(player_index: int, pos: int) -> bool:
+	return wardens.has(pos) and int(wardens[pos]["owner"]) != player_index
+
+
+## 문지기를 세울 칸: 상대 앞으로 amount칸(골에 가까운 길). 출발·골·관문·다른 문지기 칸은 피해 한 칸씩 당긴다.
+func warden_spot(owner_index: int, amount: int) -> int:
+	var target_index := 1 - owner_index
+	var pos := int(players[target_index]["pos"])
+	var path: Array = []
+	for i in amount:
+		var options: Array = node_of(pos).get("next", [])
+		if options.is_empty() or str(node_of(pos).get("type", "")) == "goal":
+			break
+		pos = int(options[best_option(options)] if options.size() > 1 else options[0])
+		path.append(pos)
+	for index in range(path.size() - 1, -1, -1):
+		var spot := int(path[index])
+		var kind := str(node_of(spot).get("type", ""))
+		if kind in ["start", "goal", "gate"]:
+			continue
+		if wardens.has(spot) and int(wardens[spot]["owner"]) != owner_index:
+			continue
+		return spot
+	return -1
+
+
+## 문지기 주사위와 보너스: 주인 ATTACK 영웅의 공격 주사위·레벨 보너스, 맵 속성이 영웅이고 영웅 분류면 +2.
+func warden_power(pos: int) -> Dictionary:
+	var warden: Dictionary = wardens[pos]
+	var hero: Dictionary = characters.get(str(warden["hero"]), {})
+	var bonus := int(warden["bonus"])
+	if map_attr == "영웅" and str(hero.get("category", "")) == "영웅":
+		bonus += ATTR_BONUS
+	return {"dice": maxi(1, int(warden["dice"])), "bonus": bonus}
+
+
+## 현재 플레이어가 문지기를 공격한다. 이기면 문지기가 사라지고 true. 지면 거점으로, 문지기 주사위 1개 줄어듦.
+func _battle_warden(pos: int) -> bool:
+	var player: Dictionary = players[current]
+	var warden: Dictionary = wardens[pos]
+	var attacker: Dictionary = char_of(current, "attack")
+	var power := warden_power(pos)
+	say("  문지기 [%s]이(가) 길을 막습니다!" % warden["name"])
+	var attack_dice := _attack_dice(current)
+	var defense_dice := int(power["dice"]) - effect_sum(current, "enemy_dice_minus")
+	var attack_mods := _attack_mods(current)
+	var result := resolve_battle(attack_dice, defense_dice, _attack_bonus(current), int(power["bonus"]), attack_mods)
+	if not result["attacker_won"] and _consume_effect(current, "retry"):
+		_say_battle(result)
+		say("  재도전! 한 번 더 굴립니다.")
+		result = resolve_battle(attack_dice, defense_dice, _attack_bonus(current), int(power["bonus"]), attack_mods)
+	_say_battle(result)
+	_battle_event(attacker["name"], str(warden["name"]), result, "warden")
+	if result["attacker_won"]:
+		wardens.erase(pos)
+		say("  %s 승리! 문지기가 사라졌습니다." % player["name"])
+		_event({"kind": "warden", "player": int(warden["owner"]), "pos": pos, "hero": str(warden["hero"]), "gone": true})
+		_chase_after_win()
+		return true
+	warden["dice"] = maxi(1, int(warden["dice"]) - gate_weaken)
+	say("  패배... %s은(는) 직전 거점으로 돌아갑니다." % player["name"])
+	_return_to_checkpoint(current)
+	return false
 
 
 ## 이 플레이어가 아직 뚫지 못한 관문인가
@@ -819,6 +894,11 @@ func _resolve_tile(depth: int) -> void:
 	var here_type: String = node_of(pos).get("type", "")
 	if here_type != "start" and here_type != "goal" and int(opponent["pos"]) == pos:
 		if not _battle_players():
+			return
+		pos = int(player["pos"])
+
+	if warden_blocks(current, pos):
+		if not _battle_warden(pos):
 			return
 		pos = int(player["pos"])
 
@@ -1169,7 +1249,7 @@ func _say_battle(result: Dictionary) -> void:
 		str(result["defense_rolls"]), int(result["defense_total"])])
 
 
-## target: "player"(상대 말과 싸움), "keeper"(키퍼를 공격), "ambush"(몬스터의 습격을 막음), "card"(역전의 첫걸음 카드, 지는 쪽이 거점으로 가지 않음)
+## target: "player"(상대 말과 싸움), "keeper"(키퍼를 공격), "warden"(카드로 세운 문지기를 공격), "ambush"(몬스터의 습격을 막음), "card"(역전의 첫걸음 카드, 지는 쪽이 거점으로 가지 않음)
 func _battle_event(attacker_name: String, defender_name: String, result: Dictionary, target: String) -> void:
 	_event({
 		"kind": "battle",
@@ -1288,6 +1368,20 @@ func _apply_effect(effect: Dictionary, player_index: int) -> void:
 			else:
 				_add_effect(opponent_index, "card_sealed", 1, 2)
 				say("  %s은(는) 다음 차례에 카드를 쓸 수 없습니다." % opponent["name"])
+		"warden":
+			var spot := warden_spot(player_index, maxi(amount, 1))
+			if spot < 0:
+				say("  문지기를 세울 자리가 없습니다.")
+			else:
+				# 한 사람이 세운 문지기는 하나만: 예전 것은 사라진다.
+				for old_spot in wardens.keys():
+					if int(wardens[old_spot]["owner"]) == player_index:
+						wardens.erase(old_spot)
+				var hero: Dictionary = char_of(player_index, "attack")
+				wardens[spot] = {"owner": player_index, "hero": str(hero["id"]), "name": str(hero["name"]),
+					"dice": int(hero["attack"]), "bonus": level_bonus(player_index, "attack")}
+				say("  %d번 칸에 문지기 [%s](공격 주사위 %d개)이(가) 섰습니다!" % [spot, hero["name"], int(hero["attack"])])
+				_event({"kind": "warden", "player": player_index, "pos": spot, "hero": str(hero["id"]), "gone": false})
 		"random_one":
 			var choices: Array = effect.get("effects", [])
 			if not choices.is_empty():
