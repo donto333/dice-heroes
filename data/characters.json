@@ -2,7 +2,7 @@
   "_comment": "캐릭터 48명 (분류마다 ★★★ 3, ★★ 4, ★ 5). 이름과 등급의 기준은 로스터 시트다. 수치는 tests/run_tests.gd의 밸런스 통계를 보며 조정한다.",
   "characters": [
     {"id": "lubu", "name": "여포", "category": "영웅", "grade": 3, "move": 1, "attack": 4, "defense": 2, "intellect": 1, "charge": 80, "ability": "unique_lubu", "title": "비장의 맹장", "bio": "후한 말 최강의 무용을 떨친 장수. 붉은 명마를 타고 방천화극을 휘둘렀다."},
-    {"id": "yisunsin", "name": "이순신", "category": "영웅", "grade": 3, "move": 1, "attack": 4, "defense": 5, "intellect": 2, "charge": 50, "ability": "unique_yisunsin", "title": "바다의 수호자", "bio": "조선 수군을 이끌고 임진왜란에서 연전연승한 장군. 판옥선과 거북선으로 바다를 지켰다."},
+    {"id": "yisunsin", "name": "이순신", "category": "영웅", "grade": 3, "move": 1, "attack": 4, "defense": 5, "intellect": 3, "charge": 50, "ability": "unique_yisunsin", "title": "바다의 수호자", "bio": "조선 수군을 이끌고 임진왜란에서 연전연승한 장군. 판옥선과 거북선으로 바다를 지켰다."},
     {"id": "alexander", "name": "알렉산더 대왕", "category": "영웅", "grade": 3, "move": 2, "attack": 3, "defense": 2, "intellect": 2, "ability": "unique_alexander", "title": "정복왕", "bio": "마케도니아의 왕. 젊은 나이에 그리스에서 인도 가까이까지 대제국을 세웠다."},
     {"id": "machao", "name": "마초", "category": "영웅", "grade": 2, "move": 2, "attack": 3, "defense": 1, "intellect": 1, "ability": "skill_machao", "title": "서량의 금마초", "bio": "서량 출신의 날랜 기병 장수. 빛나는 갑옷과 창술로 이름을 떨쳤다."},
     {"id": "eulji", "name": "을지문덕", "category": "영웅", "grade": 2, "move": 1, "attack": 3, "defense": 3, "intellect": 2, "charge": 50, "ability": "skill_eulji", "title": "살수의 지략가", "bio": "고구려의 장수. 수나라 대군을 살수까지 끌어들여 크게 무찔렀다."},
