@@ -71,6 +71,7 @@ func _init() -> void:
 	_test_gold_gacha()
 	_test_odds_table()
 	_test_paid_gems()
+	_test_pickup()
 	_test_card_album()
 	_test_pass_by_fight()
 	_test_balance()
@@ -2206,6 +2207,44 @@ func _test_paid_gems() -> void:
 	_check(Profile.record_purchase(profile, eco, "없는상품", "").is_empty(), "없는 상품이 팔림")
 	for pack in eco["gem_packs"]["packs"]:
 		_check(int(pack.get("price", 0)) > 0 and str(pack.get("id", "")) != "", "보석 상품에 가격이나 id가 없음")
+
+
+## 픽업 소환(2026-11-19): 2주마다 바뀌고, 확정은 픽업 영웅, 확률표에 반영.
+func _test_pickup() -> void:
+	var eco: Dictionary = _data["economy"]
+	var table: Dictionary = eco["summon"]["pickup"]
+	var heroes: Array = table["heroes"]
+	_check(Profile.pickup_hero(eco, str(table["start"])) == str(heroes[0]), "픽업 첫 영웅이 다름")
+	_check(Profile.pickup_hero(eco, "2026-11-29") == str(heroes[0]), "14일 안에 픽업이 바뀜")
+	_check(Profile.pickup_hero(eco, "2026-11-30") == str(heroes[1]), "14일 뒤에 픽업이 안 바뀜")
+	_check(Profile.pickup_days_left(eco, "2026-11-16") == 14 and Profile.pickup_days_left(eco, "2026-11-29") == 1, "픽업 남은 날이 틀림")
+	for id in heroes:
+		var found := false
+		for character in _data["characters"]:
+			if str(character["id"]) == str(id) and int(character["grade"]) == 3:
+				found = true
+		_check(found, "픽업 영웅이 ★★★ 영웅이 아님: %s" % id)
+	var profile := Profile.new_profile("픽업", eco)
+	profile["daily"]["date"] = "2026-11-19"
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	var pickup := Profile.pickup_hero(eco, "2026-11-19")
+	var threes := 0
+	var pickups := 0
+	for round_index in 60:
+		profile["pity"] = int(eco["summon"]["pity_3"]) - 1
+		var forced := Profile.summon(profile, _data["characters"], eco, 1, rng)
+		_check(str(forced[0]["id"]) == pickup, "★★★ 확정이 픽업 영웅이 아님")
+		for entry in Profile.summon(profile, _data["characters"], eco, 10, rng):
+			if int(entry["grade"]) == 3:
+				threes += 1
+				if str(entry["id"]) == pickup:
+					pickups += 1
+	_check(threes > 10 and pickups > 0 and pickups < threes, "픽업이 아닌 ★★★도 나와야 함")
+	var odds := Profile.odds_table("hero", _data["characters"], _data["cards"], eco, "2026-11-19")
+	var first: Dictionary = odds["groups"][0]["items"][0]
+	_check(bool(first["pickup"]) and str(first["id"]) == pickup, "확률표 맨 위가 픽업 영웅이 아님")
+	_check(absf(float(first["rate"]) - float(eco["summon"]["rates"]["3"]) * float(table["share"]) / 100.0) < 0.001, "픽업 영웅 확률이 틀림")
 
 
 ## 카드 앨범(2026-11-18): 등급별 모은 수에 따라 보상, 한 번만 받음.

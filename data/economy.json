@@ -63,6 +63,26 @@
       "1": 64
     },
     "pity_3": 40,
+    "pickup": {
+      "_comment": "픽업 소환(2026-11-19, 정식 출시 준비): start부터 days일마다 heroes 순서로 ★★★ 한 명이 바뀐다. 보석 소환에서 ★★★가 나오면 share%는 그 영웅, 나머지는 다른 ★★★. pity_3 확정은 반드시 픽업 영웅. 골드 소환은 상관없음.",
+      "start": "2026-11-16",
+      "days": 14,
+      "share": 50,
+      "heroes": [
+        "zeus",
+        "lubu",
+        "sejong",
+        "nightingale",
+        "wukong",
+        "yisunsin",
+        "tesla",
+        "zhugeliang",
+        "alexander",
+        "dangun",
+        "davinci",
+        "edison"
+      ]
+    },
     "shards_on_duplicate": {
       "1": 5,
       "2": 10,

@@ -1930,5 +1930,12 @@
  "즉시 300 + 30일 동안 매일 100": "300 now + 100 daily for 30 days",
  "유료 보석 %s + 덤 %s": "Paid gems %s + bonus %s",
  "결제한 스토어(구글 플레이)의 주문 내역에서도 확인할 수 있어요.": "You can also check orders in the store you paid with (Google Play).",
- "보석 상점에 가격과 구매 확인 창, 구매 내역이 생겼어요. 유료 보석과 무료 보석을 따로 세요(결제는 정식 출시 때 열려요).": "The gem shop now shows prices, a purchase confirmation and purchase history. Paid and free gems are counted separately (payment opens at launch)."
+ "보석 상점에 가격과 구매 확인 창, 구매 내역이 생겼어요. 유료 보석과 무료 보석을 따로 세요(결제는 정식 출시 때 열려요).": "The gem shop now shows prices, a purchase confirmation and purchase history. Paid and free gems are counted separately (payment opens at launch).",
+ "픽업 소환": "Pickup Summon",
+ "%s 확률 UP · ★★★의 %d%%": "%s rate UP · %d%% of ★★★",
+ "%d일 남음": "%d days left",
+ "%d명 · 픽업 %s, 나머지 한 명당 %s": "%d heroes · pickup %s, others %s each",
+ "· ★★★ 확정으로 나오는 영웅은 언제나 픽업 영웅이에요.": "· The guaranteed ★★★ is always the pickup hero.",
+ "· 픽업 영웅: %s (%d일 남음). ★★★가 나오면 %d%%는 이 영웅, 나머지는 다른 ★★★예요.": "· Pickup hero: %s (%d days left). When ★★★ appears, %d%% of the time it's this hero; otherwise another ★★★.",
+ "픽업 소환이 생겼어요: 2주마다 ★★★ 영웅 한 명의 확률이 올라가고, ★★★ 확정도 그 영웅으로 나와요.": "Pickup Summon is here: every 2 weeks one ★★★ hero gets a higher rate, and the guaranteed ★★★ is that hero."
 }

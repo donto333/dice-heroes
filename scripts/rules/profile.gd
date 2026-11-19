@@ -310,6 +310,36 @@ static func roll_grade(profile: Dictionary, eco: Dictionary, rng: RandomNumberGe
 ## 영웅을 count번 소환한다. 비용은 먼저 치러야 한다(pay 또는 무료 소환).
 ## 돌려주는 값: [{"id", "grade", "new": 처음 얻었는지, "shards": 중복이면 받은 조각}]
 ## gold: true면 골드 소환(economy.json의 summon.gold 확률, ★·★★만, ★★★ 보장은 세지 않음).
+## 픽업 소환 영웅(economy.json summon.pickup). date는 "2026-11-19". 없으면 "".
+static func pickup_hero(eco: Dictionary, date: String) -> String:
+	var table: Dictionary = eco.get("summon", {}).get("pickup", {})
+	var heroes: Array = table.get("heroes", [])
+	if heroes.is_empty():
+		return ""
+	return str(heroes[_pickup_round(table, date) % heroes.size()])
+
+
+## 지금 픽업이 끝나기까지 남은 날(오늘 포함).
+static func pickup_days_left(eco: Dictionary, date: String) -> int:
+	var table: Dictionary = eco.get("summon", {}).get("pickup", {})
+	var days := maxi(int(table.get("days", 14)), 1)
+	var passed := _days_between(str(table.get("start", "")), date)
+	return days - posmod(passed, days)
+
+
+static func _pickup_round(table: Dictionary, date: String) -> int:
+	var passed := _days_between(str(table.get("start", "")), date)
+	return maxi(passed, 0) / maxi(int(table.get("days", 14)), 1)
+
+
+static func _days_between(from_date: String, to_date: String) -> int:
+	if from_date == "" or to_date == "":
+		return 0
+	var a := Time.get_unix_time_from_datetime_string(from_date + "T00:00:00")
+	var b := Time.get_unix_time_from_datetime_string(to_date + "T00:00:00")
+	return int(floor(float(b - a) / 86400.0))
+
+
 static func summon(profile: Dictionary, characters: Array, eco: Dictionary, count: int, rng: RandomNumberGenerator, gold: bool = false) -> Array:
 	var summon_table: Dictionary = eco.get("summon", {})
 	var shard_table: Dictionary = summon_table.get("shards_on_duplicate", {})
@@ -317,9 +347,12 @@ static func summon(profile: Dictionary, characters: Array, eco: Dictionary, coun
 	for index in count:
 		var guarantee_two := count >= 10 and index == count - 1 and not _has_grade_at_least(results, 2)
 		var grade := 1
+		var forced := false
 		if gold:
 			grade = roll_rates(summon_table.get("gold", {}).get("rates", {"1": 100}), rng, guarantee_two)
 		else:
+			var pity_limit := int(summon_table.get("pity_3", 0))
+			forced = pity_limit > 0 and int(profile.get("pity", 0)) + 1 >= pity_limit
 			grade = roll_grade(profile, eco, rng, guarantee_two)
 			if grade == 3:
 				profile["pity"] = 0
@@ -331,7 +364,19 @@ static func summon(profile: Dictionary, characters: Array, eco: Dictionary, coun
 				pool.append(character)
 		var picked: Dictionary = pool[rng.randi_range(0, pool.size() - 1)]
 		var id := str(picked["id"])
-		var entry := {"id": id, "grade": grade, "new": false, "shards": 0}
+		# 픽업 소환: ★★★면 share%(확정이면 반드시)는 픽업 영웅, 아니면 다른 ★★★ 중 하나.
+		var pickup := pickup_hero(eco, str(profile.get("daily", {}).get("date", "")))
+		if not gold and grade == 3 and pickup != "" and pool.size() > 1:
+			var share := float(summon_table.get("pickup", {}).get("share", 0))
+			if forced or rng.randf() * 100.0 < share:
+				id = pickup
+			else:
+				var others: Array = []
+				for character in pool:
+					if str(character["id"]) != pickup:
+						others.append(str(character["id"]))
+				id = others[rng.randi_range(0, others.size() - 1)]
+		var entry := {"id": id, "grade": grade, "new": false, "shards": 0, "pickup": id == pickup and grade == 3}
 		if owns(profile, id):
 			var shards := int(shard_table.get(str(grade), 5))
 			profile["owned"][id]["shards"] = int(profile["owned"][id]["shards"]) + shards
@@ -1731,7 +1776,7 @@ static func owns_card(profile: Dictionary, id: String) -> bool:
 ## 실제 뽑기와 같은 economy.json 값으로 계산한다. 등급 안에서는 모두 같은 확률이다.
 ## 돌려주는 값: {"groups": [{"grade", "rate"(%), "items": [{"id", "name", "rate"(%)}]}], "pity_3", "guarantee_two"}
 ## 룰렛은 groups 하나에 칸마다 {"reward", "rate"}.
-static func odds_table(kind: String, characters: Array, cards: Dictionary, eco: Dictionary) -> Dictionary:
+static func odds_table(kind: String, characters: Array, cards: Dictionary, eco: Dictionary, date: String = "") -> Dictionary:
 	if kind == "roulette":
 		var slots: Array = eco.get("roulette", {}).get("slots", [])
 		var total := 0.0
@@ -1763,10 +1808,24 @@ static func odds_table(kind: String, characters: Array, cards: Dictionary, eco: 
 				if int(character.get("grade", 0)) == grade:
 					pool.append({"id": str(character["id"]), "name": str(character.get("name", character["id"]))})
 		var items: Array = []
+		var pickup := "" if is_card or gold else pickup_hero(eco, date)
+		var has_pickup := false
 		for entry in pool:
-			items.append({"id": entry["id"], "name": entry["name"], "rate": rate / float(pool.size())})
+			has_pickup = has_pickup or (grade == 3 and str(entry["id"]) == pickup)
+		var share := float(table.get("pickup", {}).get("share", 0)) / 100.0
+		for entry in pool:
+			var each := rate / float(pool.size())
+			if has_pickup and pool.size() > 1:
+				each = rate * share if str(entry["id"]) == pickup else rate * (1.0 - share) / float(pool.size() - 1)
+			items.append({"id": entry["id"], "name": entry["name"], "rate": each, "pickup": has_pickup and str(entry["id"]) == pickup})
+		if has_pickup:
+			items.sort_custom(func(a, b) -> bool: return bool(a["pickup"]) and not bool(b["pickup"]))
 		groups.append({"grade": grade, "rate": rate, "items": items})
-	return {"groups": groups, "pity_3": 0 if gold else int(table.get("pity_3", 0)), "guarantee_two": true}
+	var result := {"groups": groups, "pity_3": 0 if gold else int(table.get("pity_3", 0)), "guarantee_two": true}
+	if not is_card and not gold:
+		result["pickup"] = pickup_hero(eco, date)
+		result["pickup_share"] = int(table.get("pickup", {}).get("share", 0))
+	return result
 
 
 static func card_grade(cards: Dictionary, id: String) -> int:
