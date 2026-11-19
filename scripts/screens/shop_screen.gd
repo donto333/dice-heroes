@@ -92,17 +92,35 @@ func _summon_panel() -> Control:
 	card.add_child(circle)
 	var column := Kit.vbox(12)
 	card.add_child(column)
-	column.add_child(Kit.title("영웅 소환", 40))
+	# 픽업 소환(2026-11-19): 이번 픽업 영웅을 크게, 다른 ★★★ 셋을 옆에.
+	var date := str(app.profile.get("daily", {}).get("date", ""))
+	var pickup := Profile.pickup_hero(app.eco, date)
+	var pickup_info: Dictionary = app.character(pickup) if pickup != "" else {}
+	column.add_child(Kit.title("픽업 소환" if pickup != "" else "영웅 소환", 40))
 	var faces := Kit.hbox(8)
 	column.add_child(faces)
+	var shown: Array = [] if pickup == "" else [pickup]
 	for id in BANNER:
+		if shown.size() < 4 and not shown.has(id):
+			shown.append(id)
+	for id in shown:
 		var face := Portrait.new()
 		face.custom_minimum_size = Vector2(0, 150)
 		face.hd = true
 		var info: Dictionary = app.character(id)
 		face.show_character(info, Kit.GRADE_COLORS[3])
 		face.border = Kit.GOLD
-		faces.add_child(Kit.expand(face))
+		Kit.expand(face)
+		if id == pickup:
+			face.size_flags_stretch_ratio = 1.8
+		faces.add_child(face)
+	if pickup != "":
+		var up_line := Kit.hbox(8)
+		up_line.alignment = BoxContainer.ALIGNMENT_CENTER
+		column.add_child(up_line)
+		var share := int(summon.get("pickup", {}).get("share", 0))
+		up_line.add_child(MenuArt.capsule("%s 확률 UP · ★★★의 %d%%" % [str(pickup_info.get("name", pickup)), share], "star", 20))
+		up_line.add_child(MenuArt.capsule("%d일 남음" % Profile.pickup_days_left(app.eco, date), "", 20))
 	var rates: Dictionary = summon.get("rates", {})
 	var pity_left: int = int(summon.get("pity_3", 0)) - int(app.profile.get("pity", 0))
 	# 확률·보장은 캡슐 두 개로

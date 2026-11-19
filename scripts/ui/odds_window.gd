@@ -28,7 +28,7 @@ static func button(app, kind: String) -> Button:
 
 static func open(app, kind: String) -> Control:
 	app.play("click")
-	var table: Dictionary = Profile.odds_table(kind, app.data.get("characters", []), app.data.get("cards", {}), app.eco)
+	var table: Dictionary = Profile.odds_table(kind, app.data.get("characters", []), app.data.get("cards", {}), app.eco, str(app.profile.get("daily", {}).get("date", "")))
 	var body := Kit.vbox(12)
 	if kind == "roulette":
 		_roulette_rows(body, table)
@@ -69,8 +69,10 @@ static func _gacha_rows(body: VBoxContainer, table: Dictionary, kind: String) ->
 		var head := Kit.hbox(8)
 		column.add_child(head)
 		head.add_child(Kit.label("%s %s" % ["★".repeat(grade), GRADE_NAMES.get(grade, "")], 22, color))
-		var each_rate := percent(float(items[0]["rate"]) if not items.is_empty() else 0.0)
+		var each_rate := percent(float(items[-1]["rate"]) if not items.is_empty() else 0.0)
 		var each := ("%d장 · 한 장당 %s" if kind.begins_with("card") else "%d명 · 한 명당 %s") % [items.size(), each_rate]
+		if not items.is_empty() and bool(items[0].get("pickup", false)):
+			each = "%d명 · 픽업 %s, 나머지 한 명당 %s" % [items.size(), percent(float(items[0]["rate"])), each_rate]
 		head.add_child(Kit.expand(Kit.label(each, 18, Kit.MUTED)))
 		head.add_child(Kit.label(percent(float(group["rate"])), 22, Kit.GOLD))
 		var grid := GridContainer.new()
@@ -81,7 +83,8 @@ static func _gacha_rows(body: VBoxContainer, table: Dictionary, kind: String) ->
 		for item in items:
 			var cell := Kit.hbox(6)
 			cell.custom_minimum_size = Vector2(250, 0)
-			var name_label := Kit.label(str(item["name"]), 17, Color.WHITE)
+			var is_pickup := bool(item.get("pickup", false))
+			var name_label := Kit.label(("UP " if is_pickup else "") + str(item["name"]), 17, Kit.GOLD if is_pickup else Color.WHITE)
 			name_label.clip_text = true
 			cell.add_child(Kit.expand(name_label))
 			cell.add_child(Kit.label(percent(float(item["rate"])), 16, Kit.MUTED))
@@ -112,6 +115,11 @@ static func _notes(app, kind: String, table: Dictionary) -> String:
 	lines.append("· 같은 등급 안에서는 모두 같은 확률이에요.")
 	if kind.ends_with("_gold"):
 		lines.append("· 골드로는 ★★★가 나오지 않고, ★★★ 확정 횟수도 세지 않아요.")
+	var pickup := str(table.get("pickup", ""))
+	if pickup != "":
+		var info: Dictionary = app.character(pickup)
+		lines.append("· 픽업 영웅: %s (%d일 남음). ★★★가 나오면 %d%%는 이 영웅, 나머지는 다른 ★★★예요." % [str(info.get("name", pickup)), Profile.pickup_days_left(app.eco, str(app.profile.get("daily", {}).get("date", ""))), int(table.get("pickup_share", 0))])
+		lines.append("· ★★★ 확정으로 나오는 영웅은 언제나 픽업 영웅이에요.")
 	if bool(table.get("guarantee_two", false)):
 		lines.append("· 10회 뽑기에서 앞의 9번에 ★★ 이상이 없으면 마지막 한 번은 ★★ 이상이 나와요.")
 	var pity := int(table.get("pity_3", 0))
