@@ -588,6 +588,12 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 			var counted: int = min(streak, int(bonus_table.get("max_count", 5))) - 1
 			reward["streak_gold"] = counted * int(bonus_table.get("gold_per_win", 0))
 			reward["gold"] = int(reward["gold"]) + int(reward["streak_gold"])
+	# 프리미엄 시즌 패스: 판 보상(골드·경험치)을 광고 없이 2배로 준다. 첫 승리 보석·트로피는 그대로.
+	var pass_scale := pass_reward_scale(profile, eco)
+	if pass_scale > 1 and mode != "local":
+		reward["gold"] = int(reward["gold"]) * pass_scale
+		reward["exp"] = int(reward["exp"]) * pass_scale
+		reward["pass_double"] = pass_scale
 	var counts_as_win := outcome == "win" and mode != "local"
 	if counts_as_win and not bool(profile["daily"].get("first_win", false)):
 		profile["daily"]["first_win"] = true
@@ -1321,6 +1327,18 @@ static func add_pass_exp(profile: Dictionary, eco: Dictionary, amount: int) -> v
 	var level_list: Array = table.get("levels", [])
 	var cap: int = int(table.get("exp_per_level", 100)) * level_list.size()
 	state["exp"] = min(cap, int(state["exp"]) + amount)
+
+
+## 프리미엄 시즌 패스를 가졌는지. 결제가 붙으면 구매 확인 뒤 pass.premium을 true로 둔다.
+static func pass_premium(profile: Dictionary) -> bool:
+	return bool(_pass_state(profile).get("premium", false))
+
+
+## 프리미엄 패스가 있으면 판 보상(골드·경험치)에 곱하는 배수. 없으면 1.
+static func pass_reward_scale(profile: Dictionary, eco: Dictionary) -> int:
+	if not pass_premium(profile):
+		return 1
+	return maxi(1, int(eco.get("pass", {}).get("premium_reward_scale", 1)))
 
 
 ## 지금 패스 레벨(0부터, 최고는 levels 수)

@@ -2297,8 +2297,8 @@ func _show_game_over() -> void:
 		notes.append(str(line))
 	extras["rows"] = rows
 	extras["notes"] = notes
-	# 보상형 광고: 이번 판 골드를 한 번 더(2026-11-19)
-	if not _is_local() and app.has_profile() and int(_last_reward.get("gold", 0)) > 0 and Profile.ads_left(app.profile, app.eco, "gold_double") > 0:
+	# 보상형 광고: 이번 판 골드를 한 번 더(2026-11-19). 프리미엄 시즌 패스가 있으면 이미 광고 없이 2배라 버튼을 띄우지 않는다.
+	if not _is_local() and app.has_profile() and not Profile.pass_premium(app.profile) and int(_last_reward.get("gold", 0)) > 0 and Profile.ads_left(app.profile, app.eco, "gold_double") > 0:
 		extras["ad_text"] = "광고 보고 골드 +%s" % Kit.comma(int(_last_reward["gold"]))
 	# 칸 알림·말풍선이 결과 창을 가리지 않게 맨 앞으로
 	_close_hint()
@@ -2380,6 +2380,8 @@ func _record(outcome: String) -> PackedStringArray:
 		lines.append("%d연승! 연승 보너스 골드 +%d" % [int(reward["streak"]), int(reward.get("streak_gold", 0))])
 	for event in Profile.active_events(app.data.get("events", {}), app.today()):
 		lines.append("이벤트 적용: %s" % event["name"])
+	if int(reward.get("pass_double", 0)) > 1:
+		lines.append("시즌 패스 혜택: 보상 %d배 (광고 없이)" % int(reward["pass_double"]))
 	if bool(reward["first_win"]):
 		lines.append("오늘 첫 승리 보너스!")
 	if int(reward["level_ups"]) > 0:
