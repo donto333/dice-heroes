@@ -8,7 +8,8 @@ const Profile := preload("res://scripts/rules/profile.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 
 const TITLES := {
-	"hero": "영웅 소환 확률",
+	"hero": "픽업 모집 확률",
+	"hero_std": "일반 모집 확률",
 	"hero_gold": "골드 소환 확률",
 	"card": "카드 뽑기 확률",
 	"card_gold": "골드 카드 뽑기 확률",
@@ -124,8 +125,10 @@ static func _notes(app, kind: String, table: Dictionary) -> String:
 		lines.append("· 10회 뽑기에서 앞의 9번에 ★★ 이상이 없으면 마지막 한 번은 ★★ 이상이 나와요.")
 	var pity := int(table.get("pity_3", 0))
 	if pity > 0:
-		var done := int(app.profile.get("card_pity" if kind == "card" else "pity", 0))
+		var done := int(app.profile.get("card_pity" if kind == "card" else Profile.pity_key("standard" if kind == "hero_std" else "pickup"), 0))
 		lines.append("· %d번째까지 ★★★가 안 나오면 %d번째는 ★★★가 확정이에요. 지금까지 %d번 쌓였어요." % [pity - 1, pity, done])
+	if kind == "hero" or kind == "hero_std":
+		lines.append("· 픽업 모집과 일반 모집의 ★★★ 확정 횟수는 따로 쌓여요.")
 	if kind.begins_with("card"):
 		lines.append("· 이미 가진 카드가 나오면 골드로 바뀌어요.")
 	else:

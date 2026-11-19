@@ -53,6 +53,7 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		## 영웅별 전적 {id: {"played": n, "wins": n}}
 		"hero_stats": {},
 		"pity": 0,
+		"pity_std": 0,
 		"daily": {"date": "", "progress": {}, "claimed": [], "all_claimed": false, "free_summons": 0, "first_win": false, "deals_bought": [], "roulette_spins": 0, "challenge_done": false, "sweeps": 0, "free_card_draws": 0},
 		"attendance": {"last_date": "", "count": 0},
 		"settings": {"sfx": true, "bgm": true, "fast": false, "vibrate": true},
@@ -308,10 +309,11 @@ static func roll_rates(rates: Dictionary, rng: RandomNumberGenerator, guarantee_
 
 
 ## 소환 한 번의 등급. 보장(pity)이 차면 ★★★, guarantee_two면 ★★ 이상.
-static func roll_grade(profile: Dictionary, eco: Dictionary, rng: RandomNumberGenerator, guarantee_two: bool) -> int:
+## pity_key: 보장 횟수를 세는 칸(픽업 모집 "pity", 일반 모집 "pity_std").
+static func roll_grade(profile: Dictionary, eco: Dictionary, rng: RandomNumberGenerator, guarantee_two: bool, pity_key: String = "pity") -> int:
 	var summon: Dictionary = eco.get("summon", {})
 	var pity_limit := int(summon.get("pity_3", 0))
-	if pity_limit > 0 and int(profile.get("pity", 0)) + 1 >= pity_limit:
+	if pity_limit > 0 and int(profile.get(pity_key, 0)) + 1 >= pity_limit:
 		return 3
 	var rates: Dictionary = summon.get("rates", {"1": 100})
 	var roll := rng.randf() * 100.0
@@ -360,7 +362,15 @@ static func _days_between(from_date: String, to_date: String) -> int:
 	return int(floor(float(b - a) / 86400.0))
 
 
-static func summon(profile: Dictionary, characters: Array, eco: Dictionary, count: int, rng: RandomNumberGenerator, gold: bool = false) -> Array:
+## 보장 횟수를 세는 칸. 픽업 모집과 일반 모집은 따로 센다(2026-11-19 사용자 결정: 모집을 둘로 나눔).
+static func pity_key(banner: String) -> String:
+	return "pity_std" if banner == "standard" else "pity"
+
+
+## banner: "pickup"(픽업 모집: ★★★의 share%는 픽업 영웅, 확정은 픽업 영웅) 또는
+## "standard"(일반 모집: ★★★ 모두 같은 확률, 확정도 아무 ★★★). 골드 소환은 banner와 상관없다.
+static func summon(profile: Dictionary, characters: Array, eco: Dictionary, count: int, rng: RandomNumberGenerator, gold: bool = false, banner: String = "pickup") -> Array:
+	var key := pity_key(banner)
 	var summon_table: Dictionary = eco.get("summon", {})
 	var shard_table: Dictionary = summon_table.get("shards_on_duplicate", {})
 	var results: Array = []
@@ -372,12 +382,12 @@ static func summon(profile: Dictionary, characters: Array, eco: Dictionary, coun
 			grade = roll_rates(summon_table.get("gold", {}).get("rates", {"1": 100}), rng, guarantee_two)
 		else:
 			var pity_limit := int(summon_table.get("pity_3", 0))
-			forced = pity_limit > 0 and int(profile.get("pity", 0)) + 1 >= pity_limit
-			grade = roll_grade(profile, eco, rng, guarantee_two)
+			forced = pity_limit > 0 and int(profile.get(key, 0)) + 1 >= pity_limit
+			grade = roll_grade(profile, eco, rng, guarantee_two, key)
 			if grade == 3:
-				profile["pity"] = 0
+				profile[key] = 0
 			else:
-				profile["pity"] = int(profile.get("pity", 0)) + 1
+				profile[key] = int(profile.get(key, 0)) + 1
 		var pool: Array = []
 		for character in characters:
 			if int(character["grade"]) == grade:
@@ -385,7 +395,7 @@ static func summon(profile: Dictionary, characters: Array, eco: Dictionary, coun
 		var picked: Dictionary = pool[rng.randi_range(0, pool.size() - 1)]
 		var id := str(picked["id"])
 		# 픽업 소환: ★★★면 share%(확정이면 반드시)는 픽업 영웅, 아니면 다른 ★★★ 중 하나.
-		var pickup := pickup_hero(eco, str(profile.get("daily", {}).get("date", "")))
+		var pickup := "" if banner == "standard" else pickup_hero(eco, str(profile.get("daily", {}).get("date", "")))
 		if not gold and grade == 3 and pickup != "" and pool.size() > 1:
 			var share := float(summon_table.get("pickup", {}).get("share", 0))
 			if forced or rng.randf() * 100.0 < share:
@@ -1888,7 +1898,7 @@ static func owns_card(profile: Dictionary, id: String) -> bool:
 
 
 ## 확률 보기 창(2026-11-19, 정식 출시 준비: 확률형 아이템 정보 공개)에 보여 줄 표.
-## kind: hero(영웅 소환)·hero_gold(골드 소환)·card(카드 뽑기)·card_gold(골드 카드 뽑기)·roulette(행운의 룰렛).
+## kind: hero(픽업 모집)·hero_std(일반 모집)·hero_gold(골드 소환)·card(카드 뽑기)·card_gold(골드 카드 뽑기)·roulette(행운의 룰렛).
 ## 실제 뽑기와 같은 economy.json 값으로 계산한다. 등급 안에서는 모두 같은 확률이다.
 ## 돌려주는 값: {"groups": [{"grade", "rate"(%), "items": [{"id", "name", "rate"(%)}]}], "pity_3", "guarantee_two"}
 ## 룰렛은 groups 하나에 칸마다 {"reward", "rate"}.
@@ -1924,7 +1934,7 @@ static func odds_table(kind: String, characters: Array, cards: Dictionary, eco: 
 				if int(character.get("grade", 0)) == grade:
 					pool.append({"id": str(character["id"]), "name": str(character.get("name", character["id"]))})
 		var items: Array = []
-		var pickup := "" if is_card or gold else pickup_hero(eco, date)
+		var pickup := "" if is_card or gold or kind == "hero_std" else pickup_hero(eco, date)
 		var has_pickup := false
 		for entry in pool:
 			has_pickup = has_pickup or (grade == 3 and str(entry["id"]) == pickup)
@@ -1938,7 +1948,7 @@ static func odds_table(kind: String, characters: Array, cards: Dictionary, eco: 
 			items.sort_custom(func(a, b) -> bool: return bool(a["pickup"]) and not bool(b["pickup"]))
 		groups.append({"grade": grade, "rate": rate, "items": items})
 	var result := {"groups": groups, "pity_3": 0 if gold else int(table.get("pity_3", 0)), "guarantee_two": true}
-	if not is_card and not gold:
+	if kind == "hero":
 		result["pickup"] = pickup_hero(eco, date)
 		result["pickup_share"] = int(table.get("pickup", {}).get("share", 0))
 	return result
