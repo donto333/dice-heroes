@@ -130,17 +130,29 @@ func _draw_art(center: Vector2, radius: float, step: float, font: Font) -> void:
 		draw_texture_rect(_arrow, Rect2(Vector2(center.x - arrow_size.x / 2.0, tip_y - arrow_size.y), arrow_size), false)
 
 
-## 칸 글자: 칸 가운데 방향을 따라 눕혀, 반지름 at 자리에 가운데 맞춰 쓴다.
-## 왼쪽 절반 칸은 그대로 두면 글자가 거꾸로 서므로 반 바퀴 돌려 늘 바로 읽히게 한다.
-## 글자가 width보다 길면 글자 크기를 줄인다(번역 글이 길 때).
+## 칸 글자: 칸 가운데(반지름 at 자리)에 바로 선 두 줄 글자(종류 위, 수량 아래)로 쓴다.
+## 눕혀 쓰면 위·아래·왼쪽 칸 글자가 세로나 거꾸로 보여서 바꿨다(2026-11-20 사용자 요청).
 func _draw_label(center: Vector2, mid: float, at: float, width: float, text: String, font: Font) -> void:
-	var font_size := 24
-	while font_size > 14 and font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > width:
-		font_size -= 1
+	var parts := text.split(" ", false, 1)
+	var top := parts[0] if parts.size() > 1 else ""
+	var big := parts[1] if parts.size() > 1 else text
 	var spot := center + Vector2(cos(mid), sin(mid)) * at
-	var turn := mid if cos(mid) >= -0.001 else mid + PI
-	draw_set_transform(spot, turn, Vector2.ONE)
-	var origin := Vector2(-width / 2.0, font_size * 0.36)
-	draw_string_outline(font, origin, text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size, 6, Color(0, 0, 0, 0.75))
-	draw_string(font, origin, text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size, Color.WHITE)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	var box := minf(width, 96.0)
+	var big_size := 26
+	while big_size > 14 and font.get_string_size(big, HORIZONTAL_ALIGNMENT_LEFT, -1, big_size).x > box:
+		big_size -= 1
+	var small_size := 17
+	while small_size > 11 and font.get_string_size(top, HORIZONTAL_ALIGNMENT_LEFT, -1, small_size).x > box:
+		small_size -= 1
+	var left := spot.x - box / 2.0
+	if top != "":
+		var y1 := spot.y - 4.0
+		draw_string_outline(font, Vector2(left, y1), top, HORIZONTAL_ALIGNMENT_CENTER, box, small_size, 5, Color(0, 0, 0, 0.75))
+		draw_string(font, Vector2(left, y1), top, HORIZONTAL_ALIGNMENT_CENTER, box, small_size, Color(1, 0.95, 0.75))
+		var y2 := spot.y + big_size * 0.85
+		draw_string_outline(font, Vector2(left, y2), big, HORIZONTAL_ALIGNMENT_CENTER, box, big_size, 6, Color(0, 0, 0, 0.75))
+		draw_string(font, Vector2(left, y2), big, HORIZONTAL_ALIGNMENT_CENTER, box, big_size, Color.WHITE)
+	else:
+		var y := spot.y + big_size * 0.36
+		draw_string_outline(font, Vector2(left, y), big, HORIZONTAL_ALIGNMENT_CENTER, box, big_size, 6, Color(0, 0, 0, 0.75))
+		draw_string(font, Vector2(left, y), big, HORIZONTAL_ALIGNMENT_CENTER, box, big_size, Color.WHITE)
