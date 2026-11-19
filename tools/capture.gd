@@ -388,6 +388,13 @@ func _run() -> void:
 	await _shot("13_match_banner")
 	await _wait(1.6)
 	await _shot("14_match")
+	# 분신 문지기 카드(2026-11-19): 상대가 내 앞에 문지기를 세운 모습
+	var warden_game = _app.current_screen.game
+	warden_game._apply_effect({"type": "warden", "amount": 2}, 1)
+	await _wait(0.4)
+	await _shot("14w_warden")
+	warden_game.wardens.clear()
+	warden_game.take_events()
 	_app.current_screen._show_skill_info("attack")
 	await _wait(0.3)
 	await _shot("14s_skill_info")
