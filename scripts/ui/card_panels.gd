@@ -47,7 +47,7 @@ func _cards() -> Dictionary:
 
 # ---------------------------------------------------------------- 덱
 
-## 카드 목록(영웅 메뉴 '카드 목록'): 33종 전부, 가진 카드는 또렷하게, 없는 카드는 자물쇠. 덱에 든 카드는 '덱' 표시.
+## 카드 목록(영웅 메뉴 '카드 목록'): 58종 전부, 가진 카드는 또렷하게, 없는 카드는 자물쇠. 덱에 든 카드는 '덱' 표시.
 func build_list(column: VBoxContainer) -> void:
 	var cards := _cards()
 	var deck: Array = Profile.battle_deck(app.profile, cards, app.eco)
