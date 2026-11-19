@@ -83,7 +83,7 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 	plate.custom_minimum_size = Vector2(196, 64)
 	var back := NinePatchRect.new()
 	back.texture = texture
-	back.patch_margin_left = 66
+	back.patch_margin_left = 70
 	back.patch_margin_right = 26
 	back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -93,10 +93,10 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 		picture.texture = icon
 		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		# 명판 그림(178×64)의 동그란 구멍은 가운데 (29.5, 31.5), 지름 약 36픽셀이다.
-		# 아이콘이 금테를 덮지 않게 구멍보다 조금 작게(34) 정확히 가운데에 둔다.
-		picture.position = Vector2(29.5 - 17.0, 31.5 - 17.0)
-		picture.size = Vector2(34, 34)
+		# 명판 그림(178×64, 2026-11-19 A 스타일)의 동그란 자리는 가운데 (32, 32), 안쪽 지름 약 48픽셀이다.
+		# 아이콘이 금테를 덮지 않게 안쪽보다 조금 작게(40) 정확히 가운데에 둔다.
+		picture.position = Vector2(32.0 - 20.0, 32.0 - 20.0)
+		picture.size = Vector2(40, 40)
 		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		plate.add_child(picture)
 	var label := Label.new()
@@ -106,7 +106,7 @@ static func title_plate(text: String, icon: Texture2D) -> Control:
 	TextStyle.menu(label, Color(0, 0.05, 0.2), 7)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.offset_left = 70
+	label.offset_left = 74
 	label.offset_right = -16
 	label.offset_bottom = -2
 	label.clip_text = true
@@ -386,7 +386,8 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 	var capsule := PanelContainer.new()
 	capsule.custom_minimum_size = Vector2(230, 50)
 	capsule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var art = style("currency", Vector4(24, 0, 24, 0), Vector4(8, 2, 6, 2))
+	# 재화 칸 그림(143×46): 왼쪽 동그란 자리(지름 46)에 아이콘(34)이 가운데 오게 안쪽 여백 6
+	var art = style("currency", Vector4(50, 0, 22, 0), Vector4(6, 2, 6, 2))
 	capsule.add_theme_stylebox_override("panel", art if art != null else Kit.box(Color(0, 0.06, 0.22, 0.72), color.darkened(0.2), 2, 20, 4))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
@@ -843,7 +844,7 @@ static func result_row(icon_name: String, title: String, value: String, height: 
 	if art != null:
 		holder.resized.connect(holder.queue_redraw)
 		holder.draw.connect(func() -> void:
-			PillSkin.draw_slices(holder, art, Rect2(Vector2.ZERO, holder.size), 0.95, Color.WHITE, 0.3))
+			PillSkin.draw_slices(holder, art, Rect2(Vector2.ZERO, holder.size), 1.02, Color.WHITE, 0.4))
 	else:
 		var back := Panel.new()
 		back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

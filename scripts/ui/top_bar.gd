@@ -79,7 +79,7 @@ func _chip(parent: Control, icon_name: String, color: Color) -> Label:
 	style.content_margin_left = 6
 	style.content_margin_right = 14
 	capsule.add_theme_stylebox_override("panel", style)
-	var art := MenuArt.style("currency", Vector4(24, 0, 24, 0), Vector4(8, 3, 16, 3))
+	var art := MenuArt.style("currency", Vector4(50, 0, 22, 0), Vector4(6, 3, 16, 3))
 	if art != null:
 		capsule.custom_minimum_size = Vector2(180, 46)
 		capsule.add_theme_stylebox_override("panel", art)
