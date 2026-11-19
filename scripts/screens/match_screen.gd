@@ -163,6 +163,11 @@ func _board_center() -> Vector2:
 ## 말이 칸에 내려앉았다: 져서 날아온 것이면 쿵 소리와 흔들림.
 func _on_piece_landed(player_index: int, flung: bool) -> void:
 	if not flung:
+		# 발끝 효과(2026-11-19, 꾸미기): 내 말(첫 번째 플레이어)이 한 칸 뛸 때마다 발밑에 작게 피어난다.
+		if player_index == 0 and not _is_local() and app.has_profile():
+			var trail := Profile.trail_fx(app.profile, app.eco)
+			if trail != "":
+				_fx.burst(_piece_spot(player_index) + Vector2(0, 36), trail, 6, 0.32)
 		return
 	_play("impact")
 	_fx.burst(_piece_spot(player_index) + Vector2(0, 40), "impact", 14, 0.9)

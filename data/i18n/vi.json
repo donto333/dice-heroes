@@ -1952,5 +1952,17 @@
  "시험 광고예요. 정식 출시 때는 여기에 진짜 광고가 나와요.": "Đây là quảng cáo thử. Khi ra mắt sẽ có quảng cáo thật ở đây.",
  "%d초 뒤에 보상을 받아요": "Nhận thưởng sau %d giây",
  "광고 보고 무료 뽑기 (오늘 %d회)": "Xem quảng cáo rút miễn phí (còn %d hôm nay)",
- "보상형 광고가 생겼어요: 광고를 보면 보석 100개, 판 끝 골드 2배, 룰렛·카드 뽑기 한 번 더, 원정 골드 2배를 받아요(지금은 시험 광고).": "Đã có quảng cáo có thưởng: xem để nhận 100 ngọc, x2 vàng sau trận, thêm lượt quay/rút thẻ và x2 vàng viễn chinh (hiện là quảng cáo thử)."
+ "보상형 광고가 생겼어요: 광고를 보면 보석 100개, 판 끝 골드 2배, 룰렛·카드 뽑기 한 번 더, 원정 골드 2배를 받아요(지금은 시험 광고).": "Đã có quảng cáo có thưởng: xem để nhận 100 ngọc, x2 vàng sau trận, thêm lượt quay/rút thẻ và x2 vàng viễn chinh (hiện là quảng cáo thử).",
+ "발끝 효과": "Hiệu ứng bước chân",
+ "내 말이 뛸 때 발밑에 피어나요 · 능력치와는 상관없어요": "Nở dưới chân quân khi nhảy · không ảnh hưởng chỉ số",
+ "유료 보석 전용": "Chỉ ngọc trả phí",
+ "발끝 효과 '%s'를 샀어요! 바로 쓸게요.": "Đã mua hiệu ứng '%s'! Dùng ngay.",
+ "유료 보석이 모자라요.": "Không đủ ngọc trả phí.",
+ "흙먼지": "Bụi đất",
+ "별빛": "Ánh sao",
+ "꽃잎": "Cánh hoa",
+ "서리": "Sương giá",
+ "불씨": "Tàn lửa",
+ "황금": "Vàng ròng",
+ "꾸미기에 '발끝 효과'가 생겼어요: 내 말이 뛸 때마다 별빛·꽃잎·불씨 같은 효과가 발밑에 피어나요.": "Trang trí mới 'Hiệu ứng bước chân': ánh sao, cánh hoa, tàn lửa... nở dưới chân quân mỗi bước nhảy."
 }
