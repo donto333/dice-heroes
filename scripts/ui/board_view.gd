@@ -815,6 +815,14 @@ func piece_point(player_index: int) -> Vector2:
 	return _center(int(shown_pos[player_index]), layout) - Vector2(0, float(layout["cell"]) * 0.5)
 
 
+## 칸 하나의 위치(이 판 좌표). 문지기 등장 연출에 쓴다.
+func tile_point(id: int) -> Vector2:
+	if game == null or not game.nodes.has(id):
+		return size * 0.5
+	var layout := _layout()
+	return _center(id, layout) - Vector2(0, float(layout["cell"]) * 0.5)
+
+
 ## 다른 플레이어 말이 같은 칸(보이는 자리)에 있으면 true. 그때만 두 말이 좌우로 비켜 선다.
 func _sharing_tile(player_index: int) -> bool:
 	for other in shown_pos.size():
@@ -949,6 +957,34 @@ func _draw_star(center: Vector2, radius: float, color: Color) -> void:
 
 
 ## 둥근 메달: 짙은 테 → 색 테 → 동그랗게 자른 그림.
+## 카드로 세운 분신 문지기(2026-11-19): 주인 색 마법진 위에 주인 ATTACK 영웅의 모형을 반투명하게 세운다.
+## 모형이 없으면 초상화 메달.
+func _draw_warden(id: int, rect: Rect2, cell: float) -> void:
+	var warden: Dictionary = game.wardens[id]
+	var tint: Color = PLAYER_COLORS[int(warden["owner"]) % PLAYER_COLORS.size()]
+	var foot := rect.get_center() + Vector2(-cell * 0.12, cell * 0.1)
+	var pulse := 0.5 + 0.5 * sin(_anim_time * 3.0 + float(id))
+	# 납작한 마법진(타원 고리 두 겹)
+	draw_set_transform(foot, 0.0, Vector2(1.0, 0.42))
+	draw_circle(Vector2.ZERO, cell * 0.44, Color(tint, 0.18 + 0.12 * pulse))
+	draw_arc(Vector2.ZERO, cell * 0.44, 0.0, TAU, 40, Color(tint.lightened(0.3), 0.9), 3.0)
+	draw_arc(Vector2.ZERO, cell * 0.3, _anim_time, _anim_time + TAU * 0.8, 30, Color(1, 1, 1, 0.7), 2.0)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	var model: Texture2D = GameData.standee(str(warden["hero"]))
+	if model != null:
+		var breath := 1.0 + 0.03 * sin(_anim_time * 2.6 + float(id))
+		var tall := cell * 1.0 * breath
+		var wide := cell * 1.0 * float(model.get_width()) / float(model.get_height())
+		_cast_shadow(model, foot, wide, tall)
+		# 반투명한 분신: 주인 색이 은은하게 비친다.
+		draw_texture_rect(model, Rect2(foot.x - wide / 2.0, foot.y - tall, wide, tall), false,
+			Color(1, 1, 1, 0.82).lerp(Color(tint.lightened(0.5), 0.82), 0.25 + 0.15 * pulse))
+	else:
+		var face: Texture2D = GameData.portrait(str(warden["hero"]))
+		if face != null:
+			_draw_medal(face, foot - Vector2(0, cell * 0.35), cell * 0.3, tint)
+
+
 func _draw_medal(face: Texture2D, center: Vector2, radius: float, rim: Color) -> void:
 	draw_circle(center + Vector2(0, radius * 0.16), radius + 4.0, Color(0, 0, 0, 0.35))
 	draw_circle(center, radius + 5.0, rim.darkened(0.55))
@@ -1119,6 +1155,9 @@ func _draw() -> void:
 				_cast_shadow(topper, topper_foot, topper_wide, topper_tall)
 				draw_texture_rect(topper, Rect2(topper_foot.x - topper_wide / 2.0, topper_foot.y - topper_tall, topper_wide, topper_tall), false)
 			_draw_tile_fx(str(tile.get("type", "")), rect.get_center(), cell, int(id))
+		if game.wardens.has(int(id)):
+			label = "%s %d" % [tr("문지기"), int(game.wardens[int(id)]["dice"])]
+			_draw_warden(int(id), rect, cell)
 		if label != "":
 			draw_string_outline(font, rect.position + Vector2(0, rect.size.y * 0.74), tr(label),
 				HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, small, 5, Color(0, 0, 0, 0.8))

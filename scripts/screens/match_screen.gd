@@ -1909,6 +1909,17 @@ func _present_events() -> void:
 				await _show_fate(event)
 			"tile":
 				await _show_tile(event)
+			"warden":
+				# 분신 문지기가 서거나(마법진 빛) 무너진다(연기).
+				var spot := Kit.spot_in(self, _board_view, _board_view.tile_point(int(event["pos"])))
+				if bool(event.get("gone", false)):
+					_fx.burst(spot, "smoke", 18, 0.9)
+				else:
+					_play("summon_3")
+					_fx.burst(spot, "star", 24, 1.0)
+					_fx.burst(spot, "spark", 14, 0.8)
+					_say(int(event["player"]), "문지기 소환!")
+					await get_tree().create_timer(0.0 if app.instant else 0.6).timeout
 			"stand_ground":
 				# 거점 복귀를 막은 어빌리티(버티기). 말 위에 방패 빛을 띄운다.
 				var holder := int(event["player"])
@@ -2060,6 +2071,7 @@ func _show_battle_inner(event: Dictionary) -> void:
 		_add_battle_result(event)
 		_ai_reacts(event["won"] if who == 0 else not event["won"])
 		return
+	var warden_duel: bool = str(event.get("target", "")) == "warden"
 	var card_duel: bool = str(event.get("target", "")) == "card"
 	var against_player: bool = str(event.get("target", "")) == "player" or card_duel
 	var me_attacking := who == 0 or _is_local()
@@ -2077,6 +2089,11 @@ func _show_battle_inner(event: Dictionary) -> void:
 		info["good_for_me"] = not event["won"]
 	else:
 		info["good_for_me"] = not event["won"]
+	if warden_duel:
+		# 분신 문지기: 상대가 세운 내 앞 문지기(상대 ATTACK 영웅의 분신)
+		info["defender_side"] = "문지기 · %s" % game.players[other]["name"]
+		info["defender_color"] = PLAYER_TEXT_COLORS[other]
+		info["winner_text"] = "%s 승리! 문지기가 사라졌다" % game.players[who]["name"]
 	if card_duel:
 		# 역전의 첫걸음: 이기면 나는 앞으로, 상대는 뒤로. 지면 그대로(아무도 거점으로 가지 않는다).
 		info["winner_text"] = "%s 역전! 5칸 앞으로, 상대는 5칸 뒤로" % game.players[who]["name"]
