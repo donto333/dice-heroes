@@ -2363,7 +2363,7 @@ func _test_tutorial() -> void:
 		last = Profile.tutorial_event(profile, guide, events[index])
 	_check(bool(last.get("done", false)) and Profile.tutorial_step(profile, guide).is_empty(), "길잡이가 끝나지 않음")
 	var old := Profile.new_profile("예전", _data["economy"])
-	old.erase("tutorial")
+	old.erase("guide_flow")
 	_check(Profile.tutorial_step(old, guide).is_empty(), "예전 저장에 길잡이가 뜸")
 	var skipped := Profile.new_profile("건너뜀", _data["economy"])
 	Profile.skip_tutorial(skipped)

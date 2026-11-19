@@ -102,7 +102,7 @@ func _process(delta: float) -> void:
 	if _bubble == null or not is_instance_valid(_bubble):
 		return
 	# 창이 떠 있으면 숨는다(창이 닫히면 다시 보인다).
-	var covered := not get_tree().get_nodes_in_group("modal").is_empty() or (app.loading != null and app.loading.visible)
+	var covered: bool = not get_tree().get_nodes_in_group("modal").is_empty() or (app.loading != null and app.loading.visible)
 	modulate.a = 0.0 if covered else 1.0
 	_bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE if covered else Control.MOUSE_FILTER_STOP
 	_time += delta

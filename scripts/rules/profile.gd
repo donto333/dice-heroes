@@ -70,7 +70,7 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		## 산 기록 [{"id", "name", "price", "gems", "bonus", "at", "refunded"}]
 		"purchases": [],
 		## 처음 하는 사람 길잡이 단계(data/guide.json의 tutorial). 예전 저장에는 없으므로 끝난 것으로 본다.
-		"tutorial": 0,
+		"guide_flow": 0,
 	}
 
 
@@ -86,7 +86,7 @@ static func ensure_account_id(profile: Dictionary, rng: RandomNumberGenerator) -
 ## 길잡이(2026-11-19): 지금 단계. 끝났거나 예전 저장(tutorial 없음)이면 {}.
 static func tutorial_step(profile: Dictionary, guide: Dictionary) -> Dictionary:
 	var steps: Array = guide.get("tutorial", {}).get("steps", [])
-	var index := int(profile.get("tutorial", 9999))
+	var index := int(profile.get("guide_flow", 9999))
 	if index < 0 or index >= steps.size():
 		return {}
 	return steps[index]
@@ -100,12 +100,12 @@ static func tutorial_event(profile: Dictionary, guide: Dictionary, event: String
 		return {}
 	var reward: Dictionary = step.get("reward", {})
 	grant(profile, reward)
-	profile["tutorial"] = int(profile["tutorial"]) + 1
+	profile["guide_flow"] = int(profile["guide_flow"]) + 1
 	return {"reward": reward, "done": tutorial_step(profile, guide).is_empty()}
 
 
 static func skip_tutorial(profile: Dictionary) -> void:
-	profile["tutorial"] = 9999
+	profile["guide_flow"] = 9999
 
 
 ## 닉네임은 공백을 빼고 2~10글자.
