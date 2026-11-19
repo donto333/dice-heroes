@@ -141,6 +141,7 @@ func _summon_panel() -> Control:
 	free_button.disabled = free_left <= 0
 	free_button.pressed.connect(_on_free)
 	buttons.add_child(Kit.expand(free_button))
+	buttons.set_meta("guide", "summon")
 	var one := MenuArt.pill_button("1회  %s" % Kit.comma(int(summon.get("cost_one", 100))), "blue", "l")
 	_gem_icon(one)
 	one.disabled = not Profile.can_pay(app.profile, "gems", int(summon.get("cost_one", 100)))
@@ -621,6 +622,7 @@ func _summon(count: int, again_cost: int = 0, gold: bool = false) -> void:
 	host.add_child(show)
 	var again: bool = await show.play(host, results, again_cost)
 	host.go("shop", {"tab": tab})
+	host.tutorial_event("summon")
 	if again:
 		if gold:
 			host.current_screen._on_gold(count)

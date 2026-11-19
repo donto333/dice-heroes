@@ -92,6 +92,7 @@ func _on_confirmed(party: Dictionary) -> void:
 			app.profile["party"] = party.duplicate()
 			app.save()
 			app.toast("파티를 저장했어요.")
+			app.tutorial_event("party")
 		app.go("party", {"purpose": "edit"})
 		return
 	if mode == "local":

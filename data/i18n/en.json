@@ -1995,5 +1995,19 @@
  "나중에": "Later",
  "새 버전 %s이 나왔어요. (지금 %s)": "Version %s is out. (You have %s)",
  "'업데이트'를 누르면 새 앱 파일을 내려받아요.": "Tap 'Update' to download the new app file.",
- "받은 뒤 설치 화면에서 '설치'를 누르면 기록은 그대로 남아요.": "Then tap 'Install' on the install screen. Your progress is kept."
+ "받은 뒤 설치 화면에서 '설치'를 누르면 기록은 그대로 남아요.": "Then tap 'Install' on the install screen. Your progress is kept.",
+ "길잡이 끝! 기본을 모두 익혔어요. 보상: %s": "Guide complete! You've learned the basics. Reward: %s",
+ "먼저 쉬운 AI와 연습 한 판을 해 봐요. 길잡이가 차례로 안내해 드려요.": "Let's start with a practice match against an easy AI. The guide will walk you through step by step.",
+ "연습 한 판 시작": "Start Practice",
+ "길잡이": "Guide",
+ "길잡이 건너뛰기": "Skip Guide",
+ "프리미엄 패스를 가진 사람은 판이 끝날 때 받는 골드·경험치가 premium_reward_scale배(광고 없이). 대전 결과 화면에 알림이 뜬다.": "Premium pass holders get premium_reward_scale x gold and EXP after each match (no ads).",
+ "반가워요! 먼저 쉬운 AI와 연습 한 판 해 봐요. 주사위를 굴려 앞으로 가고, 골의 수호자를 먼저 이기면 승리예요.": "Welcome! Let's play a practice match against an easy AI. Roll the dice to move forward; beat the goal guardian first to win.",
+ "연습 시작": "Start Practice",
+ "첫 판 수고했어요! 이제 새 영웅을 데려와 봐요. 상점을 눌러요.": "Nice first match! Now let's recruit a new hero. Tap Shop.",
+ "하루 한 번은 무료로 소환할 수 있어요. 무료 소환을 눌러 봐요!": "You get one free summon a day. Tap Free Summon!",
+ "새 영웅을 파티에 넣어 봐요. 편성을 눌러요.": "Add your new hero to the party. Tap Formation.",
+ "영웅을 눌러 ATTACK·DEFENSE·SUPPORT 자리에 넣고 저장을 눌러요. ★ 합계가 소환 포인트 한도 안이어야 해요.": "Tap heroes to place them in ATTACK, DEFENSE and SUPPORT, then tap Save. The total ★ must fit your summon point limit.",
+ "준비 끝! 랭크전에서 트로피를 모아 티어를 올려 봐요. 길잡이를 마치면 보석 300개를 드려요.": "All set! Collect trophies in Ranked to climb tiers. Finish the guide to get 300 gems.",
+ "처음 하는 사람을 위한 길잡이가 생겼어요: 연습 한 판 → 무료 소환 → 파티 편성 → 랭크전을 차례로 안내하고 단계마다 보상을 줘요.": "New players now get a guide: practice match → free summon → party setup → Ranked, with a reward at each step."
 }

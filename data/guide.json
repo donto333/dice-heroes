@@ -65,5 +65,73 @@
         "gems": 200
       }
     }
-  ]
+  ],
+  "tutorial": {
+    "_comment": "처음 하는 사람 길잡이(2026-11-19): 순서대로 한 단계씩. profile.tutorial(지금 단계 번호, 없거나 단계 수 이상이면 끝남). event가 일어나면 다음 단계로 가고 reward를 준다. screens는 화면마다 가리킬 버튼(화면 코드의 노드 메타 guide)과 말. action이 있으면 말풍선에 그 버튼(start_tutorial: 연습 한 판 시작). 연습 한 판은 쉬움 AI·map 번 맵.",
+    "guide_hero": "sejong",
+    "map": 0,
+    "steps": [
+      {
+        "id": "first_match",
+        "event": "match_end",
+        "reward": {
+          "gold": 500
+        },
+        "screens": {
+          "lobby": {
+            "target": "ai",
+            "text": "반가워요! 먼저 쉬운 AI와 연습 한 판 해 봐요. 주사위를 굴려 앞으로 가고, 골의 수호자를 먼저 이기면 승리예요.",
+            "action": "연습 시작"
+          }
+        }
+      },
+      {
+        "id": "summon",
+        "event": "summon",
+        "reward": {
+          "gems": 100
+        },
+        "screens": {
+          "lobby": {
+            "target": "shop",
+            "text": "첫 판 수고했어요! 이제 새 영웅을 데려와 봐요. 상점을 눌러요."
+          },
+          "shop": {
+            "target": "summon",
+            "text": "하루 한 번은 무료로 소환할 수 있어요. 무료 소환을 눌러 봐요!"
+          }
+        }
+      },
+      {
+        "id": "party",
+        "event": "party",
+        "reward": {
+          "gold": 500
+        },
+        "screens": {
+          "lobby": {
+            "target": "party",
+            "text": "새 영웅을 파티에 넣어 봐요. 편성을 눌러요."
+          },
+          "party": {
+            "target": "party_save",
+            "text": "영웅을 눌러 ATTACK·DEFENSE·SUPPORT 자리에 넣고 저장을 눌러요. ★ 합계가 소환 포인트 한도 안이어야 해요."
+          }
+        }
+      },
+      {
+        "id": "rank",
+        "event": "rank",
+        "reward": {
+          "gems": 300
+        },
+        "screens": {
+          "lobby": {
+            "target": "rank",
+            "text": "준비 끝! 랭크전에서 트로피를 모아 티어를 올려 봐요. 길잡이를 마치면 보석 300개를 드려요."
+          }
+        }
+      }
+    ]
+  }
 }

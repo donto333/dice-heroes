@@ -34,7 +34,8 @@ static func ask(main_app, start_mode: String, start_params: Dictionary = {}) -> 
 	launcher.mode = start_mode
 	launcher.params = start_params
 	main_app.set_meta("match_launcher", launcher)
-	launcher._open()
+	if not bool(start_params.get("tutorial", false)):
+		launcher._open()
 	return launcher
 
 
@@ -219,7 +220,7 @@ func confirm() -> void:
 			theirs["name"] = "%s(%s)" % [names[app.rng.randi_range(0, names.size() - 1)], tier["name"]]
 	var scale := 1.0
 	if mode == "ai":
-		var difficulty: Dictionary = Profile.ai_difficulty(app.eco, str(app.profile.get("ai_difficulty", "easy")))
+		var difficulty: Dictionary = Profile.ai_difficulty(app.eco, "easy" if bool(params.get("tutorial", false)) else str(app.profile.get("ai_difficulty", "easy")))
 		ai_level = int(difficulty["level"])
 		scale = float(difficulty["reward_scale"])
 		if not bool(difficulty["smart"]):
@@ -228,9 +229,16 @@ func confirm() -> void:
 		theirs["name"] = "AI(%s)" % difficulty["name"]
 	theirs["levels"] = {"attack": ai_level, "defense": ai_level, "support": ai_level}
 	var start := {"mode": mode, "parties": [mine, theirs], "humans": [true, false], "reward_scale": scale}
+	if mode == "ai" and bool(params.get("tutorial", false)):
+		# 길잡이 첫 판: 정해진 맵에서 곧바로
+		start["map"] = clampi(int(app.data.get("guide", {}).get("tutorial", {}).get("map", 0)), 0, app.data["boards"].size() - 1)
+		_go(start)
+		return
 	if mode == "ai":
 		pick_map(start)
 		return
+	if mode == "rank":
+		app.tutorial_event("rank")
 	start["map"] = _random_map()
 	_go(start)
 

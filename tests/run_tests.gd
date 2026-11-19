@@ -78,6 +78,7 @@ func _init() -> void:
 	_test_ads()
 	_test_trails()
 	_test_account_id()
+	_test_tutorial()
 	_test_card_album()
 	_test_pass_by_fight()
 	_test_balance()
@@ -2342,6 +2343,31 @@ func _test_account_id() -> void:
 	var first := Profile.ensure_account_id(profile, rng)
 	_check(first.begins_with("DH-") and first.length() == 12, "계정 번호 모양이 틀림: %s" % first)
 	_check(Profile.ensure_account_id(profile, rng) == first, "계정 번호가 바뀜")
+
+
+## 처음 하는 사람 길잡이(2026-11-19): 순서대로 넘어가고 보상, 예전 저장은 끝난 것으로.
+func _test_tutorial() -> void:
+	var guide: Dictionary = _data["guide"]
+	var profile := Profile.new_profile("길잡이", _data["economy"])
+	_check(str(Profile.tutorial_step(profile, guide).get("id", "")) == "first_match", "길잡이 첫 단계가 첫 판이 아님")
+	_check(Profile.tutorial_event(profile, guide, "summon").is_empty(), "순서가 아닌 일로 길잡이가 넘어감")
+	var gold := int(profile["gold"])
+	var first := Profile.tutorial_event(profile, guide, "match_end")
+	_check(not first.is_empty() and int(profile["gold"]) > gold, "첫 판 길잡이 보상이 없음")
+	var events := []
+	for step in guide["tutorial"]["steps"]:
+		events.append(str(step["event"]))
+		_check(not (step.get("screens", {}) as Dictionary).is_empty(), "길잡이 단계에 화면 안내가 없음: %s" % step["id"])
+	var last := {}
+	for index in range(1, events.size()):
+		last = Profile.tutorial_event(profile, guide, events[index])
+	_check(bool(last.get("done", false)) and Profile.tutorial_step(profile, guide).is_empty(), "길잡이가 끝나지 않음")
+	var old := Profile.new_profile("예전", _data["economy"])
+	old.erase("tutorial")
+	_check(Profile.tutorial_step(old, guide).is_empty(), "예전 저장에 길잡이가 뜸")
+	var skipped := Profile.new_profile("건너뜀", _data["economy"])
+	Profile.skip_tutorial(skipped)
+	_check(Profile.tutorial_step(skipped, guide).is_empty(), "길잡이 건너뛰기가 안 됨")
 
 
 ## 카드 앨범(2026-11-18): 등급별 모은 수에 따라 보상, 한 번만 받음.
