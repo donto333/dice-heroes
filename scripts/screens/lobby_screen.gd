@@ -11,6 +11,7 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const RouletteWheel := preload("res://scripts/ui/roulette_wheel.gd")
+const OddsWindow := preload("res://scripts/ui/odds_window.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const LOBBY_ART := "res://assets/ui_lobby/"
@@ -993,6 +994,9 @@ func open_roulette() -> void:
 	_spin_button = Kit.button("", Color("e8890c"), 28, 72)
 	_spin_button.pressed.connect(_on_spin)
 	body.add_child(_spin_button)
+	var odds_row := CenterContainer.new()
+	odds_row.add_child(OddsWindow.button(app, "roulette"))
+	body.add_child(odds_row)
 	_refresh_roulette()
 	app.dialog("행운의 룰렛", body, [["닫기", Kit.PANEL_LIGHT, _close_roulette]], 660)
 
@@ -1055,6 +1059,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"뽑기와 룰렛에 '확률 보기'가 생겼어요: 등급별·영웅·카드 하나하나의 확률과 보장 횟수를 볼 수 있어요.",
 	"영웅 밸런스를 맞췄어요: 여포·이순신·헤라클레스·아문센·최영·계백이 강해지고, 여러 영웅의 스킬 충전 속도를 조정했어요.",
 	"카드 등급을 다시 맞췄어요: 명검은 ★, 군신의 가호·도둑 까치·깊은 망각·불굴은 ★★가 됐어요.",
 	"새 아이템 카드 25장에 그림이 생겼어요.",

@@ -69,6 +69,7 @@ func _init() -> void:
 	_test_cards()
 	_test_card_deck()
 	_test_gold_gacha()
+	_test_odds_table()
 	_test_card_album()
 	_test_pass_by_fight()
 	_test_balance()
@@ -2143,6 +2144,44 @@ func _test_gold_gacha() -> void:
 		_check(int(entry["grade"]) <= 2, "골드 카드 뽑기에서 ★★★이 나옴")
 	_check(int(profile["pity"]) == 5 and int(profile["card_pity"]) == 3, "골드 뽑기가 ★★★ 보장 횟수를 바꿈")
 	_check(int(eco["summon"]["gold"]["cost_one"]) > 0 and int(eco["card_gacha"]["gold"]["cost_one"]) > 0, "골드 뽑기 값이 없음")
+
+
+## 확률 보기 창(2026-11-19): 표의 확률이 모두 더해 100%이고, 실제 뽑기와 같은 값에서 나오는지.
+func _test_odds_table() -> void:
+	var eco: Dictionary = _data["economy"]
+	for kind in ["hero", "hero_gold", "card", "card_gold", "roulette"]:
+		var table := Profile.odds_table(kind, _data["characters"], _data["cards"], eco)
+		var total := 0.0
+		var count := 0
+		for group in table["groups"]:
+			var group_total := 0.0
+			for item in group["items"]:
+				total += float(item["rate"])
+				group_total += float(item["rate"])
+				count += 1
+			_check(absf(group_total - float(group["rate"])) < 0.01, "%s 확률표의 등급 합이 맞지 않음" % kind)
+		_check(count > 0, "%s 확률표가 비었음" % kind)
+		_check(absf(total - 100.0) < 0.01, "%s 확률표 합이 100%%가 아님: %.3f" % [kind, total])
+		if kind.ends_with("_gold"):
+			for group in table["groups"]:
+				_check(int(group["grade"]) < 3, "%s 확률표에 ★★★가 있음" % kind)
+	var hero := Profile.odds_table("hero", _data["characters"], _data["cards"], eco)
+	_check(absf(float(hero["groups"][0]["rate"]) - float(eco["summon"]["rates"]["3"])) < 0.01, "영웅 소환 ★★★ 확률이 economy.json과 다름")
+	_check(int(hero["pity_3"]) == int(eco["summon"]["pity_3"]), "영웅 소환 보장 횟수가 다름")
+	var heroes_in_table := 0
+	for group in hero["groups"]:
+		heroes_in_table += (group["items"] as Array).size()
+	_check(heroes_in_table == (_data["characters"] as Array).size(), "영웅 소환 확률표에 빠진 영웅이 있음")
+	# 골드 소환을 많이 굴려 표의 등급 확률과 비슷하게 나오는지
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var gold_rates: Dictionary = eco["summon"]["gold"]["rates"]
+	var twos := 0
+	for index in 20000:
+		if Profile.roll_rates(gold_rates, rng, false) == 2:
+			twos += 1
+	var expected := float(Profile.odds_table("hero_gold", _data["characters"], _data["cards"], eco)["groups"][0]["rate"])
+	_check(absf(100.0 * twos / 20000.0 - expected) < 1.5, "골드 소환 실제 ★★ 비율이 확률표와 다름")
 
 
 ## 카드 앨범(2026-11-18): 등급별 모은 수에 따라 보상, 한 번만 받음.
