@@ -815,6 +815,14 @@ func piece_point(player_index: int) -> Vector2:
 	return _center(int(shown_pos[player_index]), layout) - Vector2(0, float(layout["cell"]) * 0.5)
 
 
+## 다른 플레이어 말이 같은 칸(보이는 자리)에 있으면 true. 그때만 두 말이 좌우로 비켜 선다.
+func _sharing_tile(player_index: int) -> bool:
+	for other in shown_pos.size():
+		if other != player_index and int(shown_pos[other]) == int(shown_pos[player_index]):
+			return true
+	return false
+
+
 ## 서 있는 입체 모형 말: 발밑 그림자와 색 고리 → 모형(뛸 때 늘어나고 착지 때 눌림) → 내 차례 표시와 남은 칸 수.
 func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift: float, cell: float, hop_t: float, flinging: bool, font: Font) -> void:
 	var player_color: Color = PLAYER_COLORS[player_index]
@@ -834,9 +842,10 @@ func _draw_standee(texture: Texture2D, player_index: int, center: Vector2, lift:
 	if has_circle:
 		# 발밑의 마법진: 내 말은 파랑, 상대는 금색. 차례인 말은 크게 돌고 숨 쉬듯 밝아진다.
 		var breathe := 0.75 + 0.25 * sin(_anim_time * 3.0)
+		# 칸 윗면(폭 1.04칸, 안쪽 원 지름 약 0.9칸) 안에 들어가는 크기로 그린다.
 		if active:
-			_flat_sprite("glow_soft_a", foot, cell * 1.5, Color(player_color.r, player_color.g, player_color.b, 0.5 * breathe), 0.0)
-		_flat_sprite(circle_name, foot, cell * (1.25 if active else 0.85), Color(1, 1, 1, breathe if active else 0.6), _anim_time * (1.1 if active else 0.4))
+			_flat_sprite("glow_soft_a", foot, cell * 1.05, Color(player_color.r, player_color.g, player_color.b, 0.5 * breathe), 0.0)
+		_flat_sprite(circle_name, foot, cell * (0.9 if active else 0.72), Color(1, 1, 1, breathe if active else 0.6), _anim_time * (1.1 if active else 0.4))
 
 	var height := cell * 1.02
 	var texture_size := texture.get_size()
@@ -1178,8 +1187,12 @@ func _draw() -> void:
 			flinging = bool(_hops[player_index].get("fling", false))
 			center = _center(int(_hops[player_index]["from"]), layout).lerp(center, t)
 			lift = sin(t * PI) * cell * (2.4 if flinging else HOP_HEIGHT)
-		center.x += (player_index * 2 - 1) * cell * 0.22
-		center.y += cell * 0.06
+		# 두 말이 같은 칸에 있을 때만 좌우로 비켜 선다. 혼자면 칸 한가운데에 선다.
+		if _sharing_tile(player_index):
+			center.x += (player_index * 2 - 1) * cell * 0.22
+		# 발(_draw_standee의 foot = center + 0.1칸)이 칸 윗면 한가운데에 오도록 올린다.
+		# 예전에는 윗면 앞쪽 모서리 근처에 서서 발밑 마법진이 칸 옆면으로 흘러내렸다.
+		center.y -= cell * (BLOCK_DEPTH * 0.5 + 0.1)
 		var pawn_size := cell * 0.62
 		var pawn_rect := Rect2(center - Vector2(pawn_size, pawn_size) / 2.0, Vector2(pawn_size, pawn_size))
 		var standee: Texture2D = piece_standees[player_index] if player_index < piece_standees.size() else null
