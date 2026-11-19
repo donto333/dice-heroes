@@ -6,6 +6,7 @@ const GameData := preload("res://scripts/game_data.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const AI := preload("res://scripts/rules/ai.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
+const AppUpdate := preload("res://scripts/rules/app_update.gd")
 # 화면 코드는 실행하지 않지만, 문법 오류를 잡으려고 불러 둔다.
 const MainScreen := preload("res://scripts/main.gd")
 const MatchScreen := preload("res://scripts/screens/match_screen.gd")
@@ -73,6 +74,7 @@ func _init() -> void:
 	_test_paid_gems()
 	_test_pickup()
 	_test_pass_premium_double()
+	_test_app_update()
 	_test_ads()
 	_test_trails()
 	_test_account_id()
@@ -757,6 +759,19 @@ func _test_level_bonus() -> void:
 
 
 ## 프리미엄 시즌 패스가 있으면 판 보상(골드·경험치)이 광고 없이 배수만큼 늘고, 보석은 그대로인지.
+## 앱 새 버전 알림: 버전 비교와 받은 글 읽기
+func _test_app_update() -> void:
+	_check(AppUpdate.is_newer("0.29.512", "0.29.513"), "빌드 번호가 오르면 새 버전")
+	_check(AppUpdate.is_newer("0.29.999", "0.30.1"), "base가 오르면 새 버전")
+	_check(AppUpdate.is_newer("0.29.512", "0.29.100") == false, "빌드 번호가 낮으면 새 버전 아님")
+	_check(AppUpdate.is_newer("0.29.512", "0.29.512") == false, "같은 버전은 새 버전 아님")
+	_check(AppUpdate.is_newer("0.29", "0.29.5"), "번호 없는 버전보다 번호 있는 버전이 새 버전")
+	_check(AppUpdate.is_newer("0.29.5", "") == false, "빈 버전은 무시")
+	_check(AppUpdate.latest_from('{"version": "0.29.600"}') == "0.29.600", "받은 글에서 버전 읽기")
+	_check(AppUpdate.latest_from("<html>Not Found</html>") == "", "엉뚱한 글은 무시")
+	_check(AppUpdate.latest_from('{"version": "abc"}') == "", "숫자가 아닌 버전은 무시")
+
+
 func _test_pass_premium_double() -> void:
 	var eco: Dictionary = _data["economy"]
 	var scale := int(eco.get("pass", {}).get("premium_reward_scale", 1))
