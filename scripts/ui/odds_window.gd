@@ -74,13 +74,13 @@ static func _gacha_rows(body: VBoxContainer, table: Dictionary, kind: String) ->
 		head.add_child(Kit.expand(Kit.label(each, 18, Kit.MUTED)))
 		head.add_child(Kit.label(percent(float(group["rate"])), 22, Kit.GOLD))
 		var grid := GridContainer.new()
-		grid.columns = 4
+		grid.columns = 3
 		grid.add_theme_constant_override("h_separation", 14)
 		grid.add_theme_constant_override("v_separation", 4)
 		column.add_child(grid)
 		for item in items:
 			var cell := Kit.hbox(6)
-			cell.custom_minimum_size = Vector2(180, 0)
+			cell.custom_minimum_size = Vector2(250, 0)
 			var name_label := Kit.label(str(item["name"]), 17, Color.WHITE)
 			name_label.clip_text = true
 			cell.add_child(Kit.expand(name_label))

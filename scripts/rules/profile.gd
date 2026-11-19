@@ -62,6 +62,10 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"deck": (start.get("deck", []) as Array).duplicate(),
 		## 카드 뽑기 ★★★ 보장까지 센 횟수
 		"card_pity": 0,
+		## 돈으로 산 보석(gems 안에 든 몫). 무료 보석부터 먼저 쓴다(쓰지 않은 유료 보석만 청약 철회 대상).
+		"gems_paid": 0,
+		## 산 기록 [{"id", "name", "price", "gems", "bonus", "at", "refunded"}]
+		"purchases": [],
 	}
 
 
@@ -104,6 +108,69 @@ static func pay(profile: Dictionary, currency: String, amount: int) -> bool:
 	if currency == "gems":
 		# 보석 마일리지: 쓴 보석을 센다.
 		profile["gems_spent"] = int(profile.get("gems_spent", 0)) + amount
+		# 무료 보석부터 쓰므로, 유료 몫은 남은 보석보다 많을 수 없다.
+		profile["gems_paid"] = clampi(int(profile.get("gems_paid", 0)), 0, maxi(int(profile["gems"]), 0))
+	return true
+
+
+## 유료 보석·무료 보석(2026-11-19, 정식 출시 준비). gems는 둘을 합친 값 그대로다.
+static func paid_gems(profile: Dictionary) -> int:
+	return clampi(int(profile.get("gems_paid", 0)), 0, maxi(int(profile.get("gems", 0)), 0))
+
+
+static func free_gems(profile: Dictionary) -> int:
+	return maxi(int(profile.get("gems", 0)) - paid_gems(profile), 0)
+
+
+static func gem_pack(eco: Dictionary, id: String) -> Dictionary:
+	for pack in eco.get("gem_packs", {}).get("packs", []):
+		if str(pack.get("id", "")) == id:
+			return pack
+	return {}
+
+
+## 이 상품을 지금 사면 받는 보석 {"gems": 유료, "bonus": 무료 덤}. 처음 사는 first_double 상품은 gems가 2배.
+static func pack_contents(profile: Dictionary, eco: Dictionary, id: String) -> Dictionary:
+	var pack := gem_pack(eco, id)
+	var gems := int(pack.get("gems", 0))
+	if bool(pack.get("first_double", false)) and not has_bought(profile, id):
+		gems *= 2
+	return {"gems": gems, "bonus": int(pack.get("bonus", 0))}
+
+
+static func has_bought(profile: Dictionary, id: String) -> bool:
+	for entry in profile.get("purchases", []):
+		if str(entry.get("id", "")) == id and not bool(entry.get("refunded", false)):
+			return true
+	return false
+
+
+## 결제가 확인된 뒤에만 부른다(나중에 서버가 영수증을 확인하고 부름). at은 "2026-11-19 20:10" 같은 때.
+## 유료 보석은 gems_paid에도 더하고, 덤은 무료 보석이다. 월정액의 매일 보석은 여기서 주지 않는다.
+static func record_purchase(profile: Dictionary, eco: Dictionary, id: String, at: String) -> Dictionary:
+	var pack := gem_pack(eco, id)
+	if pack.is_empty():
+		return {}
+	var contents := pack_contents(profile, eco, id)
+	profile["gems"] = int(profile.get("gems", 0)) + int(contents["gems"]) + int(contents["bonus"])
+	profile["gems_paid"] = int(profile.get("gems_paid", 0)) + int(contents["gems"])
+	var entry := {"id": id, "name": str(pack.get("name", id)), "price": int(pack.get("price", 0)), "gems": int(contents["gems"]), "bonus": int(contents["bonus"]), "at": at, "refunded": false}
+	if not profile.has("purchases"):
+		profile["purchases"] = []
+	profile["purchases"].append(entry)
+	return entry
+
+
+## 환불(청약 철회·스토어 환불): 그 구매로 받은 보석을 되돌린다. 이미 써 버렸으면 보석이 마이너스가 될 수 있다.
+static func refund_purchase(profile: Dictionary, index: int) -> bool:
+	var list: Array = profile.get("purchases", [])
+	if index < 0 or index >= list.size() or bool(list[index].get("refunded", false)):
+		return false
+	var entry: Dictionary = list[index]
+	var paid := mini(int(entry["gems"]), int(profile.get("gems_paid", 0)))
+	profile["gems_paid"] = int(profile.get("gems_paid", 0)) - paid
+	profile["gems"] = int(profile.get("gems", 0)) - int(entry["gems"]) - int(entry.get("bonus", 0))
+	entry["refunded"] = true
 	return true
 
 

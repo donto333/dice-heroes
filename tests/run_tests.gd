@@ -70,6 +70,7 @@ func _init() -> void:
 	_test_card_deck()
 	_test_gold_gacha()
 	_test_odds_table()
+	_test_paid_gems()
 	_test_card_album()
 	_test_pass_by_fight()
 	_test_balance()
@@ -2182,6 +2183,29 @@ func _test_odds_table() -> void:
 			twos += 1
 	var expected := float(Profile.odds_table("hero_gold", _data["characters"], _data["cards"], eco)["groups"][0]["rate"])
 	_check(absf(100.0 * twos / 20000.0 - expected) < 1.5, "골드 소환 실제 ★★ 비율이 확률표와 다름")
+
+
+## 유료·무료 보석과 구매 기록(2026-11-19): 무료부터 쓰고, 첫 구매 2배, 환불하면 되돌림.
+func _test_paid_gems() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("결제", eco)
+	profile["gems"] = 100
+	var first := Profile.record_purchase(profile, eco, "gems_500", "2026-11-19 20:00")
+	_check(int(first["gems"]) == 1000, "보석 한 줌 첫 구매가 2배가 아님")
+	_check(Profile.paid_gems(profile) == 1000 and Profile.free_gems(profile) == 100, "유료·무료 보석 셈이 틀림")
+	var second := Profile.record_purchase(profile, eco, "gems_500", "2026-11-19 20:01")
+	_check(int(second["gems"]) == 500, "두 번째 구매도 2배가 됨")
+	Profile.pay(profile, "gems", 300)
+	_check(Profile.free_gems(profile) == 0 and Profile.paid_gems(profile) == 1300, "무료 보석부터 쓰지 않음")
+	var box := Profile.record_purchase(profile, eco, "gems_1200", "2026-11-19 20:02")
+	_check(int(box["bonus"]) == 120 and Profile.free_gems(profile) == 120, "덤 보석이 무료 보석으로 들어가지 않음")
+	var before := int(profile["gems"])
+	_check(Profile.refund_purchase(profile, 2), "환불이 되지 않음")
+	_check(int(profile["gems"]) == before - 1320, "환불하면 받은 보석을 되돌려야 함")
+	_check(not Profile.refund_purchase(profile, 2), "같은 구매를 두 번 환불함")
+	_check(Profile.record_purchase(profile, eco, "없는상품", "").is_empty(), "없는 상품이 팔림")
+	for pack in eco["gem_packs"]["packs"]:
+		_check(int(pack.get("price", 0)) > 0 and str(pack.get("id", "")) != "", "보석 상품에 가격이나 id가 없음")
 
 
 ## 카드 앨범(2026-11-18): 등급별 모은 수에 따라 보상, 한 번만 받음.

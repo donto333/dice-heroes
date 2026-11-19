@@ -13,6 +13,7 @@ const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const OddsWindow := preload("res://scripts/ui/odds_window.gd")
+const PurchaseWindows := preload("res://scripts/ui/purchase_windows.gd")
 const CardPanels := preload("res://scripts/ui/card_panels.gd")
 const PassPanel := preload("res://scripts/ui/pass_panel.gd")
 
@@ -376,9 +377,21 @@ func _on_dice_skin(id: String) -> void:
 ## 보석 상품: 정식 버전에서 팔 구성을 미리 보여 준다. 아직 결제가 없어서 살 수 없다.
 func _gem_pack_panel() -> Control:
 	var table: Dictionary = app.eco.get("gem_packs", {})
+	var open := bool(table.get("open", false))
 	var group := Kit.vbox(8)
-	group.add_child(MenuArt.section("보석 상점", "gem", "준비 중"))
-	group.add_child(Kit.para("정식 버전에서 열릴 상품이에요. 지금은 살 수 없고, 보석은 출석·미션·업적·패스·우편으로 모을 수 있어요.", 18, Kit.MUTED))
+	group.add_child(MenuArt.section("보석 상점", "gem", "" if open else "준비 중"))
+	# 유료·무료 보석과 구매 내역(2026-11-19, 정식 출시 준비)
+	var wallet := Kit.hbox(8)
+	wallet.alignment = BoxContainer.ALIGNMENT_CENTER
+	group.add_child(wallet)
+	wallet.add_child(MenuArt.capsule("유료 보석 %s" % Kit.comma(Profile.paid_gems(app.profile)), "gem", 18))
+	wallet.add_child(MenuArt.capsule("무료 보석 %s" % Kit.comma(Profile.free_gems(app.profile)), "gem", 18))
+	var history := MenuArt.pill_button("구매 내역", "blue", "s")
+	history.custom_minimum_size = Vector2(132, 40)
+	history.pressed.connect(func() -> void: PurchaseWindows.history(app))
+	wallet.add_child(history)
+	if not open:
+		group.add_child(Kit.para("정식 버전에서 열릴 상품이에요. 지금은 살 수 없고, 보석은 출석·미션·업적·패스·우편으로 모을 수 있어요.", 18, Kit.MUTED))
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 8)
@@ -393,14 +406,19 @@ func _gem_pack_panel() -> Control:
 		var text := Kit.vbox(2)
 		line.add_child(Kit.expand(text))
 		text.add_child(Kit.label(str(pack["name"]), 22))
-		text.add_child(Kit.label(Kit.comma(int(pack["gems"])), 22, Kit.GEM))
+		var contents := Profile.pack_contents(app.profile, app.eco, str(pack.get("id", "")))
+		var amount := Kit.comma(int(contents["gems"]))
+		if int(contents["bonus"]) > 0:
+			amount += " + %s" % Kit.comma(int(contents["bonus"]))
+		text.add_child(Kit.label(amount, 22, Kit.GEM))
 		if str(pack.get("note", "")) != "":
 			text.add_child(Kit.label(str(pack.get("note", "")), 16, Kit.MUTED))
-		var buy := MenuArt.pill_button("준비 중", "gray", "s")
-		buy.disabled = true
+		var buy := MenuArt.pill_button(PurchaseWindows.won(int(pack.get("price", 0))), "gold" if open else "blue", "s")
+		var pack_id := str(pack.get("id", ""))
+		buy.pressed.connect(func() -> void: PurchaseWindows.confirm(app, pack_id))
 		text.add_child(buy)
 		grid.add_child(cell)
-	# 묶음 상품(스타터·성장·패스 프리미엄) 설계도 함께 보여 준다.
+	# 묶음 상품(스타터·성장·패스 프리미엄)은 아직 준비 중으로만 보여 준다.
 	for bundle in table.get("bundles", []):
 		var line := MenuArt.row(10)
 		var row := Kit.hbox(10)
@@ -412,8 +430,9 @@ func _gem_pack_panel() -> Control:
 		if str(bundle.get("note", "")) != "":
 			words.add_child(Kit.label(str(bundle.get("note", "")), 16, Kit.MUTED))
 		row.add_child(Kit.expand(words))
-		var soon := MenuArt.pill_button("준비 중", "gray", "m")
-		soon.custom_minimum_size = Vector2(130, 56)
+		var price := int(bundle.get("price", 0))
+		var soon := MenuArt.pill_button("%s · 준비 중" % PurchaseWindows.won(price) if price > 0 else "준비 중", "gray", "m")
+		soon.custom_minimum_size = Vector2(180, 56)
 		soon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		soon.disabled = true
 		row.add_child(soon)

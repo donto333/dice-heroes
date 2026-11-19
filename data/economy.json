@@ -799,47 +799,74 @@
     ]
   },
   "gem_packs": {
-    "_comment": "보석 상품 구성(수익구조 설계). 아직 결제가 없어서 open=false이고 상점에서는 '준비 중'으로만 보여 준다. 값은 정하지 않았다. bundles는 묶음 상품 설계(스타터·성장)로, 역시 준비 중으로만 보인다.",
+    "_comment": "보석 상품(2026-11-19 정식 출시 기획의 가격표안). price는 원(부가세 포함), gems는 유료 보석, bonus는 덤(무료 보석), first_double이면 처음 살 때 gems를 한 번 더 준다. monthly는 즉시 gems + days일 동안 매일 daily. 아직 결제가 없어서 open=false이고 상점에서는 구매 확인 창까지만 열린다. 산 기록은 Profile.record_purchase(유료 보석은 gems_paid로 따로 셈).",
     "open": false,
     "packs": [
       {
+        "id": "gems_500",
         "name": "보석 한 줌",
+        "price": 5500,
         "gems": 500,
+        "bonus": 0,
+        "first_double": true,
         "note": "처음 사면 2배"
       },
       {
+        "id": "gems_1200",
         "name": "보석 주머니",
+        "price": 12000,
         "gems": 1200,
+        "bonus": 120,
         "note": "+10% 덤"
       },
       {
+        "id": "gems_3000",
         "name": "보석 상자",
+        "price": 29000,
         "gems": 3000,
+        "bonus": 600,
         "note": "+20% 덤"
       },
       {
+        "id": "gems_6500",
+        "name": "보석 금고",
+        "price": 59000,
+        "gems": 6500,
+        "bonus": 1500,
+        "note": "+23% 덤"
+      },
+      {
+        "id": "monthly",
         "name": "월정액",
-        "gems": 3000,
-        "note": "30일 동안 매일 100개씩"
+        "price": 5500,
+        "gems": 300,
+        "bonus": 0,
+        "daily": 100,
+        "days": 30,
+        "note": "즉시 300 + 30일 동안 매일 100"
       }
     ],
     "bundles": [
       {
         "name": "스타터 묶음",
         "text": "보석 1,000 + ★★★ 소환권 1장 + 골드 5,000",
-        "note": "계정당 1번"
+        "note": "계정당 1번",
+        "price": 3300
       },
       {
         "name": "성장 묶음",
         "text": "플레이어 레벨 5·10·15·20에 보석 500씩",
-        "note": "레벨을 올릴수록 이득"
+        "note": "레벨을 올릴수록 이득",
+        "price": 11000
       },
       {
         "name": "패스 프리미엄",
         "text": "시즌 패스의 프리미엄 줄 보상 열기",
-        "note": "시즌마다"
+        "note": "시즌마다",
+        "price": 11000
       }
-    ]
+    ],
+    "refund_days": 7
   },
   "power": {
     "_comment": "파티 전투력(보여 주기용 숫자). ATTACK 자리는 공격·이동, DEFENSE는 방어, SUPPORT는 지력을 본다.",
