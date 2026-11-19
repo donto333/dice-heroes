@@ -944,12 +944,16 @@ func _resolve_tile(depth: int) -> void:
 			_tile_event("treasure", "보물! 카드 획득", true)
 			_draw_card(current, true)
 		"forward":
-			if depth < 3:
+			# 전진으로 날아가 내린 칸이 또 전진 칸이어도 다시 날아가지 않는다(연달아 이동 금지, 2026-11-19).
+			# 맵 만들 때도 전진 칸끼리 5칸 안에 두지 않지만(tools/make_maps.py), 무작위 칸이 전진이 될 수 있어 규칙에서도 막는다.
+			if depth == 0:
 				var amount := int(tile["amount"])
 				say("  전진 칸! %d칸 더 나아갑니다." % amount)
 				_tile_event("forward", "전진! %d칸 더" % amount, true)
 				_walk(current, amount, false)
 				_resolve_tile(depth + 1)
+			else:
+				say("  전진 칸이지만 연달아 나아가지는 않습니다.")
 		"warp":
 			var to := int(tile["to"])
 			say("  워프! %d번 칸으로 이동합니다." % to)

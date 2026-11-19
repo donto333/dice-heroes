@@ -502,6 +502,33 @@ THEMES = [
 ]
 
 
+# 전진 칸끼리 이 칸 수 안에 있으면 안 된다(전진 3~4칸 + 여유 1). 전진으로 날아간 자리에 또 전진 칸이
+# 있어 연달아 날아가는 구조를 없앤다(2026-11-19 사용자 결정).
+FORWARD_GAP = 5
+
+
+def spread_forward(board):
+    """앞쪽 전진 칸에서 FORWARD_GAP칸 안에(어느 갈래로 가든) 또 전진 칸이 있으면 뒤의 것을 보통 칸으로 바꾼다."""
+    nodes = {n["id"]: n for n in board["nodes"]}
+    changed = 0
+    for node in board["nodes"]:
+        if node.get("type") != "forward":
+            continue
+        frontier = [node["id"]]
+        for _ in range(FORWARD_GAP):
+            ahead = []
+            for cur in frontier:
+                for nxt in nodes[cur]["next"]:
+                    target = nodes[nxt]
+                    if target.get("type") == "forward":
+                        target["type"] = "normal"
+                        target.pop("amount", None)
+                        changed += 1
+                    ahead.append(nxt)
+            frontier = ahead
+    return changed
+
+
 def save(path, board):
     lines = ["{"]
     keys = list(board.keys())
@@ -539,6 +566,7 @@ def shortest(board):
 if __name__ == "__main__":
     for theme in THEMES:
         board = make_board(theme)
+        spread_forward(board)
         save(theme["file"], board)
         counts = {}
         for n in board["nodes"]:

@@ -30,7 +30,7 @@
     {"id": 21, "type": "random", "x": 6, "y": 14, "next": [22], "route": "가시덤불 길 (짧고 위험)"},
     {"id": 22, "type": "fate", "x": 6, "y": 13, "next": [23]},
     {"id": 23, "type": "ambush", "x": 6, "y": 12, "next": [24], "name": "독거미", "dice": 3},
-    {"id": 24, "type": "forward", "x": 6, "y": 11, "next": [25], "amount": 4},
+    {"id": 24, "type": "normal", "x": 6, "y": 11, "next": [25]},
     {"id": 25, "type": "random", "x": 6, "y": 10, "next": [26], "hidden": true},
     {"id": 26, "type": "battle", "x": 6, "y": 9, "next": [27], "name": "산적", "dice": 3},
     {"id": 27, "type": "fate", "x": 6, "y": 8, "next": [28]},

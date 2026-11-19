@@ -17,6 +17,7 @@ const MatchLauncher := preload("res://scripts/ui/match_launcher.gd")
 const ProfileCard := preload("res://scripts/ui/profile_card.gd")
 const LoadingOverlay := preload("res://scripts/ui/loading_overlay.gd")
 const Opening := preload("res://scripts/ui/opening.gd")
+const UpdateCheck := preload("res://scripts/ui/update_check.gd")
 ## 화면마다 틀 배경음악
 const SCREEN_MUSIC := {"match": "match", "title": "title", "login": "title",
 	"shop": "shop", "heroes": "shop", "missions": "shop", "pass": "shop"}
@@ -62,6 +63,8 @@ var instant := false
 var redraw := false
 var _busy := false
 var _characters_by_id: Dictionary = {}
+## 안드로이드 앱 새 버전 알림(로비가 show_notice를 부른다)
+var update_check: Node
 
 
 func _ready() -> void:
@@ -93,6 +96,9 @@ func _ready() -> void:
 	# 가로 화면 전용: 세로로 들어도 게임이 스스로 돌아 가로로 그려진다.
 	_fit_orientation()
 	_setup_display()
+	update_check = UpdateCheck.new()
+	add_child(update_check)
+	update_check.start(self)
 	go("title")
 
 
