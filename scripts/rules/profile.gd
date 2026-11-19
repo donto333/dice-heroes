@@ -42,6 +42,9 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		## 가진 주사위 스킨 id와 지금 쓰는 스킨
 		"dice_skins": ["classic"],
 		"dice_skin": "classic",
+		## 가진 발끝 효과 id와 지금 쓰는 것(2026-11-19)
+		"trails": [],
+		"trail": "none",
 		## 우편함: [{"id", "title", "text", "reward", "claimed"}], mail_delivered: 이미 배달된 우편 id
 		"mail": [],
 		"mail_delivered": [],
@@ -67,6 +70,15 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		## 산 기록 [{"id", "name", "price", "gems", "bonus", "at", "refunded"}]
 		"purchases": [],
 	}
+
+
+## 계정 번호(2026-11-19): 문의할 때 알려 주는 번호. 없으면 만들어 둔다. 예: DH-3F9A-0C21
+static func ensure_account_id(profile: Dictionary, rng: RandomNumberGenerator) -> String:
+	var id := str(profile.get("account_id", ""))
+	if id == "":
+		id = "DH-%04X-%04X" % [rng.randi_range(0, 0xFFFF), rng.randi_range(0, 0xFFFF)]
+		profile["account_id"] = id
+	return id
 
 
 ## 닉네임은 공백을 빼고 2~10글자.
@@ -98,12 +110,20 @@ static func repair(profile: Dictionary, eco: Dictionary) -> Dictionary:
 # ---------------------------------------------------------------- 재화
 
 static func can_pay(profile: Dictionary, currency: String, amount: int) -> bool:
+	# paid_gems: 유료 보석으로만 내는 값(유료 전용 꾸미기). 보석 합계에서 빠지고 유료 몫도 줄어든다.
+	if currency == "paid_gems":
+		return paid_gems(profile) >= amount
 	return int(profile.get(currency, 0)) >= amount
 
 
 static func pay(profile: Dictionary, currency: String, amount: int) -> bool:
 	if not can_pay(profile, currency, amount):
 		return false
+	if currency == "paid_gems":
+		profile["gems_paid"] = paid_gems(profile) - amount
+		profile["gems"] = int(profile["gems"]) - amount
+		profile["gems_spent"] = int(profile.get("gems_spent", 0)) + amount
+		return true
 	profile[currency] = int(profile[currency]) - amount
 	if currency == "gems":
 		# 보석 마일리지: 쓴 보석을 센다.
@@ -1198,6 +1218,50 @@ static func claim_all_mail(profile: Dictionary) -> Dictionary:
 			total["gems"] = int(total["gems"]) + int(reward.get("gems", 0))
 			total["count"] = int(total["count"]) + 1
 	return total
+
+
+# ---------------------------------------------------------------- 발끝 효과(2026-11-19)
+
+static func trail(eco: Dictionary, id: String) -> Dictionary:
+	for entry in eco.get("trails", []):
+		if str(entry["id"]) == id:
+			return entry
+	return {"id": "none", "name": "없음", "fx": "", "cost": {}}
+
+
+static func owns_trail(profile: Dictionary, id: String) -> bool:
+	return id == "none" or id in profile.get("trails", [])
+
+
+## 지금 쓰는 발끝 효과의 fx 이름(없으면 "").
+static func trail_fx(profile: Dictionary, eco: Dictionary) -> String:
+	var id := str(profile.get("trail", "none"))
+	return str(trail(eco, id if owns_trail(profile, id) else "none").get("fx", ""))
+
+
+## 산다(사면 바로 씀). 이미 있거나 값이 모자라면 false.
+static func buy_trail(profile: Dictionary, eco: Dictionary, id: String) -> bool:
+	var entry := trail(eco, id)
+	if str(entry.get("id", "")) != id or owns_trail(profile, id):
+		return false
+	var cost: Dictionary = entry.get("cost", {})
+	for currency in cost:
+		if str(currency) != "_comment" and not can_pay(profile, str(currency), int(cost[currency])):
+			return false
+	for currency in cost:
+		pay(profile, str(currency), int(cost[currency]))
+	if not profile.has("trails"):
+		profile["trails"] = []
+	profile["trails"].append(id)
+	profile["trail"] = id
+	return true
+
+
+static func equip_trail(profile: Dictionary, id: String) -> bool:
+	if not owns_trail(profile, id):
+		return false
+	profile["trail"] = id
+	return true
 
 
 # ---------------------------------------------------------------- 주사위 스킨

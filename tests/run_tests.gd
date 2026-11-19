@@ -74,6 +74,8 @@ func _init() -> void:
 	_test_pickup()
 	_test_pass_premium_double()
 	_test_ads()
+	_test_trails()
+	_test_account_id()
 	_test_card_album()
 	_test_pass_by_fight()
 	_test_balance()
@@ -2297,6 +2299,34 @@ func _test_ads() -> void:
 	_check(seen <= int(eco["ads"]["daily_max"]), "광고를 하루 전체 한도보다 많이 봄")
 	Profile.ensure_daily(profile, "2026-11-20")
 	_check(Profile.ads_left(profile, eco, "gems") == 1, "다음 날 광고 횟수가 초기화되지 않음")
+
+
+## 발끝 효과(2026-11-19): 사고 쓰기, 유료 전용은 유료 보석으로만.
+func _test_trails() -> void:
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("발끝", eco)
+	_check(Profile.trail_fx(profile, eco) == "", "처음부터 발끝 효과가 켜져 있음")
+	profile["gems"] = 5000
+	_check(Profile.buy_trail(profile, eco, "star"), "보석으로 발끝 효과를 못 삼")
+	_check(Profile.trail_fx(profile, eco) == "star", "산 발끝 효과가 바로 켜지지 않음")
+	_check(not Profile.buy_trail(profile, eco, "ember"), "무료 보석으로 유료 전용 발끝 효과를 삼")
+	Profile.record_purchase(profile, eco, "gems_500", "2026-11-19")
+	var paid := Profile.paid_gems(profile)
+	_check(Profile.buy_trail(profile, eco, "ember"), "유료 보석으로 유료 전용 발끝 효과를 못 삼")
+	_check(Profile.paid_gems(profile) == paid - 600, "유료 전용 값이 유료 보석에서 빠지지 않음")
+	_check(Profile.equip_trail(profile, "star") and Profile.trail_fx(profile, eco) == "star", "가진 발끝 효과로 못 바꿈")
+	_check(not Profile.equip_trail(profile, "coin"), "안 가진 발끝 효과를 씀")
+	for entry in eco["trails"]:
+		_check(str(entry["id"]) == "none" or str(entry["fx"]) in ["spark", "coin", "smoke", "star", "petal", "ember", "ice", "impact", "heal", "dust", "bolt"], "발끝 효과의 fx 이름이 틀림: %s" % entry["id"])
+
+
+## 계정 번호(2026-11-19): 한 번 만들면 그대로.
+func _test_account_id() -> void:
+	var profile := Profile.new_profile("번호", _data["economy"])
+	var rng := RandomNumberGenerator.new()
+	var first := Profile.ensure_account_id(profile, rng)
+	_check(first.begins_with("DH-") and first.length() == 12, "계정 번호 모양이 틀림: %s" % first)
+	_check(Profile.ensure_account_id(profile, rng) == first, "계정 번호가 바뀜")
 
 
 ## 카드 앨범(2026-11-18): 등급별 모은 수에 따라 보상, 한 번만 받음.
