@@ -84,7 +84,7 @@ def main() -> None:
 			name, contents, seconds = queue[0]
 			body = {
 				"contents": contents,
-				"settings": {"resolution": order.get("resolution", "720p"), "duration": seconds},
+				"settings": dict({"resolution": order.get("resolution", "720p"), "duration": seconds}, **({"sound": order["sound"]} if "sound" in order else {})),
 				"options": {"watermark_info": {"enabled": False}, "external_task_id": "%s_%d" % (name, int(time.time()))},
 			}
 			reply = requests.post("%s/image-to-video/%s" % (BASE, order.get("model", "kling-4.0")), headers=headers, json=body, timeout=120)
