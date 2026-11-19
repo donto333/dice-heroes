@@ -12,6 +12,7 @@ const DiePreview := preload("res://scripts/ui/die_preview.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
+const OddsWindow := preload("res://scripts/ui/odds_window.gd")
 const CardPanels := preload("res://scripts/ui/card_panels.gd")
 const PassPanel := preload("res://scripts/ui/pass_panel.gd")
 
@@ -109,6 +110,7 @@ func _summon_panel() -> Control:
 	column.add_child(caps)
 	caps.add_child(MenuArt.capsule("★★★ %s%%  ·  ★★ %s%%  ·  ★ %s%%" % [str(rates.get("3", 0)), str(rates.get("2", 0)), str(rates.get("1", 0))], "star", 18))
 	caps.add_child(MenuArt.capsule("10회는 ★★ 이상 보장 · ★★★ 확정까지 %d회" % max(pity_left, 1), "", 18))
+	caps.add_child(OddsWindow.button(app, "hero"))
 	column.add_child(Kit.para("이미 가진 영웅이 나오면 강화 조각으로 바뀌어요.", 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	var buttons := Kit.hbox(10)
 	column.add_child(buttons)
@@ -145,6 +147,7 @@ func _gold_summon_panel() -> Control:
 	words.add_child(Kit.label("★·★★ 영웅 소환", 24, Color.WHITE))
 	words.add_child(Kit.para("골드로 소환해요. 10회는 ★★ 이상 1명 보장.", 17, Kit.MUTED))
 	inside.add_child(Kit.expand(words))
+	inside.add_child(OddsWindow.button(app, "hero_gold"))
 	for count in [1, 10]:
 		var cost := int(table.get("cost_ten" if count >= 10 else "cost_one", 1000))
 		var button := MenuArt.pill_button("%d회  %s" % [count, Kit.comma(cost)], "green" if count == 1 else "gold", "m")

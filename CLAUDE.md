@@ -72,6 +72,7 @@
 - 기다림 화면 도움말 그림(2026-11-18, GPT 그림 활용 기획 5단계): `loading_overlay.gd`의 TIPS 12개와 같은 순서의 그림 `assets/art/tips/tip_01~12.png`(`GameData.tip_art`). 도움말을 보여 줄 때 그림은 왼쪽 아래, 글은 그 오른쪽. TIPS를 바꾸거나 늘리면 그림도 같은 번호로 맞춘다. Codex 웹에서 4×3 판 한 장으로 그려 잘라 넣음.
 - 카드 뽑기 연출(2026-11-18 사용자 요청): 영웅 소환 연출 `summon_show.gd`를 `kind = "card"`로 함께 쓴다(앞면은 카드 그림 `_card_picture`, 겹친 카드는 +골드, ★★★는 전설 카드 등장 컷 `_card_cut`). `card_panels.gd`의 `_pull`이 띄우고, 끝나면 돌아갈 화면을 다시 그린 뒤 '한 번 더'면 `CardPanels.find_in`으로 다시 뽑는다(무료 뽑기 뒤에는 '한 번 더' 없음). 자동 사진 `09h_cards_result`·`09m~09o_card_show_*`.
 - 대전 시작 확인 창(2026-11-18 사용자 결정): 랭크전·AI 연습전·모험·오늘의 도전은 파티 고르기 화면을 거치지 않는다. `app.start_mode(모드, {"stage": id})`가 `scripts/ui/match_launcher.gd`(MatchLauncher.ask)로 저장된 파티 편성(세 명·소환 포인트·시너지·유물)과 카드 편성(등급별 줄)을 한 창에 보여 주고, 버튼은 확인·취소뿐이다. 확인하면 상대를 정해 바로 대전(AI 연습전은 맵 고르기 창 뒤). 파티가 한도를 넘거나 비면 편성 화면으로 보낸다. 친구 대전만 예전처럼 파티 화면(purpose match, mode local)을 쓰고 맵 고르기는 `MatchLauncher.for_map(app).pick_map(start)`. 자동 사진 `12_start_confirm`, 자동 진행은 `app.get_meta("match_launcher").confirm()`.
+- 확률 보기 창(2026-11-19, 정식 출시 준비 1번, 기획서는 Claude 문서 '주사위 영웅전 정식 출시 사업·매출 기획'): `scripts/ui/odds_window.gd`(OddsWindow.open(app, kind), kind는 hero·hero_gold·card·card_gold·roulette). 숫자는 규칙 `Profile.odds_table`이 economy.json에서 계산(등급 안은 모두 같은 확률, 룰렛은 weight 비율). 버튼 `OddsWindow.button`은 상점 영웅 소환·골드 소환, 카드 뽑기·골드 뽑기, 룰렛 창에 있다. tests의 `_test_odds_table`, 자동 사진 `09p_odds_hero`·`09q_odds_card`.
 - 매일 바뀌는 것(날짜 씨앗): 오늘의 미션 6개(`Profile.active_missions`), 오늘의 특가, 오늘의 도전(상대·맵). 하루 기록은 `profile["daily"]`.
 
 ## 게임 요약

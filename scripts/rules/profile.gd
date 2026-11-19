@@ -1659,6 +1659,49 @@ static func owns_card(profile: Dictionary, id: String) -> bool:
 	return (profile.get("cards", []) as Array).has(id)
 
 
+## 확률 보기 창(2026-11-19, 정식 출시 준비: 확률형 아이템 정보 공개)에 보여 줄 표.
+## kind: hero(영웅 소환)·hero_gold(골드 소환)·card(카드 뽑기)·card_gold(골드 카드 뽑기)·roulette(행운의 룰렛).
+## 실제 뽑기와 같은 economy.json 값으로 계산한다. 등급 안에서는 모두 같은 확률이다.
+## 돌려주는 값: {"groups": [{"grade", "rate"(%), "items": [{"id", "name", "rate"(%)}]}], "pity_3", "guarantee_two"}
+## 룰렛은 groups 하나에 칸마다 {"reward", "rate"}.
+static func odds_table(kind: String, characters: Array, cards: Dictionary, eco: Dictionary) -> Dictionary:
+	if kind == "roulette":
+		var slots: Array = eco.get("roulette", {}).get("slots", [])
+		var total := 0.0
+		for slot in slots:
+			total += float(slot.get("weight", 0))
+		var items: Array = []
+		for slot in slots:
+			items.append({"reward": slot.get("reward", {}), "rate": 100.0 * float(slot.get("weight", 0)) / maxf(total, 0.001)})
+		return {"groups": [{"grade": 0, "rate": 100.0, "items": items}], "pity_3": 0, "guarantee_two": false}
+	var is_card := kind.begins_with("card")
+	var table: Dictionary = eco.get("card_gacha" if is_card else "summon", {})
+	var gold := kind.ends_with("_gold")
+	var rates: Dictionary = (table.get("gold", {}) as Dictionary).get("rates", {}) if gold else table.get("rates", {})
+	var total_rate := 0.0
+	for key in ["3", "2", "1"]:
+		total_rate += float(rates.get(key, 0))
+	var groups: Array = []
+	for grade in [3, 2, 1]:
+		var rate := 100.0 * float(rates.get(str(grade), 0)) / maxf(total_rate, 0.001)
+		if rate <= 0.0:
+			continue
+		var pool: Array = []
+		if is_card:
+			for key in cards:
+				if str(key) != "_comment" and card_grade(cards, str(key)) == grade:
+					pool.append({"id": str(key), "name": str((cards[key] as Dictionary).get("name", key))})
+		else:
+			for character in characters:
+				if int(character.get("grade", 0)) == grade:
+					pool.append({"id": str(character["id"]), "name": str(character.get("name", character["id"]))})
+		var items: Array = []
+		for entry in pool:
+			items.append({"id": entry["id"], "name": entry["name"], "rate": rate / float(pool.size())})
+		groups.append({"grade": grade, "rate": rate, "items": items})
+	return {"groups": groups, "pity_3": 0 if gold else int(table.get("pity_3", 0)), "guarantee_two": true}
+
+
 static func card_grade(cards: Dictionary, id: String) -> int:
 	return int((cards.get(id, {}) as Dictionary).get("grade", 1))
 

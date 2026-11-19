@@ -205,6 +205,17 @@ func _run() -> void:
 	_app.go("shop", {"tab": "cards"})
 	await _wait(0.4)
 	await _shot("09g_cards_gacha")
+	# 확률 보기 창(2026-11-19)
+	var OddsWindow = load("res://scripts/ui/odds_window.gd")
+	var odds = OddsWindow.open(_app, "hero")
+	await _wait(0.4)
+	await _shot("09p_odds_hero")
+	odds.close()
+	odds = OddsWindow.open(_app, "card")
+	await _wait(0.4)
+	await _shot("09q_odds_card")
+	odds.close()
+	await _wait(0.2)
 	var card_scroll := _find_scroll(_app.current_screen)
 	if card_scroll != null:
 		card_scroll.scroll_vertical = 100000

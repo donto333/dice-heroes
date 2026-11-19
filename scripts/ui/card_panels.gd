@@ -9,6 +9,7 @@ extends Node
 const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
+const OddsWindow := preload("res://scripts/ui/odds_window.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const SummonShow := preload("res://scripts/ui/summon_show.gd")
 
@@ -399,6 +400,7 @@ func build_gacha(body: VBoxContainer) -> void:
 	inner.add_child(caps)
 	caps.add_child(MenuArt.capsule("★★★ %d%%  ·  ★★ %d%%  ·  ★ %d%%" % [int(rates.get("3", 0)), int(rates.get("2", 0)), int(rates.get("1", 0))], "", 18))
 	caps.add_child(MenuArt.capsule("10회는 ★★ 이상 보장 · ★★★ 확정까지 %d회" % pity_left, "", 18))
+	caps.add_child(OddsWindow.button(app, "card"))
 	var dupe: Dictionary = table.get("dupe_gold", {})
 	inner.add_child(Kit.para("이미 가진 카드가 나오면 골드로 바뀌어요. (★ %s · ★★ %s · ★★★ %s)" % [Kit.money_text("gold", int(dupe.get("1", 0))), Kit.money_text("gold", int(dupe.get("2", 0))), Kit.money_text("gold", int(dupe.get("3", 0)))], 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	var buttons := Kit.hbox(10)
@@ -435,6 +437,7 @@ func _gold_panel() -> Control:
 	words.add_child(Kit.label("★·★★ 카드 뽑기", 24, Color.WHITE))
 	words.add_child(Kit.para("골드로 뽑아요. 10회는 ★★ 이상 1장 보장.", 17, Kit.MUTED))
 	inside.add_child(Kit.expand(words))
+	inside.add_child(OddsWindow.button(app, "card_gold"))
 	for count in [1, 10]:
 		var cost := int(table.get("cost_ten" if count >= 10 else "cost_one", 500))
 		var button := MenuArt.pill_button("%d회  %s" % [count, Kit.money_text("gold", cost)], "green" if count == 1 else "gold", "m")
