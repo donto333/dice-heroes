@@ -114,7 +114,33 @@ func setup(main_app, _params: Dictionary) -> void:
 	var reset := MenuArt.pill_button("초기화", "red", "m")
 	reset.custom_minimum_size = Vector2(130, 56)
 	reset.pressed.connect(_on_reset)
-	MenuArt.list_row(body, "close", "데이터 초기화", "영웅·재화·기록이 모두 지워져요.", reset)
+	MenuArt.list_row(body, "close", "데이터 초기화", "영웅·재화·기록이 모두 지워져요. 온라인 계정이 생기면 여기서 계정 삭제도 할 수 있어요.", reset)
+
+	# ---- 고객 지원(2026-11-19, 정식 출시 준비 7번)
+	var support: Dictionary = app.eco.get("support", {})
+	var account := Profile.ensure_account_id(app.profile, app.rng)
+	app.save()
+	body.add_child(MenuArt.section("고객 지원", "mail", "문의·약관"))
+	var ask := MenuArt.list_row(body, "mail", "문의하기", "계정 번호 %s · 문의할 때 이 번호를 함께 알려 주세요." % account)
+	var ask_row := Kit.hbox(8)
+	ask.add_child(ask_row)
+	var copy := MenuArt.pill_button("번호 복사", "blue", "m")
+	copy.pressed.connect(_on_copy_account)
+	ask_row.add_child(Kit.expand(copy))
+	var has_mail := str(support.get("email", "")) != ""
+	var mail := MenuArt.pill_button("메일 보내기" if has_mail else "메일 준비 중", "green" if has_mail else "gray", "m")
+	mail.disabled = not has_mail
+	mail.pressed.connect(_on_mail)
+	ask_row.add_child(Kit.expand(mail))
+	var docs := MenuArt.list_row(body, "book", "약관", "개인정보 처리방침과 이용약관이에요.")
+	var docs_row := Kit.hbox(8)
+	docs.add_child(docs_row)
+	for spec in [["개인정보 처리방침", "privacy_url"], ["이용약관", "terms_url"]]:
+		var url := str(support.get(spec[1], ""))
+		var open := MenuArt.pill_button(str(spec[0]) if url != "" else "%s 준비 중" % spec[0], "blue" if url != "" else "gray", "m")
+		open.disabled = url == ""
+		open.pressed.connect(func() -> void: OS.shell_open(url))
+		docs_row.add_child(Kit.expand(open))
 
 	var about := MenuArt.list_row(body, "book", "주사위 영웅전  버전 %s" % app.VERSION, "글꼴: Noto Sans KR (SIL Open Font License) · 엔진: Godot Engine (MIT) · 영웅·화면 그림: AI 도구로 만든 창작 일러스트")
 	var about_row := Kit.hbox(8)
@@ -337,6 +363,22 @@ func _confirm_import() -> void:
 	else:
 		app.play("bad")
 		app.toast("코드가 올바르지 않아요.")
+
+
+func _on_copy_account() -> void:
+	DisplayServer.clipboard_set(Profile.ensure_account_id(app.profile, app.rng))
+	app.play("click")
+	app.toast("계정 번호를 복사했어요.")
+
+
+## 메일 앱을 열어 계정 번호·버전을 미리 적어 둔다.
+func _on_mail() -> void:
+	var email := str(app.eco.get("support", {}).get("email", ""))
+	if email == "":
+		return
+	var subject := "[주사위 영웅전] 문의".uri_encode()
+	var text := "계정 번호: %s\n버전: %s\n닉네임: %s\n\n문의 내용:\n" % [Profile.ensure_account_id(app.profile, app.rng), app.VERSION, str(app.profile.get("nickname", ""))]
+	OS.shell_open("mailto:%s?subject=%s&body=%s" % [email, subject, text.uri_encode()])
 
 
 func _on_reset() -> void:

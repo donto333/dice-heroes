@@ -74,6 +74,7 @@ func _init() -> void:
 	_test_pickup()
 	_test_ads()
 	_test_trails()
+	_test_account_id()
 	_test_card_album()
 	_test_pass_by_fight()
 	_test_balance()
@@ -2296,6 +2297,15 @@ func _test_trails() -> void:
 	_check(not Profile.equip_trail(profile, "coin"), "안 가진 발끝 효과를 씀")
 	for entry in eco["trails"]:
 		_check(str(entry["id"]) == "none" or str(entry["fx"]) in ["spark", "coin", "smoke", "star", "petal", "ember", "ice", "impact", "heal", "dust", "bolt"], "발끝 효과의 fx 이름이 틀림: %s" % entry["id"])
+
+
+## 계정 번호(2026-11-19): 한 번 만들면 그대로.
+func _test_account_id() -> void:
+	var profile := Profile.new_profile("번호", _data["economy"])
+	var rng := RandomNumberGenerator.new()
+	var first := Profile.ensure_account_id(profile, rng)
+	_check(first.begins_with("DH-") and first.length() == 12, "계정 번호 모양이 틀림: %s" % first)
+	_check(Profile.ensure_account_id(profile, rng) == first, "계정 번호가 바뀜")
 
 
 ## 카드 앨범(2026-11-18): 등급별 모은 수에 따라 보상, 한 번만 받음.
