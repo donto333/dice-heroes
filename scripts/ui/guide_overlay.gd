@@ -78,6 +78,10 @@ func _make_bubble(text: String, action: String) -> PanelContainer:
 	skip.custom_minimum_size = Vector2(170, 44)
 	skip.pressed.connect(_on_skip)
 	buttons.add_child(skip)
+	# 버튼 말고는 모두 누르기를 통과시킨다(그릇 상자도 기본값이면 아래 버튼을 막는다).
+	for child in bubble.find_children("*", "Control", true, false):
+		if not child is Button and not (child as Control).get_parent() is Button:
+			(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return bubble
 
 
