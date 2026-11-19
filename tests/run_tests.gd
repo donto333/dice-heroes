@@ -694,7 +694,7 @@ func _test_full_games() -> void:
 					shown[int(event["player"])] = int(event["to"])
 					_check(game.nodes.has(int(event["to"])), "없는 칸으로 이동함")
 				elif event["kind"] == "battle":
-					_check(str(event.get("target", "")) in ["player", "keeper", "ambush", "card"], "전투 사건의 target이 잘못됨")
+					_check(str(event.get("target", "")) in ["player", "keeper", "ambush", "card", "warden"], "전투 사건의 target이 잘못됨")
 					if event["target"] == "player":
 						player_battles += 1
 					else:
@@ -2369,7 +2369,7 @@ func _test_warden_card() -> void:
 	if not game.wardens.has(5):
 		return
 	var warden: Dictionary = game.wardens[5]
-	_check(str(warden["hero"]) == "lubu" and int(warden["dice"]) == 5, "문지기가 여포(공격 주사위 5)가 아님")
+	_check(str(warden["hero"]) == "lubu" and int(warden["dice"]) == int(game.characters["lubu"]["attack"]), "문지기가 여포(공격 주사위 그대로)가 아님")
 	var told := false
 	for event in game.take_events():
 		told = told or (event["kind"] == "warden" and int(event["pos"]) == 5 and not bool(event["gone"]))
@@ -2399,18 +2399,21 @@ func _test_warden_card() -> void:
 		while duel.awaiting_choice():
 			duel.choose_path(0)
 		var fought := false
+		var beat := false
 		for event in duel.take_events():
 			if event["kind"] == "battle" and str(event.get("target", "")) == "warden":
 				fought = true
+				beat = bool(event["won"])
 				_check(str(event["defender"]) == "한신", "문지기 전투의 방어자가 내 영웅이 아님")
 		_check(fought, "상대가 문지기를 지나치며 싸우지 않음 (씨앗 %d)" % seed_value)
 		if duel.wardens.has(17):
 			lost += 1
+			_check(not beat, "문지기를 이겼는데 남아 있음")
 			_check(int(duel.players[1]["pos"]) == 10, "문지기에게 졌는데 거점으로 가지 않음: %d" % int(duel.players[1]["pos"]))
 			_check(int(duel.wardens[17]["dice"]) == maxi(1, int(duel.characters["hanxin"]["attack"]) - duel.gate_weaken), "문지기에게 졌는데 문지기 주사위가 줄지 않음")
 		else:
 			won += 1
-			_check(duel.players[1]["trail"].has(17), "문지기를 이겼는데 그 칸을 지나지 않음")
+			_check(beat, "문지기가 사라졌는데 이긴 전투가 아님")
 	_check(won > 0 and lost > 0, "문지기 전투 결과가 한쪽으로만 나옴 (승 %d, 패 %d)" % [won, lost])
 	# 주인은 그냥 지나간다
 	var mine = _skill_table(22, "lubu")
