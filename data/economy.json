@@ -1236,8 +1236,8 @@
     }
   },
   "support": {
-    "_comment": "문의·약관(2026-11-19, 정식 출시 준비 7번). email이 비어 있으면 설정의 '메일 보내기'는 '준비 중'. privacy_url·terms_url도 비어 있으면 준비 중. 사업자 정보가 정해지면 채운다.",
-    "email": "",
+    "_comment": "문의·약관(2026-11-19, 정식 출시 준비 7번). email(2026-11-19 사용자 결정: 임시로 donto333@naver.com, 나중에 바꿈)이 비어 있으면 설정의 '메일 보내기'는 '준비 중'. privacy_url·terms_url도 비어 있으면 준비 중. 사업자 정보가 정해지면 채운다.",
+    "email": "donto333@naver.com",
     "privacy_url": "",
     "terms_url": ""
   }
