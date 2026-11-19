@@ -12,6 +12,7 @@ const TopBar := preload("res://scripts/ui/top_bar.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const RouletteWheel := preload("res://scripts/ui/roulette_wheel.gd")
 const OddsWindow := preload("res://scripts/ui/odds_window.gd")
+const AdPlayer := preload("res://scripts/ui/ad_player.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const LOBBY_ART := "res://assets/ui_lobby/"
@@ -994,6 +995,9 @@ func open_roulette() -> void:
 	_spin_button = Kit.button("", Color("e8890c"), 28, 72)
 	_spin_button.pressed.connect(_on_spin)
 	body.add_child(_spin_button)
+	_ad_spin_button = MenuArt.pill_button("", "purple", "m")
+	_ad_spin_button.pressed.connect(_on_ad_spin)
+	body.add_child(_ad_spin_button)
 	var odds_row := CenterContainer.new()
 	odds_row.add_child(OddsWindow.button(app, "roulette"))
 	body.add_child(odds_row)
@@ -1001,7 +1005,14 @@ func open_roulette() -> void:
 	app.dialog("행운의 룰렛", body, [["닫기", Kit.PANEL_LIGHT, _close_roulette]], 660)
 
 
+var _ad_spin_button: Button
+
+
 func _refresh_roulette() -> void:
+	if is_instance_valid(_ad_spin_button):
+		var ad_left := Profile.ads_left(app.profile, app.eco, "roulette")
+		_ad_spin_button.text = "광고 보고 한 번 더 (오늘 %d회)" % ad_left
+		_ad_spin_button.disabled = ad_left <= 0
 	var table: Dictionary = app.eco.get("roulette", {})
 	var cost := Profile.roulette_cost(app.profile, app.eco)
 	var limit := int(table.get("free_per_day", 1)) + int(table.get("max_extra", 0))
@@ -1017,10 +1028,25 @@ func _refresh_roulette() -> void:
 		_spin_button.disabled = not Profile.can_pay(app.profile, "gems", cost)
 
 
-func _on_spin() -> void:
+## 보상형 광고를 보고 룰렛 한 번 더(2026-11-19).
+func _on_ad_spin() -> void:
+	if _wheel.is_spinning() or Profile.ads_left(app.profile, app.eco, "roulette") <= 0:
+		return
+	app.play("click")
+	var ad := AdPlayer.new()
+	app.add_child(ad)
+	if not await ad.play(app):
+		return
+	if not is_inside_tree() or Profile.ads_left(app.profile, app.eco, "roulette") <= 0:
+		return
+	Profile.watch_ad(app.profile, app.eco, "roulette")
+	_on_spin(true)
+
+
+func _on_spin(by_ad := false) -> void:
 	if _wheel.is_spinning():
 		return
-	var result := Profile.spin_roulette(app.profile, app.eco, app.rng)
+	var result := Profile.spin_roulette(app.profile, app.eco, app.rng, by_ad)
 	if result.is_empty():
 		app.toast("지금은 돌릴 수 없어요.")
 		return
@@ -1028,6 +1054,8 @@ func _on_spin() -> void:
 	app.play("dice")
 	_spin_button.disabled = true
 	_spin_button.text = "돌아가는 중..."
+	if is_instance_valid(_ad_spin_button):
+		_ad_spin_button.disabled = true
 	await _wheel.spin_to(int(result["index"]))
 	if not is_inside_tree():
 		return
@@ -1059,6 +1087,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"보상형 광고가 생겼어요: 광고를 보면 보석 100개, 판 끝 골드 2배, 룰렛·카드 뽑기 한 번 더, 원정 골드 2배를 받아요(지금은 시험 광고).",
 	"픽업 소환이 생겼어요: 2주마다 ★★★ 영웅 한 명의 확률이 올라가고, ★★★ 확정도 그 영웅으로 나와요.",
 	"보석 상점에 가격과 구매 확인 창, 구매 내역이 생겼어요. 유료 보석과 무료 보석을 따로 세요(결제는 정식 출시 때 열려요).",
 	"뽑기와 룰렛에 '확률 보기'가 생겼어요: 등급별·영웅·카드 하나하나의 확률과 보장 횟수를 볼 수 있어요.",
@@ -1164,8 +1193,30 @@ func _maybe_idle_reward() -> void:
 	var hours := float(now - int(app.profile.get("idle_at", now))) / 3600.0
 	var gold := Profile.claim_idle(app.profile, app.eco, now)
 	app.save()
-	if gold > 0:
-		app.toast("원정 보상: %.1f시간 동안 골드 %d을 모았어요!" % [minf(hours, float(app.eco["idle"]["max_hours"])), gold])
+	if gold <= 0:
+		return
+	var text := "원정 보상: %.1f시간 동안 골드 %d을 모았어요!" % [minf(hours, float(app.eco["idle"]["max_hours"])), gold]
+	if Profile.ads_left(app.profile, app.eco, "idle_double") <= 0:
+		app.toast(text)
+		return
+	# 보상형 광고: 원정 골드 한 번 더(2026-11-19)
+	var body := Kit.para(text + "\n광고를 보면 골드 %d을 한 번 더 받아요." % gold, 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	app.dialog("원정 보상", body, [["광고 보고 2배", Kit.PRIMARY, _on_idle_ad.bind(gold)], ["받기", Kit.ACCENT]], 640)
+
+
+func _on_idle_ad(gold: int) -> void:
+	var host = app
+	var ad := AdPlayer.new()
+	host.add_child(ad)
+	if not await ad.play(host):
+		return
+	var reward := Profile.watch_ad(host.profile, host.eco, "idle_double", {"gold": gold})
+	host.save()
+	if reward.is_empty():
+		return
+	host.play("reward")
+	host.toast("광고 보상: %s" % Kit.reward_line(reward))
+	host.go("lobby")
 
 
 ## 주가 바뀌었으면 지난주 연습 리그 보상을 준다.

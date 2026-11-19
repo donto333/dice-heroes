@@ -230,6 +230,17 @@ func _run() -> void:
 	await _shot("09t_purchase_history")
 	history_window.close()
 	await _wait(0.2)
+	# 시험 광고 화면(2026-11-19): 기다림 없이 끝나기 전 모습을 찍으려고 instant를 잠깐 끈다.
+	var AdPlayer = load("res://scripts/ui/ad_player.gd")
+	var ad = AdPlayer.new()
+	_app.add_child(ad)
+	_app.instant = false
+	ad.play(_app)
+	await _wait(0.3)
+	await _shot("09u_ad_player")
+	_app.instant = true
+	# 시험 광고가 스스로 끝날 때까지 기다린다(도중에 지우면 멈춘 함수가 오류를 낸다).
+	await _wait(float(_app.eco["ads"]["test_seconds"]) + 0.5)
 	var card_scroll := _find_scroll(_app.current_screen)
 	if card_scroll != null:
 		card_scroll.scroll_vertical = 100000

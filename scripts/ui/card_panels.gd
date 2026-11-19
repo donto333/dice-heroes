@@ -10,6 +10,7 @@ const Kit := preload("res://scripts/ui/kit.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const OddsWindow := preload("res://scripts/ui/odds_window.gd")
+const AdPlayer := preload("res://scripts/ui/ad_player.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const SummonShow := preload("res://scripts/ui/summon_show.gd")
 
@@ -419,6 +420,12 @@ func build_gacha(body: VBoxContainer) -> void:
 	ten.pressed.connect(_on_paid_draw.bind(10))
 	buttons.add_child(Kit.expand(ten))
 	Kit.shimmer(ten)
+	# 보상형 광고: 무료 뽑기 한 번 더(2026-11-19)
+	var ad_left := Profile.ads_left(app.profile, app.eco, "card_draw")
+	var ad_button := MenuArt.pill_button("광고 보고 무료 뽑기 (오늘 %d회)" % ad_left, "purple", "m")
+	ad_button.disabled = ad_left <= 0
+	ad_button.pressed.connect(_on_ad_draw)
+	inner.add_child(ad_button)
 	body.add_child(_gold_panel())
 	body.add_child(Kit.para("뽑은 카드는 영웅 메뉴의 '카드 편성'에서 넣어야 판에 나와요.", 17, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
@@ -461,6 +468,21 @@ func _on_gold_draw(count: int) -> void:
 func _on_free_draw() -> void:
 	if not Profile.use_free_card_draw(app.profile, app.eco):
 		return
+	_free_pull = true
+	_pull(1)
+
+
+func _on_ad_draw() -> void:
+	if Profile.ads_left(app.profile, app.eco, "card_draw") <= 0:
+		return
+	app.play("click")
+	var ad := AdPlayer.new()
+	app.add_child(ad)
+	if not await ad.play(app):
+		return
+	if Profile.ads_left(app.profile, app.eco, "card_draw") <= 0:
+		return
+	Profile.watch_ad(app.profile, app.eco, "card_draw")
 	_free_pull = true
 	_pull(1)
 

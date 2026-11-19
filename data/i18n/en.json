@@ -1937,5 +1937,20 @@
  "%d명 · 픽업 %s, 나머지 한 명당 %s": "%d heroes · pickup %s, others %s each",
  "· ★★★ 확정으로 나오는 영웅은 언제나 픽업 영웅이에요.": "· The guaranteed ★★★ is always the pickup hero.",
  "· 픽업 영웅: %s (%d일 남음). ★★★가 나오면 %d%%는 이 영웅, 나머지는 다른 ★★★예요.": "· Pickup hero: %s (%d days left). When ★★★ appears, %d%% of the time it's this hero; otherwise another ★★★.",
- "픽업 소환이 생겼어요: 2주마다 ★★★ 영웅 한 명의 확률이 올라가고, ★★★ 확정도 그 영웅으로 나와요.": "Pickup Summon is here: every 2 weeks one ★★★ hero gets a higher rate, and the guaranteed ★★★ is that hero."
+ "픽업 소환이 생겼어요: 2주마다 ★★★ 영웅 한 명의 확률이 올라가고, ★★★ 확정도 그 영웅으로 나와요.": "Pickup Summon is here: every 2 weeks one ★★★ hero gets a higher rate, and the guaranteed ★★★ is that hero.",
+ "광고 보고 한 번 더 (오늘 %d회)": "Watch ad for one more (%d today)",
+ "광고를 보면 골드 %d을 한 번 더 받아요.": "Watch an ad to get %d gold again.",
+ "원정 보상": "Expedition Reward",
+ "광고 보고 2배": "Watch ad for 2x",
+ "광고 보상: %s": "Ad reward: %s",
+ "광고 보고 골드 +%s": "Watch ad: gold +%s",
+ "골드 +%s 받았어요": "Got gold +%s",
+ "광고 보고 보석 %d개": "Watch an ad for %d gems",
+ "광고 보기": "Watch Ad",
+ "오늘 볼 수 있는 광고를 다 봤어요.": "You've watched all of today's ads.",
+ "광고": "Ad",
+ "시험 광고예요. 정식 출시 때는 여기에 진짜 광고가 나와요.": "This is a test ad. Real ads will appear here at launch.",
+ "%d초 뒤에 보상을 받아요": "Reward in %d seconds",
+ "광고 보고 무료 뽑기 (오늘 %d회)": "Watch ad for a free draw (%d today)",
+ "보상형 광고가 생겼어요: 광고를 보면 보석 100개, 판 끝 골드 2배, 룰렛·카드 뽑기 한 번 더, 원정 골드 2배를 받아요(지금은 시험 광고).": "Rewarded ads are here: watch for 100 gems, double match gold, an extra roulette spin or card draw, and double expedition gold (test ads for now)."
 }
