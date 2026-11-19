@@ -743,8 +743,10 @@ func _test_level_bonus() -> void:
 	for slot in ["attack", "defense", "support"]:
 		game.players[1]["gauge"][slot] = 0
 	game._gain_turn_gauge(1, 50)
-	_check(int(game.players[1]["gauge"]["attack"]) == 50 + int(50 * int(charge[4]) / 100.0), "레벨 5 자리 게이지가 더 차지 않음")
-	_check(int(game.players[1]["gauge"]["attack"]) > int(game.players[1]["gauge"]["support"]) or int(charge[4]) == int(charge[0]), "레벨 높은 자리가 더 빨리 차지 않음")
+	# 영웅마다 충전 속도(charge)가 달라서, 레벨 보너스에 그 영웅의 charge를 더해 계산한다.
+	var attack_charge := int(game.char_of(1, "attack").get("charge", 0))
+	_check(int(game.players[1]["gauge"]["attack"]) == mini(100, 50 + int(50 * (int(charge[4]) + attack_charge) / 100.0)), "레벨 5 자리 게이지가 더 차지 않음")
+	_check(game.level_gauge_percent(1, "attack") > game.level_gauge_percent(1, "support") or int(charge[4]) == int(charge[0]), "레벨 높은 자리가 더 빨리 차지 않음")
 
 
 func _test_profile_basics() -> void:
