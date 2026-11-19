@@ -2009,5 +2009,13 @@
  "%s 승리! 문지기가 사라졌다": "%s wins! Warden gone",
  "문지기": "Warden",
  "분신 문지기": "Phantom Warden",
- "상대 앞 3칸 길목에 내 ATTACK 영웅의 분신 문지기를 세움. 공격 주사위·레벨이 같고, 상대는 이겨야 지나감(지면 거점으로)": "Places a phantom warden of your ATTACK hero 3 tiles ahead of the opponent. Same attack dice and level; the opponent must win to pass (loses: back to checkpoint)"
+ "상대 앞 3칸 길목에 내 ATTACK 영웅의 분신 문지기를 세움. 공격 주사위·레벨이 같고, 상대는 이겨야 지나감(지면 거점으로)": "Places a phantom warden of your ATTACK hero 3 tiles ahead of the opponent. Same attack dice and level; the opponent must win to pass (loses: back to checkpoint)",
+ "픽업 모집": "Pickup Recruit",
+ "일반 모집": "Standard Recruit",
+ "★★★ %d명 모두 같은 확률로 나와요.": "All %d ★★★ heroes have the same chance.",
+ "픽업 모집 확률": "Pickup Recruit Rates",
+ "일반 모집 확률": "Standard Recruit Rates",
+ "· 픽업 모집과 일반 모집의 ★★★ 확정 횟수는 따로 쌓여요.": "· Pickup and Standard Recruit count toward their ★★★ guarantee separately.",
+ "★★★ %d명 모두 같은 확률로 나와요. 이미 가진 영웅이 나오면 강화 조각으로 바뀌어요.": "All %d ★★★ heroes have the same chance. Heroes you already own turn into upgrade shards.",
+ "상점의 영웅 소환이 '픽업 모집'과 '일반 모집'으로 나뉘었어요: 일반 모집은 ★★★ 모두 같은 확률이고, ★★★ 확정 횟수는 따로 쌓여요.": "The shop's hero summon is now split into 'Pickup Recruit' and 'Standard Recruit': Standard gives every ★★★ the same chance, and the ★★★ guarantee counts separately."
 }
