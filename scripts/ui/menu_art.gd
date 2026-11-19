@@ -283,7 +283,7 @@ static func _enter(screen: Control, app, head: Control, rail_holder: Control, bo
 
 
 ## 세로 판의 항목 버튼: 고른 것은 금색, 나머지는 파란 알약.
-## 배치(2026-11-17 고침): 양 끝 금 장식(버튼 높이의 약 0.42배)은 비워 두고,
+## 배치(2026-11-17 고침, 2026-11-19 새 그림): 양 끝 금 장식(버튼 높이의 약 0.5배)은 비워 두고,
 ## 그 안쪽 왼쪽에 아이콘, 아이콘 뒤부터 오른쪽 장식 앞까지의 칸 가운데에 글자를 둔다.
 ## 글자가 칸보다 길면(번역 글 포함) 글자 크기를 줄여 장식에 닿지 않게 한다.
 static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool = false) -> Button:
@@ -300,7 +300,7 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool =
 	button.add_theme_font_size_override("font_size", FONT)
 	var art := tex("menu_on" if on else "menu_off")
 	# 양 끝 장식 너비(그림에서 장식은 높이의 약 0.42배). 그림이 없을 때는 둥근 끝만큼만 띄운다.
-	var ornament := HEIGHT * 0.42 if art != null else 14.0
+	var ornament := HEIGHT * 0.5 if art != null else 14.0
 	var box := 32.0 if small else 40.0
 	var text_left := ornament + 4.0
 	var text_right := ornament + 4.0
