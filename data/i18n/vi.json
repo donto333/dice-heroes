@@ -1881,5 +1881,11 @@
  "우리 팀 게이지 +60%, 카드 1장 받기": "Năng lượng đội +60% và rút 1 thẻ",
  "새 아이템 카드 25장(★ 10·★★ 10·★★★ 5)이 생겼어요. 상점의 카드 뽑기에서 얻을 수 있어요.": "Có thêm 25 thẻ vật phẩm mới (10 ★, 10 ★★, 5 ★★★). Hãy nhận chúng ở mục Rút thẻ trong cửa hàng.",
  "새 아이템 카드 25장에 그림이 생겼어요.": "25 thẻ vật phẩm mới giờ đã có hình minh họa riêng.",
- "카드 등급을 다시 맞췄어요: 명검은 ★, 군신의 가호·도둑 까치·깊은 망각·불굴은 ★★가 됐어요.": "Đã cân bằng lại cấp thẻ: Bảo kiếm thành ★; Phù hộ Chiến thần, Chim ác là trộm, Lãng quên sâu và Bất khuất thành ★★."
+ "카드 등급을 다시 맞췄어요: 명검은 ★, 군신의 가호·도둑 까치·깊은 망각·불굴은 ★★가 됐어요.": "Đã cân bằng lại cấp thẻ: Bảo kiếm thành ★; Phù hộ Chiến thần, Chim ác là trộm, Lãng quên sâu và Bất khuất thành ★★.",
+ "2턴간 공격 주사위 +2개·6이 나오면 하나마다 +2, 이번 턴 이기면 3칸 더 전진": "Xúc xắc tấn công +2 trong 2 lượt, mỗi mặt 6 thêm +2; thắng lượt này tiến thêm 3 ô",
+ "2턴간 공격·방어 합계 +3": "Tổng tấn công và phòng thủ +3 trong 2 lượt",
+ "이번 턴 공격 합계 +4, 지면 한 번 다시 굴림": "Tổng tấn công +4 lượt này, thua thì được tung lại một lần",
+ "이번 턴 공격 주사위 +2개·눈은 최소 2, 이기면 3칸 더 전진": "Xúc xắc tấn công +2 lượt này, mỗi viên ít nhất 2, thắng tiến thêm 3 ô",
+ "이번 이동을 7칸으로 고정, 저주·쉬기 해제": "Cố định lần đi này là 7 ô, giải nguyền rủa và nghỉ lượt",
+ "영웅 밸런스를 맞췄어요: 여포·이순신·헤라클레스·아문센·최영·계백이 강해지고, 여러 영웅의 스킬 충전 속도를 조정했어요.": "Cân bằng anh hùng: Lữ Bố, Yi Sun-sin, Heracles, Roald Amundsen, Choe Yeong và Gyebaek mạnh hơn, đồng thời điều chỉnh tốc độ nạp kỹ năng của nhiều anh hùng."
 }
