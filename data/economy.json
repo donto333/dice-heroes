@@ -1,5 +1,10 @@
 {
   "_comment": "게임 밖 성장 규칙의 수치. 재화(골드·보석), 영웅 소환, 강화, 보상, 랭크, 미션, 출석. 규칙 코드는 scripts/rules/profile.gd. ai_names: 랭크전 AI 상대 이름.",
+  "app_update": {
+    "_note": "안드로이드 앱 새 버전 알림. check_url의 app_version.json은 android.yml이 APK와 함께 릴리스에 올린다.",
+    "check_url": "https://github.com/donto333/dice-heroes/releases/latest/download/app_version.json",
+    "apk_url": "https://github.com/donto333/dice-heroes/releases/latest/download/dice-heroes.apk"
+  },
   "start": {
     "gold": 1500,
     "gems": 300,

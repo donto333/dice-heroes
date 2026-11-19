@@ -1988,5 +1988,12 @@
  "닉네임: %s": "Nickname: %s",
  "문의 내용:": "Message:",
  "결제 문의는 설정 → 고객 지원에서 계정 번호 %s와 함께 보내 주세요.": "For payment questions, go to Settings → Support and include account ID %s.",
- "설정에 '고객 지원'이 생겼어요: 계정 번호 복사, 문의하기, 약관 보기.": "Settings now has 'Support': copy your account ID, contact us and view the terms."
+ "설정에 '고객 지원'이 생겼어요: 계정 번호 복사, 문의하기, 약관 보기.": "Settings now has 'Support': copy your account ID, contact us and view the terms.",
+ "안드로이드 앱이 새 버전을 알려 줘요: 앱을 켤 때 새 버전이 있으면 '업데이트'를 눌러 바로 받을 수 있어요.": "The Android app now tells you about new versions: if one is out when you open the app, tap 'Update' to get it right away.",
+ "새 버전이 있어요": "A new version is available",
+ "업데이트": "Update",
+ "나중에": "Later",
+ "새 버전 %s이 나왔어요. (지금 %s)": "Version %s is out. (You have %s)",
+ "'업데이트'를 누르면 새 앱 파일을 내려받아요.": "Tap 'Update' to download the new app file.",
+ "받은 뒤 설치 화면에서 '설치'를 누르면 기록은 그대로 남아요.": "Then tap 'Install' on the install screen. Your progress is kept."
 }
