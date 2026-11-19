@@ -227,6 +227,9 @@ func load_profile() -> void:
 	if not profile.is_empty():
 		Profile.repair(profile, eco)
 		Profile.ensure_daily(profile, today())
+		# 카드 등급이 바뀌어 등급별 자리 수를 넘게 된 덱은 넘친 카드만 뺀다(2026-11-19 등급 재설정).
+		if profile.has("deck") and Profile.fit_deck(profile, data.get("cards", {}), eco):
+			save()
 	apply_gfx()
 
 

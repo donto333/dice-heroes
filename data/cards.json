@@ -166,7 +166,7 @@
       "effect": {
         "type": "discard_enemy"
       },
-      "grade": 3
+      "grade": 2
     },
     "sage_ring": {
       "name": "현자의 반지",
@@ -183,7 +183,7 @@
       "effect": {
         "type": "steal_card"
       },
-      "grade": 3
+      "grade": 2
     },
     "war_drum": {
       "name": "전고",
@@ -253,7 +253,7 @@
     "keen_blade": {
       "name": "명검",
       "text": "이번 턴 공격 주사위에 6이 나오면 하나마다 +2",
-      "grade": 2,
+      "grade": 1,
       "effect": {
         "type": "crit",
         "amount": 2,
@@ -271,7 +271,7 @@
     "war_god": {
       "name": "군신의 가호",
       "text": "이번 턴 공격 주사위 +1개, 공격 합계 +2",
-      "grade": 3,
+      "grade": 2,
       "effect": {
         "type": "multi",
         "effects": [
@@ -317,7 +317,7 @@
     "iron_will": {
       "name": "불굴",
       "text": "앞으로 내 3턴 동안 거점으로 돌아갈 일을 한 번 막음",
-      "grade": 3,
+      "grade": 2,
       "effect": {
         "type": "stand_ground",
         "amount": 1,

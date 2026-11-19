@@ -2112,6 +2112,14 @@ func _test_card_deck() -> void:
 	var broken := Profile.new_profile("망가짐", eco)
 	broken["deck"] = ["없는카드"]
 	_check(Profile.deck_error(broken, cards, eco, Profile.battle_deck(broken, cards, eco)) == "", "망가진 덱을 되돌리지 못함")
+	# 카드 등급이 바뀌어 등급별 자리를 넘은 덱(★★★ 4장)은 넘친 카드만 빼고 나머지는 그대로 둔다
+	var overflow: Array = full.duplicate()
+	overflow.append(by_grade[3][int(per_grade["3"])])
+	profile["deck"] = overflow
+	_check(Profile.fit_deck(profile, cards, eco), "넘친 덱을 다듬지 않음")
+	_check(profile["deck"] == full, "넘친 카드만 빠지지 않음: %s" % str(profile["deck"]))
+	_check(Profile.deck_error(profile, cards, eco, profile["deck"]) == "", "다듬은 덱이 규칙에 안 맞음")
+	_check(not Profile.fit_deck(profile, cards, eco), "맞는 덱을 또 고침")
 
 
 ## 골드 소환·골드 카드 뽑기(2026-11-18): ★·★★만 나오고 ★★★ 보장 횟수는 그대로.
