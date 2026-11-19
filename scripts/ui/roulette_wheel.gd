@@ -26,7 +26,7 @@ const RING_HOLE := 0.77
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(400, 410)
+	custom_minimum_size = Vector2(380, 380)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ring = _load("roulette_ring")
 	_arrow = _load("roulette_arrow")
@@ -86,15 +86,7 @@ func _draw() -> void:
 		var color: Color = slots[index]["color"]
 		draw_colored_polygon(points, color)
 		draw_line(center, center + Vector2(cos(from), sin(from)) * radius, Color(1, 1, 1, 0.7), 2.0)
-		# 글자는 칸 가운데 방향으로 눕혀 쓴다.
-		var mid := from + step / 2.0
-		draw_set_transform(center, mid, Vector2.ONE)
-		var text := str(slots[index]["text"])
-		var font_size := 24
-		var width := radius * 0.62
-		draw_string_outline(font, Vector2(radius * 0.34, font_size * 0.36), tr(text), HORIZONTAL_ALIGNMENT_CENTER, width, font_size, 6, Color(0, 0, 0, 0.75))
-		draw_string(font, Vector2(radius * 0.34, font_size * 0.36), tr(text), HORIZONTAL_ALIGNMENT_CENTER, width, font_size, Color.WHITE)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		_draw_label(center, from + step / 2.0, radius * 0.62, radius * 0.6, tr(str(slots[index]["text"])), font)
 	# 테두리 전구
 	for bulb in 16:
 		var a := angle * 0.0 + TAU * bulb / 16.0
@@ -123,16 +115,8 @@ func _draw_art(center: Vector2, radius: float, step: float, font: Font) -> void:
 		draw_colored_polygon(points, color)
 		# 칸 안쪽이 살짝 밝게: 바깥쪽 절반에 옅은 흰 띠
 		draw_line(center, center + Vector2(cos(from), sin(from)) * wedge, Color(1, 0.92, 0.6, 0.85), 3.0)
-		var mid := from + step / 2.0
-		draw_set_transform(center, mid, Vector2.ONE)
-		var text := tr(str(slots[index]["text"]))
-		var font_size := 24
 		var inner := outer * RING_HOLE
-		var width := inner * 0.66
-		var spot := Vector2(inner * 0.27, font_size * 0.36)
-		draw_string_outline(font, spot, text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size, 6, Color(0, 0, 0, 0.75))
-		draw_string(font, spot, text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size, Color.WHITE)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		_draw_label(center, from + step / 2.0, inner * 0.6, inner * 0.62, tr(str(slots[index]["text"])), font)
 	draw_texture_rect(_ring, Rect2(center - Vector2(outer, outer), Vector2(outer, outer) * 2.0), false)
 	if _hub != null:
 		var hub := outer * 0.19
@@ -144,3 +128,31 @@ func _draw_art(center: Vector2, radius: float, step: float, font: Font) -> void:
 		var arrow_size := Vector2(outer * 0.27, outer * 0.27 * _arrow.get_height() / maxf(_arrow.get_width(), 1.0))
 		var tip_y := center.y - outer * 0.68
 		draw_texture_rect(_arrow, Rect2(Vector2(center.x - arrow_size.x / 2.0, tip_y - arrow_size.y), arrow_size), false)
+
+
+## 칸 글자: 칸 가운데(반지름 at 자리)에 바로 선 두 줄 글자(종류 위, 수량 아래)로 쓴다.
+## 눕혀 쓰면 위·아래·왼쪽 칸 글자가 세로나 거꾸로 보여서 바꿨다(2026-11-20 사용자 요청).
+func _draw_label(center: Vector2, mid: float, at: float, width: float, text: String, font: Font) -> void:
+	var parts := text.split(" ", false, 1)
+	var top := parts[0] if parts.size() > 1 else ""
+	var big := parts[1] if parts.size() > 1 else text
+	var spot := center + Vector2(cos(mid), sin(mid)) * at
+	var box := minf(width, 96.0)
+	var big_size := 26
+	while big_size > 14 and font.get_string_size(big, HORIZONTAL_ALIGNMENT_LEFT, -1, big_size).x > box:
+		big_size -= 1
+	var small_size := 17
+	while small_size > 11 and font.get_string_size(top, HORIZONTAL_ALIGNMENT_LEFT, -1, small_size).x > box:
+		small_size -= 1
+	var left := spot.x - box / 2.0
+	if top != "":
+		var y1 := spot.y - 4.0
+		draw_string_outline(font, Vector2(left, y1), top, HORIZONTAL_ALIGNMENT_CENTER, box, small_size, 5, Color(0, 0, 0, 0.75))
+		draw_string(font, Vector2(left, y1), top, HORIZONTAL_ALIGNMENT_CENTER, box, small_size, Color(1, 0.95, 0.75))
+		var y2 := spot.y + big_size * 0.85
+		draw_string_outline(font, Vector2(left, y2), big, HORIZONTAL_ALIGNMENT_CENTER, box, big_size, 6, Color(0, 0, 0, 0.75))
+		draw_string(font, Vector2(left, y2), big, HORIZONTAL_ALIGNMENT_CENTER, box, big_size, Color.WHITE)
+	else:
+		var y := spot.y + big_size * 0.36
+		draw_string_outline(font, Vector2(left, y), big, HORIZONTAL_ALIGNMENT_CENTER, box, big_size, 6, Color(0, 0, 0, 0.75))
+		draw_string(font, Vector2(left, y), big, HORIZONTAL_ALIGNMENT_CENTER, box, big_size, Color.WHITE)

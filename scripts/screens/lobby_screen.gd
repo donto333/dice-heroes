@@ -999,22 +999,40 @@ func open_roulette() -> void:
 		var text: String = "보석 %d" % int(reward["gems"]) if reward.has("gems") else "골드 %d" % int(reward.get("gold", 0))
 		slots.append({"text": text, "color": Color(str(slot.get("color", "3a6fd8")))})
 	_wheel.slots = slots
-	var center := CenterContainer.new()
-	center.add_child(_wheel)
-	body.add_child(center)
+	# 가로 화면에 맞춰 왼쪽은 바퀴, 오른쪽은 '확률 보기'(오른쪽 위)·안내·버튼(2026-11-20 사용자 요청).
+	body.add_theme_constant_override("separation", 0)
+	var row := Kit.hbox(24)
+	body.add_child(row)
+	var wheel_box := CenterContainer.new()
+	wheel_box.add_child(_wheel)
+	row.add_child(wheel_box)
+	var side := Kit.vbox(14)
+	side.custom_minimum_size = Vector2(340, 0)
+	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(side)
+	var odds_line := HBoxContainer.new()
+	odds_line.alignment = BoxContainer.ALIGNMENT_END
+	odds_line.add_child(OddsWindow.button(app, "roulette"))
+	side.add_child(odds_line)
+	var gap := Control.new()
+	gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	side.add_child(gap)
 	_spin_info = Kit.para("", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
-	body.add_child(_spin_info)
-	_spin_button = Kit.button("", Color("e8890c"), 28, 72)
+	side.add_child(_spin_info)
+	# 버튼 두 개는 같은 크기 알약으로.
+	_spin_button = MenuArt.pill_button("", "gold", "l")
+	_spin_button.custom_minimum_size = Vector2(0, 64)
 	_spin_button.pressed.connect(_on_spin)
-	body.add_child(_spin_button)
-	_ad_spin_button = MenuArt.pill_button("", "purple", "m")
+	side.add_child(_spin_button)
+	_ad_spin_button = MenuArt.pill_button("", "purple", "l")
+	_ad_spin_button.custom_minimum_size = Vector2(0, 64)
 	_ad_spin_button.pressed.connect(_on_ad_spin)
-	body.add_child(_ad_spin_button)
-	var odds_row := CenterContainer.new()
-	odds_row.add_child(OddsWindow.button(app, "roulette"))
-	body.add_child(odds_row)
+	side.add_child(_ad_spin_button)
+	var gap2 := Control.new()
+	gap2.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	side.add_child(gap2)
 	_refresh_roulette()
-	app.dialog("행운의 룰렛", body, [["닫기", Kit.PANEL_LIGHT, _close_roulette]], 660)
+	app.dialog("행운의 룰렛", body, [["닫기", Kit.PANEL_LIGHT, _close_roulette]], 860)
 
 
 var _ad_spin_button: Button
