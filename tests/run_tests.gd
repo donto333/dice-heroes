@@ -2200,7 +2200,7 @@ func _test_gold_gacha() -> void:
 ## 확률 보기 창(2026-11-19): 표의 확률이 모두 더해 100%이고, 실제 뽑기와 같은 값에서 나오는지.
 func _test_odds_table() -> void:
 	var eco: Dictionary = _data["economy"]
-	for kind in ["hero", "hero_std", "hero_gold", "card", "card_gold", "roulette"]:
+	for kind in ["hero", "hero_gold", "card", "card_gold", "roulette"]:
 		var table := Profile.odds_table(kind, _data["characters"], _data["cards"], eco)
 		var total := 0.0
 		var count := 0
@@ -2294,23 +2294,6 @@ func _test_pickup() -> void:
 	var first: Dictionary = odds["groups"][0]["items"][0]
 	_check(bool(first["pickup"]) and str(first["id"]) == pickup, "확률표 맨 위가 픽업 영웅이 아님")
 	_check(absf(float(first["rate"]) - float(eco["summon"]["rates"]["3"]) * float(table["share"]) / 100.0) < 0.001, "픽업 영웅 확률이 틀림")
-	# 일반 모집(2026-11-19): 픽업 없이 ★★★ 모두 같은 확률, 보장 횟수는 pity_std로 따로 센다.
-	var std_odds := Profile.odds_table("hero_std", _data["characters"], _data["cards"], eco, "2026-11-19")
-	_check(not std_odds.has("pickup"), "일반 모집 확률표에 픽업이 있음")
-	var std_three: Array = std_odds["groups"][0]["items"]
-	_check(absf(float(std_three[0]["rate"]) - float(std_three[std_three.size() - 1]["rate"])) < 0.0001, "일반 모집 ★★★ 확률이 고르지 않음")
-	var std_profile := Profile.new_profile("일반", eco)
-	std_profile["daily"]["date"] = "2026-11-19"
-	std_profile["pity"] = 7
-	var seen := {}
-	for round_index in 80:
-		std_profile["pity_std"] = int(eco["summon"]["pity_3"]) - 1
-		var std_forced := Profile.summon(std_profile, _data["characters"], eco, 1, rng, false, "standard")
-		_check(int(std_forced[0]["grade"]) == 3 and not bool(std_forced[0]["pickup"]), "일반 모집 확정이 ★★★가 아니거나 픽업 표시가 붙음")
-		seen[str(std_forced[0]["id"])] = true
-		_check(int(std_profile["pity_std"]) == 0, "일반 모집 ★★★ 뒤에 보장 횟수가 안 줄어듦")
-	_check(seen.size() >= 6, "일반 모집 확정 ★★★가 여러 영웅으로 나오지 않음: %d" % seen.size())
-	_check(int(std_profile["pity"]) == 7, "일반 모집이 픽업 모집 보장 횟수를 건드림")
 
 
 ## 보상형 광고(2026-11-19): 자리별·하루 전체 한도, 보석 100개, 2배 보상, 다음 날 초기화.

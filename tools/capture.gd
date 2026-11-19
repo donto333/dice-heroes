@@ -166,7 +166,7 @@ func _run() -> void:
 	_app.go("shop")
 	await _wait(0.4)
 	await _shot("08_shop")
-	for part in [["standard", "08g_shop_standard"], ["grow", "08c_shop_grow"], ["look", "08b_dice_shop"], ["gems", "08e_shop_gems"]]:
+	for part in [["grow", "08c_shop_grow"], ["look", "08b_dice_shop"], ["gems", "08e_shop_gems"]]:
 		_app.go("shop", {"tab": str(part[0])})
 		await _wait(0.4)
 		await _shot(str(part[1]))
@@ -225,7 +225,7 @@ func _run() -> void:
 	_app.go("heroes", {"view": "card_album"})
 	await _wait(0.5)
 	await _shot("09l_card_album")
-	_app.go("shop", {"tab": "standard"})
+	_app.go("shop")
 	await _wait(0.4)
 	var shop_scroll := _find_scroll(_app.current_screen)
 	if shop_scroll != null:
