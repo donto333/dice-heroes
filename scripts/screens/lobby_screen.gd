@@ -999,20 +999,33 @@ func open_roulette() -> void:
 		var text: String = "보석 %d" % int(reward["gems"]) if reward.has("gems") else "골드 %d" % int(reward.get("gold", 0))
 		slots.append({"text": text, "color": Color(str(slot.get("color", "3a6fd8")))})
 	_wheel.slots = slots
+	# 바퀴 자리: 가운데에 바퀴, 오른쪽 위 빈 귀퉁이에 '확률 보기'(2026-11-20 사용자 요청).
+	var wheel_area := Control.new()
+	wheel_area.custom_minimum_size = Vector2(0, 384)
+	body.add_child(wheel_area)
 	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center.add_child(_wheel)
-	body.add_child(center)
+	wheel_area.add_child(center)
+	var odds: Button = OddsWindow.button(app, "roulette")
+	odds.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	odds.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	odds.offset_left = -136
+	odds.offset_right = -4
+	odds.offset_top = 0
+	odds.offset_bottom = 40
+	wheel_area.add_child(odds)
 	_spin_info = Kit.para("", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	body.add_child(_spin_info)
-	_spin_button = Kit.button("", Color("e8890c"), 28, 72)
+	# 버튼 두 개는 같은 크기 알약으로, 위아래 같은 간격.
+	_spin_button = MenuArt.pill_button("", "gold", "l")
+	_spin_button.custom_minimum_size = Vector2(0, 64)
 	_spin_button.pressed.connect(_on_spin)
 	body.add_child(_spin_button)
-	_ad_spin_button = MenuArt.pill_button("", "purple", "m")
+	_ad_spin_button = MenuArt.pill_button("", "purple", "l")
+	_ad_spin_button.custom_minimum_size = Vector2(0, 64)
 	_ad_spin_button.pressed.connect(_on_ad_spin)
 	body.add_child(_ad_spin_button)
-	var odds_row := CenterContainer.new()
-	odds_row.add_child(OddsWindow.button(app, "roulette"))
-	body.add_child(odds_row)
 	_refresh_roulette()
 	app.dialog("행운의 룰렛", body, [["닫기", Kit.PANEL_LIGHT, _close_roulette]], 660)
 
