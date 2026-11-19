@@ -1785,8 +1785,33 @@ static func toggle_deck(profile: Dictionary, cards: Dictionary, eco: Dictionary,
 	return ""
 
 
-## 판에 들고 갈 덱. 저장된 덱이 규칙에 안 맞으면(예전 저장 등) 처음 덱으로 되돌린다.
+## 저장된 덱을 규칙에 맞게 다듬는다. 카드 등급이 바뀌어 등급별 자리 수를 넘게 된 덱은
+## 넘친 카드만(뒤에 넣은 것부터) 빼고, 없는 카드·가지지 않은 카드·겹친 카드도 뺀다. 바뀌었으면 true.
+static func fit_deck(profile: Dictionary, cards: Dictionary, eco: Dictionary) -> bool:
+	var rule: Dictionary = eco.get("card_deck", {})
+	var per_grade: Dictionary = rule.get("per_grade", {})
+	var size := int(rule.get("size", 15))
+	var old: Array = profile.get("deck", [])
+	var kept: Array = []
+	var counts := {1: 0, 2: 0, 3: 0}
+	for id in old:
+		var key := str(id)
+		if not cards.has(key) or not owns_card(profile, key) or kept.has(key) or kept.size() >= size:
+			continue
+		var grade := card_grade(cards, key)
+		if int(counts.get(grade, 0)) >= int(per_grade.get(str(grade), 99)):
+			continue
+		counts[grade] = int(counts.get(grade, 0)) + 1
+		kept.append(key)
+	if kept.size() == old.size():
+		return false
+	profile["deck"] = kept
+	return true
+
+
+## 판에 들고 갈 덱. 넘친 카드는 빼서 맞추고, 그래도 안 맞으면(너무 적음 등) 처음 덱으로 되돌린다.
 static func battle_deck(profile: Dictionary, cards: Dictionary, eco: Dictionary) -> Array:
+	fit_deck(profile, cards, eco)
 	var deck: Array = profile.get("deck", [])
 	if deck_error(profile, cards, eco, deck) == "":
 		return deck.duplicate()
