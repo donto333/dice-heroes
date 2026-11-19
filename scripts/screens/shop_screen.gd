@@ -28,7 +28,8 @@ var app
 const TABS := [["summon", "소환"], ["grow", "성장"], ["look", "꾸미기"], ["gems", "보석"]]
 ## 왼쪽 세로 판 항목: [id, 글자, 아이콘]
 ## 2026-11-18 사용자 결정: 영웅 소환 바로 아래에 카드 뽑기를 따로 둔다.
-const RAIL := [["summon", "영웅 소환", "summon"], ["cards", "카드 뽑기", "card"], ["grow", "성장", "upgrade"], ["look", "꾸미기", "dice"], ["gems", "보석", "gem"], ["pass", "시즌 패스", "pass"]]
+## 2026-11-19 사용자 결정: 영웅 소환을 픽업 모집(summon)과 일반 모집(standard)으로 나눈다.
+const RAIL := [["summon", "픽업 모집", "summon"], ["standard", "일반 모집", "summon"], ["cards", "카드 뽑기", "card"], ["grow", "성장", "upgrade"], ["look", "꾸미기", "dice"], ["gems", "보석", "gem"], ["pass", "시즌 패스", "pass"]]
 var _tab := "summon"
 
 
@@ -37,7 +38,8 @@ func setup(main_app, _params: Dictionary) -> void:
 	_tab = str(_params.get("tab", "summon"))
 	# 시안식 틀: 왼쪽 세로 판에 상점 항목, 오른쪽 큰 금테 판.
 	var summon_table: Dictionary = app.eco.get("summon", {})
-	var pity_left: int = maxi(int(summon_table.get("pity_3", 0)) - int(app.profile.get("pity", 0)), 1)
+	var banner := "standard" if _tab == "standard" else "pickup"
+	var pity_left: int = maxi(int(summon_table.get("pity_3", 0)) - int(app.profile.get(Profile.pity_key(banner), 0)), 1)
 	var summary := MenuArt.summary("summon", "무료 소환 %d회" % Profile.free_summons_left(app.profile, app.eco), "★★★ 확정까지 %d회" % pity_left)
 	var card_panels: Node = null
 	if _tab == "cards":
@@ -74,18 +76,21 @@ func setup(main_app, _params: Dictionary) -> void:
 			body.add_child(_gem_pack_panel())
 		"cards":
 			card_panels.build_gacha(body)
-		_:
-			body.add_child(_summon_panel())
+		"standard":
+			body.add_child(_summon_panel("standard"))
 			body.add_child(_gold_summon_panel())
+		_:
+			body.add_child(_summon_panel("pickup"))
 			body.add_child(_deals_panel())
 	body.add_child(Kit.para("보석은 미션, 출석, 레벨업, 오늘 첫 승리로 모을 수 있어요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	# 남은 버튼도 모두 금테 알약으로(UI 개편 1단계)
 	MenuArt.skin_buttons(body)
 
 
-func _summon_panel() -> Control:
+## banner: "pickup"(픽업 모집) 또는 "standard"(일반 모집).
+func _summon_panel(banner: String) -> Control:
 	var summon: Dictionary = app.eco.get("summon", {})
-	var card := Kit.panel(Color("5b35c0"), Kit.GOLD, 16)
+	var card := Kit.panel(Color("5b35c0") if banner == "pickup" else Color("2c4fb0"), Kit.GOLD, 16)
 	# 소환진 그림(assets/art/ui/summon.jpg)을 판 바탕에 깐다.
 	var circle := ArtView.new()
 	circle.show_art("ui/summon")
@@ -97,9 +102,9 @@ func _summon_panel() -> Control:
 	card.add_child(column)
 	# 픽업 소환(2026-11-19): 이번 픽업 영웅을 크게, 다른 ★★★ 셋을 옆에.
 	var date := str(app.profile.get("daily", {}).get("date", ""))
-	var pickup := Profile.pickup_hero(app.eco, date)
+	var pickup := Profile.pickup_hero(app.eco, date) if banner == "pickup" else ""
 	var pickup_info: Dictionary = app.character(pickup) if pickup != "" else {}
-	column.add_child(Kit.title("픽업 소환" if pickup != "" else "영웅 소환", 40))
+	column.add_child(Kit.title("픽업 모집" if banner == "pickup" else "일반 모집", 40))
 	var faces := Kit.hbox(8)
 	column.add_child(faces)
 	var shown: Array = [] if pickup == "" else [pickup]
@@ -125,32 +130,39 @@ func _summon_panel() -> Control:
 		up_line.add_child(MenuArt.capsule("%s 확률 UP · ★★★의 %d%%" % [str(pickup_info.get("name", pickup)), share], "star", 20))
 		up_line.add_child(MenuArt.capsule("%d일 남음" % Profile.pickup_days_left(app.eco, date), "", 20))
 	var rates: Dictionary = summon.get("rates", {})
-	var pity_left: int = int(summon.get("pity_3", 0)) - int(app.profile.get("pity", 0))
+	var pity_left: int = int(summon.get("pity_3", 0)) - int(app.profile.get(Profile.pity_key(banner), 0))
 	# 확률·보장은 캡슐 두 개로
 	var caps := Kit.hbox(8)
 	caps.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_child(caps)
 	caps.add_child(MenuArt.capsule("★★★ %s%%  ·  ★★ %s%%  ·  ★ %s%%" % [str(rates.get("3", 0)), str(rates.get("2", 0)), str(rates.get("1", 0))], "star", 18))
 	caps.add_child(MenuArt.capsule("10회는 ★★ 이상 보장 · ★★★ 확정까지 %d회" % max(pity_left, 1), "", 18))
-	caps.add_child(OddsWindow.button(app, "hero"))
-	column.add_child(Kit.para("이미 가진 영웅이 나오면 강화 조각으로 바뀌어요.", 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	caps.add_child(OddsWindow.button(app, "hero" if banner == "pickup" else "hero_std"))
+	var note := "이미 가진 영웅이 나오면 강화 조각으로 바뀌어요."
+	if banner == "standard":
+		var three := 0
+		for character in app.data["characters"]:
+			if int(character["grade"]) == 3:
+				three += 1
+		note = "★★★ %d명 모두 같은 확률로 나와요. " % three + note
+	column.add_child(Kit.para(note, 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	var buttons := Kit.hbox(10)
 	column.add_child(buttons)
 	var free_left := Profile.free_summons_left(app.profile, app.eco)
 	var free_button := MenuArt.pill_button("무료 소환 (오늘 %d회)" % free_left, "green", "l")
 	free_button.disabled = free_left <= 0
-	free_button.pressed.connect(_on_free)
+	free_button.pressed.connect(_on_free.bind(banner))
 	buttons.add_child(Kit.expand(free_button))
 	buttons.set_meta("guide", "summon")
 	var one := MenuArt.pill_button("1회  %s" % Kit.comma(int(summon.get("cost_one", 100))), "blue", "l")
 	_gem_icon(one)
 	one.disabled = not Profile.can_pay(app.profile, "gems", int(summon.get("cost_one", 100)))
-	one.pressed.connect(_on_paid.bind(1))
+	one.pressed.connect(_on_paid.bind(1, banner))
 	buttons.add_child(Kit.expand(one))
 	var ten := MenuArt.pill_button("10회  %s" % Kit.comma(int(summon.get("cost_ten", 900))), "gold", "l")
 	_gem_icon(ten)
 	ten.disabled = not Profile.can_pay(app.profile, "gems", int(summon.get("cost_ten", 900)))
-	ten.pressed.connect(_on_paid.bind(10))
+	ten.pressed.connect(_on_paid.bind(10, banner))
 	buttons.add_child(Kit.expand(ten))
 	Kit.shimmer(ten)
 	return card
@@ -594,24 +606,24 @@ func _gem_icon(button: Button) -> void:
 	_money_icon(button, "gem")
 
 
-func _on_free() -> void:
+func _on_free(banner: String = "pickup") -> void:
 	if not Profile.use_free_summon(app.profile, app.eco):
 		return
-	_summon(1)
+	_summon(1, 0, false, banner)
 
 
-func _on_paid(count: int) -> void:
+func _on_paid(count: int, banner: String = "pickup") -> void:
 	var summon: Dictionary = app.eco.get("summon", {})
 	var cost := int(summon.get("cost_ten" if count >= 10 else "cost_one", 100))
 	if not Profile.pay(app.profile, "gems", cost):
 		app.play("denied")
 		app.toast("보석이 모자라요.")
 		return
-	_summon(count, cost)
+	_summon(count, cost, false, banner)
 
 
-func _summon(count: int, again_cost: int = 0, gold: bool = false) -> void:
-	var results := Profile.summon(app.profile, app.data["characters"], app.eco, count, app.rng, gold)
+func _summon(count: int, again_cost: int = 0, gold: bool = false, banner: String = "pickup") -> void:
+	var results := Profile.summon(app.profile, app.data["characters"], app.eco, count, app.rng, gold, banner)
 	app.save()
 	# 결과는 이미 정해져 저장됐다. 소환 연출(제단 → 운명의 주사위 → 카드 뒤집기)로 보여 준다.
 	# 연출이 끝나면 이 화면은 새로 그려지므로(app.go) 그 뒤에는 self를 쓰지 않는다.
@@ -627,7 +639,7 @@ func _summon(count: int, again_cost: int = 0, gold: bool = false) -> void:
 		if gold:
 			host.current_screen._on_gold(count)
 		else:
-			host.current_screen._on_paid(count)
+			host.current_screen._on_paid(count, banner)
 
 
 func _on_exchange(index: int) -> void:
