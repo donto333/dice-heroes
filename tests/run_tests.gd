@@ -118,6 +118,7 @@ func _init() -> void:
 	_test_streak_power()
 	_test_presets()
 	_test_coupon_and_backup()
+	_test_all_coupons()
 	_test_lang()
 	_test_forward_spacing()
 	if _failures.is_empty():
@@ -2488,3 +2489,26 @@ func _test_forward_spacing() -> void:
 						ahead.append(int(nxt))
 						_check(nodes[int(nxt)].get("type", "") != "forward", "전진 칸이 연달아 있음: %s %d→%d" % [path, id, int(nxt)])
 				frontier = ahead
+
+
+## 쿠폰 목록: 코드는 대문자·숫자만, 이름과 보상(골드·보석만, 0보다 큼)이 있고, 한 번씩만 쓰인다.
+func _test_all_coupons() -> void:
+	var coupons: Dictionary = _data["coupons"]
+	var table: Dictionary = coupons["coupons"]
+	_check(table.size() >= 14, "쿠폰이 14개보다 적음: %d" % table.size())
+	var code_shape := RegEx.create_from_string("^[A-Z0-9]+$")
+	var profile := Profile.new_profile("쿠폰", _data["economy"])
+	for code in table:
+		var entry: Dictionary = table[code]
+		_check(code_shape.search(str(code)) != null, "쿠폰 코드 모양이 이상함: " + str(code))
+		_check(str(entry.get("text", "")) != "", "쿠폰 이름이 없음: " + str(code))
+		var reward: Dictionary = entry.get("reward", {})
+		_check(not reward.is_empty(), "쿠폰 보상이 없음: " + str(code))
+		for key in reward:
+			_check((key == "gold" or key == "gems") and int(reward[key]) > 0, "쿠폰 보상이 이상함: %s %s" % [code, key])
+		var gems := int(profile["gems"])
+		var gold := int(profile["gold"])
+		var first := Profile.redeem_coupon(profile, coupons, str(code).to_lower())
+		_check(bool(first["ok"]), "쿠폰을 못 씀: " + str(code))
+		_check(int(profile["gems"]) == gems + int(reward.get("gems", 0)) and int(profile["gold"]) == gold + int(reward.get("gold", 0)), "쿠폰 보상이 안 들어옴: " + str(code))
+		_check(str(Profile.redeem_coupon(profile, coupons, str(code))["reason"]) == "used", "쿠폰을 두 번 씀: " + str(code))
