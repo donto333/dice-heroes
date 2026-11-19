@@ -11,6 +11,8 @@ const Profile := preload("res://scripts/rules/profile.gd")
 
 var app
 var _target_id := ""
+var _place := ""
+var _margin := 24.0
 var _target: Control
 var _bubble: PanelContainer
 var _time := 0.0
@@ -38,6 +40,8 @@ func refresh() -> void:
 	if spec.is_empty():
 		return
 	_target_id = str(spec.get("target", ""))
+	_place = str(spec.get("place", ""))
+	_margin = float(spec.get("margin", 24))
 	_bubble = _make_bubble(str(spec.get("text", "")), str(spec.get("action", "")))
 	add_child(_bubble)
 	visible = true
@@ -46,8 +50,9 @@ func refresh() -> void:
 func _make_bubble(text: String, action: String) -> PanelContainer:
 	var bubble := PanelContainer.new()
 	bubble.add_theme_stylebox_override("panel", Kit.plate(Color("243a9c"), Kit.TRIM, 22.0, 14))
-	bubble.mouse_filter = Control.MOUSE_FILTER_STOP
-	bubble.custom_minimum_size = Vector2(560, 0)
+	# 말풍선 몸통은 누르기를 막지 않는다(아래 버튼이 눌린다). 말풍선 안 버튼만 받는다.
+	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bubble.custom_minimum_size = Vector2(520, 0)
 	var row := Kit.hbox(12)
 	bubble.add_child(row)
 	var face := Portrait.new()
@@ -104,7 +109,8 @@ func _process(delta: float) -> void:
 	# 창이 떠 있으면 숨는다(창이 닫히면 다시 보인다).
 	var covered: bool = not get_tree().get_nodes_in_group("modal").is_empty() or (app.loading != null and app.loading.visible)
 	modulate.a = 0.0 if covered else 1.0
-	_bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE if covered else Control.MOUSE_FILTER_STOP
+	for button in _bubble.find_children("*", "Button", true, false):
+		(button as Button).mouse_filter = Control.MOUSE_FILTER_IGNORE if covered else Control.MOUSE_FILTER_STOP
 	_time += delta
 	if _target == null or not is_instance_valid(_target) or not _target.is_visible_in_tree():
 		_target = _find(app.current_screen) if app.current_screen != null and _target_id != "" else null
@@ -112,7 +118,10 @@ func _process(delta: float) -> void:
 	var bubble_size := _bubble.get_combined_minimum_size()
 	var place := Vector2(24, size.y - bubble_size.y - 24)
 	var rect := _target_rect()
-	if rect.size != Vector2.ZERO:
+	if _place != "":
+		place.x = 24.0 if _place.ends_with("left") else size.x - bubble_size.x - 24.0
+		place.y = 94.0 if _place.begins_with("top") else size.y - bubble_size.y - _margin
+	elif rect.size != Vector2.ZERO:
 		var below := rect.position.y + rect.size.y * 0.5 > size.y * 0.55
 		place.y = 24.0 + 70.0 if below else size.y - bubble_size.y - 24.0
 		place.x = 24.0 if rect.position.x + rect.size.x * 0.5 > size.x * 0.5 else size.x - bubble_size.x - 24.0

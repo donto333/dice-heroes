@@ -67,7 +67,7 @@
     }
   ],
   "tutorial": {
-    "_comment": "처음 하는 사람 길잡이(2026-11-19): 순서대로 한 단계씩. profile.tutorial(지금 단계 번호, 없거나 단계 수 이상이면 끝남). event가 일어나면 다음 단계로 가고 reward를 준다. screens는 화면마다 가리킬 버튼(화면 코드의 노드 메타 guide)과 말. action이 있으면 말풍선에 그 버튼(start_tutorial: 연습 한 판 시작). 연습 한 판은 쉬움 AI·map 번 맵.",
+    "_comment": "처음 하는 사람 길잡이(2026-11-19): 순서대로 한 단계씩. profile.tutorial(지금 단계 번호, 없거나 단계 수 이상이면 끝남). event가 일어나면 다음 단계로 가고 reward를 준다. screens는 화면마다 가리킬 버튼(화면 코드의 노드 메타 guide)과 말. action이 있으면 말풍선에 그 버튼(start_tutorial: 연습 한 판 시작). 연습 한 판은 쉬움 AI·map 번 맵. place(top_left·top_right·bottom_left·bottom_right)와 margin을 주면 말풍선 자리를 정한다(없으면 가리키는 버튼 반대쪽 귀퉁이).",
     "guide_hero": "sejong",
     "map": 0,
     "steps": [
@@ -115,7 +115,9 @@
           },
           "party": {
             "target": "party_save",
-            "text": "영웅을 눌러 ATTACK·DEFENSE·SUPPORT 자리에 넣고 저장을 눌러요. ★ 합계가 소환 포인트 한도 안이어야 해요."
+            "text": "영웅을 눌러 ATTACK·DEFENSE·SUPPORT 자리에 넣고 저장을 눌러요. ★ 합계가 소환 포인트 한도 안이어야 해요.",
+            "place": "bottom_left",
+            "margin": 104
           }
         }
       },

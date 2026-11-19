@@ -83,6 +83,8 @@ func _run() -> void:
 	_app.profile["guide_flow"] = 3
 	_app.go("lobby")
 	await _wait(0.3)
+	_close_dialogs()
+	await _wait(0.2)
 	await _shot("03e_guide_rank")
 	_app.profile["guide_flow"] = 9999
 	_app.go("lobby")
