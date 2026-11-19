@@ -189,6 +189,13 @@ func _draw_skin(off: bool, down: bool, over: bool, r: float) -> bool:
 		texture = UiSkin.tex("round_blue")
 	if texture == null and family == "sq":
 		texture = UiSkin.tex("sq_blue")
+	if texture == null and family == "sq":
+		# 2026-11-19 A 스타일: 긴 버튼 그림의 양 끝 장식이 작아져(높이의 0.5배) 짧은 버튼에도 그대로 쓴다.
+		texture = UiSkin.tex("btn_" + tone)
+		if texture == null:
+			texture = UiSkin.tex("btn_blue")
+		if texture != null:
+			family = "btn"
 	if texture == null and family == "btn":
 		texture = UiSkin.tex("btn_blue")
 	if texture == null:
@@ -211,7 +218,8 @@ func _draw_skin(off: bool, down: bool, over: bool, r: float) -> bool:
 	var dest := Rect2(-2.0, -2.0 + sink, size.x + 4.0, size.y + 4.0)
 	var item := get_canvas_item()
 	if family == "btn":
-		UiSkin.draw_bar(item, texture, dest.grow(3.0) if fancy else dest, 0.82, tint, 0.2 if fancy else 0.0)
+		# 양 끝 장식: 큰 금색 시작 버튼은 날개(0.82), 나머지 A 스타일 버튼은 작은 보석(0.5)
+		UiSkin.draw_bar(item, texture, dest.grow(3.0) if fancy else dest, 0.82 if fancy else 0.5, tint, 0.2 if fancy else 0.0)
 	else:
 		# 네모·동그라미: 귀퉁이는 그대로 두고 가운데만 늘린다(가로세로 비율이 달라도 테가 찌그러지지 않게).
 		var width := float(texture.get_width())
