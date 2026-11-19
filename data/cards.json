@@ -1,5 +1,5 @@
 {
-  "_comment": "아이템 카드 58종. grade: 1=★ 일반, 2=★★ 희귀, 3=★★★ 전설(카드 뽑기 확률·덱 제한에 씀). effect.type은 scripts/rules/game.gd의 _apply_effect()에서 처리한다.",
+  "_comment": "아이템 카드 59종. grade: 1=★ 일반, 2=★★ 희귀, 3=★★★ 전설(카드 뽑기 확률·덱 제한에 씀). effect.type은 scripts/rules/game.gd의 _apply_effect()에서 처리한다.",
   "cards": {
     "swift_horse": {
       "name": "천리마",
@@ -684,6 +684,15 @@
         ]
       },
       "grade": 3
+    },
+    "phantom_warden": {
+      "name": "분신 문지기",
+      "grade": 3,
+      "text": "상대 앞 3칸 길목에 내 ATTACK 영웅의 분신 문지기를 세움. 공격 주사위·레벨이 같고, 상대는 이겨야 지나감(지면 거점으로)",
+      "effect": {
+        "type": "warden",
+        "amount": 3
+      }
     }
   }
 }

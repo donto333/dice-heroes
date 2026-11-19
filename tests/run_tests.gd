@@ -43,7 +43,7 @@ const EFFECT_TYPES := [
 	"gauge_team", "gauge_enemy", "draw_card", "skip_enemy", "enemy_move_dice",
 	"trap", "swap", "comeback", "discard_enemy", "steal_card", "cure", "charm", "set_attr", "multi",
 	"crit", "atk_floor", "def_floor", "move_floor", "drain", "gauge_boost", "stand_ground",
-	"advance", "push_enemy", "steal_gauge", "enemy_seal", "enemy_card_seal", "random_one",
+	"advance", "push_enemy", "steal_gauge", "enemy_seal", "enemy_card_seal", "random_one", "warden",
 ]
 
 var _failures: Array[String] = []
@@ -272,6 +272,7 @@ func _test_references() -> void:
 	_check(owners.size() == abilities.size(), "주인 없는 어빌리티가 있음")
 	_test_new_skill_effects()
 	_test_every_ability_and_card()
+	_test_warden_card()
 
 	# 모든 어빌리티를 한 번씩 써도 판이 깨지지 않는지.
 	for ability_id in abilities:
@@ -479,7 +480,7 @@ func _test_checkpoints() -> void:
 func _test_cards() -> void:
 	var known := EFFECT_TYPES
 	var cards: Dictionary = _data["cards"]
-	_check(cards.size() == 58, "카드가 58종이 아님: %d" % cards.size())
+	_check(cards.size() == 59, "카드가 59종이 아님: %d" % cards.size())
 	for card_id in cards:
 		var card: Dictionary = cards[card_id]
 		_check(int(card.get("grade", 0)) in [1, 2, 3], "카드 등급이 1~3이 아님: " + card_id)
@@ -696,7 +697,7 @@ func _test_full_games() -> void:
 					shown[int(event["player"])] = int(event["to"])
 					_check(game.nodes.has(int(event["to"])), "없는 칸으로 이동함")
 				elif event["kind"] == "battle":
-					_check(str(event.get("target", "")) in ["player", "keeper", "ambush", "card"], "전투 사건의 target이 잘못됨")
+					_check(str(event.get("target", "")) in ["player", "keeper", "ambush", "card", "warden"], "전투 사건의 target이 잘못됨")
 					if event["target"] == "player":
 						player_battles += 1
 					else:
@@ -1752,6 +1753,13 @@ func _check_effect_applied(game, part: Dictionary, before: Dictionary, label: St
 			_check(them["trail"].size() == int(before["their_trail"]) - amount, "%s: 상대를 %d칸 밀지 못함" % [label, amount])
 		"trap":
 			_check(game.traps.size() >= mini(maxi(amount, 1), int(before["my_trail"])), "%s: 덫이 깔리지 않음" % label)
+		"warden":
+			var found := false
+			for spot in game.wardens:
+				var warden: Dictionary = game.wardens[spot]
+				found = found or (int(warden["owner"]) == 0 and str(warden["hero"]) == str(game.char_of(0, "attack")["id"])
+					and int(warden["dice"]) == int(game.char_of(0, "attack")["attack"]))
+			_check(found, "%s: 내 ATTACK 영웅 모습의 문지기가 서지 않음" % label)
 		"comeback", "multi", "random_one":
 			pass
 		_:
@@ -2364,6 +2372,73 @@ func _test_card_album() -> void:
 	_check(Profile.claim_card_album(profile, eco, cards, 3).is_empty(), "카드 앨범 보상을 두 번 받음")
 	_check(Profile.card_album_has_claimable(profile, eco, cards), "★·★★ 카드 앨범 보상이 남았는데 없다고 함")
 
+
+## ★★★ 분신 문지기 카드(2026-11-19): 상대 앞 3칸에 내 ATTACK 영웅의 문지기가 서고, 상대는 이겨야 지나간다.
+func _test_warden_card() -> void:
+	var game = _skill_table(21, "lubu")
+	_place(game, 0, [0, 1])
+	_place(game, 1, [0, 1, 2])
+	game.players[0]["hand"] = ["phantom_warden"]
+	game.take_events()
+	_check(game.play_card(0), "분신 문지기 카드를 쓸 수 없음")
+	_check(game.wardens.has(5), "문지기가 상대(2번 칸) 앞 3칸(5번 칸)에 서지 않음: %s" % str(game.wardens.keys()))
+	if not game.wardens.has(5):
+		return
+	var warden: Dictionary = game.wardens[5]
+	_check(str(warden["hero"]) == "lubu" and int(warden["dice"]) == int(game.characters["lubu"]["attack"]), "문지기가 여포(공격 주사위 그대로)가 아님")
+	var told := false
+	for event in game.take_events():
+		told = told or (event["kind"] == "warden" and int(event["pos"]) == 5 and not bool(event["gone"]))
+	_check(told, "문지기를 세운 사건이 화면에 가지 않음")
+	_check(not game.warden_blocks(0, 5) and game.warden_blocks(1, 5), "문지기가 주인을 막거나 상대를 안 막음")
+	# 다시 쓰면 예전 문지기는 사라지고 새 자리에 하나만
+	_place(game, 1, [0, 1, 2, 3, 4, 5, 6])
+	game._apply_effect({"type": "warden", "amount": 3}, 0)
+	_check(game.wardens.size() == 1 and game.wardens.has(9), "문지기가 하나만 남지 않음: %s" % str(game.wardens.keys()))
+	# 상대가 지나가려 하면 문지기 칸에서 멈춰 싸운다. 이기면 문지기가 사라지고, 지면 거점으로 가고 문지기 주사위가 1개 준다.
+	var won := 0
+	var lost := 0
+	for seed_value in range(1, 81):
+		var duel = _skill_table(seed_value, "hanxin")
+		_place(duel, 0, [0, 1])
+		_place(duel, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+		duel._apply_effect({"type": "warden", "amount": 3}, 0)
+		_check(duel.wardens.has(17), "문지기가 길목(17번)에 서지 않음 (씨앗 %d)" % seed_value)
+		if not duel.wardens.has(17):
+			return
+		duel.end_turn()
+		duel.begin_turn()
+		duel.players[1]["effects"] = [{"key": "move_fixed", "amount": 6, "turns": 1}]
+		duel.players[1]["cursed"] = false
+		duel.take_events()
+		duel.roll_move()
+		while duel.awaiting_choice():
+			duel.choose_path(0)
+		var fought := false
+		var beat := false
+		for event in duel.take_events():
+			if event["kind"] == "battle" and str(event.get("target", "")) == "warden":
+				fought = true
+				beat = bool(event["won"])
+				_check(str(event["defender"]) == "한신", "문지기 전투의 방어자가 내 영웅이 아님")
+		_check(fought, "상대가 문지기를 지나치며 싸우지 않음 (씨앗 %d)" % seed_value)
+		if duel.wardens.has(17):
+			lost += 1
+			_check(not beat, "문지기를 이겼는데 남아 있음")
+			_check(int(duel.players[1]["pos"]) == 10, "문지기에게 졌는데 거점으로 가지 않음: %d" % int(duel.players[1]["pos"]))
+			_check(int(duel.wardens[17]["dice"]) == maxi(1, int(duel.characters["hanxin"]["attack"]) - duel.gate_weaken), "문지기에게 졌는데 문지기 주사위가 줄지 않음")
+		else:
+			won += 1
+			_check(beat, "문지기가 사라졌는데 이긴 전투가 아님")
+	_check(won > 0 and lost > 0, "문지기 전투 결과가 한쪽으로만 나옴 (승 %d, 패 %d)" % [won, lost])
+	# 주인은 그냥 지나간다
+	var mine = _skill_table(22, "lubu")
+	_place(mine, 0, [0, 1, 2, 3])
+	_place(mine, 1, [0, 1, 2, 3])
+	mine._apply_effect({"type": "warden", "amount": 3}, 0)
+	mine.players[0]["effects"] = [{"key": "move_fixed", "amount": 4, "turns": 1}]
+	mine.roll_move()
+	_check(mine.wardens.has(6) and mine.players[0]["trail"].has(7), "주인이 자기 문지기에 막힘")
 
 ## 맵: 전진 칸에서 5칸 안에(어느 갈래로든) 또 전진 칸이 있으면 안 된다(연달아 날아가는 구조 금지).
 func _test_forward_spacing() -> void:

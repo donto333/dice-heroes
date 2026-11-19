@@ -1998,5 +1998,16 @@
  "받은 뒤 설치 화면에서 '설치'를 누르면 기록은 그대로 남아요.": "Sau đó bấm 'Cài đặt' ở màn hình cài đặt. Dữ liệu chơi vẫn được giữ.",
  "전진 칸이지만 연달아 나아가지는 않습니다.": "Ô tiến lên, nhưng không tiến liên tiếp hai lần.",
  "안드로이드 앱 새 버전 알림. check_url의 app_version.json은 android.yml이 APK와 함께 릴리스에 올린다.": "",
- "프리미엄 패스를 가진 사람은 판이 끝날 때 받는 골드·경험치가 premium_reward_scale배(광고 없이). 대전 결과 화면에 알림이 뜬다.": ""
+ "프리미엄 패스를 가진 사람은 판이 끝날 때 받는 골드·경험치가 premium_reward_scale배(광고 없이). 대전 결과 화면에 알림이 뜬다.": "",
+ "문지기 [%s]이(가) 길을 막습니다!": "Hộ vệ [%s] chặn đường!",
+ "%s 승리! 문지기가 사라졌습니다.": "%s thắng! Hộ vệ đã biến mất.",
+ "문지기를 세울 자리가 없습니다.": "Không có chỗ đặt hộ vệ.",
+ "%d번 칸에 문지기 [%s](공격 주사위 %d개)이(가) 섰습니다!": "Hộ vệ [%2$s] (%3$d xúc xắc tấn công) đứng ở ô %1$d!",
+ "★★★ 새 카드 '분신 문지기': 상대 앞길에 내 ATTACK 영웅의 분신이 서서 길을 막아요. 상대는 이겨야 지나가요.": "Thẻ ★★★ mới 'Hộ vệ phân thân': phân thân anh hùng ATTACK của bạn chặn đường đối thủ. Họ phải thắng mới qua được.",
+ "문지기 소환!": "Triệu hồi hộ vệ!",
+ "문지기 · %s": "Hộ vệ · %s",
+ "%s 승리! 문지기가 사라졌다": "%s thắng! Hộ vệ biến mất",
+ "문지기": "Hộ vệ",
+ "분신 문지기": "Hộ vệ phân thân",
+ "상대 앞 3칸 길목에 내 ATTACK 영웅의 분신 문지기를 세움. 공격 주사위·레벨이 같고, 상대는 이겨야 지나감(지면 거점으로)": "Đặt hộ vệ phân thân của anh hùng ATTACK cách đối thủ 3 ô. Cùng xúc xắc tấn công và cấp; đối thủ phải thắng mới qua được (thua: về trạm)"
 }

@@ -77,6 +77,9 @@ static func card_useful(game, card: Dictionary) -> bool:
 			return game.players[me]["hand"].size() < game.HAND_LIMIT
 		"cure":
 			return bool(game.players[me]["cursed"])
+		"warden":
+			# 상대 앞에 세울 자리가 있을 때만
+			return game.warden_spot(me, int(card["effect"].get("amount", 3))) >= 0
 	return true
 
 
