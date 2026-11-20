@@ -10,12 +10,17 @@ const GOLD_TOP := Color("fff6b0")
 const GOLD_BOTTOM := Color("ffa412")
 const GOLD_EDGE := Color("4a2200")
 const NAVY_EDGE := Color(0.0, 0.05, 0.22)
+const Observatory := preload("res://scripts/ui/observatory_theme.gd")
 
 static var _gold_shader: Shader = null
 
 
 ## 금색 그라데이션 제목. 글자 몸통(흰색으로 칠한 부분)만 그라데이션으로 바꾸고 외곽선은 그대로 둔다.
 static func gold(label: Label, outline: int = 9) -> void:
+	if Observatory.active:
+		label.add_theme_color_override("font_color", Observatory.AMBER)
+		menu(label, Observatory.NIGHT, 3)
+		return
 	label.add_theme_color_override("font_color", Color.WHITE)
 	label.add_theme_constant_override("outline_size", outline)
 	label.add_theme_color_override("font_outline_color", GOLD_EDGE)
@@ -33,6 +38,9 @@ static func gold(label: Label, outline: int = 9) -> void:
 
 ## 메뉴·버튼 글자(Label·Button 모두).
 static func menu(target: Control, edge: Color = NAVY_EDGE, outline: int = 7) -> void:
+	if Observatory.active:
+		edge = Observatory.NIGHT
+		outline = mini(outline, 4)
 	target.add_theme_constant_override("outline_size", outline)
 	target.add_theme_color_override("font_outline_color", edge)
 	_shadow(target, Color(edge.r, edge.g, edge.b, 0.7), 3)

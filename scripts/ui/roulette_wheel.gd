@@ -21,19 +21,28 @@ var _arrow: Texture2D = null
 var _hub: Texture2D = null
 
 const ART := "res://assets/ui_menu/"
+const Kit := preload("res://scripts/ui/kit.gd")
+const Observatory := preload("res://scripts/ui/observatory_theme.gd")
+const GOLD_ICON := preload("res://assets/ui_icons/gold.png")
+const GEM_ICON := preload("res://assets/ui_icons/gem.png")
 ## 바퀴 그림 안쪽 구멍 반지름 / 바깥 반지름(그림에서 잰 값). 칸은 이보다 조금 크게 그려 금테 밑으로 들어가게 한다.
 const RING_HOLE := 0.77
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(380, 380)
+	custom_minimum_size = Vector2(535, 524) if Observatory.active else Vector2(380, 380)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ring = _load("roulette_ring")
 	_arrow = _load("roulette_arrow")
 	_hub = _load("roulette_hub")
+	if Observatory.active and not slots.is_empty():
+		angle = -PI / 2.0 - PI / slots.size()
 
 
 func _load(name: String) -> Texture2D:
+	var observatory := Observatory.texture("ui_menu", name)
+	if observatory != null:
+		return observatory
 	var path := ART + name + ".png"
 	if ResourceLoader.exists(path):
 		return load(path)
@@ -70,6 +79,9 @@ func _draw() -> void:
 	var radius: float = min(size.x, size.y - 30.0) / 2.0 - 8.0
 	var step := TAU / slots.size()
 	var font := get_theme_default_font()
+	if Observatory.active and _ring != null and _hub != null and _arrow != null:
+		_draw_observatory(center, (minf(size.x, size.y) - 26.0) / 2.0, step, font)
+		return
 	if _ring != null:
 		_draw_art(center, radius, step, font)
 		return
@@ -104,6 +116,7 @@ func _draw() -> void:
 ## 그림 바퀴: 칸(색·글자)은 코드가 그리고, 그 위에 금테 바퀴·가운데 단추·위 화살표 그림을 덮는다.
 func _draw_art(center: Vector2, radius: float, step: float, font: Font) -> void:
 	var outer := radius + 14.0
+	var inner := outer * RING_HOLE
 	var wedge := outer * (RING_HOLE + 0.04)
 	for index in slots.size():
 		var from := angle + index * step
@@ -115,7 +128,6 @@ func _draw_art(center: Vector2, radius: float, step: float, font: Font) -> void:
 		draw_colored_polygon(points, color)
 		# 칸 안쪽이 살짝 밝게: 바깥쪽 절반에 옅은 흰 띠
 		draw_line(center, center + Vector2(cos(from), sin(from)) * wedge, Color(1, 0.92, 0.6, 0.85), 3.0)
-		var inner := outer * RING_HOLE
 		_draw_label(center, from + step / 2.0, inner * 0.6, inner * 0.62, tr(str(slots[index]["text"])), font)
 	draw_texture_rect(_ring, Rect2(center - Vector2(outer, outer), Vector2(outer, outer) * 2.0), false)
 	if _hub != null:
@@ -128,6 +140,37 @@ func _draw_art(center: Vector2, radius: float, step: float, font: Font) -> void:
 		var arrow_size := Vector2(outer * 0.27, outer * 0.27 * _arrow.get_height() / maxf(_arrow.get_width(), 1.0))
 		var tip_y := center.y - outer * 0.68
 		draw_texture_rect(_arrow, Rect2(Vector2(center.x - arrow_size.x / 2.0, tip_y - arrow_size.y), arrow_size), false)
+
+
+func _draw_observatory(center: Vector2, outer: float, step: float, font: Font) -> void:
+	var wedge := outer * 0.964
+	draw_circle(center, outer - 3.0, Color("1e1a36"), true, -1, true)
+	for index in slots.size():
+		var from := angle + index * step
+		var points := PackedVector2Array([center])
+		var colors := PackedColorArray([Color("a084a8")])
+		var base := Color("504060") if index % 2 == 0 else Color("242d52")
+		for part in 13:
+			var a := from + step * part / 12.0
+			points.append(center + Vector2.from_angle(a) * wedge)
+			colors.append(base)
+		draw_polygon(points, colors)
+		draw_line(center, center + Vector2.from_angle(from) * wedge, Color("b69cb6"), 1.5, true)
+		var mid := from + step * 0.5
+		var reward: Dictionary = slots[index].get("reward", {})
+		if reward.is_empty():
+			_draw_label(center, mid, outer * 0.68, 93, tr(str(slots[index]["text"])), font)
+			continue
+		var gem := reward.has("gems")
+		var spot := center + Vector2.from_angle(mid) * (outer * 0.68)
+		draw_texture_rect(GEM_ICON if gem else GOLD_ICON, Rect2(spot - Vector2(27, 35), Vector2(54, 54)), false)
+		var amount := Kit.comma(int(reward.get("gems" if gem else "gold", 0)))
+		_draw_label(center + Vector2(0, 23), mid, outer * 0.68, 94, amount, font)
+	draw_texture_rect(_ring, Rect2(center - Vector2.ONE * outer, Vector2.ONE * outer * 2.0), false)
+	var hub := outer * 0.215
+	draw_texture_rect(_hub, Rect2(center - Vector2.ONE * hub, Vector2.ONE * hub * 2.0), false)
+	var arrow := Vector2(48, 50)
+	draw_texture_rect(_arrow, Rect2(center + Vector2(-arrow.x * 0.5, -outer - 4), arrow), false)
 
 
 ## 칸 글자: 칸 가운데(반지름 at 자리)에 바로 선 두 줄 글자(종류 위, 수량 아래)로 쓴다.

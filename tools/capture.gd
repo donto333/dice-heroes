@@ -117,8 +117,18 @@ func _run() -> void:
 	await _wait(0.5)
 	await _shot("05_lobby")
 	_close_dialogs()
+	_app.current_screen._on_notices()
+	await _wait(0.4)
+	await _shot("05k_notice")
+	_close_dialogs()
+	_app.start_mode("rank")
+	await _wait(0.4)
+	await _shot("05l_rank_start")
+	_close_dialogs()
+	_app.get_meta("match_launcher").cancel()
 	_app.current_screen.open_roulette()
 	await _wait(0.4)
+	await _shot("05m_roulette_free")
 	_app.current_screen._on_spin()
 	await _wait(4.0)
 	await _shot("05c_roulette")
@@ -395,6 +405,9 @@ func _run() -> void:
 	_app.go("settings")
 	await _wait(0.4)
 	await _shot("11_settings")
+	if _app.current_screen.has_method("_show_section") and _app.current_screen.get("_settings_scroll") != null:
+		_app.current_screen._show_section("support")
+		await _frames(2)
 	var settings_scroll := _find_scroll(_app.current_screen)
 	if settings_scroll != null:
 		settings_scroll.scroll_vertical = 100000

@@ -1444,6 +1444,9 @@ func _make_button(font_size: int, height: float, color: Color) -> Button:
 # ---------------------------------------------------------------- 그림 부품
 
 func _match_tex(name: String) -> Texture2D:
+	var themed := Kit.Observatory.texture("ui_match", name)
+	if themed != null:
+		return themed
 	var path: String = MATCH_ART + name + ".png"
 	if ResourceLoader.exists(path):
 		return load(path)

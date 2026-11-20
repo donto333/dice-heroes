@@ -5,6 +5,7 @@ extends RefCounted
 
 const PATH := "res://assets/ui_kit/%s.png"
 const META_PATH := "res://assets/ui_kit/meta.json"
+const Observatory := preload("res://scripts/ui/observatory_theme.gd")
 
 static var _textures := {}
 static var _meta := {}
@@ -12,6 +13,9 @@ static var _meta_loaded := false
 
 
 static func tex(name: String) -> Texture2D:
+	var observatory := Observatory.texture("ui_kit", name)
+	if observatory != null:
+		return observatory
 	if _textures.has(name):
 		return _textures[name]
 	var texture: Texture2D = null

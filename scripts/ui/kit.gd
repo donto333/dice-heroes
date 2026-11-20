@@ -1,6 +1,7 @@
 extends RefCounted
 ## 화면들이 함께 쓰는 모양(색, 버튼, 글자, 상자). 모든 화면이 같은 느낌이 나도록 여기서만 정한다.
 
+const Observatory := preload("res://scripts/ui/observatory_theme.gd")
 ## 2026-11 리뉴얼: 밝고 통통한 캐주얼(하늘색 바탕, 파란 판, 흰 글자, 노랑·주황·초록 버튼).
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const Gloss := preload("res://scripts/ui/gloss.gd")
@@ -257,6 +258,10 @@ static func screen_frame(parent: Control, margin: int = 18, color: Color = BG, m
 ## 화면 바탕에 일러스트를 깐다(하늘색 바탕 위). 그림이 없으면 아무것도 하지 않는다.
 ## 화면 위아래의 글자·버튼이 잘 보이도록 위아래를 살짝 어둡게 한다.
 static func backdrop(parent: Control, art_name: String, strength: float = 1.0) -> Control:
+	if Observatory.active and art_name.begins_with("ui/bg_"):
+		var observatory := Observatory.backdrop()
+		parent.add_child(observatory)
+		return observatory
 	var view := ArtView.new()
 	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	view.show_art(art_name)
@@ -309,6 +314,12 @@ static func bar(value: float, color: Color, height: float = 14.0) -> ProgressBar
 	result.value = clampf(value, 0.0, 1.0)
 	result.show_percentage = false
 	result.custom_minimum_size = Vector2(0, height)
+	if Observatory.active:
+		var tone := UiSkin.tone(color)
+		var fill := Observatory.AMBER if tone in ["gold", "red"] else Observatory.TEAL
+		result.add_theme_stylebox_override("background", box(Observatory.NIGHT, Observatory.EDGE.darkened(0.35), 1, 6, 0))
+		result.add_theme_stylebox_override("fill", box(fill, Color.TRANSPARENT, 0, 6, 0))
+		return result
 	result.add_theme_stylebox_override("background", box(Color(0, 0.1, 0.3, 0.55), Color.TRANSPARENT, 0, 7, 0))
 	result.add_theme_stylebox_override("fill", box(color, Color.TRANSPARENT, 0, 7, 0))
 	# 그림 막대: 금빛/푸른빛 광택 막대 그림이 있으면 채움을 그림으로 그린다.
@@ -348,8 +359,9 @@ static func icon(name: String, pixels: float = 54.0) -> TextureRect:
 	var rect := TextureRect.new()
 	var glossy := "res://assets/ui_icons/%s.png" % name
 	var path := "res://assets/icons/%s.png" % str(ICON_FALLBACK.get(name, name))
-	if ResourceLoader.exists(glossy):
-		rect.texture = load(glossy)
+	var themed := Observatory.texture("ui_icons", name)
+	if themed != null or ResourceLoader.exists(glossy):
+		rect.texture = themed if themed != null else load(glossy)
 		rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	elif ResourceLoader.exists(path):
 		rect.texture = load(path)
