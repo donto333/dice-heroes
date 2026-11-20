@@ -103,7 +103,7 @@ func _on_action() -> void:
 func _input(event: InputEvent) -> void:
 	if not visible or _bubble == null or not is_instance_valid(_bubble) or modulate.a < 0.5:
 		return
-	var pressed := (event is InputEventMouseButton and event.pressed) or (event is InputEventScreenTouch and event.pressed)
+	var pressed: bool = (event is InputEventMouseButton and event.pressed) or (event is InputEventScreenTouch and event.pressed)
 	if not pressed:
 		return
 	var spot: Vector2 = make_input_local(event).position
