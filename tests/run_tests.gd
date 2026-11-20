@@ -6,6 +6,7 @@ const GameData := preload("res://scripts/game_data.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const AI := preload("res://scripts/rules/ai.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
+const LobbyAlerts := preload("res://scripts/rules/lobby_alerts.gd")
 const AppUpdate := preload("res://scripts/rules/app_update.gd")
 # 화면 코드는 실행하지 않지만, 문법 오류를 잡으려고 불러 둔다.
 const MainScreen := preload("res://scripts/main.gd")
@@ -90,6 +91,7 @@ func _init() -> void:
 	_test_upgrade_and_level()
 	_test_match_rewards()
 	_test_missions_and_attendance()
+	_test_lobby_alerts()
 	_test_adventure()
 	_test_achievements()
 	_test_ai_difficulty()
@@ -426,6 +428,14 @@ func _test_fork_choice() -> void:
 	game.roll_move()
 	_check(game.awaiting_choice(), "갈림길에서 멈추지 않음")
 	_check(int(game.pending_choice.get("steps", 0)) == 3, "갈림길에서 남은 칸 수가 3이 아님")
+	var routes: Dictionary = game.choice_routes()
+	_check(routes["joined"] and routes["paths"] == [[14, 15, 16, 17, 18, 19, 26], [20, 21, 22, 23, 24, 25, 26]], "합류하는 칸까지 두 갈래 길이가 틀림")
+	game.nodes[22]["next"] = [25]
+	_check(game.choice_routes()["paths"][1].size() == 5, "길이가 다른 갈래를 같은 칸 수로 셈")
+	game.nodes[22]["next"] = [23]
+	game.nodes[14]["next"] = []
+	_check(not game.choice_routes()["joined"] and game.choice_routes()["paths"][0].size() == 1, "합류하지 않는 갈래를 합류한다고 표시함")
+	game.nodes[14]["next"] = [15]
 	game.end_turn()
 	_check(game.current == 0, "길을 고르기 전에 턴이 넘어감")
 	game.choose_path(1)
@@ -958,6 +968,37 @@ func _test_missions_and_attendance() -> void:
 		var reward := Profile.check_in(att, eco, today)
 		_check(reward == table[day % table.size()], "출석 보상 순서가 틀림")
 		_check(Profile.check_in(att, eco, today).is_empty(), "하루에 두 번 출석됨")
+
+
+## 확인한 항목은 남은 보상을 보존하며, 새 우편이나 미션이 생겼을 때만 다시 점을 띄운다.
+func _test_lobby_alerts() -> void:
+	var eco: Dictionary = _data["economy"].duplicate()
+	eco["missions"] = [{"id": "test", "event": "play", "goal": 1, "reward": {"gold": 1}}]
+	var data := {"characters": _data["characters"], "cards": _data["cards"]}
+	var profile := Profile.new_profile("알림", eco)
+	var today := "2026-11-20"
+	Profile.ensure_daily(profile, today)
+	profile["mail"] = [{"id": "first", "reward": {"gold": 1}}, {"id": "second", "reward": {"gold": 1}}]
+	var pending := LobbyAlerts.pending(profile, eco, data, today)
+	_check(pending["missions"].is_empty(), "아직 달성하지 않은 미션이나 도전으로 알림이 켜짐")
+	_check(LobbyAlerts.mark_seen(profile, "mail", pending["mail"]), "우편 알림을 확인하지 못함")
+	_check(Profile.unclaimed_mail_count(profile) == 2, "알림을 확인했는데 우편 보상이 사라짐")
+	Profile.claim_mail(profile, "first")
+	pending = LobbyAlerts.pending(profile, eco, data, today)
+	LobbyAlerts.discard_resolved(profile, pending)
+	_check(LobbyAlerts.unread(profile, "mail", pending["mail"]).is_empty(), "우편 일부를 받은 뒤 확인한 우편이 다시 미확인으로 표시됨")
+	profile["mail"].append({"id": "third", "reward": {"gold": 1}})
+	Profile.add_progress(profile, eco, "play", 1)
+	pending = LobbyAlerts.pending(profile, eco, data, today)
+	_check(LobbyAlerts.unread(profile, "mail", pending["mail"]) == ["mail:third"], "새 우편 알림을 표시하지 못함")
+	_check(not pending["missions"].is_empty(), "달성한 일일 미션 알림이 없음")
+	LobbyAlerts.mark_seen(profile, "attendance", pending["attendance"])
+	var loaded: Dictionary = JSON.parse_string(JSON.stringify(profile))
+	_check(LobbyAlerts.unread(loaded, "attendance", pending["attendance"]).is_empty(), "저장 후 출석 알림의 확인 상태를 잃음")
+	var tomorrow := "2026-11-21"
+	Profile.ensure_daily(loaded, tomorrow)
+	pending = LobbyAlerts.pending(loaded, eco, data, tomorrow)
+	_check(not LobbyAlerts.unread(loaded, "attendance", pending["attendance"]).is_empty(), "날짜가 바뀌었는데 새 출석 알림이 없음")
 
 
 func _test_adventure() -> void:

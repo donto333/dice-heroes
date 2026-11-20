@@ -410,6 +410,31 @@ func choice_label(option_index: int) -> String:
 	return route_name(int(pending_choice["options"][option_index]))
 
 
+## 각 갈래의 첫 칸부터 다시 만나는 칸까지. 만나는 곳이 없으면 다음 선택이나 길의 끝에서 멈춘다.
+func choice_routes() -> Dictionary:
+	if choice_kind() != "path":
+		return {}
+	var fork := int(players[current]["pos"])
+	var paths: Array = []
+	for option in pending_choice["options"]:
+		var path: Array[int] = []
+		var id := int(option)
+		while id != fork and nodes.has(id) and id not in path:
+			path.append(id)
+			var tile: Dictionary = nodes[id]
+			var next: Array = tile["next"]
+			if next.size() != 1 or tile["type"] == "goal":
+				break
+			id = int(next[0])
+		paths.append(path)
+	for id in paths[0]:
+		if paths.all(func(path): return id in path):
+			for path in paths:
+				path.resize(path.find(id) + 1)
+			return {"paths": paths, "joined": true}
+	return {"paths": paths, "joined": false}
+
+
 func can_use_ability(slot: String) -> bool:
 	if not can_act() or ability_used:
 		return false

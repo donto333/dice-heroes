@@ -435,21 +435,7 @@ func owned_levels() -> Dictionary:
 	return result
 
 
-## 로비 아래 메뉴의 빨간 점.
-func badges() -> Dictionary:
-	if not has_profile():
-		return {}
-	return {
-		"missions": Profile.has_claimable(profile, eco) or Profile.can_check_in(profile, today()) or Profile.has_claimable_achievement(profile, data) or Profile.guide_claimable(profile, data),
-		"shop": Profile.free_summons_left(profile, eco) > 0 or not Profile.mileage_claimable(profile, eco).is_empty() or Profile.pass_claimable_count(profile, eco) > 0 or Profile.free_card_draws_left(profile, eco) > 0,
-		"heroes": _any_upgradable() or Profile.album_has_claimable(profile, eco, data["characters"]) or Profile.card_album_has_claimable(profile, eco, data.get("cards", {})),
-		## 로비 메뉴별(2026-11-18): 목록 = 강화할 영웅, 도감 = 받을 도감 보상
-		"list": _any_upgradable(),
-		"album": Profile.album_has_claimable(profile, eco, data["characters"]) or Profile.card_album_has_claimable(profile, eco, data.get("cards", {})),
-	}
-
-
-func _any_upgradable() -> bool:
+func has_upgradable_hero() -> bool:
 	for id in profile.get("owned", {}):
 		if Profile.can_upgrade(profile, eco, str(id)):
 			return true

@@ -2069,5 +2069,10 @@
  "표시할 공지가 없어요.": "There are no notices.",
  "이전 공지": "Previous notice",
  "다음 공지": "Next notice",
- "로비 글자와 버튼을 키웠어요. 창 제목과 영웅 이름도 각 칸 안에 맞췄어요.": "Lobby text and buttons are larger. Window titles and hero names now fit their frames."
+ "로비 글자와 버튼을 키웠어요. 창 제목과 영웅 이름도 각 칸 안에 맞췄어요.": "Lobby text and buttons are larger. Window titles and hero names now fit their frames.",
+ "갈림길에서 두 경로의 모양과 칸 수를 볼 수 있어요. 이미 확인한 메뉴의 빨간 점은 사라져요.": "Forks show both routes and their lengths. Menu dots clear after you check them.",
+ "갈림길 · 남은 이동 %d칸": "Fork · %d moves left",
+ "합류까지 %d칸": "%d tiles to the merge",
+ "이 갈래 %d칸": "%d tiles along this route",
+ "갈림길이에요! 지도와 칸 수를 비교하고 갈 길을 골라요. 지도에서 길과 버튼은 같은 색이에요.": "You are at a fork! Compare the map and tile counts, then pick a route. Each button matches the route color."
 }
