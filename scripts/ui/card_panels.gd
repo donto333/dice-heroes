@@ -18,7 +18,7 @@ const UiSkin := preload("res://scripts/ui/skin.gd")
 const GRADE_NAMES := {1: "일반", 2: "희귀", 3: "전설"}
 ## 등급별 카드 바탕색
 const GRADE_FILLS := {1: Color("2a4a7a"), 2: Color("1f5f8f"), 3: Color("6a3fa8")}
-## 카드 편성 칸 크기: 덱 줄의 카드 최대 크기, 보유 카드 칸 높이
+## 카드 편성 칸 크기: 덱 줄의 카드 기준 비율, 보유 카드 칸 높이
 const DECK_TILE := Vector2(96, 76)
 const OWNED_TILE_HEIGHT := 146.0
 const DECK_CARD_GAP := 6.0
@@ -105,10 +105,14 @@ func build_deck(column: VBoxContainer) -> void:
 	column.add_child(body)
 
 	# 왼쪽: 등급별 덱 줄
+	var deck_area := Control.new()
+	deck_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	deck_area.size_flags_stretch_ratio = 1.75
+	body.add_child(deck_area)
 	var left := Kit.vbox(4)
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.size_flags_stretch_ratio = 1.75
-	body.add_child(left)
+	# 이전 줄의 최소 높이가 창을 다시 줄일 때 계산에 영향을 주지 않게 한다.
+	deck_area.add_child(left)
+	left.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	var deck_rows := {}
 	for grade in [3, 2, 1]:
 		var mine: Array = []
@@ -128,8 +132,8 @@ func build_deck(column: VBoxContainer) -> void:
 				row.add_child(tile)
 			else:
 				row.add_child(_empty_slot(grade))
-	left.resized.connect(_fit_deck_rows.bind(left, deck_rows))
-	_fit_deck_rows(left, deck_rows)
+	deck_area.resized.connect(_fit_deck_rows.bind(deck_area, left, deck_rows))
+	_fit_deck_rows.call_deferred(deck_area, left, deck_rows)
 
 	# 오른쪽: 보유 카드
 	var right := Kit.vbox(6)
@@ -207,31 +211,52 @@ func _deck_row_inset(grade: int, tile_height: float) -> Vector2:
 	return Vector2(height * float(DECK_ROW_CAPS[grade]) + DECK_FRAME_PADDING, (height - tile_height) * 0.5)
 
 
-func _fit_deck_rows(column: Control, rows: Dictionary) -> void:
-	if column.size.x <= 0.0:
+func _fit_deck_rows(area: Control, column: VBoxContainer, rows: Dictionary) -> void:
+	if not is_instance_valid(area) or area.size.x <= 0.0 or area.size.y <= 0.0:
 		return
-	# 가장 넓은 줄도 들어가는 크기를 골라 세 등급의 장착 카드와 빈칸에 똑같이 적용한다.
-	var fit := 1.0
+	var gap := column.get_theme_constant("separation")
+	var available_height := area.size.y - gap * (column.get_child_count() - 1)
+	for child in column.get_children():
+		if child is Label:
+			available_height -= child.get_combined_minimum_size().y
+	# 각 줄의 폭을 채울 때 필요한 카드 크기와, 세 줄에 공통으로 넣을 수 있는 크기.
+	var width_scales := {}
+	var common_scale := INF
+	var natural_height := 0.0
+	var height_per_scale := 0.0
 	for grade in rows:
 		var row: HBoxContainer = rows[grade]
 		var count := row.get_child_count()
-		var fixed := maxf(0.0, count - 1) * DECK_CARD_GAP + 2.0 * _deck_row_inset(grade, 0.0).x
-		var full := count * DECK_TILE.x + maxf(0.0, count - 1) * DECK_CARD_GAP + 2.0 * _deck_row_inset(grade, DECK_TILE.y).x
-		fit = minf(fit, (column.size.x - fixed) / (full - fixed))
-	var tile_size := (DECK_TILE * fit).floor().max(Vector2.ONE)
+		var fixed_inset := _deck_row_inset(grade, 0.0)
+		var scalable_inset := _deck_row_inset(grade, DECK_TILE.y) - fixed_inset
+		var fixed_width := maxf(0.0, count - 1) * DECK_CARD_GAP + 2.0 * fixed_inset.x
+		var scalable_width := count * DECK_TILE.x + 2.0 * scalable_inset.x
+		var scalable_height := DECK_TILE.y + 2.0 * scalable_inset.y
+		var scale_for_width := maxf(0.0, (area.size.x - fixed_width) / scalable_width)
+		width_scales[grade] = scale_for_width
+		common_scale = minf(common_scale, scale_for_width)
+		available_height -= 2.0 * fixed_inset.y
+		height_per_scale += scalable_height
+		natural_height += scalable_height * scale_for_width
+	# 장수가 가장 많은 줄의 크기를 먼저 확보하고, 남은 높이를 다른 줄에 비례해 나눈다.
+	common_scale = maxf(0.0, minf(common_scale, available_height / height_per_scale))
+	var common_height := common_scale * height_per_scale
+	var extra := clampf((available_height - common_height) / maxf(natural_height - common_height, 0.01), 0.0, 1.0)
 	for grade in rows:
 		var row: HBoxContainer = rows[grade]
 		var frame := row.get_parent() as Panel
 		var holder := frame.get_parent() as Control
+		var tile_size := (DECK_TILE * lerpf(common_scale, float(width_scales[grade]), extra)).floor().max(Vector2.ONE)
 		var inset := _deck_row_inset(grade, tile_size.y)
 		var count := row.get_child_count()
+		var cards_width := count * tile_size.x + maxf(0.0, count - 1) * DECK_CARD_GAP
+		var side := (area.size.x - cards_width) * 0.5
 		for tile: Control in row.get_children():
 			tile.custom_minimum_size = tile_size
-		# 빈칸이 있을 때도 정해진 자리 수만큼 감싼다.
-		frame.size = Vector2(count * tile_size.x + maxf(0.0, count - 1) * DECK_CARD_GAP, tile_size.y) + 2.0 * inset
+		frame.size = Vector2(area.size.x, tile_size.y + 2.0 * inset.y)
 		holder.custom_minimum_size.y = frame.size.y
-		row.offset_left = inset.x
-		row.offset_right = -inset.x
+		row.offset_left = side
+		row.offset_right = -side
 		row.offset_top = inset.y
 		row.offset_bottom = -inset.y
 
