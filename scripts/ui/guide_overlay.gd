@@ -1,8 +1,9 @@
 extends Control
 ## 처음 하는 사람 길잡이(2026-11-19). 지금 단계(data/guide.json tutorial)에 맞춰
 ## 화면의 버튼(노드 메타 "guide")을 반짝이는 고리와 통통 튀는 화살표로 가리키고, 길잡이 영웅의 말풍선을 띄운다.
-## 화면 누르기는 막지 않는다(말풍선의 버튼만 받는다). 창이 떠 있거나 대전 중이면 숨는다.
-## main.gd가 화면을 바꿀 때마다 refresh()를 부른다. 단계 바꾸기는 app.tutorial_event(일).
+## 2026-11-20 사용자 요청으로 강제 길잡이: 가리키는 버튼(과 말풍선 버튼) 말고는 누를 수 없고, 주변은 어둡게 덮는다.
+## 창이 떠 있으면 숨고 누르기도 막지 않는다(창의 '사용' 같은 버튼을 눌러야 하므로). 건너뛰기는 없다.
+## main.gd가 화면을 바꿀 때마다 refresh()를 부르고, 대전 화면은 point(말)로 직접 띄운다. 단계 바꾸기는 app.tutorial_event(일).
 
 const Kit := preload("res://scripts/ui/kit.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
@@ -25,18 +26,31 @@ func _ready() -> void:
 
 ## 지금 화면에 맞는 말풍선과 가리킬 곳을 다시 정한다.
 func refresh() -> void:
+	_clear()
+	if app == null or not app.has_profile():
+		return
+	var step: Dictionary = Profile.tutorial_step(app.profile, app.data.get("guide", {}))
+	if step.is_empty():
+		return
+	_show(step.get("screens", {}).get(str(app.current_name), {}))
+
+
+## 화면이 직접 말풍선을 띄운다(대전 첫 판). 빈 값이면 지운다.
+func point(spec: Dictionary) -> void:
+	_clear()
+	_show(spec)
+
+
+func _clear() -> void:
 	if _bubble != null and is_instance_valid(_bubble):
 		_bubble.queue_free()
 	_bubble = null
 	_target_id = ""
 	_target = null
 	visible = false
-	if app == null or not app.has_profile():
-		return
-	var step: Dictionary = Profile.tutorial_step(app.profile, app.data.get("guide", {}))
-	if step.is_empty():
-		return
-	var spec: Dictionary = step.get("screens", {}).get(str(app.current_name), {})
+
+
+func _show(spec: Dictionary) -> void:
 	if spec.is_empty():
 		return
 	_target_id = str(spec.get("target", ""))
@@ -74,10 +88,6 @@ func _make_bubble(text: String, action: String) -> PanelContainer:
 		var go := MenuArt.pill_button(action, "gold", "m")
 		go.pressed.connect(_on_action)
 		buttons.add_child(Kit.expand(go))
-	var skip := MenuArt.pill_button("길잡이 건너뛰기", "gray", "s")
-	skip.custom_minimum_size = Vector2(170, 44)
-	skip.pressed.connect(_on_skip)
-	buttons.add_child(skip)
 	# 버튼 말고는 모두 누르기를 통과시킨다(그릇 상자도 기본값이면 아래 버튼을 막는다).
 	for child in bubble.find_children("*", "Control", true, false):
 		if not child is Button and not (child as Control).get_parent() is Button:
@@ -89,11 +99,26 @@ func _on_action() -> void:
 	app.start_tutorial_match()
 
 
-func _on_skip() -> void:
-	app.play("click")
-	Profile.skip_tutorial(app.profile)
-	app.save()
-	refresh()
+## 강제 길잡이: 가리키는 버튼과 말풍선 버튼이 아닌 곳의 누르기는 여기서 삼킨다(창이 떠 있으면 막지 않는다).
+func _input(event: InputEvent) -> void:
+	if not visible or _bubble == null or not is_instance_valid(_bubble) or modulate.a < 0.5:
+		return
+	var pressed: bool = (event is InputEventMouseButton and event.pressed) or (event is InputEventScreenTouch and event.pressed)
+	if not pressed:
+		return
+	var spot: Vector2 = make_input_local(event).position
+	var rect := _target_rect()
+	# 가리킬 버튼을 아직 못 찾았으면 막지 않는다(갇히지 않게).
+	if rect.size == Vector2.ZERO:
+		return
+	if rect.grow(10.0).has_point(spot):
+		return
+	for button in _bubble.find_children("*", "Button", true, false):
+		var top_left := Kit.spot_in(self, button, Vector2.ZERO)
+		var bottom_right := Kit.spot_in(self, button, (button as Control).size)
+		if Rect2(top_left, bottom_right - top_left).abs().has_point(spot):
+			return
+	get_viewport().set_input_as_handled()
 
 
 ## 가리킬 버튼을 지금 화면에서 찾는다(노드 메타 guide).
@@ -146,6 +171,13 @@ func _draw() -> void:
 	var rect := _target_rect()
 	if rect.size == Vector2.ZERO:
 		return
+	# 가리키는 버튼만 밝게 두고 나머지를 어둡게 덮는다.
+	var hole := rect.grow(10.0)
+	var shade := Color(0, 0, 0, 0.5)
+	draw_rect(Rect2(0, 0, size.x, maxf(hole.position.y, 0.0)), shade)
+	draw_rect(Rect2(0, hole.end.y, size.x, maxf(size.y - hole.end.y, 0.0)), shade)
+	draw_rect(Rect2(0, hole.position.y, maxf(hole.position.x, 0.0), hole.size.y), shade)
+	draw_rect(Rect2(hole.end.x, hole.position.y, maxf(size.x - hole.end.x, 0.0), hole.size.y), shade)
 	var pulse := 0.5 + 0.5 * sin(_time * 5.0)
 	var grow := 6.0 + 6.0 * pulse
 	var ring := rect.grow(grow)

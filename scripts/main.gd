@@ -576,6 +576,13 @@ func _refresh_guide() -> void:
 	_guide.refresh()
 
 
+## 화면이 직접 길잡이 말풍선을 띄운다(대전 첫 판의 카드·스킬·주사위). 빈 값이면 지운다.
+func guide_point(spec: Dictionary) -> void:
+	if _guide == null:
+		_refresh_guide()
+	_guide.point(spec)
+
+
 ## 길잡이 단계의 일이 일어났다(match_end·summon·party·rank). 다음 단계로 가며 보상을 준다.
 func tutorial_event(event: String) -> void:
 	if not has_profile():
