@@ -40,15 +40,22 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 	# 그림 창틀: 위·아래 가운데 장식이 달린 화려한 틀. 테가 두꺼워 여백을 넉넉히 둔다.
 	frame.grand = true
 	if Kit.UiSkin.has("win_navy"):
-		frame.set_content_margin_all(30)
-		frame.content_margin_top = 40
+		# 틀 그림의 테(금줄·귀퉁이 보석)가 안쪽까지 들어와 있어서, 여백이 좁으면 아래 버튼·양옆 내용이 테에 걸친다.
+		frame.set_content_margin_all(46)
+		frame.content_margin_top = 50
+		frame.content_margin_bottom = 48
 	_panel.add_theme_stylebox_override("panel", frame)
 	center.add_child(_panel)
 	_column = Kit.vbox(16)
 	_panel.add_child(_column)
 	if title_text != "":
 		# 제목 리본
-		_column.add_child(Kit.ribbon(title_text, 32))
+		# 리본 양끝이 틀 테에 닿지 않게 양옆을 조금 비운다.
+		var ribbon_box := MarginContainer.new()
+		ribbon_box.add_theme_constant_override("margin_left", 18)
+		ribbon_box.add_theme_constant_override("margin_right", 18)
+		ribbon_box.add_child(Kit.ribbon(title_text, 32))
+		_column.add_child(ribbon_box)
 	if body != null:
 		if body.get_combined_minimum_size().y > BODY_MAX_HEIGHT:
 			# 긴 내용: 창 안에서 끌어 내린다.
