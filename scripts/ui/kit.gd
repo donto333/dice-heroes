@@ -161,7 +161,7 @@ static func plate(fill: Color = PANEL, trim: Color = TRIM, radius: float = 20.0,
 
 
 ## 제목 리본(양 끝이 갈라진 깃발 띠).
-static func ribbon(text: String, font_size: int = 34, color: Color = Color("7a2fd0")) -> Control:
+static func ribbon(text: String, font_size: int = 34, color: Color = Color("7a2fd0")) -> Ribbon:
 	return Ribbon.new(text, font_size, color)
 
 

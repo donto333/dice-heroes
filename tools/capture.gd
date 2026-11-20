@@ -117,6 +117,11 @@ func _run() -> void:
 	await _wait(0.5)
 	await _shot("05_lobby")
 	_close_dialogs()
+	_app.profile["seen_version"] = ""
+	_app.current_screen._maybe_news()
+	await _wait(0.4)
+	await _shot("05n_news")
+	_close_dialogs()
 	_app.current_screen._on_notices()
 	await _wait(0.4)
 	await _shot("05k_notice")

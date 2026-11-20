@@ -11,6 +11,9 @@ const GameData := preload("res://scripts/game_data.gd")
 const Fx := preload("res://scripts/ui/fx.gd")
 
 const ART := "res://assets/ui_menu/"
+## 영웅 카드의 아래 이름 띠. 별의 관측소 틀은 264px 그림의 216~242px가 안쪽이다.
+const HERO_NAME_BAND := Vector2(0.785, 0.91)
+const OBSERVATORY_HERO_NAME_BAND := Vector2(216.0, 242.0) / 264.0
 
 ## 화면 이름 → [제목, 아이콘]. 위 띠 왼쪽 제목 명판에 쓴다.
 const TITLES := {
@@ -400,6 +403,10 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 	TextStyle.number(label, 5)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
+	var full_button := Kit.Observatory.active and on_plus.is_valid()
+	if full_button:
+		label.clip_text = true
+		Kit.squeeze_text(label, 26, 14)
 	# 받기 연출(fly_reward)이 이 칸을 찾아 알갱이를 날리고 숫자를 올린다.
 	capsule.set_meta("money", icon_name)
 	capsule.set_meta("label", label)
@@ -418,12 +425,15 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 			var press := Button.new()
 			press.flat = true
 			press.focus_mode = Control.FOCUS_NONE
-			press.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 				press.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 			press.pressed.connect(on_plus)
-			mark.mouse_filter = Control.MOUSE_FILTER_STOP
-			mark.add_child(press)
+			if full_button:
+				capsule.add_child(press)
+			else:
+				press.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+				mark.mouse_filter = Control.MOUSE_FILTER_STOP
+				mark.add_child(press)
 	elif on_plus.is_valid():
 		var plus_button := Kit.button("+", Kit.ACCENT, 22, 34)
 		plus_button.custom_minimum_size = Vector2(38, 34)

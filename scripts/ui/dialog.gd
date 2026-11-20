@@ -70,13 +70,14 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 				title_center.offset_bottom = 4
 			title_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			var title := Kit.ribbon(title_text, 29)
-			title.custom_minimum_size.x = width * 0.38 if featured else clampf(width * 0.54, 234.0, 430.0)
 			if featured:
 				var glyph := Kit.icon(str(DESIGN_ICONS[design]), 38)
 				Kit.Observatory.silver_icon(glyph)
-				title.call("set_icon", glyph)
+				title.set_icon(glyph)
 			title_center.add_child(title)
 			heading.add_child(title_center)
+			var preferred := width * 0.38 if featured else clampf(width * 0.54, 234.0, 430.0)
+			title.fit_plate_width(preferred, width - 56.0)
 		else:
 			var ribbon_box := MarginContainer.new()
 			ribbon_box.add_theme_constant_override("margin_left", 18)
