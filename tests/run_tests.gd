@@ -79,6 +79,7 @@ func _init() -> void:
 	_test_trails()
 	_test_account_id()
 	_test_tutorial()
+	_test_tutorial_luck()
 	_test_card_album()
 	_test_pass_by_fight()
 	_test_balance()
@@ -2410,6 +2411,27 @@ func _test_tutorial() -> void:
 	var skipped := Profile.new_profile("건너뜀", _data["economy"])
 	Profile.skip_tutorial(skipped)
 	_check(Profile.tutorial_step(skipped, guide).is_empty(), "길잡이 건너뛰기가 안 됨")
+
+
+## 길잡이 첫 판 행운(2026-11-20): 뒤처졌을 때만 행운, 행운이면 이동 평균이 커진다.
+func _test_tutorial_luck() -> void:
+	var game := Game.new()
+	game.rng.seed = 11
+	game.setup(_data, [{"name": "나", "attack": "lubu", "defense": "zeus", "support": "sejong"},
+		{"name": "AI", "attack": "machao", "defense": "athena", "support": "hypatia"}])
+	_check(not game.is_lucky(0), "행운 대상이 아닌데 행운이 켜짐")
+	game.lucky_player = 0
+	game.players[1]["pos"] = game.players[0]["pos"]
+	_check(not game.is_lucky(0), "같은 자리인데 행운이 켜짐")
+	_check(not game.is_lucky(1), "컴퓨터에게 행운이 켜짐")
+	var weights: Array = game.tutorial_luck["move"]["1"]
+	var plain := 0
+	var lucky := 0
+	for index in 4000:
+		plain += game.roll_weighted_dice(1, game.move_weights_for(1))[0]
+		lucky += game.roll_weighted_dice(1, weights)[0]
+	_check(lucky > plain, "행운 주사위의 평균이 더 크지 않음")
+	_check(bool(game._attack_mods(0).has("lucky")), "전투 굴림에 행운 표시가 없음")
 
 
 ## 카드 앨범(2026-11-18): 등급별 모은 수에 따라 보상, 한 번만 받음.

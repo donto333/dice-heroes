@@ -61,6 +61,9 @@ var dice_control: Dictionary = {}
 ## 따라잡기: 상대보다 catchup_gap칸 이상 뒤처진 쪽의 이동 주사위 눈 비율
 var catchup_gap := 0
 var catchup_weights: Dictionary = {}
+## 길잡이 첫 판 행운(2026-11-20): 이 플레이어가 뒤처져 있으면 주사위 큰 눈이 잘 나온다. -1이면 없음.
+var lucky_player := -1
+var tutorial_luck: Dictionary = {}
 
 var players: Array = []
 var current := 0
@@ -127,6 +130,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 	dice_control = data.get("rules", {}).get("dice_control", {})
 	catchup_gap = int(data.get("rules", {}).get("catchup_gap", 0))
 	catchup_weights = data.get("rules", {}).get("catchup_move_weights", {})
+	tutorial_luck = data.get("rules", {}).get("tutorial_luck", {})
 	var rules: Dictionary = data.get("rules", {})
 	second_player_gauge = int(rules.get("second_player_gauge", 0))
 	double_gauge = int(rules.get("double_gauge", 0))
@@ -485,6 +489,11 @@ func _control_succeeds() -> bool:
 	return chance > 0 and rng.randi_range(1, 100) <= chance
 
 
+## 길잡이 첫 판 행운: 이 플레이어가 행운 대상이고 상대보다 골에서 멀리 있으면 true.
+func is_lucky(player_index: int) -> bool:
+	return lucky_player >= 0 and player_index == lucky_player and behind_by(player_index) > 0
+
+
 ## 따라잡기: player_index가 상대보다 catchup_gap칸 이상 뒤처져 있는지. (catchup_gap이 0이면 쓰지 않는다)
 func is_catching_up(player_index: int) -> bool:
 	return catchup_gap > 0 and behind_by(player_index) >= catchup_gap
@@ -618,6 +627,8 @@ func roll_move(aim: String = "") -> void:
 				say("  주사위 컨트롤 성공! %s 눈이 잘 나옵니다." % ("낮은" if aim == "low" else "높은"))
 			else:
 				say("  주사위 컨트롤 실패. 보통으로 굴립니다.")
+		if is_lucky(current):
+			weights = tutorial_luck.get("move", {}).get("1" if count <= 1 else "2", weights)
 		rolls = roll_weighted_dice(count, weights)
 		if effect_sum(current, "move_best") > 0:
 			var again := roll_weighted_dice(count, weights)
@@ -1057,8 +1068,8 @@ func resolve_battle(attack_dice: int, defense_dice: int, attack_bonus: int, defe
 	var defense_count: int = clamp(defense_dice, 1, MAX_BATTLE_DICE)
 	var result := {}
 	for attempt in 10:
-		var attack_rolls := _raise_floor(roll_dice(attack_count), int(attack_mods.get("floor", 0)))
-		var defense_rolls := _raise_floor(roll_dice(defense_count), int(defense_mods.get("floor", 0)))
+		var attack_rolls := _raise_floor(_battle_roll(attack_count, attack_mods), int(attack_mods.get("floor", 0)))
+		var defense_rolls := _raise_floor(_battle_roll(defense_count, defense_mods), int(defense_mods.get("floor", 0)))
 		var attack_total := _sum(attack_rolls) + attack_bonus + _six_bonus(attack_rolls, int(attack_mods.get("six", 0)))
 		var defense_total := _sum(defense_rolls) + defense_bonus + _six_bonus(defense_rolls, int(defense_mods.get("six", 0)))
 		result = {
@@ -1091,12 +1102,19 @@ static func _six_bonus(rolls: Array, per_six: int) -> int:
 
 ## 이 플레이어가 공격할 때 굴림을 바꾸는 효과
 func _attack_mods(player_index: int) -> Dictionary:
-	return {"floor": effect_max(player_index, "atk_floor"), "six": effect_sum(player_index, "crit")}
+	return {"floor": effect_max(player_index, "atk_floor"), "six": effect_sum(player_index, "crit"), "lucky": is_lucky(player_index)}
 
 
 ## 이 플레이어가 막을 때 굴림을 바꾸는 효과
 func _defense_mods(player_index: int) -> Dictionary:
-	return {"floor": effect_max(player_index, "def_floor")}
+	return {"floor": effect_max(player_index, "def_floor"), "lucky": is_lucky(player_index)}
+
+
+## 전투 주사위: 길잡이 첫 판 행운이면 큰 눈이 잘 나오는 비율로 굴린다.
+func _battle_roll(count: int, mods: Dictionary) -> Array:
+	if bool(mods.get("lucky", false)):
+		return roll_weighted_dice(count, tutorial_luck.get("battle", []))
+	return roll_dice(count)
 
 
 func _attack_dice(player_index: int) -> int:
