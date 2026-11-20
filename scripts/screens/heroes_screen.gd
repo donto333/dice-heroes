@@ -234,13 +234,13 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	text.clip_text = true
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if frame_tex != null:
-		# 금테 카드: 이름은 틀 아래쪽 남색 이름 칸(그림 높이의 78.5%~91%) 안 가운데에 둔다.
-		# 세로 상자 맨 아래에 두면 아래 금테에 걸려 글자 아래가 잘려 보였다.
+		# 파티 편성과 같은 그림의 이름 띠에 맞춘다.
+		var band := MenuArt.OBSERVATORY_HERO_NAME_BAND if Kit.Observatory.active else MenuArt.HERO_NAME_BAND
 		text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		text.anchor_left = 0.1
 		text.anchor_right = 0.9
-		text.anchor_top = 0.785
-		text.anchor_bottom = 0.91
+		text.anchor_top = band.x
+		text.anchor_bottom = band.y
 		text.offset_left = 0
 		text.offset_right = 0
 		text.offset_top = 0

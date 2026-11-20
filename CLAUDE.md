@@ -18,6 +18,7 @@
 
 ## 구조
 
+- 별의 관측소 화면에서 창 제목은 실제 글자와 아이콘 너비로 리본 명판을 잡고(`ribbon.gd`), 편성과 목록의 영웅 이름은 같은 카드 그림의 아래 띠(`MenuArt.OBSERVATORY_HERO_NAME_BAND`)에 맞춘다. 로비는 상단 바로가기와 오른쪽 메뉴를 넓게 쓰고, 골드·보석 칸 전체로 상점에 들어간다.
 - 별의 관측소 화면 테마: 새 기본 테마의 팔레트와 공통 판은 `scripts/ui/observatory_theme.gd`, 배경과 그림 부품은 `assets/ui_observatory/`에 둔다. 로비·메뉴·대전·창이 같은 테마를 쓰며, 설정의 '화면 테마'에서 기존 UI를 고르면 프로필의 `settings.classic_ui`에 저장된다. 공지·출석·설정·우편·룰렛·대전 시작 창은 별도 배치를 쓰고, 기존의 보상·설정·대전 진입 함수를 그대로 호출한다. 공지 배너와 출석 카드의 공통 코드는 `scripts/ui/observatory_popups.gd`에 둔다.
 - `scripts/main.gd`: 화면 전환 틀(app). `scripts/screens/`: 타이틀·로그인·로비·영웅·상점·미션·설정·파티·대전 화면.
 - `scripts/rules/game.gd`: 판 규칙. `scripts/rules/profile.gd`: 게임 밖 성장(재화·소환·강화·보상·랭크·미션·출석). 수치는 `data/economy.json`.

@@ -361,8 +361,9 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	stats.offset_right = -4
 	button.add_child(stats)
 	KitStyle.squeeze_text(stats, 15, 12)
-	# 이름은 틀 아래쪽 남색 이름 칸(그림 높이의 78.5%~91%) 가운데에. 영웅 화면과 같은 자리.
-	var name_label := _band_label(str(character["name"]), 18, 0.785, 0.91)
+	# 영웅 목록과 같은 그림의 이름 띠에 맞춘다.
+	var band := MenuArt.OBSERVATORY_HERO_NAME_BAND if KitStyle.Observatory.active else MenuArt.HERO_NAME_BAND
+	var name_label := _band_label(str(character["name"]), 18, band.x, band.y)
 	name_label.offset_left = 0
 	name_label.offset_right = 0
 	name_label.anchor_left = 0.1
