@@ -923,6 +923,8 @@ func _setup_tutorial() -> void:
 	if game.cards.has(card):
 		game.players[0]["hand"] = [card]
 	game.players[0]["gauge"]["attack"] = 100
+	# 첫 판 한정 행운: 컴퓨터가 앞서 있으면 내 주사위만 큰 눈이 잘 나온다.
+	game.lucky_player = 0
 	if not app.profile.has("tutorial"):
 		app.profile["tutorial"] = {}
 	for key in ["roll", "card", "ability"]:
