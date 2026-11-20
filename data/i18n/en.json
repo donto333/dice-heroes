@@ -2076,5 +2076,5 @@
  "이 갈래 %d칸": "%d tiles along this route",
  "갈림길이에요! 지도와 칸 수를 비교하고 갈 길을 골라요. 지도에서 길과 버튼은 같은 색이에요.": "You are at a fork! Compare the map and tile counts, then pick a route. Each button matches the route color.",
  "카드 편성에서 장착 카드와 빈칸의 크기를 맞췄어요. 일반 카드 7장도 한눈에 볼 수 있어요.": "Equipped cards and empty deck slots are now the same size. All seven common cards fit in view.",
- "카드 편성 칸이 화면에 맞춰 넓어지고 장착 카드와 빈칸도 함께 커져요.": "Deck rows now fit the screen, and equipped cards and empty slots grow with them."
+ "카드 편성의 세 등급 틀을 같은 크기로 맞추고 장착 카드와 빈칸을 왼쪽부터 놓았어요.": "The three deck rows are now the same size, with equipped cards and empty slots aligned on the left."
 }

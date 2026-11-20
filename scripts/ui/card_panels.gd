@@ -23,6 +23,8 @@ const DECK_TILE := Vector2(96, 76)
 const OWNED_TILE_HEIGHT := 146.0
 const DECK_CARD_GAP := 6.0
 const DECK_FRAME_PADDING := 6.0
+## 세로로 긴 창에서도 옆 장식이 카드 공간을 너무 많이 차지하지 않게 한다.
+const DECK_FRAME_MIN_ASPECT := 4.4
 ## 원본 줄 높이 150px에서 잰 양 끝 장식 폭과 위·아래 테두리 두께의 비율.
 const DECK_ROW_CAPS := {1: 44.0 / 150.0, 2: 80.0 / 150.0, 3: 92.0 / 150.0}
 const DECK_ROW_EDGES := {1: 13.0 / 150.0, 2: 20.0 / 150.0, 3: 25.0 / 150.0}
@@ -204,13 +206,6 @@ func _deck_row(parent: VBoxContainer, grade: int) -> HBoxContainer:
 	return row
 
 
-## 그림 테두리와 양 끝 장식을 피한 카드 여백. 양옆 조각은 줄 높이에 비례해 그려진다.
-func _deck_row_inset(grade: int, tile_height: float) -> Vector2:
-	var edge: float = DECK_ROW_EDGES[grade]
-	var height := (tile_height + 2.0 * DECK_FRAME_PADDING) / (1.0 - 2.0 * edge)
-	return Vector2(height * float(DECK_ROW_CAPS[grade]) + DECK_FRAME_PADDING, (height - tile_height) * 0.5)
-
-
 func _fit_deck_rows(area: Control, column: VBoxContainer, rows: Dictionary) -> void:
 	if not is_instance_valid(area) or area.size.x <= 0.0 or area.size.y <= 0.0:
 		return
@@ -219,46 +214,29 @@ func _fit_deck_rows(area: Control, column: VBoxContainer, rows: Dictionary) -> v
 	for child in column.get_children():
 		if child is Label:
 			available_height -= child.get_combined_minimum_size().y
-	# 각 줄의 폭을 채울 때 필요한 카드 크기와, 세 줄에 공통으로 넣을 수 있는 크기.
-	var width_scales := {}
-	var common_scale := INF
-	var natural_height := 0.0
-	var height_per_scale := 0.0
-	for grade in rows:
-		var row: HBoxContainer = rows[grade]
-		var count := row.get_child_count()
-		var fixed_inset := _deck_row_inset(grade, 0.0)
-		var scalable_inset := _deck_row_inset(grade, DECK_TILE.y) - fixed_inset
-		var fixed_width := maxf(0.0, count - 1) * DECK_CARD_GAP + 2.0 * fixed_inset.x
-		var scalable_width := count * DECK_TILE.x + 2.0 * scalable_inset.x
-		var scalable_height := DECK_TILE.y + 2.0 * scalable_inset.y
-		var scale_for_width := maxf(0.0, (area.size.x - fixed_width) / scalable_width)
-		width_scales[grade] = scale_for_width
-		common_scale = minf(common_scale, scale_for_width)
-		available_height -= 2.0 * fixed_inset.y
-		height_per_scale += scalable_height
-		natural_height += scalable_height * scale_for_width
-	# 장수가 가장 많은 줄의 크기를 먼저 확보하고, 남은 높이를 다른 줄에 비례해 나눈다.
-	common_scale = maxf(0.0, minf(common_scale, available_height / height_per_scale))
-	var common_height := common_scale * height_per_scale
-	var extra := clampf((available_height - common_height) / maxf(natural_height - common_height, 0.01), 0.0, 1.0)
+	var height := floorf(minf(available_height / rows.size(), area.size.x / DECK_FRAME_MIN_ASPECT))
+	var frame_size := Vector2(area.size.x, maxf(1.0, height))
+	# 가장 넓은 전설 틀의 왼쪽 장식을 피해 세 줄의 첫 카드 위치를 맞춘다.
+	var left_inset := ceilf(frame_size.y * float(DECK_ROW_CAPS[3])) + DECK_FRAME_PADDING
 	for grade in rows:
 		var row: HBoxContainer = rows[grade]
 		var frame := row.get_parent() as Panel
 		var holder := frame.get_parent() as Control
-		var tile_size := (DECK_TILE * lerpf(common_scale, float(width_scales[grade]), extra)).floor().max(Vector2.ONE)
-		var inset := _deck_row_inset(grade, tile_size.y)
+		var right_inset := ceilf(frame_size.y * float(DECK_ROW_CAPS[grade])) + DECK_FRAME_PADDING
 		var count := row.get_child_count()
-		var cards_width := count * tile_size.x + maxf(0.0, count - 1) * DECK_CARD_GAP
-		var side := (area.size.x - cards_width) * 0.5
+		var safe_width := frame_size.x - left_inset - right_inset - maxf(0.0, count - 1) * DECK_CARD_GAP
+		var safe_height := frame_size.y * (1.0 - 2.0 * float(DECK_ROW_EDGES[grade])) - 2.0 * DECK_FRAME_PADDING
+		var scale := minf(safe_width / (maxi(1, count) * DECK_TILE.x), safe_height / DECK_TILE.y)
+		var tile_size := (DECK_TILE * scale).floor().max(Vector2.ONE)
+		var vertical_inset := (frame_size.y - tile_size.y) * 0.5
 		for tile: Control in row.get_children():
 			tile.custom_minimum_size = tile_size
-		frame.size = Vector2(area.size.x, tile_size.y + 2.0 * inset.y)
-		holder.custom_minimum_size.y = frame.size.y
-		row.offset_left = side
-		row.offset_right = -side
-		row.offset_top = inset.y
-		row.offset_bottom = -inset.y
+		frame.size = frame_size
+		holder.custom_minimum_size.y = frame_size.y
+		row.offset_left = left_inset
+		row.offset_right = -right_inset
+		row.offset_top = vertical_inset
+		row.offset_bottom = -vertical_inset
 
 
 ## 비어 있는 덱 자리(등급색 점선 느낌의 흐린 칸)
