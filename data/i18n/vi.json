@@ -2058,5 +2058,6 @@
  "이동 %d · 공격 %d · 방어 %d · 지력 %d": "Di chuyển %d · Tấn công %d · Phòng thủ %d · Trí lực %d",
  "전투 +%d · 스킬 충전 +%d%%": "Chiến đấu +%d · Nạp kỹ năng +%d%%",
  "이 무장으로 적용할까요? (자리: %s)": "Dùng anh hùng này? (Vị trí: %s)",
- "이미 편성됨": "Đã có trong đội"
+ "이미 편성됨": "Đã có trong đội",
+ "파티 편성에서 영웅 얼굴과 방어 자리가 잘 보여요. 카드 편성의 카드와 스크롤 막대도 틀 안에 맞췄어요.": "Khuôn mặt anh hùng và vị trí phòng thủ hiển thị rõ hơn khi xếp đội. Thẻ và thanh cuộn trong phần xếp bộ bài giờ nằm gọn trong khung."
 }

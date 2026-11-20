@@ -20,7 +20,7 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 ## 분류 → 알약 색(영웅 화면과 같은 탭)
 const CATEGORY_PILLS := {"": "blue", "영웅": "red", "위인": "blue", "신화": "purple", "근현대": "green"}
-## 자리 → 자리 카드 틀 그림(assets/ui_menu/slot_*.png, 위 띠 빨강·보라·초록)
+## 자리 → 자리 카드 틀 그림(assets/ui_menu/slot_*.png, 위 띠 빨강·파랑·초록)
 const SLOT_FRAMES := {"attack": "slot_attack", "defense": "slot_defense", "support": "slot_support"}
 
 const SLOTS := ["attack", "defense", "support"]
@@ -279,8 +279,10 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	for state in ["normal", "hover", "pressed", "disabled"]:
 		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	var portrait := Portrait.new()
+	portrait.focus_y = 0.0
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	portrait.anchor_top = 0.14
+	# 그림의 위 띠가 끝나는 자리부터 초상화를 그린다.
+	portrait.anchor_top = 0.206
 	portrait.anchor_bottom = 0.85
 	portrait.offset_left = 8
 	portrait.offset_right = -8
@@ -296,7 +298,7 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(frame)
-	var role := _band_label(SLOT_LABELS[slot], 16, 0.0, 0.15)
+	var role := _band_label(SLOT_LABELS[slot], 16, 0.02, 0.19)
 	button.add_child(role)
 	# 능력 한 줄(2단계): 초상화 아래쪽에 어두운 띠를 깔고 그 위에 또렷하게.
 	var stat := _band_label("", 18, 0.70, 0.81)
@@ -328,12 +330,13 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 		fill.expand_margin_bottom = -8
 		button.add_theme_stylebox_override(state, fill)
 	var portrait := Portrait.new()
+	portrait.focus_y = 0.0
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# 머리가 금테와 위쪽 보석에 가리지 않도록 틀의 투명한 창에서 시작한다.
+	portrait.anchor_left = 0.092
+	portrait.anchor_right = 0.898
+	portrait.anchor_top = 0.177
 	portrait.anchor_bottom = 0.6
-	portrait.offset_left = 10
-	portrait.offset_right = -10
-	portrait.offset_top = 16
-	portrait.offset_bottom = 0
 	portrait.border_width = 0.0
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(portrait)
@@ -419,6 +422,7 @@ func _fill_card(button: Button, portrait_height: float, font_size: int) -> Dicti
 	column.add_theme_constant_override("separation", 4)
 	margin.add_child(column)
 	var portrait := Portrait.new()
+	portrait.focus_y = 0.0
 	portrait.custom_minimum_size = Vector2(0, portrait_height)
 	portrait.border_width = 2.0
 	column.add_child(portrait)

@@ -2058,5 +2058,6 @@
  "이동 %d · 공격 %d · 방어 %d · 지력 %d": "Move %d · Attack %d · Defense %d · Intellect %d",
  "전투 +%d · 스킬 충전 +%d%%": "Battle +%d · Skill charge +%d%%",
  "이 무장으로 적용할까요? (자리: %s)": "Apply this hero? (Slot: %s)",
- "이미 편성됨": "Already in party"
+ "이미 편성됨": "Already in party",
+ "파티 편성에서 영웅 얼굴과 방어 자리가 잘 보여요. 카드 편성의 카드와 스크롤 막대도 틀 안에 맞췄어요.": "Hero faces and the defense slot are easier to see in party setup. Cards and scrollbars now fit inside their frames in deck setup."
 }

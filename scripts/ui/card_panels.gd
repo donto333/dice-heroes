@@ -13,13 +13,17 @@ const OddsWindow := preload("res://scripts/ui/odds_window.gd")
 const AdPlayer := preload("res://scripts/ui/ad_player.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const SummonShow := preload("res://scripts/ui/summon_show.gd")
+const UiSkin := preload("res://scripts/ui/skin.gd")
 
 const GRADE_NAMES := {1: "일반", 2: "희귀", 3: "전설"}
 ## 등급별 카드 바탕색
 const GRADE_FILLS := {1: Color("2a4a7a"), 2: Color("1f5f8f"), 3: Color("6a3fa8")}
 ## 카드 편성 칸 크기: 덱 줄의 카드, 보유 카드 칸 높이
-const DECK_TILE := Vector2(96, 112)
+const DECK_TILE := Vector2(96, 76)
 const OWNED_TILE_HEIGHT := 146.0
+## 원본 줄 높이 150px에서 잰 양 끝 장식 폭과 위·아래 테두리 두께의 비율.
+const DECK_ROW_CAPS := {1: 44.0 / 150.0, 2: 80.0 / 150.0, 3: 92.0 / 150.0}
+const DECK_ROW_EDGES := {1: 13.0 / 150.0, 2: 20.0 / 150.0, 3: 25.0 / 150.0}
 ## 뽑기 판에 보여 줄 전설 카드
 const SHOWCASE := ["war_god", "silence_bell", "spirit_drain", "iron_will"]
 
@@ -110,18 +114,7 @@ func build_deck(column: VBoxContainer) -> void:
 				mine.append(str(id))
 		var limit := int(per_grade.get(str(grade), 0))
 		left.add_child(Kit.label("%s %d / %d" % [str(GRADE_NAMES[grade]), mine.size(), limit], 20, Kit.GRADE_COLORS[grade]))
-		var frame := PanelContainer.new()
-		# 덱 줄 판 그림(assets/ui_menu/deck_row_frame_N.png, 가운데만 늘림). 없으면 단색 테두리.
-		var row_art = MenuArt.style("deck_row_frame_%d" % grade, Vector4(90, 32, 90, 32), Vector4(18, 12, 18, 8))
-		frame.add_theme_stylebox_override("panel", row_art if row_art != null else Kit.box(Color(0, 0, 0, 0.22), Kit.GRADE_COLORS[grade].darkened(0.35), 2, 12, 6))
-		left.add_child(frame)
-		var row_scroll := ScrollContainer.new()
-		row_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		# 옆 스크롤 막대가 카드 이름을 가리지 않게 아래로 여유를 둔다.
-		row_scroll.custom_minimum_size = Vector2(0, DECK_TILE.y + 16)
-		frame.add_child(row_scroll)
-		var row := Kit.hbox(6)
-		row_scroll.add_child(row)
+		var row := _deck_row(left, grade)
 		for index in limit:
 			if index < mine.size():
 				var tile := card_tile(cards, mine[index], true, false, DECK_TILE.y, false)
@@ -150,11 +143,14 @@ func build_deck(column: VBoxContainer) -> void:
 		filters.add_child(Kit.expand(tab))
 	var owned_frame := PanelContainer.new()
 	owned_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var owned_art = MenuArt.style("deck_owned_frame", Vector4(44, 44, 44, 44), Vector4(16, 16, 16, 16))
+	# 모서리 장식 아래와 금테 안쪽에 카드 두 줄과 스크롤 막대를 둔다.
+	var owned_art := MenuArt.style("deck_owned_frame", Vector4(80, 78, 80, 78), Vector4(30, 54, 30, 54))
 	owned_frame.add_theme_stylebox_override("panel", owned_art if owned_art != null else Kit.box(Color(0, 0, 0, 0.22), Kit.GOLD.darkened(0.4), 2, 12, 6))
 	right.add_child(owned_frame)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_RESERVE
+	scroll.add_theme_constant_override("scrollbar_h_separation", 8)
 	owned_frame.add_child(scroll)
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -175,6 +171,42 @@ func build_deck(column: VBoxContainer) -> void:
 		var tile := card_tile(cards, str(id), true, deck.has(id), OWNED_TILE_HEIGHT, false)
 		tile.pressed.connect(_on_card.bind(str(id)))
 		grid.add_child(tile)
+
+
+func _deck_row(parent: VBoxContainer, grade: int) -> HBoxContainer:
+	var frame := PanelContainer.new()
+	parent.add_child(frame)
+	var scroll := ScrollContainer.new()
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_RESERVE
+	const SCROLL_GAP := 4
+	scroll.add_theme_constant_override("scrollbar_v_separation", SCROLL_GAP)
+	frame.add_child(scroll)
+	var scroll_space := scroll.get_h_scroll_bar().get_minimum_size().y + SCROLL_GAP
+	scroll.custom_minimum_size.y = DECK_TILE.y + scroll_space
+	var art := MenuArt.tex("deck_row_frame_%d" % grade)
+	if art != null:
+		# 양 끝은 줄 높이에 맞춰 그린다. 카드 영역도 같은 비율로 장식 안쪽에서 시작한다.
+		# 위에도 스크롤 막대 자리만큼 여백을 주어 카드 자체를 가운데에 놓는다.
+		var edge_ratio: float = DECK_ROW_EDGES[grade]
+		var edge := ceilf((DECK_TILE.y + 2.0 * scroll_space) * edge_ratio / (1.0 - 2.0 * edge_ratio))
+		var row_height := DECK_TILE.y + 2.0 * (edge + scroll_space)
+		var cap: float = DECK_ROW_CAPS[grade]
+		var side := ceilf(row_height * cap) + 4.0
+		var inset := StyleBoxEmpty.new()
+		inset.set_content_margin(SIDE_LEFT, side)
+		inset.set_content_margin(SIDE_RIGHT, side)
+		inset.set_content_margin(SIDE_TOP, edge + scroll_space)
+		inset.set_content_margin(SIDE_BOTTOM, edge)
+		frame.add_theme_stylebox_override("panel", inset)
+		frame.draw.connect(func() -> void:
+			UiSkin.draw_bar(frame.get_canvas_item(), art, Rect2(Vector2.ZERO, frame.size), cap))
+		frame.resized.connect(frame.queue_redraw)
+	else:
+		frame.add_theme_stylebox_override("panel", Kit.box(Color(0, 0, 0, 0.22), Kit.GRADE_COLORS[grade].darkened(0.35), 2, 12, 6))
+	var row := Kit.hbox(6)
+	scroll.add_child(row)
+	return row
 
 
 ## 비어 있는 덱 자리(등급색 점선 느낌의 흐린 칸)
