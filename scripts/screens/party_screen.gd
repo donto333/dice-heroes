@@ -65,7 +65,7 @@ func setup(main_app, params: Dictionary) -> void:
 	if mode != "local":
 		options["presets"] = app.profile.get("party_presets", [{}, {}, {}])
 		select.preset_saved.connect(_on_preset_saved)
-	select.setup(characters, app.data["abilities"], initial, options)
+	select.setup(app, characters, app.data["abilities"], initial, options)
 	select.confirmed.connect(_on_confirmed)
 	select.cancelled.connect(_on_cancelled)
 

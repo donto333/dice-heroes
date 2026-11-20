@@ -1,5 +1,5 @@
 extends Control
-## 파티 고르기. 캐릭터 카드를 눌러 ATTACK / DEFENSE / SUPPORT 자리에 앉힌다.
+## 파티 고르기. 캐릭터 카드의 정보 창에서 적용하면 고른 자리에 앉힌다.
 ## 소환 포인트(★ 수) 합계가 한도(플레이어 레벨에 따라 5~8)를 넘으면 정할 수 없다.
 ## 파티 편성(영웅 화면)과 대전 직전 모두에서 쓴다. 보여 줄 캐릭터 목록과 글자는 setup()의 options로 바꾼다.
 const KitStyle := preload("res://scripts/ui/kit.gd")
@@ -25,6 +25,7 @@ const SLOT_FRAMES := {"attack": "slot_attack", "defense": "slot_defense", "suppo
 
 const SLOTS := ["attack", "defense", "support"]
 const SLOT_LABELS := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
+const SLOT_NAMES := {"attack": "공격", "defense": "방어", "support": "지원"}
 const SLOT_HINTS := {"attack": "이동 · 공격", "defense": "방어", "support": "지력 · 게이지"}
 const SLOT_STAT := {"attack": "attack", "defense": "defense", "support": "intellect"}
 const STAT_NAMES := {"attack": "공격", "defense": "방어", "intellect": "지력"}
@@ -41,6 +42,7 @@ const GOLD := Color("ffcf4d")
 var characters: Array = []
 var abilities: Dictionary = {}
 var party := {"attack": "", "defense": "", "support": ""}
+var _app
 
 var _active_slot := "attack"
 var _slot_buttons: Dictionary = {}
@@ -53,6 +55,8 @@ var _start_button: Button
 var _styles: Dictionary = {}
 var _filter := ""
 var _filter_buttons: Dictionary = {}
+var _grade_filter := 0
+var _grade_buttons: Dictionary = {}
 var _info_label: Label
 var _synergy_label: Label
 ## 그림 부품(assets/ui_menu)이 있으면 금테 카드·알약으로 그린다(UI 개편 1단계).
@@ -89,7 +93,8 @@ const STRATEGY_WEIGHTS := {
 }
 
 
-func setup(character_list: Array, ability_table: Dictionary, initial: Dictionary, options: Dictionary = {}) -> void:
+func setup(main_app, character_list: Array, ability_table: Dictionary, initial: Dictionary, options: Dictionary = {}) -> void:
+	_app = main_app
 	characters = character_list
 	abilities = ability_table
 	_options = options
@@ -209,12 +214,19 @@ func _build() -> void:
 	tabs.add_theme_constant_override("separation", 6)
 	right.add_child(tabs)
 	for category in ["", "영웅", "위인", "신화", "근현대"]:
-		var tab := _plain_button("전체" if category == "" else category, CATEGORY_COLORS.get(category, Color("2f74d6")))
-		tab.custom_minimum_size = Vector2(0, 50)
-		tab.add_theme_font_size_override("font_size", 20)
+		var tab := _filter_button("전체" if category == "" else category, CATEGORY_COLORS.get(category, Color("2f74d6")))
 		tab.pressed.connect(_on_filter_pressed.bind(category))
 		tabs.add_child(tab)
 		_filter_buttons[category] = tab
+
+	var grades := HBoxContainer.new()
+	grades.add_theme_constant_override("separation", 6)
+	right.add_child(grades)
+	for grade in [0, 3, 2, 1]:
+		var tab := _filter_button("전체" if grade == 0 else "★".repeat(grade), KitStyle.PANEL_LIGHT)
+		tab.pressed.connect(_on_grade_pressed.bind(grade))
+		grades.add_child(tab)
+		_grade_buttons[grade] = tab
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -343,6 +355,7 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	stats.offset_left = 4
 	stats.offset_right = -4
 	button.add_child(stats)
+	KitStyle.squeeze_text(stats, 15, 12)
 	# 이름은 틀 아래쪽 남색 이름 칸(그림 높이의 78.5%~91%) 가운데에. 영웅 화면과 같은 자리.
 	var name_label := _band_label(str(character["name"]), 18, 0.785, 0.91)
 	name_label.offset_left = 0
@@ -460,6 +473,27 @@ func _plain_button(text: String, color: Color) -> Button:
 	return button
 
 
+func _filter_button(text: String, color: Color) -> Button:
+	var button := _plain_button(text, color)
+	button.custom_minimum_size = Vector2(0, 50)
+	button.add_theme_font_size_override("font_size", 18)
+	return button
+
+
+func _style_filter_button(button: Button, selected: bool, pill_color: String, fallback: Color) -> void:
+	if selected:
+		MenuArt.tab(button, true)
+	elif not MenuArt.pill(button, pill_color):
+		for state in ["normal", "hover", "pressed"]:
+			button.add_theme_stylebox_override(state, _box(fallback.darkened(0.55), fallback.darkened(0.2), 2))
+	# 긴 번역도 편성 판 너비 안에 들어가도록 알약의 글자 여백을 줄인다.
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var style := button.get_theme_stylebox(state)
+		if style is StyleBoxEmpty:
+			style.content_margin_left = 8
+			style.content_margin_right = 8
+
+
 func _character(id: String) -> Dictionary:
 	for character in characters:
 		if character["id"] == id:
@@ -502,17 +536,72 @@ func _on_slot_pressed(slot: String) -> void:
 
 
 func _on_filter_pressed(category: String) -> void:
+	if category == _filter:
+		return
 	_filter = category
+	_grade_filter = 0
+	_refresh()
+
+
+func _on_grade_pressed(grade: int) -> void:
+	_grade_filter = grade
 	_refresh()
 
 
 func _on_character_pressed(id: String) -> void:
+	var character := _character(id)
+	if character.is_empty():
+		return
 	_show_info(id)
+	var grade := int(character["grade"])
+	var grade_color: Color = KitStyle.GRADE_COLORS[grade]
+	var body := KitStyle.vbox(12)
+	var row := KitStyle.hbox(16)
+	body.add_child(row)
+
+	var portrait := Portrait.new()
+	portrait.custom_minimum_size = Vector2(236, 252)
+	portrait.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	portrait.hd = true
+	portrait.border = grade_color
+	portrait.show_character(character, CATEGORY_COLORS.get(character["category"], KitStyle.LINE))
+	row.add_child(portrait)
+
+	var info := KitStyle.vbox(8)
+	info.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(KitStyle.expand(info))
+	var level := _level_of(character)
+	info.add_child(KitStyle.para("%s  %s  Lv%d" % ["★".repeat(grade), character["category"], level], 24, grade_color))
+	info.add_child(KitStyle.para("이동 %d · 공격 %d · 방어 %d · 지력 %d" % [
+		int(character["move"]), int(character["attack"]), int(character["defense"]), int(character["intellect"])], 21, Color.WHITE))
+	var battle_bonus := _from_table(_level_battle, level)
+	var gauge_bonus := _from_table(_level_gauge, level)
+	if battle_bonus > 0 or gauge_bonus > 0:
+		info.add_child(KitStyle.para("전투 +%d · 스킬 충전 +%d%%" % [battle_bonus, gauge_bonus], 18, KitStyle.GOLD))
+	var ability_id := str(character.get("ability", ""))
+	var ability: Dictionary = abilities.get(ability_id, {})
+	var skill := KitStyle.hbox(10)
+	info.add_child(skill)
+	var icon := GameDataLoader.ability_icon_rect(ability_id, 56.0)
+	if icon != null:
+		skill.add_child(icon)
+	skill.add_child(KitStyle.expand(KitStyle.para("%s\n%s" % [ability.get("name", "-"), ability.get("text", "")], 20, Color.WHITE)))
+
+	var target_slot := _active_slot
+	body.add_child(KitStyle.para("이 무장으로 적용할까요? (자리: %s)" % SLOT_NAMES[target_slot], 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	var apply: Array = ["이미 편성됨", KitStyle.DISABLED]
+	if party[target_slot] != id:
+		apply = ["적용", KitStyle.ACCENT, _apply_character.bind(id, target_slot)]
+	_app.dialog(str(character["name"]), body, [apply, ["취소", KitStyle.PANEL_LIGHT]], 720)
+
+
+func _apply_character(id: String, target_slot: String) -> void:
 	# 이미 다른 자리에 있으면 그 자리와 맞바꾼다.
 	for slot in SLOTS:
-		if party[slot] == id and slot != _active_slot:
-			party[slot] = party[_active_slot]
-	party[_active_slot] = id
+		if party[slot] == id and slot != target_slot:
+			party[slot] = party[target_slot]
+	party[target_slot] = id
+	_active_slot = target_slot
 	# 다음 빈 자리로 넘어간다.
 	for slot in SLOTS:
 		if party[slot] == "":
@@ -774,17 +863,10 @@ func _refresh() -> void:
 	if _points_label == null:
 		return
 	for category in _filter_buttons:
-		var tab: Button = _filter_buttons[category]
-		var on: bool = category == _filter
-		if on:
-			MenuArt.tab(tab, true)
-		elif not MenuArt.pill(tab, CATEGORY_PILLS.get(category, "blue")):
-			var tab_color: Color = CATEGORY_COLORS.get(category, Color("8fd0ff"))
-			for state in ["normal", "hover", "pressed"]:
-				tab.add_theme_stylebox_override(state, _box(tab_color.darkened(0.55), tab_color.darkened(0.2), 2))
-	for id in _card_buttons:
-		var card: Button = _card_buttons[id]
-		card.visible = _filter == "" or _character(id).get("category", "") == _filter
+		_style_filter_button(_filter_buttons[category], category == _filter,
+				CATEGORY_PILLS.get(category, "blue"), CATEGORY_COLORS.get(category, Color("8fd0ff")))
+	for grade in _grade_buttons:
+		_style_filter_button(_grade_buttons[grade], grade == _grade_filter, "blue", KitStyle.PANEL_LIGHT)
 	for slot in SLOTS:
 		var button: Button = _slot_buttons[slot]
 		var character := _character(party[slot])
@@ -819,6 +901,8 @@ func _refresh() -> void:
 	for id in _card_buttons:
 		var button: Button = _card_buttons[id]
 		var character := _character(id)
+		button.visible = (_filter == "" or character["category"] == _filter) \
+				and (_grade_filter == 0 or int(character["grade"]) == _grade_filter)
 		var chosen := false
 		for slot in SLOTS:
 			if party[slot] == id:

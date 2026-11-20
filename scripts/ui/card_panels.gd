@@ -78,7 +78,7 @@ func build_list(column: VBoxContainer) -> void:
 
 
 ## 카드 편성(2026-11-18 사용자 결정 배치): 위 제목 줄, 왼쪽은 등급별 덱 줄 세 개(전설 3 · 희귀 5 · 일반 7, 줄마다 옆으로 스크롤),
-## 오른쪽은 '보유 카드'(2칸 세로 스크롤, 등급 거름). 오른쪽 카드를 누르면 넣고 빼며, 왼쪽 덱 카드를 누르면 뺀다.
+## 오른쪽은 '보유 카드'(2칸 세로 스크롤, 등급 거름). 덱에 없는 카드는 정보를 보고 적용하며, 덱에 든 카드는 바로 뺀다.
 func build_deck(column: VBoxContainer) -> void:
 	var cards := _cards()
 	var rule: Dictionary = app.eco.get("card_deck", {})
@@ -89,7 +89,7 @@ func build_deck(column: VBoxContainer) -> void:
 	var head := Kit.hbox(10)
 	column.add_child(head)
 	head.add_child(Kit.label("카드 편성 %d / %d" % [deck.size(), int(rule.get("size", 15))], 28, Kit.GOLD))
-	var hint := Kit.para("오른쪽 보유 카드를 누르면 넣고, 왼쪽 덱 카드를 누르면 빼요.", 15, Kit.MUTED)
+	var hint := Kit.para("보유 카드는 정보를 확인하고 넣어요. 덱에 든 카드를 누르면 빼요.", 15, Kit.MUTED)
 	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(Kit.expand(hint))
 	head.add_child(MenuArt.capsule("최소 %d장" % int(rule.get("min", 6)), "", 18))
@@ -342,6 +342,36 @@ func _on_card(id: String) -> void:
 		app.toast("아직 없는 카드예요. 카드 뽑기에서 얻을 수 있어요.")
 		return
 	var was_in: bool = (app.profile.get("deck", []) as Array).has(id)
+	if was_in:
+		_toggle_card(id, true)
+		return
+
+	var cards := _cards()
+	var card: Dictionary = cards[id]
+	var body := Kit.vbox(12)
+	var row := Kit.hbox(16)
+	body.add_child(row)
+	var picture := card_tile(cards, id, true, false, 252.0, false)
+	picture.custom_minimum_size.x = 188
+	picture.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(picture)
+
+	var info := Kit.vbox(10)
+	info.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(Kit.expand(info))
+	var grade := Profile.card_grade(cards, id)
+	info.add_child(Kit.label("★".repeat(grade), 24, Kit.GRADE_COLORS[grade]))
+	info.add_child(Kit.para(str(card.get("text", "")), 22, Color.WHITE))
+	body.add_child(Kit.para("이 카드로 적용할까요?", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	app.dialog(str(card["name"]), body, [["적용", Kit.ACCENT, _toggle_card.bind(id, false)], ["취소", Kit.PANEL_LIGHT]], 660)
+
+
+func _toggle_card(id: String, was_in: bool) -> void:
+	# 창을 연 뒤 덱이 바뀌었으면, 적용이 카드 빼기로 뒤집히지 않게 한다.
+	var deck: Array = app.profile.get("deck", [])
+	if deck.has(id) != was_in:
+		return
 	var problem := Profile.toggle_deck(app.profile, _cards(), app.eco, id)
 	if problem != "":
 		app.play("denied")
