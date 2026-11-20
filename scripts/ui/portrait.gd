@@ -9,6 +9,8 @@ const GameData := preload("res://scripts/game_data.gd")
 var texture: Texture2D = null
 ## 크게 보여 주는 칸이면 true로 둔다(고해상도 그림을 쓴다). show_character() 전에 정한다.
 var hd := false
+## 가로로 긴 칸의 세로 자르기 기준. 0은 위, 0.5는 가운데다.
+var focus_y := 0.2
 var fill := Color("3a4466")
 var border := Color(1, 1, 1, 0.55)
 var border_width := 3.0
@@ -98,11 +100,11 @@ func _draw() -> void:
 		draw_rect(rect.grow(-border_width / 2.0), border, false, border_width)
 
 
-## 칸 비율에 맞게 그림의 가운데를 잘라 낸다. 가로로 긴 칸이면 얼굴이 남도록 위쪽을 쓴다.
+## 칸을 채우도록 자른다. 세로 여분은 focus_y를 따르고 가로 여분은 양옆에서 똑같이 자른다.
 func _crop(texture_size: Vector2) -> Rect2:
 	var ratio := size.x / size.y
 	if ratio >= texture_size.x / texture_size.y:
 		var height := texture_size.x / ratio
-		return Rect2(0, (texture_size.y - height) * 0.2, texture_size.x, height)
+		return Rect2(0, (texture_size.y - height) * focus_y, texture_size.x, height)
 	var width := texture_size.y * ratio
 	return Rect2((texture_size.x - width) / 2.0, 0, width, texture_size.y)

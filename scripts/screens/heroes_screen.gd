@@ -179,11 +179,11 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if frame != null:
-		# 초상화·별 줄은 틀의 안쪽 창(그림에서 잰 자리: 가로 9.2%~89.8%, 세로 14.8%~77.7%)에만 둔다.
+		# 초상화·별 줄은 틀의 안쪽 창(그림에서 잰 자리: 가로 9.2%~89.8%, 세로 17.7%~77.7%)에만 둔다.
 		# 틀은 그 위에 덮어 모서리 장식이 그림을 가리게 한다(전에는 그림이 틀 위로 삐져나왔다).
 		column.anchor_left = 0.092
 		column.anchor_right = 0.898
-		column.anchor_top = 0.148
+		column.anchor_top = 0.177
 		column.anchor_bottom = 0.777
 		column.offset_left = 0
 		column.offset_right = 0
@@ -197,6 +197,7 @@ func _card(character: Dictionary, owned: bool) -> Control:
 		column.offset_bottom = -4
 	button.add_child(column)
 	var face := Portrait.new()
+	face.focus_y = 0.0
 	face.custom_minimum_size = Vector2(0, 138 if frame_tex == null else 60)
 	if frame_tex != null:
 		face.size_flags_vertical = Control.SIZE_EXPAND_FILL

@@ -184,6 +184,22 @@ func _run() -> void:
 	await _wait(0.3)
 	await _shot("09w_party_hero_info")
 	_close_dialogs()
+	# 얼굴을 확인하는 사진에서만 영웅 48명을 모두 보유한 상태로 보여 준다.
+	var owned: Dictionary = _app.profile["owned"]
+	var all_owned := owned.duplicate()
+	for character in _app.data["characters"]:
+		var id := str(character["id"])
+		if not all_owned.has(id):
+			all_owned[id] = {"level": 1, "shards": 0}
+	_app.profile["owned"] = all_owned
+	_app.go("party", {"purpose": "edit"})
+	await _frames(4)
+	var hero_scroll := _find_scroll(_party_picker())
+	var hero_grid := hero_scroll.get_child(0) as GridContainer
+	var first_hero := hero_grid.get_child(0) as Control
+	hero_scroll.scroll_vertical = int(first_hero.size.y) + hero_grid.get_theme_constant("v_separation")
+	await _shot("09y_party_heroes_faces")
+	_app.profile["owned"] = owned
 	_app.go("heroes")
 	await _wait(0.4)
 	_app.current_screen.show_hero("lubu")
