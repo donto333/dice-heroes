@@ -64,6 +64,10 @@ static func art(name: String) -> Texture2D:
 	return null
 
 
+## 카드 앞면 그림(card_front_*)의 이름 띠 위·아래(카드 높이 비율).
+const NAME_BAND := Vector2(0.787, 0.895)
+
+
 func _init() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -507,8 +511,9 @@ func _make_cards() -> void:
 		name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		name_label.anchor_left = 0.1
 		name_label.anchor_right = 0.9
-		name_label.anchor_top = float(window[3]) + 0.02
-		name_label.anchor_bottom = 0.94
+		# 카드 앞면 아래 남색 이름 띠(그림의 78.7%~89.5%) 한가운데에 맞춘다.
+		name_label.anchor_top = NAME_BAND.x
+		name_label.anchor_bottom = NAME_BAND.y
 		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		front.add_child(name_label)
 		Kit.squeeze_text(name_label, 15 if small else 22, 10)

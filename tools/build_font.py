@@ -52,6 +52,35 @@ ALWAYS = (
 TEXT_GLOBS = ["scripts/**/*.gd", "data/**/*.json", "data/**/*.csv", "scenes/**/*.tscn"]
 
 
+def center_metrics(font) -> None:
+    """한글이 줄 칸 한가운데 오게 위·아래 높이를 맞춘다(줄 높이 합은 그대로).
+    바탕 글꼴은 위 칸이 커서 한글이 칸 가운데보다 0.06em쯤 아래에 그려졌다(리본·띠의 글자가 아래로 처짐)."""
+    from fontTools.pens.boundsPen import BoundsPen
+    glyphs = font.getGlyphSet()
+    cmap = font.getBestCmap()
+    tops, bottoms = [], []
+    for ch in "가방룰한글":
+        name = cmap.get(ord(ch))
+        if name is None:
+            continue
+        pen = BoundsPen(glyphs)
+        glyphs[name].draw(pen)
+        if pen.bounds:
+            bottoms.append(pen.bounds[1])
+            tops.append(pen.bounds[3])
+    if not tops:
+        return
+    hhea = font["hhea"]
+    total = hhea.ascent - hhea.descent
+    middle = (sum(tops) / len(tops) + sum(bottoms) / len(bottoms)) / 2.0
+    ascent = int(round(total / 2.0 + middle))
+    descent = total - ascent
+    hhea.ascent, hhea.descent, hhea.lineGap = ascent, -descent, 0
+    os2 = font["OS/2"]
+    os2.sTypoAscender, os2.sTypoDescender, os2.sTypoLineGap = ascent, -descent, 0
+    os2.usWinAscent, os2.usWinDescent = ascent, descent
+
+
 def fetch() -> None:
     """npm에서 노토 글꼴 조각(woff2)을 받아 .font_src에 푼다."""
     os.makedirs(SRC_DIR, exist_ok=True)
@@ -130,6 +159,7 @@ def build() -> None:
     names.setName("DiceHeroes Black", 4, 3, 1, 0x409)
     names.setName("DiceHeroes-Black", 6, 3, 1, 0x409)
     names.setName("DiceHeroes-Black-" + str(len(wanted)), 3, 3, 1, 0x409)
+    center_metrics(merged)
     merged.save(OUT)
 
     missing = sorted(ch for ch in left if ch.isprintable() and not ch.isspace())
