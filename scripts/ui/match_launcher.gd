@@ -177,7 +177,7 @@ func confirm() -> void:
 		_window.close()
 	var limit: int = app.point_limit()
 	var party: Dictionary = app.profile["party"]
-	if not Profile.party_ok(app.profile, app.data["characters"], party, limit):
+	if not bool(params.get("tutorial", false)) and not Profile.party_ok(app.profile, app.data["characters"], party, limit):
 		app.play("denied")
 		app.toast("소환 포인트 %d 안에서 파티를 먼저 짜 주세요." % limit)
 		app.go("party", {"purpose": "edit"})
@@ -230,8 +230,22 @@ func confirm() -> void:
 	theirs["levels"] = {"attack": ai_level, "defense": ai_level, "support": ai_level}
 	var start := {"mode": mode, "parties": [mine, theirs], "humans": [true, false], "reward_scale": scale}
 	if mode == "ai" and bool(params.get("tutorial", false)):
-		# 길잡이 첫 판: 정해진 맵에서 곧바로
+		# 길잡이 첫 판: 정해진 맵에서 곧바로. 파티도 정해 둔 것(내 쪽 ★★★·★★★·★★ 최대 강화, 컴퓨터 ★★·★★·★).
+		var tutorial: Dictionary = app.data.get("guide", {}).get("tutorial", {})
+		if not (tutorial.get("player_party", {}) as Dictionary).is_empty():
+			var player_party: Dictionary = (tutorial["player_party"] as Dictionary).duplicate()
+			var player_level := int(tutorial.get("player_level", 1))
+			player_party["name"] = str(mine.get("name", app.profile.get("nickname", "")))
+			player_party["levels"] = {"attack": player_level, "defense": player_level, "support": player_level}
+			start["parties"][0] = player_party
+		if not (tutorial.get("ai_party", {}) as Dictionary).is_empty():
+			var ai_party: Dictionary = (tutorial["ai_party"] as Dictionary).duplicate()
+			var tutorial_ai_level := int(tutorial.get("ai_level", 1))
+			ai_party["name"] = str(theirs.get("name", "AI"))
+			ai_party["levels"] = {"attack": tutorial_ai_level, "defense": tutorial_ai_level, "support": tutorial_ai_level}
+			start["parties"][1] = ai_party
 		start["map"] = clampi(int(app.data.get("guide", {}).get("tutorial", {}).get("map", 0)), 0, app.data["boards"].size() - 1)
+		start["tutorial"] = true
 		_go(start)
 		return
 	if mode == "ai":

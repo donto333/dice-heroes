@@ -2375,6 +2375,21 @@ func _test_tutorial() -> void:
 	var old := Profile.new_profile("예전", _data["economy"])
 	old.erase("guide_flow")
 	_check(Profile.tutorial_step(old, guide).is_empty(), "예전 저장에 길잡이가 뜸")
+	# 길잡이 첫 판 파티(2026-11-20 사용자 결정): 내 쪽 ★★★·★★★·★★, 컴퓨터 ★★·★★·★
+	var tutorial: Dictionary = guide["tutorial"]
+	for spec in [["player_party", [3, 3, 2]], ["ai_party", [2, 2, 1]]]:
+		var grades := []
+		for slot in ["attack", "defense", "support"]:
+			grades.append(Profile._grade_of(_data["characters"], str(tutorial[spec[0]][slot])))
+		grades.sort()
+		grades.reverse()
+		_check(grades == spec[1], "길잡이 %s 등급이 다름: %s" % [spec[0], str(grades)])
+	_check(int(tutorial["player_level"]) == int(_data["economy"]["upgrade"]["max_level"]), "길잡이 내 파티가 최대 강화가 아님")
+	_check(_data["cards"].has(str(tutorial["match_card"])), "길잡이 카드가 없음")
+	var match_ids := []
+	for step in tutorial["match_steps"]:
+		match_ids.append(str(step["id"]))
+	_check(match_ids == ["card", "skill", "roll"], "길잡이 첫 판 순서가 카드→스킬→주사위가 아님")
 	var skipped := Profile.new_profile("건너뜀", _data["economy"])
 	Profile.skip_tutorial(skipped)
 	_check(Profile.tutorial_step(skipped, guide).is_empty(), "길잡이 건너뛰기가 안 됨")

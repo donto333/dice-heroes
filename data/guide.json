@@ -67,7 +67,7 @@
     }
   ],
   "tutorial": {
-    "_comment": "처음 하는 사람 길잡이(2026-11-19): 순서대로 한 단계씩. profile.tutorial(지금 단계 번호, 없거나 단계 수 이상이면 끝남). event가 일어나면 다음 단계로 가고 reward를 준다. screens는 화면마다 가리킬 버튼(화면 코드의 노드 메타 guide)과 말. action이 있으면 말풍선에 그 버튼(start_tutorial: 연습 한 판 시작). 연습 한 판은 쉬움 AI·map 번 맵. place(top_left·top_right·bottom_left·bottom_right)와 margin을 주면 말풍선 자리를 정한다(없으면 가리키는 버튼 반대쪽 귀퉁이).",
+    "_comment": "처음 하는 사람 길잡이(2026-11-19): 순서대로 한 단계씩. profile.tutorial(지금 단계 번호, 없거나 단계 수 이상이면 끝남). event가 일어나면 다음 단계로 가고 reward를 준다. screens는 화면마다 가리킬 버튼(화면 코드의 노드 메타 guide)과 말. action이 있으면 말풍선에 그 버튼(start_tutorial: 연습 한 판 시작). 연습 한 판은 쉬움 AI·map 번 맵. place(top_left·top_right·bottom_left·bottom_right)와 margin을 주면 말풍선 자리를 정한다(없으면 가리키는 버튼 반대쪽 귀퉁이). match_card·match_steps: 길잡이 첫 판의 첫 차례에 손에 match_card 한 장과 ATTACK 게이지를 가득 채워 주고, 카드 쓰기→스킬 쓰기→주사위 굴리기를 차례로 가리킨다(target: card_0·skill_attack·roll). 길잡이는 강제라 가리키는 버튼(과 뜬 창) 말고는 누를 수 없다. player_party·ai_party: 길잡이 첫 판의 파티(2026-11-20 사용자 결정: 내 쪽 ★★★·★★★·★★를 player_level(최대 강화), 컴퓨터 ★★·★★·★를 ai_level). 가진 영웅과 상관없이 빌려 준다.",
     "guide_hero": "sejong",
     "map": 0,
     "steps": [
@@ -134,6 +134,36 @@
           }
         }
       }
-    ]
+    ],
+    "match_card": "shrink_road",
+    "match_steps": [
+      {
+        "id": "card",
+        "target": "card_0",
+        "text": "먼저 아이템 카드를 써 봐요! 왼쪽 카드를 누르고 '사용'을 눌러요. 카드는 주사위를 굴리기 전에 쓸 수 있어요."
+      },
+      {
+        "id": "skill",
+        "target": "skill_attack",
+        "text": "ATTACK 영웅의 어빌리티 게이지가 가득 찼어요! 스킬 버튼을 눌러 써 봐요. 한 턴에 하나만 쓸 수 있어요."
+      },
+      {
+        "id": "roll",
+        "target": "roll",
+        "text": "이제 주사위를 굴려 앞으로 가요! 꾹 누르고 있으면 세기 막대가 나와 낮게·높게를 노릴 수 있어요."
+      }
+    ],
+    "player_party": {
+      "attack": "yisunsin",
+      "defense": "zeus",
+      "support": "zhouyu"
+    },
+    "player_level": 5,
+    "ai_party": {
+      "attack": "machao",
+      "defense": "athena",
+      "support": "hypatia"
+    },
+    "ai_level": 1
   }
 }

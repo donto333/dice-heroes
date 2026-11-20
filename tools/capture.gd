@@ -86,6 +86,26 @@ func _run() -> void:
 	_close_dialogs()
 	await _wait(0.2)
 	await _shot("03e_guide_rank")
+	# 길잡이 첫 판(2026-11-20): 카드 → 스킬 → 주사위 강제 안내
+	_app.profile["guide_flow"] = 0
+	_app.start_tutorial_match()
+	var tutorial_match = null
+	for wait_index in 60:
+		await _wait(0.2)
+		tutorial_match = _app.current_screen
+		if tutorial_match != null and str(_app.current_name) == "match" and int(tutorial_match.get("_tut_step")) >= 0 and bool(tutorial_match.get("_waiting_for_player")):
+			break
+	if tutorial_match != null and str(_app.current_name) == "match":
+		await _wait(0.4)
+		await _shot("03f_guide_card")
+		tutorial_match._use_card(0)
+		await _wait(1.2)
+		await _shot("03g_guide_skill")
+		tutorial_match._on_ability_pressed("attack")
+		await _wait(2.0)
+		await _shot("03h_guide_roll")
+		print("TUTORIAL parties: ", tutorial_match.game.players[0]["slots"], " vs ", tutorial_match.game.players[1]["slots"])
+	_app.guide_point({})
 	_app.profile["guide_flow"] = 9999
 	_app.go("lobby")
 	await _wait(0.3)

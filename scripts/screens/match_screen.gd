@@ -84,6 +84,9 @@ var _map_index := 0
 var _stage_id := ""
 var _player_cards: Array = []
 var _hint_bubble: Control
+## 길잡이 첫 판(2026-11-20): 카드→스킬→주사위를 차례로 강제 안내. -1이면 안내 없음.
+var _tutorial := false
+var _tut_step := -1
 var _big_dice: Control
 var _result_scroll: ScrollContainer
 var _speed_button: Button
@@ -140,6 +143,7 @@ func setup(main_app, params: Dictionary) -> void:
 	_reward_scale = float(params.get("reward_scale", 1.0))
 	_parties = params.get("parties", [])
 	_humans = params.get("humans", [true, false])
+	_tutorial = bool(params.get("tutorial", false))
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# 알림 띠(toast.gd)는 화면 맨 아래 가운데, 아래 스킬 카드 줄(높이 약 112) 바로 위에 뜬다.
 	set_meta("toast_bottom", 122.0)
@@ -267,6 +271,7 @@ func _build_ui() -> void:
 	_build_emotes(board_area)
 
 	_roll_button = _make_round_button()
+	_roll_button.set_meta("guide", "roll")
 	# 짧게 누르면 그냥 굴리고, 꾹 누르면 세기 막대가 나와 놓는 자리로 낮게·높게를 노린다(주사위 컨트롤).
 	_roll_button.button_down.connect(_on_roll_down)
 	_roll_button.button_up.connect(_on_roll_up)
@@ -409,6 +414,7 @@ func _build_ui() -> void:
 			var art_button := _make_skill_button(slot)
 			art_button.pressed.connect(_on_ability_pressed.bind(slot))
 			art_button.gui_input.connect(_on_ability_input.bind(slot))
+			art_button.set_meta("guide", "skill_%s" % slot)
 			ability_row.add_child(art_button)
 			_ability_buttons[slot] = art_button
 			continue
@@ -440,6 +446,7 @@ func _build_ui() -> void:
 		gauge.offset_top = -30
 		gauge.offset_bottom = -18
 		_ability_gauges[slot] = gauge
+		button.set_meta("guide", "skill_%s" % slot)
 		ability_row.add_child(button)
 		_ability_buttons[slot] = button
 		_ability_portraits[slot] = _add_side_portrait(button)
@@ -473,6 +480,7 @@ func _build_ui() -> void:
 			button.offset_top = 0
 			button.offset_bottom = 0
 			button.pressed.connect(_on_card_pressed.bind(index))
+			button.set_meta("guide", "card_%d" % index)
 			frame.add_child(button)
 			_card_buttons.append(button)
 	var card_column := VBoxContainer.new()
@@ -492,6 +500,7 @@ func _build_ui() -> void:
 	for index in (Game.HAND_LIMIT if column_art == null else 0):
 		var button := _make_card_button()
 		button.pressed.connect(_on_card_pressed.bind(index))
+		button.set_meta("guide", "card_%d" % index)
 		card_column.add_child(button)
 		_card_buttons.append(button)
 
@@ -891,6 +900,9 @@ func _show_tile(event: Dictionary) -> void:
 func _turn_hints() -> void:
 	if not _humans[game.current]:
 		return
+	if _tut_step >= 0 and game.current == 0:
+		_tutorial_point()
+		return
 	if _hint("roll", "주사위 굴리기를 누르면 ATTACK 영웅의 이동 주사위만큼 걸어가요. 꾹 누르면 세기 막대가 나와서 낮게·높게를 노릴 수 있어요. 파란 테두리 초상화가 내 말이에요. 먼저 골(분홍 칸)의 수호자를 이기면 승리!"):
 		return
 	if not game.players[game.current]["hand"].is_empty() and _hint("card", "아이템 카드는 주사위를 굴리기 전에 눌러서 써요. 손에는 3장까지 들 수 있어요."):
@@ -899,6 +911,58 @@ func _turn_hints() -> void:
 		if game.can_use_ability(slot):
 			_hint("ability", "어빌리티 게이지가 찼어요! 노란 테두리 버튼을 누르면 쓸 수 있어요. 한 턴에 하나만 쓸 수 있어요.")
 			return
+
+
+## 길잡이 첫 판(2026-11-20): 손에 카드 한 장, ATTACK 게이지 가득. 카드·스킬·주사위 안내는 이미 본 것으로 둔다.
+func _setup_tutorial() -> void:
+	_tut_step = -1
+	if not _tutorial or not _humans[0] or not app.has_profile():
+		return
+	var guide: Dictionary = app.data.get("guide", {}).get("tutorial", {})
+	var card := str(guide.get("match_card", ""))
+	if game.cards.has(card):
+		game.players[0]["hand"] = [card]
+	game.players[0]["gauge"]["attack"] = 100
+	if not app.profile.has("tutorial"):
+		app.profile["tutorial"] = {}
+	for key in ["roll", "card", "ability"]:
+		app.profile["tutorial"][key] = true
+	_tut_step = 0
+
+
+func _tutorial_steps() -> Array:
+	return app.data.get("guide", {}).get("tutorial", {}).get("match_steps", [])
+
+
+## 지금 단계의 버튼을 가리킨다. 못 하는 단계(카드가 없거나 스킬을 못 씀)는 건너뛴다.
+func _tutorial_point() -> void:
+	var steps := _tutorial_steps()
+	while _tut_step >= 0 and _tut_step < steps.size():
+		var spec: Dictionary = steps[_tut_step]
+		var id := str(spec.get("id", ""))
+		if id == "card" and game.players[0]["hand"].is_empty():
+			_tut_step += 1
+		elif id == "skill" and not game.can_use_ability("attack"):
+			_tut_step += 1
+		else:
+			app.guide_point(spec)
+			return
+	_tut_step = -1
+	app.guide_point({})
+
+
+## 길잡이 단계의 일을 했으면 다음 단계로.
+func _tutorial_next(kind: String) -> void:
+	if _tut_step < 0:
+		return
+	var steps := _tutorial_steps()
+	if _tut_step < steps.size() and str(steps[_tut_step].get("id", "")) == kind:
+		_tut_step += 1
+		if kind == "roll":
+			_tut_step = -1
+			app.guide_point({})
+		else:
+			_tutorial_point()
 
 
 ## 처음 보는 상황이면 말풍선을 띄우고 true. 이미 본 안내면 false.
@@ -1566,6 +1630,7 @@ func _start_game() -> void:
 	if _mode == "rank" and _parties.size() > 1:
 		_parties[1]["relic"] = Profile.rank_boost(app.eco, int(app.profile.get("trophies", 0)))
 	game.setup(_data, _parties)
+	_setup_tutorial()
 	_start_distance = max(game.distance_of(0), 1)
 	for index in 2:
 		_board_view.piece_textures[index] = GameData.portrait(str(game.char_of(index, "attack").get("id", "")))
@@ -1740,6 +1805,7 @@ func _on_roll_pressed(aim: String = "") -> void:
 	if not _waiting_for_player:
 		return
 	_waiting_for_player = false
+	_tutorial_next("roll")
 	_play("click")
 	_refresh()
 	_clear_results()
@@ -1826,6 +1892,7 @@ func _on_ability_pressed(slot: String) -> void:
 	if _waiting_for_player and game.use_ability(slot):
 		if me == 0:
 			_abilities_used += 1
+			_tutorial_next("skill")
 		_add_result_text("어빌리티 [%s] 발동! %s" % [
 			game.ability_of(me, slot)["name"], game.ability_of(me, slot)["text"]], SLOT_COLORS[slot].lightened(0.4))
 		_play("reveal")
@@ -1877,6 +1944,7 @@ func _use_card(index: int) -> void:
 	if game.play_card(index):
 		if game.current == 0:
 			_cards_used += 1
+			_tutorial_next("card")
 		_add_result_text("카드 [%s] 사용! %s" % [card["name"], card["text"]], CARD_COLOR.lightened(0.4))
 		_play("good")
 		_refresh()
