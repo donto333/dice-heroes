@@ -121,6 +121,21 @@ jobs:
           grep -q "\"mainPack\":\"index-${version}.pck\"" build/web/index.html
           grep -o 'GODOT_CONFIG = {[^;]*' build/web/index.html
 
+      - name: 바로 전 버전 게임 파일도 남기기
+        # GitHub Pages는 index.html을 10분쯤 기억해 둔다. 그 사이 새로 배포되면 예전 index.html이
+        # 지워진 예전 게임 파일(index-예전커밋.pck)을 찾다가 "Failed loading file"이 뜬다.
+        # 그래서 지금 사이트에 올라가 있는 게임 파일을 받아 새 배포에도 함께 넣어 둔다.
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          site="https://donto333.github.io/dice-heroes"
+          old=$(curl -fsSL "$site/index.html" | grep -o 'index-[0-9a-f]\{12\}\.pck' | head -1 || true)
+          if [ -n "$old" ] && [ ! -f "build/web/$old" ]; then
+            curl -fsSL -o "build/web/$old" "$site/$old" && echo "전 버전 $old 를 남겼습니다." || rm -f "build/web/$old"
+          else
+            echo "남길 전 버전 파일이 없습니다."
+          fi
+
       - name: 빌드 결과 보관
         uses: actions/upload-artifact@v4
         with:
