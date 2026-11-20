@@ -15,6 +15,7 @@ const OddsWindow := preload("res://scripts/ui/odds_window.gd")
 const AdPlayer := preload("res://scripts/ui/ad_player.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const ObservatoryPopups := preload("res://scripts/ui/observatory_popups.gd")
+const LobbyAlerts := preload("res://scripts/rules/lobby_alerts.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const LOBBY_ART := "res://assets/ui_lobby/"
 ## 로비 그림이 화면보다 몇 배로 저장됐나의 거꾸로(2배 → 0.5)
@@ -40,6 +41,8 @@ var _hero_area: Control
 var _tile_column: Control
 var _task_bar: Control
 var _spin_info: Label
+var _pending_alerts: Dictionary
+var _badge_controls: Dictionary = {}
 
 
 func setup(main_app, params: Dictionary) -> void:
@@ -56,11 +59,13 @@ func setup(main_app, params: Dictionary) -> void:
 	# 실제 로비에 들어왔을 때만 우편과 접속 보상을 처리한다.
 	if not backdrop_only and Profile.deliver_mails(app.profile, app.data.get("mails", {})) > 0:
 		app.save()
-	var badges: Dictionary = app.badges()
+	_pending_alerts = LobbyAlerts.pending(app.profile, app.eco, app.data, app.today())
+	if not backdrop_only and LobbyAlerts.discard_resolved(app.profile, _pending_alerts):
+		app.save()
 
 	_add_hero_area()
 	_add_top_bar()
-	_add_tiles(badges)
+	_add_tiles()
 	_add_bottom_dock()
 	resized.connect(_relayout)
 	_relayout()
@@ -196,7 +201,7 @@ func _fit_lobby_text(label: Label, min_size: int) -> void:
 
 
 ## 오른쪽 위 빨간 알림 점. text가 있으면 빨간 딱지에 글자.
-func _red_badge(parent: Control, text: String = "") -> void:
+func _red_badge(parent: Control, text: String = "") -> Control:
 	var badge := PanelContainer.new()
 	var style := Kit.box(Color("e8413b"), Color.WHITE, 2, 12, 2)
 	style.content_margin_left = 8 if text != "" else 0
@@ -216,6 +221,24 @@ func _red_badge(parent: Control, text: String = "") -> void:
 	badge.offset_right = 6
 	badge.offset_top = -8
 	parent.add_child(badge)
+	return badge
+
+
+func _unread_alerts(topic: String) -> Array:
+	return LobbyAlerts.unread(app.profile, topic, _pending_alerts[topic])
+
+
+func _add_menu_badge(parent: Control, topic: String, caption: String = "") -> void:
+	if not _unread_alerts(topic).is_empty():
+		_badge_controls[topic] = _red_badge(parent, caption)
+
+
+func _mark_menu_seen(topic: String) -> void:
+	if LobbyAlerts.mark_seen(app.profile, topic, _pending_alerts[topic]):
+		app.save()
+	if _badge_controls.has(topic):
+		_badge_controls[topic].queue_free()
+		_badge_controls.erase(topic)
 
 
 func _anchor(control: Control, left: float, top: float, right: float, bottom: float) -> void:
@@ -399,13 +422,13 @@ func _add_top_bar() -> void:
 
 	# 시스템 버튼: 아이콘 아래에 이름을 적는다(기준 그림처럼). 설정 · 공지 · 우편 · 출석 · 룰렛 · 리그 · 방법
 	var system_buttons := [
-		["설정", "settings", false, _on_tab.bind("settings")],
-		["공지", "ic_notice", false, _on_notices],
-		["우편", "mail", Profile.unclaimed_mail_count(profile) > 0, open_mailbox],
-		["출석", "attend", Profile.can_check_in(profile, app.today()), _on_attendance_shortcut],
-		["룰렛", "roulette", Profile.can_spin_free(profile, app.eco), open_roulette],
-		["리그", "league", false, _on_league],
-		["방법", "help", false, _on_help],
+		["설정", "settings", "", _on_tab.bind("settings")],
+		["공지", "ic_notice", "", _on_notices],
+		["우편", "mail", "mail", open_mailbox],
+		["출석", "attend", "attendance", _on_attendance_shortcut],
+		["룰렛", "roulette", "roulette", open_roulette],
+		["리그", "league", "", _on_league],
+		["방법", "help", "", _on_help],
 	]
 	var divider := ColorRect.new()
 	divider.color = Color(1, 1, 1, 0.45)
@@ -435,8 +458,8 @@ func _add_top_bar() -> void:
 		caption.clip_text = true
 		button.add_child(caption)
 		Kit.fit_text(caption, button, 8.0 if large else 4.0, 19 if large else 13, 12 if large else 9)
-		if bool(spec[2]):
-			_red_badge(button)
+		if str(spec[2]) != "":
+			_add_menu_badge(button, str(spec[2]))
 		bar.add_child(button)
 
 	bar.add_child(Kit.expand(Control.new()))
@@ -449,13 +472,12 @@ func _add_top_bar() -> void:
 
 
 func _on_shop_tab(tab: String) -> void:
-	app.play("click")
-	app.go("shop", {"tab": tab})
+	_on_tab("shop", {"tab": tab})
 
 
 # ---------------------------------------------------------------- 오른쪽: 기능 타일
 
-func _add_tiles(badges: Dictionary) -> void:
+func _add_tiles() -> void:
 	var column := Kit.vbox(10)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anchor(column, 1.0, 0.115, 1.0, 0.855)
@@ -487,10 +509,10 @@ func _add_tiles(badges: Dictionary) -> void:
 	var difficulty: Dictionary = Profile.ai_difficulty(app.eco, str(app.profile.get("ai_difficulty", "easy")))
 	var done := Profile.challenge_done(app.profile)
 	var modes := [
-		["AI전", "AI BATTLE", "ic_ai", "최근 %s" % difficulty["name"], false, _choose_difficulty],
-		["친구 대전", "FRIEND MATCH", "ic_friend_match", "한 기기 2인", false, _on_mode.bind("local")],
+		["AI전", "AI BATTLE", "ic_ai", "최근 %s" % difficulty["name"], "", _choose_difficulty],
+		["친구 대전", "FRIEND MATCH", "ic_friend_match", "한 기기 2인", "", _on_mode.bind("local")],
 		# 미션 + 오늘의 도전(2026-11-18 사용자 결정: 하나로 합침). 도전은 미션 화면 맨 위에 있다.
-		["미션", "MISSION · CHALLENGE", "ic_mission_board", "도전 완료!" if done else "오늘의 도전", not done or bool(badges.get("missions", false)), _on_tab.bind("missions")],
+		["미션", "MISSION · CHALLENGE", "ic_mission_board", "도전 완료!" if done else "오늘의 도전", "missions", _on_tab.bind("missions")],
 	]
 	var white_guides := ["ai", "", "missions"]
 	for index in modes.size():
@@ -504,13 +526,12 @@ func _add_tiles(badges: Dictionary) -> void:
 	row3.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	row3.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(row3)
-	var free_summon := Profile.free_summons_left(app.profile, app.eco) > 0
 	# 2026-11-18 사용자 결정: 편성(파티·카드 편성) · 목록(영웅·카드 목록) · 도감(영웅·카드 도감) · 상점(시즌 패스 포함)
 	var menus := [
 		["편성", "FORMATION", "swords", "", "party", {"purpose": "edit"}],
-		["목록", "LIST", "ic_heroes_helmet", "dot" if bool(badges.get("list", false)) else "", "heroes"],
-		["도감", "COLLECTION", "album", "dot" if bool(badges.get("album", false)) else "", "heroes", {"view": "album"}],
-		["상점", "SHOP", "ic_shop_stall", "무료 소환" if free_summon else ("dot" if bool(badges.get("shop", false)) else ""), "shop"],
+		["목록", "LIST", "ic_heroes_helmet", "list", "heroes"],
+		["도감", "COLLECTION", "album", "album", "heroes", {"view": "album"}],
+		["상점", "SHOP", "ic_shop_stall", "shop", "shop"],
 	]
 	var navy_guides := ["party", "list", "album", "shop"]
 	for index in menus.size():
@@ -621,7 +642,7 @@ func _chevron(parent: Control, color: Color, outline: Color) -> void:
 	parent.add_child(mark)
 
 
-## spec: [이름, 영어, 아이콘, 설명, 빨간 점, 누르면]
+## spec: [이름, 영어, 아이콘, 설명, 알림 항목, 누르면]
 func _white_tile(spec: Array) -> Button:
 	var large := Kit.Observatory.active
 	var tile := _art_button(_slice("tile_white", 40, Color("f2f6ff")))
@@ -648,7 +669,9 @@ func _white_tile(spec: Array) -> Button:
 	# 영어 부제는 한국어 화면에서만(다른 언어는 제목과 겹친다).
 	english.visible = Lang.current == "ko"
 	text.add_child(english)
-	var sub := Kit.label(str(spec[3]), 18 if large else 14, (Kit.Observatory.AMBER if bool(spec[4]) else Kit.Observatory.MUTED) if large else (Color("c4421f") if bool(spec[4]) else Color("3d5585")))
+	var topic := str(spec[4])
+	var has_alert := topic != "" and not _unread_alerts(topic).is_empty()
+	var sub := Kit.label(str(spec[3]), 18 if large else 14, (Kit.Observatory.AMBER if has_alert else Kit.Observatory.MUTED) if large else (Color("c4421f") if has_alert else Color("3d5585")))
 	sub.remove_theme_color_override("font_shadow_color")
 	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.add_child(sub)
@@ -658,12 +681,12 @@ func _white_tile(spec: Array) -> Button:
 	else:
 		Kit.fit_text(title, tile, 84.0, 25)
 	_chevron(tile, Kit.Observatory.MUTED if Kit.Observatory.active else Color("2b5fc4"), Kit.Observatory.NIGHT if Kit.Observatory.active else Color.WHITE)
-	if bool(spec[4]):
-		_red_badge(tile)
+	if topic != "":
+		_add_menu_badge(tile, topic)
 	return tile
 
 
-## spec: [이름, 영어, 아이콘, 딱지("" 없음, "dot" 빨간 점, 그 밖은 글자), 화면 이름]
+## spec: [이름, 영어, 아이콘, 알림 항목, 화면 이름]
 func _navy_tile(spec: Array) -> Button:
 	var large := Kit.Observatory.active
 	var tile := _art_button(_slice("tile_navy", 34, Color("17398a")))
@@ -695,11 +718,10 @@ func _navy_tile(spec: Array) -> Button:
 		# 글자 칸 = 타일 너비 - 좌우 여백(20) - 아이콘(46) - 틈(4) - 여유(4).
 		Kit.fit_text(title, tile, 74.0, 22)
 	_chevron(tile, Color.WHITE, Color("0b1f4d"))
-	var mark := str(spec[3])
-	if mark == "dot":
-		_red_badge(tile)
-	elif mark != "":
-		_red_badge(tile, mark)
+	var topic := str(spec[3])
+	if topic != "":
+		var free_hero := topic == "shop" and LobbyAlerts.free_hero_key(app.today()) in _unread_alerts(topic)
+		_add_menu_badge(tile, topic, "무료 소환" if free_hero else "")
 	return tile
 
 
@@ -807,8 +829,7 @@ func _add_bottom_dock() -> void:
 	go.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	go.pressed.connect(open_todo)
 	task_row.add_child(go)
-	if left > 0:
-		_red_badge(task)
+	_add_menu_badge(task, "todo")
 
 
 ## 액자에 넣은 작은 초상화: ★★★는 금테, 나머지는 은테(assets/ui_kit/slot_frame*). 아래에 별, 오른쪽 아래에 레벨.
@@ -904,6 +925,7 @@ func _todo_left() -> int:
 
 
 func open_todo() -> void:
+	_mark_menu_seen("todo")
 	app.play("click")
 	var body := Kit.vbox(8)
 	var window: Control = null
@@ -997,6 +1019,7 @@ func _on_notices() -> void:
 # ---------------------------------------------------------------- 우편함
 
 func open_mailbox() -> void:
+	_mark_menu_seen("mail")
 	app.play("click")
 	var body := Kit.vbox(10)
 	var mails: Array = app.profile.get("mail", [])
@@ -1078,6 +1101,7 @@ func _close_all_dialogs() -> void:
 # ---------------------------------------------------------------- 행운의 룰렛
 
 func open_roulette() -> void:
+	_mark_menu_seen("roulette")
 	app.play("click")
 	var body := Kit.vbox(10)
 	_wheel = RouletteWheel.new()
@@ -1276,6 +1300,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"갈림길에서 두 경로의 모양과 칸 수를 볼 수 있어요. 이미 확인한 메뉴의 빨간 점은 사라져요.",
 	"로비 글자와 버튼을 키웠어요. 창 제목과 영웅 이름도 각 칸 안에 맞췄어요.",
 	"별의 관측소 화면이 열렸어요. 설정의 화면 테마에서 기존 UI로 돌아갈 수 있어요.",
 	"파티 편성에서 영웅 얼굴과 방어 자리가 잘 보여요. 카드 편성의 카드와 스크롤 막대도 틀 안에 맞췄어요.",
@@ -1495,6 +1520,7 @@ func _maybe_news() -> void:
 func _maybe_attendance() -> void:
 	if not Profile.can_check_in(app.profile, app.today()):
 		return
+	_mark_menu_seen("attendance")
 	var table: Array = app.eco.get("attendance", [])
 	var today_index := Profile.attendance_day(app.profile, app.eco)
 	if Kit.Observatory.active:
@@ -1620,5 +1646,10 @@ func _on_mode(mode: String) -> void:
 func _on_tab(screen_name: String, params: Dictionary = {}) -> void:
 	if screen_name == "lobby":
 		return
+	match screen_name:
+		"missions", "shop":
+			_mark_menu_seen(screen_name)
+		"heroes":
+			_mark_menu_seen("album" if params.get("view", "") == "album" else "list")
 	app.play("click")
 	app.go(screen_name, params)

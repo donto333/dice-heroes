@@ -79,7 +79,7 @@ func setup(main_app, params: Dictionary) -> void:
 	header.add_child(Kit.expand(_count_label))
 	var all_up := MenuArt.pill_button("일괄 강화", "green", "m")
 	all_up.custom_minimum_size = Vector2(150, 52)
-	all_up.disabled = not bool(app.badges().get("list", false))
+	all_up.disabled = not app.has_upgradable_hero()
 	all_up.pressed.connect(_upgrade_all)
 	header.add_child(all_up)
 	_owned_button = MenuArt.pill_button("보유만 보기", "blue", "m")

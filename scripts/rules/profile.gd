@@ -59,6 +59,8 @@ static func new_profile(nickname: String, eco: Dictionary) -> Dictionary:
 		"settings": {"sfx": true, "bgm": true, "fast": false, "vibrate": true},
 		## 마지막으로 새 소식을 본 버전
 		"seen_version": "",
+		## 로비 메뉴별로 이미 확인한 알림 항목.
+		"lobby_seen": {},
 		## 모험 진행: {스테이지 id: 얻은 별 수(0~3)}
 		"adventure": {},
 		## 가진 아이템 카드 id와 판에 들고 가는 카드 덱(data/cards.json, economy.json의 card_deck)

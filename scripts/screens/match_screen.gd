@@ -10,6 +10,7 @@ const Game := preload("res://scripts/rules/game.gd")
 const AI := preload("res://scripts/rules/ai.gd")
 const GameData := preload("res://scripts/game_data.gd")
 const BoardView := preload("res://scripts/ui/board_view.gd")
+const ForkChoices := preload("res://scripts/ui/fork_choices.gd")
 const DiceView := preload("res://scripts/ui/dice_view.gd")
 const BattleOverlay := preload("res://scripts/ui/battle_overlay.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
@@ -57,6 +58,7 @@ var _data: Dictionary = {}
 var _waiting_for_player := false
 ## 갈림길에서 내가 길을 골라야 하는 중인지
 var _choosing_path := false
+var _fork_choices: ForkChoices
 
 var _status_label: Label
 ## 오른쪽 위 버튼 줄(자동·빠르기·나가기)과, 그 줄 너비에 맞춰 오른쪽 여백을 정하는 가운데 위 부품들 [노드, 더 들일 여백]
@@ -1625,6 +1627,7 @@ func _make_skill_button(slot: String) -> Button:
 # ---------------------------------------------------------------- 진행
 
 func _start_game() -> void:
+	_hide_fork_choices()
 	game = Game.new()
 	# 내 파티(0번)에는 장착한 유물의 시작 보너스가 붙는다. 친구 대전은 공평하게 쓰지 않는다.
 	if _mode != "local" and not _parties.is_empty():
@@ -1839,27 +1842,29 @@ func _after_my_move() -> void:
 
 
 func _show_path_choice() -> void:
-	if game.choice_kind() == "fight":
-		_hint("fight", "상대 말을 지나칩니다! '싸운다'를 고르면 내 ATTACK과 상대 DEFENSE가 주사위로 겨뤄요. 이기면 상대가 거점으로 돌아가요.")
-	else:
-		_hint("fork", "갈림길이에요! 위쪽 갈래는 키퍼와 판정이 있어 위험하고, 아래쪽 갈래는 보물과 행운이 있는 안전한 길이에요.")
+	if game.choice_kind() != "fight":
+		_hint("fork", "갈림길이에요! 지도와 칸 수를 비교하고 갈 길을 골라요. 지도에서 길과 버튼은 같은 색이에요.")
+		_board_view.highlight = game.pending_choice["options"].duplicate()
+		_board_view.queue_redraw()
+		_result_panel.modulate.a = 0.0
+		_fork_choices = ForkChoices.new()
+		_fork_choices.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		_fork_choices.offset_left = -340
+		_fork_choices.offset_right = 340
+		_fork_choices.offset_top = 98
+		_fork_choices.chosen.connect(_on_path_chosen)
+		_fork_choices.setup(game)
+		_board_area.add_child(_fork_choices)
+		return
+	_hint("fight", "상대 말을 지나칩니다! '싸운다'를 고르면 내 ATTACK과 상대 DEFENSE가 주사위로 겨뤄요. 이기면 상대가 거점으로 돌아가요.")
 	var options: Array = game.pending_choice["options"]
-	var fighting: bool = game.choice_kind() == "fight"
-	if fighting:
-		_board_view.highlight = [int(game.players[game.current]["pos"])]
-		_add_result_text("상대 말을 지나칩니다! 싸울까요? (남은 이동 %d칸)" % int(game.pending_choice["steps"]), Color("ff8a6a"))
-	else:
-		_board_view.highlight = options.duplicate()
-		_add_result_text("갈림길! 갈 길을 고르세요. (남은 이동 %d칸)" % int(game.pending_choice["steps"]), Color("ffcf66"))
+	_board_view.highlight = [int(game.players[game.current]["pos"])]
+	_add_result_text("상대 말을 지나칩니다! 싸울까요? (남은 이동 %d칸)" % int(game.pending_choice["steps"]), Color("ff8a6a"))
 	_board_view.queue_redraw()
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	for index in options.size():
-		# 갈 길 고르기 버튼도 금테 알약: 갈림길은 초록, 싸운다는 빨강, 지나간다는 파랑.
-		var pill_color := "green"
-		if fighting:
-			pill_color = "red" if index == 0 else "blue"
-		var button := MenuArt.pill_button(game.choice_label(index), pill_color, "m")
+		var button := MenuArt.pill_button(game.choice_label(index), "red" if index == 0 else "blue", "m")
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 18)
 		button.clip_text = true
@@ -1874,6 +1879,7 @@ func _on_path_chosen(index: int) -> void:
 	if not _choosing_path or not game.awaiting_choice():
 		return
 	_choosing_path = false
+	_hide_fork_choices()
 	_board_view.highlight = []
 	_clear_results()
 	_flash_log()
@@ -1890,6 +1896,13 @@ func _on_path_chosen(index: int) -> void:
 	if playing != game:
 		return
 	_after_my_move()
+
+
+func _hide_fork_choices() -> void:
+	if is_instance_valid(_fork_choices):
+		_fork_choices.hide()
+		_fork_choices.queue_free()
+		_fork_choices = null
 
 
 func _on_ability_pressed(slot: String) -> void:

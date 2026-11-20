@@ -552,6 +552,15 @@ func _run() -> void:
 		match_screen._board_view.focus_on(0)
 		await _wait(0.6)
 		await _shot("14g_branch_fog")
+		gate_game.pending_choice = {"kind": "path", "options": gate_game.nodes[fork_id]["next"], "steps": 3}
+		match_screen._choosing_path = true
+		match_screen._show_path_choice()
+		await _wait(0.4)
+		await _shot("14h_fork_choices")
+		match_screen._hide_fork_choices()
+		match_screen._close_hint()
+		match_screen._choosing_path = false
+		gate_game.pending_choice = {}
 		gate_game.players[0]["pos"] = fork_before
 		match_screen._board_view.reset_pieces()
 		match_screen._board_view.focus_on(0)

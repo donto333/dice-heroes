@@ -2069,5 +2069,10 @@
  "표시할 공지가 없어요.": "Không có thông báo.",
  "이전 공지": "Thông báo trước",
  "다음 공지": "Thông báo tiếp theo",
- "로비 글자와 버튼을 키웠어요. 창 제목과 영웅 이름도 각 칸 안에 맞췄어요.": "Chữ và nút ở sảnh đã lớn hơn. Tiêu đề cửa sổ và tên anh hùng nằm gọn trong khung."
+ "로비 글자와 버튼을 키웠어요. 창 제목과 영웅 이름도 각 칸 안에 맞췄어요.": "Chữ và nút ở sảnh đã lớn hơn. Tiêu đề cửa sổ và tên anh hùng nằm gọn trong khung.",
+ "갈림길에서 두 경로의 모양과 칸 수를 볼 수 있어요. 이미 확인한 메뉴의 빨간 점은 사라져요.": "Ngã rẽ hiển thị cả hai lối đi và số ô. Chấm đỏ biến mất sau khi bạn mở mục đó.",
+ "갈림길 · 남은 이동 %d칸": "Ngã rẽ · Còn đi %d ô",
+ "합류까지 %d칸": "%d ô đến điểm nhập đường",
+ "이 갈래 %d칸": "%d ô trên lối này",
+ "갈림길이에요! 지도와 칸 수를 비교하고 갈 길을 골라요. 지도에서 길과 버튼은 같은 색이에요.": "Bạn đến ngã rẽ! Hãy xem bản đồ và số ô rồi chọn lối đi. Màu của nút trùng với màu lối đi."
 }
