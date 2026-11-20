@@ -286,6 +286,16 @@ func _run() -> void:
 	await _wait(0.3)
 	await _shot("09x_deck_card_info")
 	_close_dialogs()
+	# 보유 카드와 덱을 잠깐 채워 세 등급 최대 장착 시 마지막 카드까지 보이는지 찍는다.
+	var original_cards: Array = _app.profile["cards"]
+	var original_deck: Array = _app.profile["deck"]
+	_app.profile["cards"] = _app.data["cards"].keys()
+	_app.profile["deck"] = _app.profile["cards"].duplicate()
+	_app.go("heroes", {"view": "deck"})
+	await _wait(0.4)
+	await _shot("09z_deck_full")
+	_app.profile["cards"] = original_cards
+	_app.profile["deck"] = original_deck
 	_app.go("heroes", {"view": "card_album"})
 	await _wait(0.5)
 	await _shot("09l_card_album")
