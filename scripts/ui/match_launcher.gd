@@ -7,6 +7,7 @@ extends Node
 ## 쓰는 법: MatchLauncher.ask(app, "rank", {}) / 맵 고르기만: launcher.pick_map(start)
 
 const Kit := preload("res://scripts/ui/kit.gd")
+const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const AI := preload("res://scripts/rules/ai.gd")
 const Game := preload("res://scripts/rules/game.gd")
@@ -14,6 +15,8 @@ const MapPreview := preload("res://scripts/ui/map_preview.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const CardPanels := preload("res://scripts/ui/card_panels.gd")
+const ObservatoryPopups := preload("res://scripts/ui/observatory_popups.gd")
+const CARD_FAN := preload("res://assets/ui_observatory/card_fan.png")
 
 const MODE_TITLES := {"rank": "랭크전", "ai": "AI 연습전", "local": "친구 대전", "adventure": "모험", "challenge": "오늘의 도전"}
 const SLOTS := [["attack", "ATTACK"], ["defense", "DEFENSE"], ["support", "SUPPORT"]]
@@ -53,13 +56,29 @@ func _open() -> void:
 		var found := Profile.find_stage(app.data.get("adventure", {}), str(params.get("stage", "")))
 		if not found.is_empty():
 			title = "%s 시작" % str(found["stage"].get("name", "모험"))
-	_window = app.dialog(title, _body(), [["확인", Kit.ACCENT, confirm], ["취소", Kit.PANEL_LIGHT, cancel]], 1000)
+	var action := Kit.PRIMARY if Kit.Observatory.active else Kit.ACCENT
+	var buttons := [["확인", action, confirm], ["취소", Kit.PANEL_LIGHT, cancel]]
+	if Kit.Observatory.active:
+		buttons.reverse()
+	_window = app.dialog(title, _body(), buttons, 1038 if Kit.Observatory.active else 1000, "match" if Kit.Observatory.active else "")
 
 
 func _body() -> Control:
 	var body := Kit.vbox(10)
 	var columns := Kit.hbox(18)
 	body.add_child(columns)
+	if Kit.Observatory.active:
+		var party_panel := MenuArt.row(14)
+		var deck_panel := MenuArt.row(14)
+		columns.add_child(Kit.expand(party_panel))
+		party_panel.add_child(_party_column())
+		var arrow := Kit.label("»", 36, Kit.Observatory.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+		arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		columns.add_child(arrow)
+		columns.add_child(Kit.expand(deck_panel))
+		deck_panel.add_child(_deck_column())
+		body.add_child(Kit.para("편성은 로비의 '편성' 메뉴에서 바꿀 수 있어요.", 16, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		return body
 	columns.add_child(_party_column())
 	var line := ColorRect.new()
 	line.color = Color(1, 1, 1, 0.18)
@@ -83,9 +102,18 @@ func _party_column() -> Control:
 		var member: Dictionary = app.character(str(party.get(slot[0], "")))
 		total += int(member.get("grade", 0))
 		categories.append(str(member.get("category", "")))
-	column.add_child(Kit.label("파티 편성 · 소환 포인트 %d / %d" % [total, limit], 20, Kit.GOLD))
-	for slot in SLOTS:
-		column.add_child(_member_row(slot[1], app.character(str(party.get(slot[0], "")))))
+	if Kit.Observatory.active:
+		column.add_child(Kit.label("파티 편성", 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+		var members := Kit.hbox(7)
+		column.add_child(members)
+		for slot in SLOTS:
+			var member: Dictionary = app.character(str(party.get(slot[0], "")))
+			members.add_child(Kit.expand(_observatory_member(slot[1], member)))
+		column.add_child(Kit.para("소환 포인트 %d / %d" % [total, limit], 16, Kit.Observatory.MUTED))
+	else:
+		column.add_child(Kit.label("파티 편성 · 소환 포인트 %d / %d" % [total, limit], 20, Kit.GOLD))
+		for slot in SLOTS:
+			column.add_child(_member_row(slot[1], app.character(str(party.get(slot[0], "")))))
 	var notes: Array = []
 	var synergy: Dictionary = Game.synergy_of(app.data.get("rules", {}).get("synergy", {}), categories)
 	if not synergy.is_empty():
@@ -94,6 +122,31 @@ func _party_column() -> Control:
 	notes.append("유물: %s" % (str(relic["name"]) if not relic.is_empty() else "없음"))
 	column.add_child(Kit.para("\n".join(notes), 16, Kit.MUTED))
 	return column
+
+
+func _observatory_member(slot_name: String, member: Dictionary) -> Control:
+	var tile := PanelContainer.new()
+	tile.custom_minimum_size = Vector2(95, 226)
+	tile.add_theme_stylebox_override("panel", Kit.box(Kit.Observatory.NIGHT, Kit.Observatory.EDGE, 1, 10, 4))
+	var column := Kit.vbox(2)
+	tile.add_child(column)
+	var role := Kit.label(slot_name, 13, Kit.Observatory.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	column.add_child(role)
+	var face := Portrait.new()
+	face.custom_minimum_size.y = 133
+	face.focus_y = 0.17
+	face.border_width = 0.0
+	face.show_character(member, Kit.Observatory.SURFACE)
+	column.add_child(face)
+	var grade := int(member.get("grade", 0))
+	column.add_child(Kit.label("★".repeat(grade), 15, Kit.Observatory.AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+	var name_label := Kit.label(str(member.get("name", "비어 있음")), 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	name_label.clip_text = true
+	Kit.fit_text(name_label, tile, 10, 18)
+	column.add_child(name_label)
+	if not member.is_empty():
+		column.add_child(Kit.label("Lv.%d" % maxi(1, Profile.level_of(app.profile, str(member["id"]))), 13, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	return tile
 
 
 func _member_row(slot_name: String, member: Dictionary) -> Control:
@@ -129,10 +182,29 @@ func _deck_column() -> Control:
 	var broken := Profile.deck_error(app.profile, cards, app.eco, deck) != ""
 	if broken:
 		deck = app.eco.get("start", {}).get("deck", [])
-	column.add_child(Kit.label("카드 편성 %d / %d" % [deck.size(), size], 20, Kit.GOLD))
+	column.add_child(Kit.label("카드 편성 %d / %d" % [deck.size(), size], 23 if Kit.Observatory.active else 20,
+		Color.WHITE if Kit.Observatory.active else Kit.GOLD, HORIZONTAL_ALIGNMENT_CENTER if Kit.Observatory.active else HORIZONTAL_ALIGNMENT_LEFT))
 	if broken:
 		column.add_child(Kit.para("카드 편성이 맞지 않아 기본 덱으로 시작해요.", 15, Color("ffb3a3")))
 	var per_grade: Dictionary = app.eco.get("card_deck", {}).get("per_grade", {})
+	if Kit.Observatory.active:
+		var overview := Kit.hbox(8)
+		overview.custom_minimum_size.y = 224
+		column.add_child(overview)
+		var rows := Kit.vbox(9)
+		rows.alignment = BoxContainer.ALIGNMENT_CENTER
+		overview.add_child(Kit.expand(rows))
+		var fan := ObservatoryPopups.picture(CARD_FAN)
+		fan.custom_minimum_size = Vector2(160, 224)
+		overview.add_child(fan)
+		for grade in [3, 2, 1]:
+			var ids := deck.filter(func(id): return Profile.card_grade(cards, str(id)) == grade)
+			var label := "%s   %d / %d" % ["★".repeat(grade), ids.size(), int(per_grade.get(str(grade), 0))]
+			var grade_button := MenuArt.pill_button(label, ["purple", "blue", "gold"][grade - 1], "m")
+			grade_button.pressed.connect(_show_deck_grade.bind(grade, cards, ids))
+			rows.add_child(grade_button)
+		return column
+	var height := 64.0 if Kit.Observatory.active else 78.0
 	for grade in [3, 2, 1]:
 		var ids: Array = []
 		for id in deck:
@@ -140,19 +212,28 @@ func _deck_column() -> Control:
 				ids.append(str(id))
 		column.add_child(Kit.label("%s %d / %d" % [CardPanels.GRADE_NAMES[grade], ids.size(), int(per_grade.get(str(grade), 0))], 14, Kit.GRADE_COLORS[grade]))
 		var row := Kit.hbox(6)
-		row.custom_minimum_size = Vector2(0, 78)
+		row.custom_minimum_size = Vector2(0, height)
 		for id in ids:
-			row.add_child(_mini_card(cards, id, grade))
+			row.add_child(_mini_card(cards, id, height))
 		if ids.is_empty():
 			row.add_child(Kit.label("없음", 14, Kit.MUTED))
 		column.add_child(row)
 	return column
 
 
+func _show_deck_grade(grade: int, cards: Dictionary, ids: Array) -> void:
+	var body := Kit.hbox(8)
+	for id in ids:
+		body.add_child(_mini_card(cards, str(id), 92))
+	if ids.is_empty():
+		body.add_child(Kit.label("없음", 20, Kit.MUTED))
+	app.dialog("%s" % CardPanels.GRADE_NAMES[grade], body, [["닫기", Kit.PANEL_LIGHT]], 720)
+
+
 ## 작은 카드: 카드 편성과 같은 모양(그림 가득·별 딱지·이름 띠)을 작게.
-func _mini_card(cards: Dictionary, id: String, _grade: int) -> Control:
-	var tile: Button = CardPanels.card_tile(cards, id, true, false, 78.0, false)
-	tile.custom_minimum_size = Vector2(70, 78)
+func _mini_card(cards: Dictionary, id: String, height: float) -> Control:
+	var tile := CardPanels.card_tile(cards, id, true, false, height, false)
+	tile.custom_minimum_size = Vector2(70, height)
 	tile.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	tile.tooltip_text = str(cards.get(id, {}).get("text", ""))
 	return tile

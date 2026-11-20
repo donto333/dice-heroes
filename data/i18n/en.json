@@ -2059,5 +2059,14 @@
  "전투 +%d · 스킬 충전 +%d%%": "Battle +%d · Skill charge +%d%%",
  "이 무장으로 적용할까요? (자리: %s)": "Apply this hero? (Slot: %s)",
  "이미 편성됨": "Already in party",
- "파티 편성에서 영웅 얼굴과 방어 자리가 잘 보여요. 카드 편성의 카드와 스크롤 막대도 틀 안에 맞췄어요.": "Hero faces and the defense slot are easier to see in party setup. Cards and scrollbars now fit inside their frames in deck setup."
+ "파티 편성에서 영웅 얼굴과 방어 자리가 잘 보여요. 카드 편성의 카드와 스크롤 막대도 틀 안에 맞췄어요.": "Hero faces and the defense slot are easier to see in party setup. Cards and scrollbars now fit inside their frames in deck setup.",
+ "별의 관측소 화면이 열렸어요. 설정의 화면 테마에서 기존 UI로 돌아갈 수 있어요.": "The Astral Observatory theme is here. You can switch back to the classic UI in Settings.",
+ "별의 관측소": "Astral Observatory",
+ "기존 UI": "Classic UI",
+ "화면 테마": "UI theme",
+ "무료": "Free",
+ "돌리기": "Spin",
+ "표시할 공지가 없어요.": "There are no notices.",
+ "이전 공지": "Previous notice",
+ "다음 공지": "Next notice"
 }

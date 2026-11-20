@@ -14,6 +14,7 @@ const RouletteWheel := preload("res://scripts/ui/roulette_wheel.gd")
 const OddsWindow := preload("res://scripts/ui/odds_window.gd")
 const AdPlayer := preload("res://scripts/ui/ad_player.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
+const ObservatoryPopups := preload("res://scripts/ui/observatory_popups.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const LOBBY_ART := "res://assets/ui_lobby/"
 ## 로비 그림이 화면보다 몇 배로 저장됐나의 거꾸로(2배 → 0.5)
@@ -51,8 +52,9 @@ func setup(main_app, params: Dictionary) -> void:
 	# 그림 부품은 assets/ui_lobby/(Codex 주문서 job16, tools/import_lobby.py). 그림이 없으면 단색 상자로 대신한다.
 	_add_background()
 
-	# 새 우편이 있으면 우편함에 넣는다.
-	if Profile.deliver_mails(app.profile, app.data.get("mails", {})) > 0:
+	var backdrop_only := bool(params.get("settings_backdrop", false))
+	# 실제 로비에 들어왔을 때만 우편과 접속 보상을 처리한다.
+	if not backdrop_only and Profile.deliver_mails(app.profile, app.data.get("mails", {})) > 0:
 		app.save()
 	var badges: Dictionary = app.badges()
 
@@ -62,6 +64,9 @@ func setup(main_app, params: Dictionary) -> void:
 	_add_bottom_dock()
 	resized.connect(_relayout)
 	_relayout()
+	if backdrop_only:
+		process_mode = Node.PROCESS_MODE_DISABLED
+		return
 
 	_maybe_league_reward()
 	_maybe_idle_reward()
@@ -94,6 +99,9 @@ func _relayout() -> void:
 
 ## 로비 그림 부품(assets/ui_lobby/이름.png). 없으면 null.
 func _lobby_tex(name: String) -> Texture2D:
+	var themed := Kit.Observatory.texture("ui_lobby", name)
+	if themed != null:
+		return themed
 	for ext in [".png", ".jpg"]:
 		var path: String = LOBBY_ART + name + str(ext)
 		if ResourceLoader.exists(path):
@@ -237,7 +245,7 @@ func _leader() -> Dictionary:
 # ---------------------------------------------------------------- 바탕
 
 func _add_background() -> void:
-	var sky := _picture("lobby_sky", TextureRect.STRETCH_KEEP_ASPECT_COVERED)
+	var sky := Kit.Observatory.backdrop() if Kit.Observatory.active else _picture("lobby_sky", TextureRect.STRETCH_KEEP_ASPECT_COVERED)
 	if sky == null:
 		add_child(Kit.sky())
 		return
@@ -287,11 +295,11 @@ func _add_hero_area() -> void:
 	if spoken != "":
 		lines = [spoken]
 	var bubble := PanelContainer.new()
-	bubble.add_theme_stylebox_override("panel", Kit.box(Color(1, 1, 1, 0.96), Color("1a56b0"), 3, 22, 12))
+	bubble.add_theme_stylebox_override("panel", Kit.box(Kit.Observatory.SURFACE, Kit.Observatory.EDGE, 3, 22, 12) if Kit.Observatory.active else Kit.box(Color(1, 1, 1, 0.96), Color("1a56b0"), 3, 22, 12))
 	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anchor(bubble, 0.6, 0.06, 0.6, 0.06)
 	bubble.custom_minimum_size = Vector2(210, 0)
-	var said := Kit.para(str(lines[app.rng.randi_range(0, lines.size() - 1)]), 18, Color("12264d"), HORIZONTAL_ALIGNMENT_CENTER)
+	var said := Kit.para(str(lines[app.rng.randi_range(0, lines.size() - 1)]), 18, Kit.Observatory.TEXT if Kit.Observatory.active else Color("12264d"), HORIZONTAL_ALIGNMENT_CENTER)
 	said.remove_theme_color_override("font_shadow_color")
 	said.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bubble.add_child(said)
@@ -514,7 +522,7 @@ func _rank_tile() -> Button:
 	_anchor(chip, 0.065, 0.19, 0.26, 0.76)
 	strip.add_child(chip)
 	var event_text := str(events[0]["name"]) if not events.is_empty() else "지금 바로 대전 시작!"
-	var line := Kit.label(event_text, 17, Color("b5450c"))
+	var line := Kit.label(event_text, 17, Color("f5e4c8") if Kit.Observatory.active else Color("b5450c"))
 	line.remove_theme_color_override("font_shadow_color")
 	line.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	line.clip_text = true
@@ -589,22 +597,22 @@ func _white_tile(spec: Array) -> Button:
 	text.alignment = BoxContainer.ALIGNMENT_CENTER
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(Kit.expand(text))
-	var title := Kit.label(str(spec[0]), 25, Color("12264d"))
+	var title := Kit.label(str(spec[0]), 25, Kit.Observatory.TEXT if Kit.Observatory.active else Color("12264d"))
 	title.remove_theme_color_override("font_shadow_color")
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.add_child(title)
 	Kit.fit_text(title, tile, 84.0, 25)
-	var english := Kit.label(str(spec[1]), 12, Color("4a6aa8"))
+	var english := Kit.label(str(spec[1]), 12, Kit.Observatory.MUTED if Kit.Observatory.active else Color("4a6aa8"))
 	english.remove_theme_color_override("font_shadow_color")
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# 영어 부제는 한국어 화면에서만(다른 언어는 제목과 겹친다).
 	english.visible = Lang.current == "ko"
 	text.add_child(english)
-	var sub := Kit.label(str(spec[3]), 14, Color("c4421f") if bool(spec[4]) else Color("3d5585"))
+	var sub := Kit.label(str(spec[3]), 14, (Kit.Observatory.AMBER if bool(spec[4]) else Kit.Observatory.MUTED) if Kit.Observatory.active else (Color("c4421f") if bool(spec[4]) else Color("3d5585")))
 	sub.remove_theme_color_override("font_shadow_color")
 	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text.add_child(sub)
-	_chevron(tile, Color("2b5fc4"), Color.WHITE)
+	_chevron(tile, Kit.Observatory.MUTED if Kit.Observatory.active else Color("2b5fc4"), Kit.Observatory.NIGHT if Kit.Observatory.active else Color.WHITE)
 	if bool(spec[4]):
 		_red_badge(tile)
 	return tile
@@ -911,6 +919,21 @@ func _process(delta: float) -> void:
 
 func _on_notices() -> void:
 	app.play("click")
+	if Kit.Observatory.active:
+		var entries: Array = []
+		for event in Profile.active_events(app.data.get("events", {}), app.today()):
+			var entry := {"title": event["name"], "text": event["text"]}
+			if event.has("start") and event.has("end"):
+				entry["date"] = "%s ~ %s" % [event["start"], event["end"]]
+			var effects: Dictionary = event.get("effect", {})
+			if effects.has("match_gold_scale"):
+				entry["gold_scale"] = effects["match_gold_scale"]
+			entries.append(entry)
+		for note in app.data.get("notices", {}).get("notices", []):
+			entries.append({"text": note})
+		var body := ObservatoryPopups.notice(entries, str(_leader().get("id", "")))
+		app.dialog("공지", body, [["닫기", Kit.PRIMARY]], 1038, "notice")
+		return
 	var body := Kit.vbox(8)
 	for line in _notices():
 		body.add_child(Kit.para("· " + str(line), 21, Color.WHITE))
@@ -933,7 +956,9 @@ func open_mailbox() -> void:
 		var card := MenuArt.row(12)
 		var row := Kit.hbox(12)
 		card.add_child(row)
-		var mail_icon: TextureRect = Kit.icon("mail", 52.0)
+		var mail_icon := Kit.icon("m_gift" if Kit.Observatory.active else "mail", 68.0 if Kit.Observatory.active else 52.0)
+		if Kit.Observatory.active:
+			Kit.Observatory.silver_icon(mail_icon)
 		mail_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		if claimed:
 			mail_icon.modulate = Color(0.6, 0.6, 0.7)
@@ -948,13 +973,22 @@ func open_mailbox() -> void:
 		take.disabled = claimed
 		take.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		take.pressed.connect(_on_mail_claim.bind(str(entry["id"])))
+		if Kit.Observatory.active and not claimed:
+			_red_badge(take)
 		row.add_child(take)
 		body.add_child(card)
 	var buttons: Array = []
 	if Profile.unclaimed_mail_count(app.profile) > 1:
 		buttons.append(["모두 받기", Color("e8890c"), _on_mail_claim_all])
 	buttons.append(["닫기", Kit.PANEL_LIGHT, _close_roulette])
-	app.dialog("우편함", body, buttons, 720)
+	if Kit.Observatory.active:
+		var scroll := ScrollContainer.new()
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.custom_minimum_size.y = minf(maxf(1, mails.size()) * 146.0, 375.0)
+		scroll.add_child(Kit.expand(body))
+		app.dialog("우편함", scroll, buttons, 1038, "mail")
+	else:
+		app.dialog("우편함", body, buttons, 720)
 
 
 func _on_mail_claim(id: String) -> void:
@@ -997,8 +1031,11 @@ func open_roulette() -> void:
 	for slot in app.eco.get("roulette", {}).get("slots", []):
 		var reward: Dictionary = slot["reward"]
 		var text: String = "보석 %d" % int(reward["gems"]) if reward.has("gems") else "골드 %d" % int(reward.get("gold", 0))
-		slots.append({"text": text, "color": Color(str(slot.get("color", "3a6fd8")))})
+		slots.append({"text": text, "color": Color(str(slot.get("color", "3a6fd8"))), "reward": reward})
 	_wheel.slots = slots
+	if Kit.Observatory.active:
+		_open_observatory_roulette()
+		return
 	# 가로 화면에 맞춰 왼쪽은 바퀴, 오른쪽은 '확률 보기'(오른쪽 위)·안내·버튼(2026-11-20 사용자 요청).
 	body.add_theme_constant_override("separation", 0)
 	var row := Kit.hbox(24)
@@ -1036,6 +1073,67 @@ func open_roulette() -> void:
 
 
 var _ad_spin_button: Button
+var _spin_balance: Label
+var _spin_price: Label
+
+
+func _open_observatory_roulette() -> void:
+	var field := Control.new()
+	field.custom_minimum_size.y = 530
+	field.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var art := ArtView.new()
+	art.texture = Kit.Observatory.BACKDROP
+	art.fade_top = 0.8
+	art.focus_y = 0.85
+	art.modulate.a = 0.66
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	field.add_child(art)
+	var margin := _inner(field, 25, 0, 8, 0)
+	var row := Kit.hbox(38)
+	margin.add_child(row)
+	row.add_child(_wheel)
+	var side := Kit.vbox(8)
+	side.custom_minimum_size.x = 300
+	row.add_child(Kit.expand(side))
+	var bank := MenuArt.row(6)
+	side.add_child(bank)
+	var bank_row := Kit.hbox(7)
+	bank.add_child(bank_row)
+	bank_row.add_child(Kit.icon("gem", 35))
+	_spin_balance = Kit.label("", 24)
+	bank_row.add_child(Kit.expand(_spin_balance))
+	bank_row.add_child(OddsWindow.button(app, "roulette"))
+	side.add_child(Kit.spacer())
+	_spin_button = MenuArt.pill_button("", "gold", "l")
+	_spin_button.custom_minimum_size = Vector2(0, 142)
+	# 비용 캡슐과 큰 행동 이름을 한 버튼에 넣는다.
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var style := _spin_button.get_theme_stylebox(state).duplicate()
+		style.content_margin_top = 60
+		_spin_button.add_theme_stylebox_override(state, style)
+	_spin_button.add_theme_font_size_override("font_size", 34)
+	var price := PanelContainer.new()
+	price.add_theme_stylebox_override("panel", Kit.box(Color(0.13, 0.09, 0.20, 0.66), Color(0.9, 0.7, 0.49, 0.45), 1, 16, 4))
+	_anchor(price, 0.25, 0.0, 0.75, 0.0)
+	price.offset_top = 20
+	price.offset_bottom = 58
+	price.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_spin_price = Kit.label("", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	_spin_price.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	price.add_child(_spin_price)
+	_spin_button.add_child(price)
+	_spin_button.pressed.connect(_on_spin)
+	side.add_child(_spin_button)
+	_spin_info = Kit.para("", 17, Kit.Observatory.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	side.add_child(_spin_info)
+	_ad_spin_button = MenuArt.pill_button("", "purple", "s")
+	_ad_spin_button.pressed.connect(_on_ad_spin)
+	side.add_child(_ad_spin_button)
+	var bottom := Control.new()
+	bottom.custom_minimum_size.y = 44
+	side.add_child(bottom)
+	_refresh_roulette()
+	app.dialog("행운의 룰렛", field, [["닫기", Kit.PANEL_LIGHT, _close_roulette]], 1070, "roulette")
 
 
 func _refresh_roulette() -> void:
@@ -1047,6 +1145,13 @@ func _refresh_roulette() -> void:
 	var cost := Profile.roulette_cost(app.profile, app.eco)
 	var limit := int(table.get("free_per_day", 1)) + int(table.get("max_extra", 0))
 	_spin_info.text = "오늘 %d / %d번 돌렸어요. 하루 한 번은 무료!" % [Profile.roulette_spins(app.profile), limit]
+	if is_instance_valid(_spin_balance):
+		_spin_balance.text = Kit.comma(int(app.profile["gems"]))
+		_spin_price.text = "무료" if cost == 0 else (Kit.money_text("gems", cost) if cost > 0 else "")
+		_spin_price.get_parent().visible = cost >= 0
+		_spin_button.text = "오늘은 다 돌렸어요" if cost < 0 else "돌리기"
+		_spin_button.disabled = cost < 0 or not Profile.can_pay(app.profile, "gems", maxi(cost, 0))
+		return
 	if cost < 0:
 		_spin_button.text = "오늘은 다 돌렸어요"
 		_spin_button.disabled = true
@@ -1117,6 +1222,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"별의 관측소 화면이 열렸어요. 설정의 화면 테마에서 기존 UI로 돌아갈 수 있어요.",
 	"파티 편성에서 영웅 얼굴과 방어 자리가 잘 보여요. 카드 편성의 카드와 스크롤 막대도 틀 안에 맞췄어요.",
 	"파티 편성에서 영웅을 등급으로 거를 수 있어요. 영웅과 카드는 정보 창에서 확인하고 적용해요.",
 	"상점 '영웅 모집' 안에 픽업 모집과 일반 모집이 함께 있어요. 위쪽 탭으로 골라요. ★★★ 확정 횟수는 따로 쌓여요.",
@@ -1336,6 +1442,9 @@ func _maybe_attendance() -> void:
 		return
 	var table: Array = app.eco.get("attendance", [])
 	var today_index := Profile.attendance_day(app.profile, app.eco)
+	if Kit.Observatory.active:
+		app.dialog("출석 보상", ObservatoryPopups.attendance(table, today_index), [["받기", Kit.PRIMARY, _claim_attendance]], 1038, "attendance")
+		return
 	# 칸은 모두 같은 크기, 줄마다 가운데 맞춤(7일이면 4칸 + 3칸).
 	var grid := Kit.vbox(10)
 	var row: HBoxContainer = null

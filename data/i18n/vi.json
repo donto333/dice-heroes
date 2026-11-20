@@ -2059,5 +2059,14 @@
  "전투 +%d · 스킬 충전 +%d%%": "Chiến đấu +%d · Nạp kỹ năng +%d%%",
  "이 무장으로 적용할까요? (자리: %s)": "Dùng anh hùng này? (Vị trí: %s)",
  "이미 편성됨": "Đã có trong đội",
- "파티 편성에서 영웅 얼굴과 방어 자리가 잘 보여요. 카드 편성의 카드와 스크롤 막대도 틀 안에 맞췄어요.": "Khuôn mặt anh hùng và vị trí phòng thủ hiển thị rõ hơn khi xếp đội. Thẻ và thanh cuộn trong phần xếp bộ bài giờ nằm gọn trong khung."
+ "파티 편성에서 영웅 얼굴과 방어 자리가 잘 보여요. 카드 편성의 카드와 스크롤 막대도 틀 안에 맞췄어요.": "Khuôn mặt anh hùng và vị trí phòng thủ hiển thị rõ hơn khi xếp đội. Thẻ và thanh cuộn trong phần xếp bộ bài giờ nằm gọn trong khung.",
+ "별의 관측소 화면이 열렸어요. 설정의 화면 테마에서 기존 UI로 돌아갈 수 있어요.": "Giao diện Đài quan sát sao đã ra mắt. Bạn có thể quay lại giao diện cổ điển trong Cài đặt.",
+ "별의 관측소": "Đài quan sát sao",
+ "기존 UI": "Giao diện cổ điển",
+ "화면 테마": "Chủ đề giao diện",
+ "무료": "Miễn phí",
+ "돌리기": "Quay",
+ "표시할 공지가 없어요.": "Không có thông báo.",
+ "이전 공지": "Thông báo trước",
+ "다음 공지": "Thông báo tiếp theo"
 }

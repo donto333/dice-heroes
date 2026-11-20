@@ -6,36 +6,59 @@ const Profile := preload("res://scripts/rules/profile.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
+const Dialog := preload("res://scripts/ui/dialog.gd")
+const ObservatoryPopups := preload("res://scripts/ui/observatory_popups.gd")
+const ARMILLARY := preload("res://assets/ui_observatory/settings_armillary.jpg")
+const KNOB := preload("res://assets/ui_observatory/slider_knob.png")
 
 var app
 var _name_edit: LineEdit
 var _coupon_edit: LineEdit
 var _code_edit: TextEdit
+var _settings_scroll: ScrollContainer
+var _panels := {}
+var _tab_buttons := {}
+var _tab := "general"
 
 
 func setup(main_app, _params: Dictionary) -> void:
 	app = main_app
-	# 시안식 틀: 왼쪽 세로 판에 설정 항목, 오른쪽 큰 금테 판.
-	var rail := [["settings", "게임 설정", "settings"], ["help", "게임 방법", "help"], ["title", "타이틀로", "exit"]]
-	var summary := MenuArt.summary("book", "버전 %s" % app.VERSION, str(app.profile.get("nickname", "")))
-	var column := MenuArt.frame(self, app, "ui/bg_settings", rail, "settings", _on_rail, summary)
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	column.add_child(scroll)
-	var body := Kit.vbox(8)
-	Kit.expand(body)
-	scroll.add_child(body)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var body: VBoxContainer
+	if Kit.Observatory.active:
+		body = _observatory_layout(str(_params.get("section", "general")))
+	else:
+		var rail := [["settings", "게임 설정", "settings"], ["help", "게임 방법", "help"], ["title", "타이틀로", "exit"]]
+		var summary := MenuArt.summary("book", "버전 %s" % app.VERSION, str(app.profile.get("nickname", "")))
+		var column := MenuArt.frame(self, app, "ui/bg_settings", rail, "settings", _on_rail, summary)
+		var scroll := ScrollContainer.new()
+		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		column.add_child(scroll)
+		body = Kit.vbox(8)
+		Kit.expand(body)
+		scroll.add_child(body)
 
-	# ---- 언어: 누를 때마다 한국어 → English → Tiếng Việt 차례로 바뀐다(lang.gd).
-	var lang_button := MenuArt.pill_button(Lang.language_name(), "green", "m")
-	lang_button.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	lang_button.custom_minimum_size = Vector2(240, 56)
-	lang_button.pressed.connect(_on_language)
-	MenuArt.list_row(body, "m_monitor", "언어 (Language)", "한국어 · English · Tiếng Việt", lang_button)
-	# ---- 소리
+	# ---- 언어와 소리
+	if Kit.Observatory.active:
+		_observatory_language(body)
+		_toggle_row(body, "m_speaker", "효과음", app.sfx_on(), _on_sound)
+		_toggle_row(body, "m_note", "배경음악", app.bgm_on(), _on_music)
+		_volume_slider(body, "sfx", "효과음 크기", "m_speaker")
+		_volume_slider(body, "bgm", "음악 크기", "m_note")
+	else:
+		var lang_button := MenuArt.pill_button(Lang.language_name(), "green", "m")
+		lang_button.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		lang_button.custom_minimum_size.x = 240
+		lang_button.pressed.connect(_on_language)
+		MenuArt.list_row(body, "m_monitor", "언어 (Language)", "한국어 · English · Tiếng Việt", lang_button)
+	var theme_button := MenuArt.pill_button("별의 관측소" if Kit.Observatory.active else "기존 UI", "gold", "m")
+	theme_button.custom_minimum_size = Vector2(240, 56)
+	theme_button.pressed.connect(_on_ui_theme)
+	MenuArt.list_row(body, "m_monitor", "화면 테마", "", theme_button)
 	body.add_child(MenuArt.section("소리", "m_speaker", "효과음·음성·음악"))
-	_toggle_row(body, "m_speaker", "효과음", app.sfx_on(), _on_sound)
+	if not Kit.Observatory.active:
+		_toggle_row(body, "m_speaker", "효과음", app.sfx_on(), _on_sound)
 	_toggle_row(body, "m_mic", "영웅 음성", app.voice_on(), _on_voice)
 	var announcer_label := "없음"
 	for entry in app.announcers():
@@ -45,21 +68,24 @@ func setup(main_app, _params: Dictionary) -> void:
 	announcer_button.custom_minimum_size = Vector2(300, 56)
 	announcer_button.pressed.connect(_on_announcer)
 	MenuArt.list_row(body, "m_megaphone", "안내 음성", "누를 때마다 다음 목소리", announcer_button)
-	_toggle_row(body, "m_note", "배경음악", app.bgm_on(), _on_music)
-	# 소리 크기: 작게·크게 사이에 5칸 눈금 막대
-	for spec in [["sfx", "효과음 크기", "m_speaker"], ["voice", "음성 크기", "m_mic"], ["bgm", "음악 크기", "m_note"]]:
-		var kind := str(spec[0])
-		var side := Kit.hbox(8)
-		var down := MenuArt.pill_button("작게", "blue", "s")
-		down.custom_minimum_size = Vector2(96, 48)
-		down.pressed.connect(_on_volume.bind(kind, -20))
-		side.add_child(down)
-		side.add_child(_ticks(app.volume(kind)))
-		var up := MenuArt.pill_button("크게", "green", "s")
-		up.custom_minimum_size = Vector2(96, 48)
-		up.pressed.connect(_on_volume.bind(kind, 20))
-		side.add_child(up)
-		MenuArt.list_row(body, str(spec[2]), "%s  %d%%" % [spec[1], app.volume(kind)], "", side)
+	if Kit.Observatory.active:
+		_volume_slider(body, "voice", "음성 크기", "m_mic")
+	else:
+		_toggle_row(body, "m_note", "배경음악", app.bgm_on(), _on_music)
+		# 소리 크기: 작게·크게 사이에 5칸 눈금 막대
+		for spec in [["sfx", "효과음 크기", "m_speaker"], ["voice", "음성 크기", "m_mic"], ["bgm", "음악 크기", "m_note"]]:
+			var kind := str(spec[0])
+			var side := Kit.hbox(8)
+			var down := MenuArt.pill_button("작게", "blue", "s")
+			down.custom_minimum_size = Vector2(96, 48)
+			down.pressed.connect(_on_volume.bind(kind, -20))
+			side.add_child(down)
+			side.add_child(_ticks(app.volume(kind)))
+			var up := MenuArt.pill_button("크게", "green", "s")
+			up.custom_minimum_size = Vector2(96, 48)
+			up.pressed.connect(_on_volume.bind(kind, 20))
+			side.add_child(up)
+			MenuArt.list_row(body, str(spec[2]), "%s  %d%%" % [spec[1], app.volume(kind)], "", side)
 
 	# ---- 게임
 	body.add_child(MenuArt.section("게임", "dice", "대전과 화면"))
@@ -73,6 +99,8 @@ func setup(main_app, _params: Dictionary) -> void:
 	MenuArt.list_row(body, "help", "첫 판 안내", "안내 말풍선을 처음부터 다시 볼 수 있어요.", hint_button)
 
 	# ---- 계정
+	if Kit.Observatory.active:
+		body = _panels["account"]
 	body.add_child(MenuArt.section("계정", "key", "닉네임·쿠폰·기록·옮기기"))
 	_name_edit = _edit_box(str(app.profile["nickname"]), "", 10)
 	var name_side := Kit.hbox(8)
@@ -117,6 +145,8 @@ func setup(main_app, _params: Dictionary) -> void:
 	MenuArt.list_row(body, "close", "데이터 초기화", "영웅·재화·기록이 모두 지워져요. 온라인 계정이 생기면 여기서 계정 삭제도 할 수 있어요.", reset)
 
 	# ---- 고객 지원(2026-11-19, 정식 출시 준비 7번)
+	if Kit.Observatory.active:
+		body = _panels["support"]
 	var support: Dictionary = app.eco.get("support", {})
 	var account := Profile.ensure_account_id(app.profile, app.rng)
 	app.save()
@@ -157,10 +187,123 @@ func setup(main_app, _params: Dictionary) -> void:
 	var to_title := MenuArt.pill_button("타이틀로", "red", "m")
 	to_title.pressed.connect(func(): app.go("title"))
 	about_row.add_child(Kit.expand(to_title))
+	if _settings_scroll != null:
+		_settings_scroll.set_deferred("scroll_vertical", int(_params.get("scroll", 0)))
+
+
+func _observatory_layout(initial: String) -> VBoxContainer:
+	var lobby := load("res://scripts/screens/lobby_screen.gd").new() as Control
+	add_child(lobby)
+	lobby.call("setup", app, {"settings_backdrop": true})
+	var row := Kit.hbox(16)
+	var rail := Kit.vbox(9)
+	rail.custom_minimum_size.x = 208
+	row.add_child(rail)
+	_settings_scroll = ScrollContainer.new()
+	_settings_scroll.custom_minimum_size = Vector2(0, 436)
+	_settings_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_settings_scroll.follow_focus = true
+	var frame := MenuArt.row(4)
+	frame.add_child(_settings_scroll)
+	row.add_child(Kit.expand(frame))
+	var pages := Kit.vbox(0)
+	_settings_scroll.add_child(Kit.expand(pages))
+	for spec in [["general", "게임 설정", "settings"], ["account", "계정", "friend"], ["support", "고객 지원", "help"]]:
+		var button := MenuArt.pill_button(str(spec[1]), "purple", "m")
+		var icon := Kit.icon(str(spec[2]), 28)
+		button.icon = icon.texture
+		icon.free()
+		button.add_theme_constant_override("icon_max_width", 28)
+		button.pressed.connect(_show_section.bind(str(spec[0])))
+		rail.add_child(button)
+		_tab_buttons[spec[0]] = button
+		var page := Kit.vbox(6)
+		pages.add_child(page)
+		_panels[spec[0]] = page
+	var orbit := ObservatoryPopups.picture(ARMILLARY)
+	orbit.custom_minimum_size.y = 143
+	orbit.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	rail.add_child(orbit)
+	for spec in [["게임 방법", "help"], ["타이틀로", "title"]]:
+		var button := MenuArt.pill_button(str(spec[0]), "purple", "s")
+		button.pressed.connect(_on_rail.bind(str(spec[1])))
+		rail.add_child(button)
+	_show_section(initial if _panels.has(initial) else "general")
+	var window := Dialog.new()
+	add_child(window)
+	window.open("게임 설정", row, [["닫기", Kit.PANEL_LIGHT, func(): app.go("lobby")]], 1038, "settings")
+	return _panels["general"]
+
+
+func _show_section(section: String) -> void:
+	_tab = section
+	for id in _panels:
+		_panels[id].visible = id == section
+		MenuArt.pill(_tab_buttons[id], "gold" if id == section else "purple")
+	_settings_scroll.scroll_vertical = 0
+
+
+func _redraw_settings() -> void:
+	app.go("settings", {"section": _tab, "scroll": _settings_scroll.scroll_vertical if _settings_scroll != null else 0})
+
+
+func _observatory_language(body: Control) -> void:
+	var picker := OptionButton.new()
+	picker.custom_minimum_size = Vector2(212, 44)
+	picker.add_theme_font_size_override("font_size", 18)
+	picker.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	for item in Lang.LANGUAGES:
+		picker.add_item(str(item["name"]))
+		if str(item["code"]) == Lang.current:
+			picker.select(picker.item_count - 1)
+	picker.item_selected.connect(func(index: int) -> void:
+		Lang.use(str(Lang.LANGUAGES[index]["code"]))
+		app.play("click")
+		_redraw_settings())
+	MenuArt.list_row(body, "m_monitor", "언어 (Language)", "", picker)
+
+
+func _volume_slider(body: Control, kind: String, title: String, icon_name: String) -> void:
+	var side := Kit.hbox(10)
+	side.custom_minimum_size = Vector2(244, 49)
+	var slider := HSlider.new()
+	slider.max_value = 100
+	slider.step = 20
+	slider.set_value_no_signal(app.volume(kind))
+	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	slider.add_theme_icon_override("grabber", KNOB)
+	slider.add_theme_icon_override("grabber_highlight", KNOB)
+	slider.add_theme_stylebox_override("slider", Kit.box(Kit.Observatory.NIGHT, Kit.Observatory.EDGE, 1, 5, 6))
+	slider.add_theme_stylebox_override("grabber_area", Kit.box(Kit.Observatory.AMBER, Color.TRANSPARENT, 0, 5, 6))
+	slider.add_theme_stylebox_override("grabber_area_highlight", Kit.box(Kit.Observatory.AMBER, Color.TRANSPARENT, 0, 5, 6))
+	side.add_child(Kit.expand(slider))
+	var value := Kit.label("%d%%" % app.volume(kind), 18, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
+	value.custom_minimum_size.x = 49
+	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	side.add_child(value)
+	slider.value_changed.connect(func(volume: float) -> void:
+		app.profile["settings"][kind + "_volume"] = int(volume)
+		app.save()
+		app.apply_volumes()
+		value.text = "%d%%" % int(volume))
+	slider.drag_ended.connect(func(changed: bool) -> void:
+		if changed:
+			_preview_volume(kind))
+	MenuArt.list_row(body, icon_name, title, "", side)
 
 
 ## 켜짐(초록)·꺼짐(회색) 알약이 오른쪽에 있는 목록 줄
 func _toggle_row(body: Control, icon_name: String, title: String, on: bool, callback: Callable, note: String = "") -> void:
+	if Kit.Observatory.active:
+		var pair := Kit.hbox(0)
+		for desired in [false, true]:
+			var option := MenuArt.pill_button("ON" if desired else "OFF", "gold" if desired == on else "purple", "s")
+			option.custom_minimum_size.x = 101
+			if desired != on:
+				option.pressed.connect(callback)
+			pair.add_child(option)
+		MenuArt.list_row(body, icon_name, title, note, pair)
+		return
 	var toggle := MenuArt.pill_button("켜짐" if on else "꺼짐", "green" if on else "gray", "m")
 	toggle.custom_minimum_size = Vector2(130, 56)
 	toggle.pressed.connect(callback)
@@ -211,32 +354,39 @@ func _on_music() -> void:
 	app.music.set_enabled(app.bgm_on())
 	app.save()
 	app.play("click")
-	app.go("settings")
+	_redraw_settings()
 
 
 func _on_fast() -> void:
 	app.profile["settings"]["fast"] = not bool(app.profile["settings"].get("fast", false))
 	app.save()
 	app.play("click")
-	app.go("settings")
+	_redraw_settings()
 
 
 func _on_language() -> void:
 	Lang.use(Lang.next_code())
 	app.play("click")
-	app.go("settings")
+	_redraw_settings()
+
+
+func _on_ui_theme() -> void:
+	app.profile["settings"]["classic_ui"] = Kit.Observatory.active
+	app.save()
+	app.play("click")
+	_redraw_settings()
 
 
 func _on_low_gfx() -> void:
 	app.set_low_gfx(not app.low_gfx_on())
 	app.play("click")
-	app.go("settings")
+	_redraw_settings()
 
 
 func _on_fullscreen() -> void:
 	app.set_fullscreen(not app.fullscreen_on())
 	app.play("click")
-	app.go("settings")
+	_redraw_settings()
 
 
 func _on_vibrate() -> void:
@@ -245,7 +395,7 @@ func _on_vibrate() -> void:
 	app.play("click")
 	if bool(app.profile["settings"]["vibrate"]):
 		Input.vibrate_handheld(40)
-	app.go("settings")
+	_redraw_settings()
 
 
 func _on_hints() -> void:
@@ -259,8 +409,12 @@ func _on_volume(kind: String, step: int) -> void:
 	app.profile["settings"][kind + "_volume"] = clampi(app.volume(kind) + step, 0, 100)
 	app.save()
 	app.apply_volumes()
-	app.go("settings")
-	# 바뀐 크기를 바로 들려준다.
+	_redraw_settings()
+	_preview_volume(kind)
+
+
+## 바뀐 크기를 바로 들려준다.
+func _preview_volume(kind: String) -> void:
 	if kind == "voice":
 		app.say(str(app.profile.get("party", {}).get("attack", "")), "select")
 	elif kind == "sfx":
@@ -277,7 +431,7 @@ func _on_announcer() -> void:
 			index = i
 	app.profile["settings"]["announcer"] = str(list[(index + 1) % list.size()].get("id", ""))
 	app.save()
-	app.go("settings")
+	_redraw_settings()
 	app.say("announcer", "start")
 
 
@@ -285,14 +439,14 @@ func _on_voice() -> void:
 	app.profile["settings"]["voice"] = not app.voice_on()
 	app.save()
 	app.play("click")
-	app.go("settings")
+	_redraw_settings()
 
 
 func _on_sound() -> void:
 	app.profile["settings"]["sfx"] = not app.sfx_on()
 	app.save()
 	app.play("click")
-	app.go("settings")
+	_redraw_settings()
 
 
 func _on_rename() -> void:
@@ -303,7 +457,7 @@ func _on_rename() -> void:
 	app.save()
 	app.play("good")
 	app.toast("닉네임을 바꿨어요.")
-	app.go("settings")
+	_redraw_settings()
 
 
 func _on_coupon() -> void:
@@ -312,7 +466,7 @@ func _on_coupon() -> void:
 		app.save()
 		app.play("win")
 		MenuArt.fly_reward(app, null, result["reward"])
-		app.go("settings")
+		_redraw_settings()
 		app.toast("%s: %s" % [result["text"], Kit.reward_line(result["reward"])])
 	elif str(result["reason"]) == "used":
 		app.play("bad")

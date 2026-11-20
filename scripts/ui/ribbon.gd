@@ -4,9 +4,11 @@ extends Control
 
 const OrnateBox := preload("res://scripts/ui/ornate_box.gd")
 const UiSkin := preload("res://scripts/ui/skin.gd")
+const Observatory := preload("res://scripts/ui/observatory_theme.gd")
 
 var color := Color("7a2fd0")
 var _label: Label
+var _icon: TextureRect
 
 
 func _init(text: String = "", font_size: int = 34, band: Color = Color("7a2fd0")) -> void:
@@ -36,6 +38,14 @@ const ART_BAND := Vector2(9.0, 95.0)
 
 
 func _place_label() -> void:
+	if Observatory.active:
+		_label.add_theme_color_override("font_color", Observatory.TEXT)
+		_label.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.11, 0.6))
+		_label.add_theme_constant_override("outline_size", 3)
+		if _icon != null:
+			var text_width := _label.get_theme_font("font").get_string_size(tr(_label.text), HORIZONTAL_ALIGNMENT_LEFT, -1, _label.get_theme_font_size("font_size")).x
+			_icon.position = Vector2(maxf(12.0, (size.x - text_width - 48.0) / 2.0), size.y * 0.5 - 23.0)
+			_label.offset_left = 48
 	if not UiSkin.has("ribbon_violet"):
 		return
 	# _draw의 그림 칸: Rect2(0, -8, 너비, 높이 + 12)
@@ -47,6 +57,13 @@ func _place_label() -> void:
 
 func set_text(text: String) -> void:
 	_label.text = text
+
+
+func set_icon(icon: TextureRect) -> void:
+	_icon = icon
+	_icon.size = Vector2(38, 38)
+	add_child(_icon)
+	_place_label()
 
 
 func _draw() -> void:

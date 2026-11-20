@@ -267,6 +267,8 @@ func _build() -> void:
 	_start_button.size_flags_stretch_ratio = 1.6
 	_start_button.pressed.connect(_on_start_pressed)
 	bottom.add_child(_start_button)
+	if KitStyle.Observatory.active:
+		MenuArt.pill(_start_button, "gold")
 
 
 func _capsule_label(capsule: Control) -> Label:
@@ -914,7 +916,10 @@ func _refresh() -> void:
 		var card_parts: Dictionary = _card_parts[id]
 		if card_parts.has("frame"):
 			# 고른 영웅은 금테가 밝아지고 체크 표시
-			card_parts["frame"].modulate = Color(1.35, 1.3, 1.0) if chosen else Color.WHITE
+			if KitStyle.Observatory.active:
+				card_parts["frame"].texture = MenuArt.tex("hero_card_selected" if chosen else "hero_card")
+			else:
+				card_parts["frame"].modulate = Color(1.35, 1.3, 1.0) if chosen else Color.WHITE
 			card_parts["check"].visible = chosen
 			continue
 		var fill: Color = CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))

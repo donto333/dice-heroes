@@ -26,6 +26,9 @@ const TITLES := {
 
 
 static func tex(name: String) -> Texture2D:
+	var themed := Kit.Observatory.texture("ui_menu", name)
+	if themed != null:
+		return themed
 	var path: String = ART + name + ".png"
 	if ResourceLoader.exists(path):
 		return load(path)
@@ -334,7 +337,7 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool =
 		space.content_margin_top = 4
 		space.content_margin_bottom = 6
 		button.add_theme_stylebox_override(state, space)
-	var ink := Color("5a3200") if on else Color.WHITE
+	var ink := Color("fff8e8") if Kit.Observatory.active or not on else Color("5a3200")
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		button.add_theme_color_override(state, ink)
 	if on:
@@ -506,7 +509,7 @@ static func pill(button: Button, color_name: String) -> bool:
 			space.content_margin_bottom = 5
 		button.add_theme_stylebox_override(state, space)
 	var edge: Color = PILL_EDGES.get(color_name, Color(0, 0.05, 0.2))
-	var ink := Color("5a3200") if color_name == "tab_on" else Color.WHITE
+	var ink := Color("fff8e8") if Kit.Observatory.active or color_name != "tab_on" else Color("5a3200")
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
 		button.add_theme_color_override(state, ink)
 	button.add_theme_color_override("font_disabled_color", Color("e6e9f0"))

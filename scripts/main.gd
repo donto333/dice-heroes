@@ -467,7 +467,8 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 	redraw = current_screen != null and screen_name == current_name
 	if current_screen != null:
 		current_screen.queue_free()
-	Kit.panel_tint = SCREEN_MOODS.get(screen_name, Kit.PANEL)
+	Kit.Observatory.active = not bool(profile.get("settings", {}).get("classic_ui", false))
+	Kit.panel_tint = Kit.Observatory.SURFACE if Kit.Observatory.active else SCREEN_MOODS.get(screen_name, Kit.PANEL)
 	var screen = SCREENS[screen_name].new()
 	current_name = screen_name
 	current_screen = screen
@@ -524,10 +525,10 @@ func toast(message: String) -> void:
 
 
 ## 가운데 뜨는 창. buttons: [["글자", 색, 콜백], ...]
-func dialog(title_text: String, body: Control, buttons: Array, width: float = 640.0) -> Control:
+func dialog(title_text: String, body: Control, buttons: Array, width: float = 640.0, design: String = "") -> Control:
 	var window := Dialog.new()
 	add_child(window)
-	window.open(title_text, body, buttons, width)
+	window.open(title_text, body, buttons, width, design)
 	return window
 
 
