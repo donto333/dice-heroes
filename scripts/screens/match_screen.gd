@@ -56,7 +56,7 @@ const SLOT_COLORS := {"attack": Color("b8352a"), "defense": Color("6f43a6"), "su
 const CARD_COLOR := Color("a6781a")
 const ROLL_COLOR := Color("2fb457")
 const DISABLED_COLOR := Color("6f86a8")
-const PLAYER_TEXT_COLORS := [Color("4fc3f7"), Color("ff8a65")]
+const PLAYER_TEXT_COLORS := [Color("4fc3f7"), Color("ff8a65"), Color("69e2de"), Color("ff9d79")]
 
 var game
 var _data: Dictionary = {}
@@ -706,8 +706,11 @@ func _hud_player_progress(card: Control, progress: ProgressBar) -> void:
 
 
 func _refresh_player_cards() -> void:
-	for index in _player_cards.size():
-		var parts: Dictionary = _player_cards[index]
+	for side in _player_cards.size():
+		var parts: Dictionary = _player_cards[side]
+		var index := side
+		if game.is_team_match() and game.current % 2 == side:
+			index = game.current
 		var player: Dictionary = game.players[index]
 		var leader: Dictionary = game.char_of(index, "attack")
 		parts["face"].show_character(leader, PLAYER_TEXT_COLORS[index])
@@ -722,6 +725,8 @@ func _refresh_player_cards() -> void:
 		if bool(player.get("charm", false)):
 			flags.append("부적")
 		parts["detail"].text = "골까지 %d칸 · 카드 %d%s" % [game.distance_of(index), player["hand"].size(), ("  " + " ".join(flags)) if not flags.is_empty() else ""]
+		if game.is_team_match():
+			parts["detail"].text = _team_distances(side)
 		var current: bool = game.current == index and game.winner < 0
 		if parts["panel"] == null:
 			# 그림 정보판은 지금 차례인 쪽만 밝게, 아닌 쪽은 살짝 어둡게.
@@ -729,6 +734,11 @@ func _refresh_player_cards() -> void:
 			continue
 		var edge: Color = PLAYER_TEXT_COLORS[index] if current else Color("8fd0ff")
 		parts["panel"].add_theme_stylebox_override("panel", Kit.plate(Color("243a9c") if current else Color(0.1, 0.16, 0.42, 0.86), edge if current else Color("8fa6d8"), 16.0, 8, false))
+
+
+func _team_distances(side: int) -> String:
+	return "%s %d칸 · %s %d칸" % [game.players[side]["name"], game.distance_of(side),
+		game.players[side + 2]["name"], game.distance_of(side + 2)]
 
 
 ## 칸 효과를 보드 위에 크게 띄운다. 좋은 일은 금색, 나쁜 일은 붉은색.
@@ -1799,10 +1809,14 @@ func _start_game() -> void:
 	# 랭크전은 트로피가 높을수록 상대가 강해진다.
 	if _mode == "rank" and _parties.size() > 1:
 		_parties[1]["relic"] = Profile.rank_boost(app.eco, int(app.profile.get("trophies", 0)))
+		if _parties.size() == 4:
+			_parties[3]["relic"] = _parties[1]["relic"]
 	game.setup(_data, _parties)
 	_setup_tutorial()
 	_start_distance = max(game.distance_of(0), 1)
-	for index in 2:
+	for textures in [_board_view.piece_textures, _board_view.piece_standees, _board_view.piece_anims, _board_view.party_anims, _board_view.party_standees]:
+		textures.resize(game.players.size())
+	for index in game.players.size():
 		_board_view.piece_textures[index] = GameData.portrait(str(game.char_of(index, "attack").get("id", "")))
 		_board_view.piece_standees[index] = GameData.standee(str(game.char_of(index, "attack").get("id", "")))
 		_board_view.piece_anims[index] = GameData.standee_anims(str(game.char_of(index, "attack").get("id", "")))
@@ -1865,7 +1879,10 @@ func _versus_side(index: int) -> Dictionary:
 		bonus_parts.append("시너지 %s" % synergy.get("name", ""))
 	if not (game.players[index].get("relic", {}) as Dictionary).is_empty():
 		bonus_parts.append("유물" if index == 0 else "강화")
-	return {"name": str(game.players[index]["name"]), "color": PLAYER_TEXT_COLORS[index], "members": members, "levels": levels,
+	var side_name := str(game.players[index]["name"])
+	if game.is_team_match():
+		side_name += " · " + str(game.players[index + 2]["name"])
+	return {"name": side_name, "color": PLAYER_TEXT_COLORS[index], "members": members, "levels": levels,
 		"power": Profile.party_power(_data["characters"], app.eco, party, level_table), "bonus": " · ".join(PackedStringArray(bonus_parts))}
 
 
@@ -1937,7 +1954,7 @@ func _goal_name() -> String:
 
 
 func _turn_title(index: int) -> String:
-	if _is_local():
+	if _is_local() or game.is_team_match():
 		return "%s 차례" % game.players[index]["name"]
 	return "내 차례" if _humans[index] else "AI 차례"
 
@@ -2004,6 +2021,16 @@ func _after_my_move() -> void:
 
 
 func _show_path_choice() -> void:
+	if game.choice_kind() == "target":
+		var row := Kit.hbox(16)
+		for index in game.pending_choice["options"].size():
+			var button := MenuArt.pill_button(game.choice_label(index), "red", "l")
+			button.pressed.connect(_on_path_chosen.bind(index))
+			row.add_child(Kit.expand(button))
+		_board_area.add_child(row)
+		_hud_rect(row, Rect2(514, 204, 714, 122))
+		_path_choices = row
+		return
 	if game.choice_kind() != "fight":
 		_hint("fork", "갈림길이에요! 지도와 칸 수를 비교하고 갈 길을 골라요. 지도에서 길과 버튼은 같은 색이에요.")
 		_board_view.highlight = game.pending_choice["options"].duplicate()
@@ -2069,6 +2096,8 @@ func _on_path_chosen(index: int) -> void:
 	_add_result_header(_turn_title(game.current), PLAYER_TEXT_COLORS[game.current])
 	if game.choice_kind() == "fight":
 		_add_result_text("싸웁니다!" if index == 0 else "그냥 지나갑니다.", Color.WHITE)
+	elif game.choice_kind() == "target":
+		_add_result_text(game.choice_label(index), Color.WHITE)
 	else:
 		_add_result_text("%s(으)로 갑니다." % game.choice_label(index), Color.WHITE)
 	_play("click")
@@ -2231,7 +2260,7 @@ func _show_move(event: Dictionary) -> void:
 	_result_box.add_child(row)
 	_trim_results()
 	# 이동 음성: 내 ATTACK 영웅이 가끔 한마디(매번 하면 시끄럽다).
-	if (who == 0 or _is_local()) and _voice_rng.randf() < MOVE_VOICE_CHANCE:
+	if (who % 2 == 0 or _is_local()) and _voice_rng.randf() < MOVE_VOICE_CHANCE:
 		app.say(str(game.char_of(who, "attack").get("id", "")), "move")
 	if not event["rolls"].is_empty():
 		# 판 가운데 큰 주사위 연출. 아래 결과 줄의 작은 주사위도 같이 구른다.
@@ -2306,7 +2335,7 @@ func _show_battle(event: Dictionary) -> void:
 	await _show_battle_inner(event)
 	# 내 쪽에서 본 승패 소리. 습격은 막는 쪽이 플레이어다.
 	var player_won: bool = (not bool(event["won"])) if str(event.get("target", "")) == "ambush" else bool(event["won"])
-	var mine: bool = _is_local() or int(event["player"]) == 0
+	var mine: bool = _is_local() or int(event["player"]) % 2 == 0
 	if boss and player_won:
 		_play("goal" if defender == _goal_name() else "gate_open")
 	else:
@@ -2321,7 +2350,7 @@ func _show_battle_inner(event: Dictionary) -> void:
 	_hint("battle", "전투! 양쪽이 주사위를 굴려 합이 큰 쪽이 이겨요. 지면 직전 거점(파란 깃발)으로 돌아가요. 이기면 카드를 받아요.")
 	await _wait_for_board()
 	var who := int(event["player"])
-	var other := 1 - who
+	var other := int(event["opponent"])
 	# 전투 음성: 공격하는 영웅이 먼저 외치고, 조금 뒤 막는 영웅이 받아친다(영웅이 아니면 소리 없음).
 	app.say(str(_character_named(str(event.get("attacker", ""))).get("id", "")), "attack")
 	var defender_id := str(_character_named(str(event.get("defender", ""))).get("id", ""))
@@ -2337,16 +2366,16 @@ func _show_battle_inner(event: Dictionary) -> void:
 			"defender_color": PLAYER_TEXT_COLORS[who],
 			"winner_text": "막지 못했다... 거점으로",
 			"loser_text": "%s 방어 성공!" % game.players[who]["name"],
-			"good_for_me": (not event["won"]) if (who == 0 or _is_local()) else event["won"],
+			"good_for_me": (not event["won"]) if (who % 2 == 0 or _is_local()) else event["won"],
 			"defender_character": _character_named(str(event["defender"])),
 		})
 		_add_battle_result(event)
-		_ai_reacts(event["won"] if who == 0 else not event["won"])
+		_ai_reacts(event["won"] if who % 2 == 0 else not event["won"])
 		return
 	var warden_duel: bool = str(event.get("target", "")) == "warden"
 	var card_duel: bool = str(event.get("target", "")) == "card"
 	var against_player: bool = str(event.get("target", "")) == "player" or card_duel
-	var me_attacking := who == 0 or _is_local()
+	var me_attacking := who % 2 == 0 or _is_local()
 	var info := {
 		"attacker_side": "공격 · %s" % game.players[who]["name"],
 		"defender_side": "방어 · %s" % (game.players[other]["name"] if against_player else ("관문지기" if str(event["defender"]).begins_with("관문지기") else ("골의 수호자" if str(event["defender"]) == _goal_name() else "키퍼"))),
@@ -2492,7 +2521,7 @@ func _add_battle_result(event: Dictionary) -> void:
 		_best_roll = max(_best_roll, my_total)
 		if success:
 			_slot_wins["defense" if ambushed else "attack"] += 1
-	elif str(event.get("target", "")) in ["player", "card"] and not success:
+	elif str(event.get("target", "")) in ["player", "card"] and int(event["opponent"]) == 0 and not success:
 		# 상대가 나를 공격했다가 진 것도 내 전투 승리
 		_my_battles[0] += 1
 		_slot_wins["defense"] += 1
@@ -2519,6 +2548,10 @@ func _show_game_over() -> void:
 			text = "%s 승리!" % game.players[game.winner]["name"]
 			color = PLAYER_TEXT_COLORS[game.winner]
 			outcome = "win" if game.winner == 0 else "lose"
+	elif game.is_team_match() and game.winner < 2:
+		text = "우리 팀 승리!" if game.winner == 0 else "상대 팀 승리!"
+		color = PLAYER_TEXT_COLORS[game.winner]
+		outcome = "win" if game.winner == 0 else "lose"
 	elif game.winner == 0:
 		text = "승리! 골에 먼저 들어갔습니다."
 		color = Color("7ee081")
@@ -2540,9 +2573,7 @@ func _show_game_over() -> void:
 	label.add_theme_color_override("font_color", color)
 	_result_box.add_child(label)
 
-	var reached_goal := false
-	if game.winner == 0 or game.winner == 1:
-		reached_goal = game.node_of(int(game.players[game.winner]["pos"])).get("type", "") == "goal"
+	var reached_goal: bool = game.winning_player >= 0
 	var subtitle := text
 	if not reached_goal:
 		subtitle = "%d턴이 끝나 골까지 남은 거리로 판정했습니다." % game.max_rounds
@@ -2568,6 +2599,9 @@ func _show_game_over() -> void:
 		["hourglass", "진행한 턴", "%d턴" % min(game.round_number, game.max_rounds)],
 		["flag", "골까지 남은 거리", "%s %d칸 · %s %d칸" % [game.players[0]["name"], game.distance_of(0), game.players[1]["name"], game.distance_of(1)]],
 	]
+	if game.is_team_match():
+		rows[1] = ["flag", "우리 팀", _team_distances(0)]
+		rows.append(["flag", "상대 팀", _team_distances(1)])
 	var notes: Array = []
 	if _is_local():
 		rows.append(["swords", "%s 파티" % game.players[0]["name"], _party_names(0)])
@@ -2647,7 +2681,7 @@ func _record(outcome: String) -> PackedStringArray:
 	_recorded = true
 	var missions_before := Profile.claimable_mission_count(app.profile, app.eco)
 	var achievements_before := Profile.claimable_achievement_count(app.profile, app.data)
-	var reward := Profile.record_match(app.profile, app.eco, _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids(),
+	var reward := Profile.record_match(app.profile, app.eco, "rank_team" if game.is_team_match() else _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids(),
 		"map": game.board_name, "turns": int(game.round_number), "gates": (game.gates_cleared[0] as Dictionary).size(),
 		"event_gold_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "match_gold_scale"),
 		"event_pass_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "pass_exp_scale")})
@@ -2718,7 +2752,7 @@ func _on_retry_pressed() -> void:
 	elif _mode == "adventure":
 		app.start_mode("adventure", {"stage": _next_stage if _next_stage != "" else _stage_id})
 	else:
-		app.start_mode(_mode)
+		app.start_mode(_mode, {"rank_team": game.is_team_match()} if _mode == "rank" else {})
 
 
 func _on_change_party_pressed() -> void:
@@ -2741,7 +2775,7 @@ func _on_quit_pressed() -> void:
 func _confirm_quit() -> void:
 	if _mode == "rank" and not _recorded:
 		_recorded = true
-		Profile.record_match(app.profile, app.eco, _mode, "lose", {"battle_wins": _my_battles[0], "cards": _cards_used})
+		Profile.record_match(app.profile, app.eco, "rank_team" if game.is_team_match() else _mode, "lose", {"battle_wins": _my_battles[0], "cards": _cards_used})
 		app.save()
 	game = null
 	# 판을 버리고 나갈 때는 바로 넘어간다(멈춘 판 화면을 기다리게 하지 않는다).
@@ -2787,7 +2821,7 @@ func _refresh() -> void:
 	if game.winner == 2:
 		turn_text = "무승부"
 	elif game.winner >= 0:
-		turn_text = "%s 승리!" % game.players[game.winner]["name"]
+		turn_text = _result_text if game.is_team_match() else "%s 승리!" % game.players[game.winner]["name"]
 	if _map_label != null:
 		_status_label.text = "%d/%d턴 · %s" % [min(game.round_number, game.max_rounds), game.max_rounds, turn_text]
 		_map_label.text = "%s · 맵 속성: %s" % [game.board_name, attr_text]

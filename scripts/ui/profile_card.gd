@@ -7,7 +7,7 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 
 
 ## 내 프로필: 대표 영웅, 티어, 전적, 수집, 가장 많이 쓴 영웅.
-const MODE_NAMES := {"rank": "랭크전", "ai": "AI 연습전", "local": "친구 대전", "adventure": "모험", "challenge": "오늘의 도전"}
+const MODE_NAMES := {"rank": "개인전", "rank_team": "팀전", "ai": "AI 연습전", "local": "친구 대전", "adventure": "모험", "challenge": "오늘의 도전"}
 
 static func profile_body(app) -> Control:
 	var profile: Dictionary = app.profile

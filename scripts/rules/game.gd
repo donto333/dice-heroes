@@ -66,10 +66,14 @@ var lucky_player := -1
 var tutorial_luck: Dictionary = {}
 
 var players: Array = []
+## 수호자를 쓰러뜨린 말. 거리 판정이면 -1.
+var winning_player := -1
+var fought_on_move := false
+var first_player := 0
 var current := 0
 var round_number := 1
 var map_attr := ""
-## -1 진행 중, 0 또는 1 승자, 2 무승부
+## -1 진행 중, 0 짝수 팀 승리, 1 홀수 팀 승리, 2 무승부
 var winner := -1
 var messages: Array = []
 ## 화면이 연출에 쓰는 사건 기록. take_events()로 가져가면 비워진다.
@@ -176,20 +180,25 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 			## 장착한 유물의 효과 {atk_bonus, turns, gauge, charm}. 없으면 {}.
 			"relic": (party.get("relic", {}) as Dictionary).duplicate(),
 		})
-	current = 0
+	first_player = rng.randi_range(0, 1) if is_team_match() else 0
+	current = first_player
 	round_number = 1
 	map_attr = ""
 	winner = -1
+	winning_player = -1
+	fought_on_move = false
 	messages = []
 	events = []
 	pending_choice = {}
 	revealed = {}
 	_setup_fog()
 	traps = {}
-	gates_cleared = [{}, {}]
-	gate_fails = [{}, {}]
+	gates_cleared = []
+	gate_fails = []
 	wardens = {}
 	for index in players.size():
+		gates_cleared.append({})
+		gate_fails.append({})
 		for i in START_HAND:
 			_draw_card(index, false)
 	# 지력이 높은 SUPPORT는 게이지를 채운 채로 시작한다.
@@ -197,7 +206,8 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 		_add_gauge(index, start_gauge_per_intellect * int(char_of(index, "support")["intellect"]))
 	# 먼저 하는 쪽이 유리하므로 나중에 하는 쪽은 게이지를 채워 두고 시작한다.
 	if players.size() > 1 and second_player_gauge > 0:
-		_add_gauge(1, second_player_gauge)
+		for index in range(1 - first_player, players.size(), 2):
+			_add_gauge(index, second_player_gauge)
 	# 시너지: 파티 구성 보너스(양쪽 모두)
 	for index in players.size():
 		var categories: Array = []
@@ -405,6 +415,8 @@ func choice_kind() -> String:
 
 ## 고르기 버튼에 쓸 이름.
 func choice_label(option_index: int) -> String:
+	if choice_kind() == "target":
+		return str(players[int(pending_choice["options"][option_index])]["name"])
 	if choice_kind() == "fight":
 		return "싸운다" if option_index == 0 else "지나간다"
 	return route_name(int(pending_choice["options"][option_index]))
@@ -465,8 +477,29 @@ func card_condition_met(card: Dictionary) -> bool:
 
 
 ## player_index가 상대보다 뒤처진 칸 수. 앞서 있으면 음수.
+func is_team_match() -> bool:
+	return players.size() == 4
+
+
+## 방해 카드는 골에 가장 가까운 적에게 적용한다. 같은 거리면 앞 순번이 대상이다.
+func leading_enemy(player_index: int) -> int:
+	var leader := 1 - player_index % 2
+	for index in range(leader + 2, players.size(), 2):
+		if distance_of(index) < distance_of(leader):
+			leader = index
+	return leader
+
+
+func enemies_here(player_index: int) -> Array:
+	var enemies := []
+	for index in range(1 - player_index % 2, players.size(), 2):
+		if players[index]["pos"] == players[player_index]["pos"]:
+			enemies.append(index)
+	return enemies
+
+
 func behind_by(player_index: int) -> int:
-	return distance_of(player_index) - distance_of(1 - player_index)
+	return distance_of(player_index) - distance_of(leading_enemy(player_index))
 
 
 # ---------------------------------------------------------------- 주사위
@@ -535,6 +568,7 @@ func _sum(values: Array) -> int:
 
 ## 턴을 시작한다. 쉬는 턴이면 false를 돌려주며, 이때는 바로 end_turn()을 부른다.
 func begin_turn() -> bool:
+	fought_on_move = false
 	card_played = false
 	ability_used = false
 	moved = false
@@ -693,11 +727,21 @@ func choose_path(option_index: int) -> bool:
 		return false
 	var kind := choice_kind()
 	var steps := int(pending_choice["steps"])
+	var depth := int(pending_choice.get("depth", 0))
 	pending_choice = {}
+	if kind == "target":
+		if _battle_players(int(options[option_index])):
+			if steps > 0:
+				_continue_walk(steps)
+			else:
+				_resolve_tile(depth)
+		return true
 	if kind == "fight":
 		if option_index == 1:
 			say("  %s: 싸우지 않고 지나갑니다." % players[current]["name"])
 			_continue_walk(steps)
+		elif _choose_enemy(steps):
+			return true
 		elif _battle_players():
 			# 이기면 남은 칸을 마저 간다. 지면 거점으로 돌아가 이동이 끝난다.
 			_continue_walk(steps)
@@ -712,6 +756,14 @@ func choose_path(option_index: int) -> bool:
 
 
 ## 남은 칸을 걸어가고, 길이 다 정해지면 도착한 칸을 처리한다.
+func _choose_enemy(steps: int, depth: int = 0) -> bool:
+	var targets := enemies_here(current)
+	if targets.size() < 2:
+		return false
+	pending_choice = {"kind": "target", "options": targets, "steps": steps, "depth": depth}
+	return true
+
+
 func _continue_walk(steps: int) -> void:
 	if _walk(current, steps, true):
 		_resolve_tile(0)
@@ -720,7 +772,7 @@ func _continue_walk(steps: int) -> void:
 ## 지나가는 칸에 상대가 있어서 싸울 수 있는지. 출발 칸과 골에서는 싸우지 않는다.
 func _can_fight_passing(player_index: int) -> bool:
 	var pos := int(players[player_index]["pos"])
-	if int(players[1 - player_index]["pos"]) != pos:
+	if (is_team_match() and fought_on_move) or enemies_here(player_index).is_empty():
 		return false
 	var kind: String = node_of(pos).get("type", "")
 	return kind != "start" and kind != "goal"
@@ -743,22 +795,26 @@ func best_option(options: Array) -> int:
 func end_turn() -> void:
 	if winner >= 0 or awaiting_choice():
 		return
-	current = 1 - current
-	if current == 0:
+	current = (current + 1) % players.size()
+	if current == first_player:
 		round_number += 1
 		if round_number > max_rounds:
 			_finish_by_position()
 
 
 func _finish_by_position() -> void:
-	var first := distance_of(0)
-	var second := distance_of(1)
-	if first < second:
-		winner = 0
-	elif second < first:
-		winner = 1
-	else:
-		winner = 2
+	var blue := [distance_of(0)]
+	var red := [distance_of(1)]
+	if is_team_match():
+		blue.append(distance_of(2))
+		red.append(distance_of(3))
+	blue.sort()
+	red.sort()
+	winner = 2
+	for index in blue.size():
+		if blue[index] != red[index]:
+			winner = 0 if blue[index] < red[index] else 1
+			break
 	if winner == 2:
 		say("%d턴이 끝났습니다. 골까지 거리가 같아 무승부!" % max_rounds)
 	else:
@@ -803,12 +859,12 @@ func _walk(player_index: int, steps: int, interactive: bool) -> bool:
 
 ## 이 칸에 이 플레이어를 막는(상대가 세운) 문지기가 있는가
 func warden_blocks(player_index: int, pos: int) -> bool:
-	return wardens.has(pos) and int(wardens[pos]["owner"]) != player_index
+	return wardens.has(pos) and int(wardens[pos]["owner"]) % 2 != player_index % 2
 
 
 ## 문지기를 세울 칸: 상대 앞으로 amount칸(골에 가까운 길). 출발·골·관문·다른 문지기 칸은 피해 한 칸씩 당긴다.
 func warden_spot(owner_index: int, amount: int) -> int:
-	var target_index := 1 - owner_index
+	var target_index := leading_enemy(owner_index)
 	var pos := int(players[target_index]["pos"])
 	var path: Array = []
 	for i in amount:
@@ -854,7 +910,7 @@ func _battle_warden(pos: int) -> bool:
 		say("  재도전! 한 번 더 굴립니다.")
 		result = resolve_battle(attack_dice, defense_dice, _attack_bonus(current), int(power["bonus"]), attack_mods)
 	_say_battle(result)
-	_battle_event(attacker["name"], str(warden["name"]), result, "warden")
+	_battle_event(attacker["name"], str(warden["name"]), result, "warden", int(warden["owner"]))
 	if result["attacker_won"]:
 		wardens.erase(pos)
 		say("  %s 승리! 문지기가 사라졌습니다." % player["name"])
@@ -923,12 +979,12 @@ func _arrive_back(player_index: int) -> void:
 
 func _resolve_tile(depth: int) -> void:
 	var player: Dictionary = players[current]
-	var opponent: Dictionary = players[1 - current]
 	var pos := int(player["pos"])
 
 	# 상대가 있는 칸에 도착하면 먼저 대전. 출발 칸과 골에서는 싸우지 않는다.
-	var here_type: String = node_of(pos).get("type", "")
-	if here_type != "start" and here_type != "goal" and int(opponent["pos"]) == pos:
+	if _can_fight_passing(current):
+		if _choose_enemy(0, depth):
+			return
 		if not _battle_players():
 			return
 		pos = int(player["pos"])
@@ -938,7 +994,7 @@ func _resolve_tile(depth: int) -> void:
 			return
 		pos = int(player["pos"])
 
-	if traps.has(pos) and int(traps[pos]) != current:
+	if traps.has(pos) and int(traps[pos]) % 2 != current % 2:
 		traps.erase(pos)
 		if _consume_charm(current):
 			say("  덫이 있었지만 부적이 막아 줬습니다.")
@@ -1020,7 +1076,8 @@ func _resolve_tile(depth: int) -> void:
 			# 수호자도 질 때마다 조금씩 지친다(goal_min_dice개 밑으로는 안 내려간다).
 			var goal_dice := maxi(mini(goal_min_dice, int(tile["dice"])), int(tile["dice"]) - gate_weaken * int(gate_fails[current].get(pos, 0)))
 			if _battle_keeper(goal_dice, tile["name"]):
-				winner = current
+				winning_player = current
+				winner = current % 2
 				say("%s 골인! 승리!" % player["name"])
 			else:
 				gate_fails[current][pos] = int(gate_fails[current].get(pos, 0)) + 1
@@ -1142,20 +1199,20 @@ func _battle_roll(count: int, mods: Dictionary) -> Array:
 	return roll_dice(count)
 
 
-func _attack_dice(player_index: int) -> int:
+func _attack_dice(player_index: int, opponent: int = -1) -> int:
 	var count := int(char_of(player_index, "attack")["attack"])
 	count += effect_sum(player_index, "atk_dice")
-	count -= effect_sum(1 - player_index, "enemy_dice_minus")
+	count -= effect_sum(leading_enemy(player_index) if opponent < 0 else opponent, "enemy_dice_minus")
 	if players[player_index]["cursed"]:
 		count -= 1
 		players[player_index]["cursed"] = false
 	return count
 
 
-func _defense_dice(player_index: int) -> int:
+func _defense_dice(player_index: int, opponent: int = -1) -> int:
 	var count := int(char_of(player_index, "defense")["defense"])
 	count += effect_sum(player_index, "def_dice")
-	count -= effect_sum(1 - player_index, "enemy_dice_minus")
+	count -= effect_sum(leading_enemy(player_index) if opponent < 0 else opponent, "enemy_dice_minus")
 	if players[player_index]["cursed"]:
 		count -= 1
 		players[player_index]["cursed"] = false
@@ -1194,34 +1251,37 @@ func _defense_bonus(player_index: int) -> int:
 
 
 ## 현재 플레이어가 상대를 공격한다. 공격 쪽이 이기면 true.
-func _battle_players() -> bool:
+func _battle_players(target: int = -1) -> bool:
+	if target < 0:
+		target = int(enemies_here(current)[0])
+	fought_on_move = true
 	var player: Dictionary = players[current]
-	var opponent: Dictionary = players[1 - current]
+	var opponent: Dictionary = players[target]
 	var attacker: Dictionary = char_of(current, "attack")
-	var defender: Dictionary = char_of(1 - current, "defense")
+	var defender: Dictionary = char_of(target, "defense")
 	say("  전투! %s(공격) vs %s(방어)" % [attacker["name"], defender["name"]])
-	var attack_dice := _attack_dice(current)
-	var defense_dice := _defense_dice(1 - current)
+	var attack_dice := _attack_dice(current, target)
+	var defense_dice := _defense_dice(target, current)
 	var attack_mods := _attack_mods(current)
-	var defense_mods := _defense_mods(1 - current)
+	var defense_mods := _defense_mods(target)
 	var result := resolve_battle(
-		attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current), attack_mods, defense_mods)
+		attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(target), attack_mods, defense_mods)
 	if not result["attacker_won"] and _consume_effect(current, "retry"):
 		_say_battle(result)
 		say("  재도전! 한 번 더 굴립니다.")
 		result = resolve_battle(
-			attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(1 - current), attack_mods, defense_mods)
+			attack_dice, defense_dice, _attack_bonus(current), _defense_bonus(target), attack_mods, defense_mods)
 	_say_battle(result)
-	_battle_event(attacker["name"], defender["name"], result, "player")
-	_drain_after_battle(current if result["attacker_won"] else 1 - current)
+	_battle_event(attacker["name"], defender["name"], result, "player", target)
+	_drain_after_battle(current if result["attacker_won"] else target, target if result["attacker_won"] else current)
 	if result["attacker_won"]:
 		say("  %s 승리! %s은(는) 직전 거점으로 돌아갑니다." % [player["name"], opponent["name"]])
-		_return_to_checkpoint(1 - current)
+		_return_to_checkpoint(target)
 		_chase_after_win()
 		return true
 	say("  %s 방어 성공! %s은(는) 직전 거점으로 돌아갑니다." % [opponent["name"], player["name"]])
 	_return_to_checkpoint(current)
-	if effect_sum(1 - current, "counter") > 0:
+	if effect_sum(target, "counter") > 0:
 		say("  반격! %d칸 더 물러납니다." % COUNTER_STEPS)
 		_move_back(current, COUNTER_STEPS)
 	return false
@@ -1231,10 +1291,10 @@ func _battle_players() -> bool:
 ## 이겨도 져도 아무도 거점으로 돌아가지 않는다. 이기면 true (이동은 부른 쪽에서 한다).
 func _battle_comeback(player_index: int) -> bool:
 	var attacker: Dictionary = char_of(player_index, "attack")
-	var defender: Dictionary = char_of(1 - player_index, "defense")
+	var defender: Dictionary = char_of(leading_enemy(player_index), "defense")
 	say("  전투! %s(공격) vs %s(방어)" % [attacker["name"], defender["name"]])
-	var result := resolve_battle(_attack_dice(player_index), _defense_dice(1 - player_index),
-		_attack_bonus(player_index), _defense_bonus(1 - player_index), _attack_mods(player_index), _defense_mods(1 - player_index))
+	var result := resolve_battle(_attack_dice(player_index), _defense_dice(leading_enemy(player_index), player_index),
+		_attack_bonus(player_index), _defense_bonus(leading_enemy(player_index)), _attack_mods(player_index), _defense_mods(leading_enemy(player_index)))
 	_say_battle(result)
 	_battle_event(attacker["name"], defender["name"], result, "card")
 	return bool(result["attacker_won"])
@@ -1297,10 +1357,11 @@ func _say_battle(result: Dictionary) -> void:
 
 
 ## target: "player"(상대 말과 싸움), "keeper"(키퍼를 공격), "warden"(카드로 세운 문지기를 공격), "ambush"(몬스터의 습격을 막음), "card"(역전의 첫걸음 카드, 지는 쪽이 거점으로 가지 않음)
-func _battle_event(attacker_name: String, defender_name: String, result: Dictionary, target: String) -> void:
+func _battle_event(attacker_name: String, defender_name: String, result: Dictionary, target: String, opponent: int = -1) -> void:
 	_event({
 		"kind": "battle",
 		"target": target,
+		"opponent": leading_enemy(current) if opponent < 0 else opponent,
 		"player": current,
 		"attacker": attacker_name,
 		"defender": defender_name,
@@ -1316,7 +1377,7 @@ func _battle_event(attacker_name: String, defender_name: String, result: Diction
 
 func _apply_effect(effect: Dictionary, player_index: int) -> void:
 	var player: Dictionary = players[player_index]
-	var opponent_index := 1 - player_index
+	var opponent_index := leading_enemy(player_index)
 	var opponent: Dictionary = players[opponent_index]
 	var kind: String = effect.get("type", "")
 	var amount := int(effect.get("amount", 0))
@@ -1451,8 +1512,9 @@ func _chase_after_win() -> void:
 
 
 ## 상대 팀 게이지를 amount%만큼 빼앗아 우리 팀에 더한다(세 자리 평균으로 셈).
-func _steal_gauge(player_index: int, amount: int) -> void:
-	var opponent_index := 1 - player_index
+func _steal_gauge(player_index: int, amount: int, opponent_index: int = -1) -> void:
+	if opponent_index < 0:
+		opponent_index = leading_enemy(player_index)
 	var gauge: Dictionary = players[opponent_index]["gauge"]
 	var have := 0
 	for slot in SLOTS:
@@ -1467,23 +1529,24 @@ func _steal_gauge(player_index: int, amount: int) -> void:
 
 
 ## 상대 말과 싸워 이긴 쪽에 흡수 효과가 있으면 게이지를 빼앗는다.
-func _drain_after_battle(winner_index: int) -> void:
+func _drain_after_battle(winner_index: int, loser_index: int) -> void:
 	var amount := effect_sum(winner_index, "drain")
 	if amount > 0:
-		_steal_gauge(winner_index, amount)
+		_steal_gauge(winner_index, amount, loser_index)
 
 
 ## 두 말의 자리와 지나온 길을 서로 바꾼다.
 func _swap_positions(player_index: int) -> void:
 	var me: Dictionary = players[player_index]
-	var other: Dictionary = players[1 - player_index]
+	var target := leading_enemy(player_index)
+	var other: Dictionary = players[target]
 	var my_trail: Array = me["trail"]
 	me["trail"] = other["trail"]
 	other["trail"] = my_trail
 	me["pos"] = int(me["trail"].back())
 	other["pos"] = int(other["trail"].back())
 	_event({"kind": "pos", "player": player_index, "to": me["pos"]})
-	_event({"kind": "pos", "player": 1 - player_index, "to": other["pos"]})
+	_event({"kind": "pos", "player": target, "to": other["pos"]})
 	say("  운명이 뒤바뀌었습니다! 두 말의 자리가 바뀝니다.")
 
 

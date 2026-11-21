@@ -90,6 +90,7 @@ func _init() -> void:
 	_test_summon()
 	_test_upgrade_and_level()
 	_test_match_rewards()
+	_test_rank_team()
 	_test_missions_and_attendance()
 	_test_lobby_alerts()
 	_test_adventure()
@@ -900,6 +901,47 @@ func _test_upgrade_and_level() -> void:
 	var ups := Profile.add_exp(fresh, eco, Profile.exp_to_next(fresh, eco) + 1)
 	_check(ups == 1 and int(fresh["level"]) == 2 and int(fresh["exp"]) == 1, "경험치로 레벨이 제대로 오르지 않음")
 	_check(int(fresh["gems"]) > gems, "레벨업 보석을 주지 않음")
+
+
+func _test_rank_team() -> void:
+	var parties := PARTIES + PARTIES
+	var game = _new_game(31, parties)
+	game.current = 0
+	_place(game, 0, [0, 1])
+	_place(game, 2, [0, 1])
+	_check(not game._can_fight_passing(0), "팀전에서 아군과 교전함")
+	_place(game, 3, [0, 1])
+	_check(game.enemies_here(0) == [3], "두 번째 상대를 인식하지 못함")
+	_place(game, 1, [0, 1])
+	_check(game._choose_enemy(2) and game.pending_choice["options"] == [1, 3], "같은 칸의 두 상대를 고를 수 없음")
+	game.choose_path(1)
+	_check(game.fought_on_move and not game._can_fight_passing(0), "한 이동에서 두 번 교전함")
+	game = _new_game(32, parties)
+	game._finish_by_position()
+	_check(game.winner == 2, "같은 거리의 팀들이 비기지 않음")
+	_place(game, 2, [0, 1])
+	game._finish_by_position()
+	_check(game.winner == 0, "동료가 앞선 팀이 이기지 않음")
+	for seed_value in 12:
+		game = _new_game(seed_value, parties)
+		for turn_index in game.max_rounds * parties.size():
+			_check(game.current == (game.first_player + turn_index) % 4, "팀전 차례가 엇갈림")
+			AI.take_turn(game)
+			if game.winner >= 0:
+				break
+		_check(game.winner in [0, 1, 2], "팀전이 끝나지 않음")
+		if game.winning_player >= 0:
+			_check(game.winner == game.winning_player % 2, "수호자를 꺾은 팀의 승리 처리 오류")
+	var eco: Dictionary = _data["economy"]
+	var profile := Profile.new_profile("팀전", eco)
+	Profile.ensure_daily(profile, "2026-01-01")
+	Profile.record_match(profile, eco, "rank", "win", {})
+	Profile.record_match(profile, eco, "rank_team", "win", {})
+	Profile.record_match(profile, eco, "rank_team", "lose", {})
+	Profile.record_match(profile, eco, "rank_team", "draw", {})
+	var payouts: Dictionary = eco["rewards"]["rank"]
+	_check(profile["trophies"] == 2 * int(payouts["win"]["trophies"]) + int(payouts["lose"]["trophies"]), "공통 트로피 계산 오류")
+	_check(profile["history"][0]["mode"] == "rank_team" and profile["history"][3]["mode"] == "rank", "개인전과 팀전 전적 구분 오류")
 
 
 func _test_match_rewards() -> void:
