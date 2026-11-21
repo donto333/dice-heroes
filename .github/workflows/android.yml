@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: android-${{ github.ref }}
@@ -89,9 +90,22 @@ jobs:
           fi
 
       - name: 버전 적기
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # 웹과 같은 번호: data/version.json의 base + Build 실행 번호(직접 돌릴 때는 이 실행 번호).
-          build="${{ github.event.workflow_run.run_number || github.run_number }}"
+          # 웹과 같은 번호: data/version.json의 base + Build 실행 번호.
+          # auto-merge.yml이 직접 부를 때(workflow_dispatch)도 같은 커밋의 Build 번호를 찾아 쓴다.
+          # 번호가 다르면 실시간 대전에서 웹과 앱이 '다른 버전'으로 보여 짝지어지지 않는다.
+          build="${{ github.event.workflow_run.run_number }}"
+          if [ -z "$build" ]; then
+            for try in 1 2 3 4 5 6; do
+              build=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/build.yml/runs?head_sha=$(git rev-parse HEAD)&per_page=1" -q '.workflow_runs[0].run_number' 2>/dev/null || true)
+              [ -n "$build" ] && break
+              sleep 10
+            done
+          fi
+          build="${build:-${GITHUB_RUN_NUMBER}}"
+          echo "Build 번호: ${build}"
           base=$(python3 -c "import json;print(json.load(open('data/version.json'))['base'])")
           name="${base}.${build}"
           python3 -c "import json;p='data/version.json';d=json.load(open(p));d['build']=int('${build}');json.dump(d,open(p,'w'))"
