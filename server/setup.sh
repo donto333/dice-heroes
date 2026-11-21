@@ -2,7 +2,17 @@
 # 주사위 영웅전 서버 첫 설치. Vultr '시작 스크립트'로 서버가 처음 켜질 때 root로 한 번 돈다.
 # 하는 일: Docker 설치 → 저장소 받기 → .env(비밀번호·주소) 만들기 → 서버 켜기 → 5분마다 저장소를 받아 바뀌면 다시 켜기.
 set -euxo pipefail
+
+# 'curl ... | bash'로 돌면 스크립트 자체가 표준 입력이라, 중간 명령(apt·docker 설치)이 입력을 읽어 버리면
+# 나머지 줄이 사라진다. 그래서 먼저 파일로 받아 그 파일로 다시 시작한다.
+SELF=/root/dice-setup.sh
+if [ "${DICE_SETUP_FILE:-}" != "1" ]; then
+	curl -fsSL https://raw.githubusercontent.com/donto333/dice-heroes/main/server/setup.sh -o "$SELF"
+	DICE_SETUP_FILE=1 exec bash "$SELF" < /dev/null
+fi
+
 exec > >(tee -a /var/log/dice-setup.log) 2>&1
+echo "=== 설치 시작 $(date) ==="
 
 REPO=https://github.com/donto333/dice-heroes.git
 DIR=/opt/dice-heroes
