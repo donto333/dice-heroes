@@ -1298,6 +1298,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"스킬 게이지는 충전량에 따라 색이 바뀌고 가득 차면 빛나요.",
 	"메뉴와 팝업에 원래 컬러 아이콘을 적용했어요.",
 	"대전 화면의 정보판과 버튼에 새 디자인을 적용했어요.",
 	"로비 메뉴에 원래 컬러 아이콘을 적용했어요.",
@@ -1520,7 +1521,7 @@ func _maybe_news() -> void:
 	app.save()
 	var body := Kit.vbox(8)
 	for line in NEWS:
-		body.add_child(Kit.para("· " + line, 21, Color.WHITE))
+		body.add_child(Kit.para("· " + Lang.t(line), 21, Color.WHITE))
 	app.dialog("새 소식 · 버전 %s" % app.VERSION, body, [["확인", Kit.ACCENT, _maybe_attendance]], 640)
 
 
