@@ -5,6 +5,7 @@ extends Control
 ##
 ## 화면 위에서부터: 상태 줄(나가기), 보드, 결과 패널(주사위·전투), 어빌리티, 카드, 굴리기 버튼, 진행 기록.
 
+const Realtime := preload("res://scripts/net/realtime.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const AI := preload("res://scripts/rules/ai.gd")
@@ -85,6 +86,19 @@ var _ability_portraits: Dictionary = {}
 var _ability_gauges: Dictionary = {}
 var app
 var _mode := "ai"
+var _pvp: Realtime
+var _pvp_seat := 0
+var _pvp_seed := -1
+var _pvp_first := -1
+var _pvp_seq := 0
+var _pvp_replay_limit := -1
+var _pvp_replay_waits := false
+var _pvp_ready := false
+var _pvp_animating := false
+var _pvp_sent := false
+var _pvp_turn_pending := false
+var _pvp_result := ""
+var _pvp_clock := -1
 var _parties: Array = []
 var _humans: Array = [true, false]
 var _map_index := 0
@@ -146,6 +160,12 @@ func setup(main_app, params: Dictionary) -> void:
 		_data["board"] = boards[map_index]
 	_map_index = map_index
 	_mode = str(params.get("mode", "ai"))
+	_pvp = params.get("pvp")
+	_pvp_seat = int(params.get("seat", 0))
+	if is_instance_valid(_pvp):
+		_pvp_clock = _pvp.seconds_left
+	_pvp_seed = int(params.get("seed", -1))
+	_pvp_first = int(params.get("first", -1))
 	_stage_id = str(params.get("stage", ""))
 	_reward_scale = float(params.get("reward_scale", 1.0))
 	_parties = params.get("parties", [])
@@ -175,7 +195,7 @@ func _board_center() -> Vector2:
 func _on_piece_landed(player_index: int, flung: bool) -> void:
 	if not flung:
 		# 발끝 효과(2026-11-19, 꾸미기): 내 말(첫 번째 플레이어)이 한 칸 뛸 때마다 발밑에 작게 피어난다.
-		if player_index == 0 and not _is_local() and app.has_profile():
+		if player_index == _my_seat() and not _is_local() and app.has_profile():
 			var trail := Profile.trail_fx(app.profile, app.eco)
 			if trail != "":
 				_fx.burst(_piece_spot(player_index) + Vector2(0, 36), trail, 6, 0.32)
@@ -193,9 +213,19 @@ func _on_piece_flung(player_index: int) -> void:
 
 ## 지금 화면에 어빌리티와 카드를 보여 줄 플레이어. 사람 차례면 그 사람, AI 차례면 첫 번째 사람.
 func _viewer() -> int:
+	if _mode == "rank_pvp":
+		return _pvp_seat
 	if game != null and _humans[game.current]:
 		return game.current
 	return 0
+
+
+func _my_seat() -> int:
+	return _pvp_seat if _mode == "rank_pvp" else 0
+
+
+func _is_rank() -> bool:
+	return _mode in ["rank", "rank_pvp"]
 
 
 func _is_local() -> bool:
@@ -1248,6 +1278,8 @@ func _on_speed_pressed() -> void:
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
+	if is_instance_valid(_pvp):
+		_pvp.close(_pvp_result.is_empty())
 
 
 # ---------------------------------------------------------------- 한마디 말풍선
@@ -1802,7 +1834,7 @@ func _start_game() -> void:
 	_hide_path_choices()
 	game = Game.new()
 	# 내 파티(0번)에는 장착한 유물의 시작 보너스가 붙는다. 친구 대전은 공평하게 쓰지 않는다.
-	if _mode != "local" and not _parties.is_empty():
+	if _mode not in ["local", "rank_pvp"] and not _parties.is_empty():
 		_parties[0]["relic"] = Profile.current_relic(app.profile, app.eco).get("effect", {})
 		# 내 카드 덱: 판에서는 덱에 넣은 카드만 뽑힌다. 상대(AI)는 모든 카드에서 뽑는다.
 		_parties[0]["deck"] = Profile.battle_deck(app.profile, _data.get("cards", {}), app.eco)
@@ -1811,7 +1843,7 @@ func _start_game() -> void:
 		_parties[1]["relic"] = Profile.rank_boost(app.eco, int(app.profile.get("trophies", 0)))
 		if _parties.size() == 4:
 			_parties[3]["relic"] = _parties[1]["relic"]
-	game.setup(_data, _parties)
+	game.setup(_data, _parties, _pvp_seed, _pvp_first)
 	_setup_tutorial()
 	_start_distance = max(game.distance_of(0), 1)
 	for textures in [_board_view.piece_textures, _board_view.piece_standees, _board_view.piece_anims, _board_view.party_anims, _board_view.party_standees]:
@@ -1843,7 +1875,7 @@ func _start_game() -> void:
 	_auto = false
 	_auto_button.text = "자동 꺼짐"
 	_paint_pill(_auto_button, "blue", Color("6f9bd6"))
-	_auto_button.visible = not _is_local()
+	_auto_button.visible = not _is_local() and _mode != "rank_pvp"
 	_clear_results()
 	_add_result_text("%s 파티: %s" % [game.players[1]["name"], _party_names(1)], PLAYER_TEXT_COLORS[1])
 	_add_result_text("맵: %s(%s)  ·  골의 수호자: %s\n먼저 골(분홍 칸)의 수호자를 이기고 들어가면 승리!" % [game.board_name, game.board_shape, _goal_name()], Color.WHITE)
@@ -1855,7 +1887,138 @@ func _start_game() -> void:
 		"%s (%s)" % [game.board_name, game.board_shape], "%s\n골의 수호자: %s  ·  %d턴 제한" % [game.board_feature, _goal_name(), game.max_rounds], _mode == "rank")
 	if playing != game or not is_inside_tree():
 		return
-	_advance()
+	if _mode == "rank_pvp":
+		_pvp_ready = true
+		_pvp_begin_turn()
+	else:
+		_advance()
+
+
+## 서버가 수락한 행동만 화면에서 적용하고, 연출이 끝나면 다음 수신 항목을 처리한다.
+func _process(_delta: float) -> void:
+	if not _pvp_ready or not is_instance_valid(_pvp) or _pvp_animating or not _pvp_result.is_empty():
+		return
+	if not _pvp.events.is_empty():
+		var packet: Dictionary = _pvp.events.pop_front()
+		var body: Dictionary = packet["body"]
+		match int(packet["op"]):
+			Realtime.START:
+				_pvp_resume(body)
+			Realtime.ACTION_OK:
+				await _pvp_action(body)
+			Realtime.TURN_END:
+				if _pvp_turn_pending and int(body["seq"]) == _pvp_seq and int(body["next_player"]) == game.current:
+					_pvp_begin_turn()
+			Realtime.RESULT:
+				_pvp_finish(body)
+		return
+	_pvp_update_input()
+
+
+func _pvp_begin_turn() -> void:
+	_pvp_turn_pending = false
+	game.begin_turn()
+	_board_view.focus_on(game.current)
+	_pvp_update_input()
+	_refresh()
+
+
+func _pvp_update_input() -> void:
+	var can_input: bool = _pvp.ready_for_input() and not _pvp_sent and not _pvp_turn_pending and _pvp.events.is_empty() and game.winner < 0 and game.current == _pvp_seat
+	var can_roll: bool = can_input and game.can_act()
+	var can_choose: bool = can_input and game.awaiting_choice()
+	var update: bool = _waiting_for_player != can_roll or _choosing_path != can_choose or _pvp_clock != _pvp.seconds_left
+	_waiting_for_player = can_roll
+	_choosing_path = can_choose
+	_pvp_clock = _pvp.seconds_left
+	if can_choose and not is_instance_valid(_path_choices):
+		_show_path_choice()
+	elif not can_choose and is_instance_valid(_path_choices):
+		_hide_path_choices()
+		_board_view.highlight = []
+	if update:
+		_refresh()
+	if can_input and game.moved and not game.awaiting_choice():
+		_pvp_send_action("end_turn", [])
+
+
+func _pvp_send_action(type: String, args: Array) -> void:
+	if _pvp_sent or _pvp_turn_pending or not _pvp.ready_for_input() or game.current != _pvp_seat:
+		return
+	_pvp_sent = _pvp.send_match(Realtime.ACTION, {"seq": _pvp_seq, "type": type, "args": args})
+	if _pvp_sent:
+		_pvp_update_input()
+
+
+func _pvp_action(action: Dictionary) -> void:
+	var seq := int(action["seq"])
+	if seq <= _pvp_seq:
+		return
+	var actor := int(action["player"])
+	if seq != _pvp_seq + 1 or not game.apply_action(actor, action):
+		_pvp.send_match(Realtime.RESULT, {"seq": seq, "winner": 2, "hash": game.state_hash()})
+		_pvp_finish({"winner": -1, "reason": "sync_error"})
+		return
+	_pvp_seq = seq
+	_pvp_sent = false
+	_waiting_for_player = false
+	_choosing_path = false
+	_hide_path_choices()
+	_board_view.highlight = []
+	var historical := seq <= _pvp_replay_limit
+	if game.winner >= 0:
+		_pvp_report_result()
+	elif game.current != actor:
+		_pvp_turn_pending = true
+		if historical and (seq < _pvp_replay_limit or not _pvp_replay_waits):
+			# 재참가 전 이미 합의한 턴은 다음 행동을 읽기 전에 시작한다.
+			_pvp_begin_turn()
+		else:
+			_pvp_report_turn()
+	_refresh()
+	if historical:
+		game.take_events()
+		_board_view.reset_pieces()
+	else:
+		_pvp_animating = true
+		_clear_results()
+		_add_result_header(_turn_title(actor), PLAYER_TEXT_COLORS[actor])
+		await _present_events()
+		_pvp_animating = false
+
+
+func _pvp_report_turn() -> void:
+	_pvp.send_match(Realtime.TURN_END, {"seq": _pvp_seq, "next_player": game.current, "hash": game.state_hash()})
+
+
+func _pvp_report_result() -> void:
+	_pvp.send_match(Realtime.RESULT, {"seq": _pvp_seq, "winner": game.winner, "hash": game.state_hash()})
+
+
+func _pvp_resume(start: Dictionary) -> void:
+	_pvp_sent = false
+	_pvp_replay_limit = int(start["seq"])
+	_pvp_replay_waits = bool(start["awaiting_turn"])
+	if _pvp_seq != _pvp_replay_limit:
+		return
+	if game.winner >= 0:
+		_pvp_report_result()
+	elif _pvp_turn_pending:
+		if _pvp_replay_waits:
+			_pvp_report_turn()
+		else:
+			_pvp_begin_turn()
+
+
+func _pvp_finish(result: Dictionary) -> void:
+	_pvp_result = str(result["reason"])
+	game.winner = int(result["winner"])
+	_waiting_for_player = false
+	_choosing_path = false
+	_hide_path_choices()
+	_pvp.close()
+	_show_game_over()
+	_refresh()
 
 
 ## VS 화면에 보여 줄 한쪽 파티.
@@ -1954,6 +2117,8 @@ func _goal_name() -> String:
 
 
 func _turn_title(index: int) -> String:
+	if _mode == "rank_pvp":
+		return "내 차례" if index == _pvp_seat else "상대 차례"
 	if _is_local() or game.is_team_match():
 		return "%s 차례" % game.players[index]["name"]
 	return "내 차례" if _humans[index] else "AI 차례"
@@ -1986,7 +2151,11 @@ func _on_roll_up() -> void:
 
 func _on_roll_pressed(aim: String = "") -> void:
 	_close_hint()
-	if game.winner >= 0:
+	if _mode == "rank_pvp" and _pvp_result.is_empty():
+		if _waiting_for_player:
+			_pvp_send_action("roll", [aim])
+		return
+	if game.winner >= 0 or not _pvp_result.is_empty():
 		_result_overlay.visible = true
 		return
 	if not _waiting_for_player:
@@ -2086,6 +2255,10 @@ func _fight_choice_button(caption: String, index: int) -> Button:
 
 
 func _on_path_chosen(index: int) -> void:
+	if _mode == "rank_pvp":
+		if _choosing_path:
+			_pvp_send_action("choice", [index])
+		return
 	if not _choosing_path or not game.awaiting_choice():
 		return
 	_choosing_path = false
@@ -2119,6 +2292,10 @@ func _hide_path_choices() -> void:
 
 
 func _on_ability_pressed(slot: String) -> void:
+	if _mode == "rank_pvp":
+		if _waiting_for_player and game.can_use_ability(slot):
+			_pvp_send_action("ability", [slot])
+		return
 	var me := _viewer()
 	if _waiting_for_player and game.use_ability(slot):
 		if me == 0:
@@ -2166,6 +2343,10 @@ func _on_card_pressed(index: int) -> void:
 
 
 func _use_card(index: int) -> void:
+	if _mode == "rank_pvp":
+		if _waiting_for_player and game.can_play_card(index):
+			_pvp_send_action("card", [index])
+		return
 	if not _waiting_for_player:
 		return
 	var hand: Array = game.players[game.current]["hand"]
@@ -2229,6 +2410,8 @@ func _present_events() -> void:
 			"ability":
 				# 어빌리티는 영웅 그림 컷인으로 보여 준다(누가 쓰든).
 				var caster := int(event["player"])
+				if _mode == "rank_pvp" and caster == _pvp_seat:
+					_abilities_used += 1
 				_say(caster, "%s!" % event["name"])
 				_play("skill")
 				app.say(str(_character_named(str(event["hero"])).get("id", "")), "skill")
@@ -2243,6 +2426,8 @@ func _present_events() -> void:
 				_notify(_character_named(str(event["hero"])), str(event["name"]), str(event.get("text", "")), PLAYER_TEXT_COLORS[caster])
 				await _cutin.play(_character_named(str(event["hero"])), str(event["name"]), str(event.get("text", "")), PLAYER_TEXT_COLORS[caster])
 			"card":
+				if _mode == "rank_pvp" and int(event["player"]) == _pvp_seat:
+					_cards_used += 1
 				await _show_card(event)
 	if not moves.is_empty():
 		_board_view.push_moves(moves)
@@ -2260,7 +2445,7 @@ func _show_move(event: Dictionary) -> void:
 	_result_box.add_child(row)
 	_trim_results()
 	# 이동 음성: 내 ATTACK 영웅이 가끔 한마디(매번 하면 시끄럽다).
-	if (who % 2 == 0 or _is_local()) and _voice_rng.randf() < MOVE_VOICE_CHANCE:
+	if (who % 2 == _my_seat() or _is_local()) and _voice_rng.randf() < MOVE_VOICE_CHANCE:
 		app.say(str(game.char_of(who, "attack").get("id", "")), "move")
 	if not event["rolls"].is_empty():
 		# 판 가운데 큰 주사위 연출. 아래 결과 줄의 작은 주사위도 같이 구른다.
@@ -2335,7 +2520,7 @@ func _show_battle(event: Dictionary) -> void:
 	await _show_battle_inner(event)
 	# 내 쪽에서 본 승패 소리. 습격은 막는 쪽이 플레이어다.
 	var player_won: bool = (not bool(event["won"])) if str(event.get("target", "")) == "ambush" else bool(event["won"])
-	var mine: bool = _is_local() or int(event["player"]) % 2 == 0
+	var mine: bool = _is_local() or int(event["player"]) % 2 == _my_seat()
 	if boss and player_won:
 		_play("goal" if defender == _goal_name() else "gate_open")
 	else:
@@ -2515,13 +2700,13 @@ func _add_battle_result(event: Dictionary) -> void:
 	if ambushed:
 		success = not event["won"]
 		verdict = "%s 방어 성공!" % game.players[who]["name"]
-	if who == 0:
+	if who == _my_seat():
 		_my_battles[0 if success else 1] += 1
 		var my_total := int(event["defense_total"]) if ambushed else int(event["attack_total"])
 		_best_roll = max(_best_roll, my_total)
 		if success:
 			_slot_wins["defense" if ambushed else "attack"] += 1
-	elif str(event.get("target", "")) in ["player", "card"] and int(event["opponent"]) == 0 and not success:
+	elif str(event.get("target", "")) in ["player", "card"] and int(event["opponent"]) == _my_seat() and not success:
 		# 상대가 나를 공격했다가 진 것도 내 전투 승리
 		_my_battles[0] += 1
 		_slot_wins["defense"] += 1
@@ -2543,7 +2728,21 @@ func _show_game_over() -> void:
 	var text := "무승부!"
 	var color := Color.WHITE
 	var outcome := "draw"
-	if _is_local():
+	if _mode == "rank_pvp":
+		var won: bool = game.winner == _pvp_seat
+		match _pvp_result:
+			"sync_error":
+				text = "동기화 오류로 대전이 무효 처리됐어요."
+			"connection_lost", "cancelled":
+				text = "연결이 끊겨 대전이 종료됐어요."
+			"leave":
+				text = "상대가 나갔어요 — 승리" if won else "대전이 종료됐어요."
+			_:
+				text = "승리!" if won else ("패배..." if game.winner < 2 else "무승부!")
+		if game.winner in [0, 1]:
+			outcome = "win" if won else "lose"
+			color = Color("7ee081") if won else Color("ff6b6b")
+	elif _is_local():
 		if game.winner == 0 or game.winner == 1:
 			text = "%s 승리!" % game.players[game.winner]["name"]
 			color = PLAYER_TEXT_COLORS[game.winner]
@@ -2565,7 +2764,7 @@ func _show_game_over() -> void:
 		app.music.play_track("victory" if (_is_local() or outcome == "win") else "defeat")
 	# 결과 음성: 내 ATTACK 영웅(친구 대전은 이긴 쪽)이 한마디.
 	if outcome != "draw":
-		var speaker := int(game.winner) if _is_local() else 0
+		var speaker := int(game.winner) if _is_local() else _my_seat()
 		app.say(str(game.char_of(speaker, "attack").get("id", "")), "win" if (_is_local() or outcome == "win") else "lose")
 	_result_text = text
 	var label := _make_label(34, text)
@@ -2575,7 +2774,7 @@ func _show_game_over() -> void:
 
 	var reached_goal: bool = game.winning_player >= 0
 	var subtitle := text
-	if not reached_goal:
+	if not reached_goal and _mode != "rank_pvp":
 		subtitle = "%d턴이 끝나 골까지 남은 거리로 판정했습니다." % game.max_rounds
 	var details := PackedStringArray([
 		"진행한 턴: %d턴" % min(game.round_number, game.max_rounds),
@@ -2587,8 +2786,8 @@ func _show_game_over() -> void:
 		details.insert(2, "내 전투: %d승 %d패  ·  최고 주사위 합 %d" % [_my_battles[0], _my_battles[1], _best_roll])
 		details.insert(3, "카드 %d장 · 어빌리티 %d번 사용" % [_cards_used, _abilities_used])
 	if not _is_local():
-		details.append("뚫은 관문: %d / %d" % [(game.gates_cleared[0] as Dictionary).size(), _gate_count()])
-	var record_lines := _record(outcome)
+		details.append("뚫은 관문: %d / %d" % [(game.gates_cleared[_my_seat()] as Dictionary).size(), _gate_count()])
+	var record_lines := _record(outcome) if _mode != "rank_pvp" or _pvp_result in ["finished", "leave"] and game.winner >= 0 else PackedStringArray()
 	details.append_array(record_lines)
 	var shown_outcome := outcome
 	if _is_local() and outcome != "draw":
@@ -2608,14 +2807,14 @@ func _show_game_over() -> void:
 		rows.append(["swords", "%s 파티" % game.players[1]["name"], _party_names(1)])
 	else:
 		rows.append(["sword", "내 전투", "%d승 %d패 · 최고 합 %d" % [_my_battles[0], _my_battles[1], _best_roll]])
-		rows.append(["t_gate", "뚫은 관문", "%d / %d" % [(game.gates_cleared[0] as Dictionary).size(), _gate_count()]])
+		rows.append(["t_gate", "뚫은 관문", "%d / %d" % [(game.gates_cleared[_my_seat()] as Dictionary).size(), _gate_count()]])
 		rows.append(["card", "카드 · 어빌리티", "카드 %d장 · %d번 사용" % [_cards_used, _abilities_used]])
-		if _mode == "rank" and _last_reward.has("trophies"):
+		if _is_rank() and _last_reward.has("trophies"):
 			rows.append(["trophy", "트로피", "%+d → %d (%s)" % [int(_last_reward["trophies"]), int(app.profile["trophies"]), str(_last_reward.get("tier_after", ""))]])
-		extras["parties"] = ["내 파티: %s" % _party_names(0), "상대 파티: %s" % _party_names(1)]
+		extras["parties"] = ["내 파티: %s" % _party_names(_my_seat()), "상대 파티: %s" % _party_names(1 - _my_seat())]
 	for line in record_lines:
 		# 트로피 줄은 결과 줄에 이미 있으니 띠에서는 뺀다.
-		if _mode == "rank" and str(line).begins_with("트로피 "):
+		if _is_rank() and str(line).begins_with("트로피 "):
 			continue
 		notes.append(str(line))
 	extras["rows"] = rows
@@ -2637,7 +2836,7 @@ func _result_extras() -> Dictionary:
 		var note := "전투 %d승" % int(_slot_wins[slot]) if slot != "" else "파티의 선봉"
 		if slot == "":
 			slot = "attack"
-		extras["mvp"] = game.char_of(0, slot)
+		extras["mvp"] = game.char_of(_my_seat(), slot)
 		extras["mvp_note"] = "%s · %s" % [SLOT_NAMES.get(slot, slot), note]
 	# 얻은 보상 칸: [아이콘, 글]
 	var rewards: Array = []
@@ -2682,7 +2881,7 @@ func _record(outcome: String) -> PackedStringArray:
 	var missions_before := Profile.claimable_mission_count(app.profile, app.eco)
 	var achievements_before := Profile.claimable_achievement_count(app.profile, app.data)
 	var reward := Profile.record_match(app.profile, app.eco, "rank_team" if game.is_team_match() else _mode, outcome, {"battle_wins": _my_battles[0], "cards": _cards_used, "reward_scale": _reward_scale, "party": _my_party_ids(),
-		"map": game.board_name, "turns": int(game.round_number), "gates": (game.gates_cleared[0] as Dictionary).size(),
+		"map": game.board_name, "turns": int(game.round_number), "gates": (game.gates_cleared[_my_seat()] as Dictionary).size(),
 		"event_gold_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "match_gold_scale"),
 		"event_pass_scale": Profile.event_scale(app.data.get("events", {}), app.today(), "pass_exp_scale")})
 	_last_reward = reward
@@ -2697,7 +2896,7 @@ func _record(outcome: String) -> PackedStringArray:
 	app.save()
 	# 길잡이: 첫 판을 끝냈다(이기든 지든).
 	app.tutorial_event("match_end")
-	if _mode == "rank":
+	if _is_rank():
 		lines.append("트로피 %+d → %d (%s)" % [int(reward["trophies"]), int(app.profile["trophies"]), reward["tier_after"]])
 		if str(reward["tier_before"]) != str(reward["tier_after"]):
 			lines.append("티어 변경: %s → %s" % [reward["tier_before"], reward["tier_after"]])
@@ -2751,6 +2950,9 @@ func _on_retry_pressed() -> void:
 		app.go_loading("match", {"mode": _mode, "parties": _parties, "humans": _humans, "map": app.rng.randi_range(0, app.data["boards"].size() - 1)}, "대전 준비 중...", 0.8, true)
 	elif _mode == "adventure":
 		app.start_mode("adventure", {"stage": _next_stage if _next_stage != "" else _stage_id})
+	elif _mode == "rank_pvp":
+		app.go("lobby")
+		app.start_mode("rank")
 	else:
 		app.start_mode(_mode, {"rank_team": game.is_team_match()} if _mode == "rank" else {})
 
@@ -2763,17 +2965,17 @@ func _on_change_party_pressed() -> void:
 ## 나가기. 랭크전에서 도중에 나가면 패배로 기록한다.
 func _on_quit_pressed() -> void:
 	_play("click")
-	if game.winner >= 0:
+	if game.winner >= 0 and _mode != "rank_pvp" or not _pvp_result.is_empty():
 		app.go_loading("lobby", {}, "돌아가는 중...", 0.5)
 		return
 	var text := "지금 나가면 이번 판은 기록되지 않아요."
-	if _mode == "rank":
+	if _is_rank():
 		text = "랭크전에서 나가면 패배로 기록되고 트로피가 줄어요."
 	app.message("대전 나가기", text, "나가기", _confirm_quit)
 
 
 func _confirm_quit() -> void:
-	if _mode == "rank" and not _recorded:
+	if _is_rank() and not _recorded:
 		_recorded = true
 		Profile.record_match(app.profile, app.eco, "rank_team" if game.is_team_match() else _mode, "lose", {"battle_wins": _my_battles[0], "cards": _cards_used})
 		app.save()
@@ -2796,7 +2998,7 @@ func _mvp_slot() -> String:
 func _my_party_ids() -> Array:
 	var ids: Array = []
 	for slot in Game.SLOTS:
-		ids.append(str(game.char_of(0, slot)["id"]))
+		ids.append(str(game.char_of(_my_seat(), slot)["id"]))
 	return ids
 
 
@@ -2818,6 +3020,8 @@ func _refresh() -> void:
 	var second: Dictionary = game.players[1]
 	var attr_text: String = game.map_attr if game.map_attr != "" else "없음"
 	var turn_text := _turn_title(game.current)
+	if _mode == "rank_pvp" and _pvp_result.is_empty():
+		turn_text += " · " + Lang.t("남은 시간 %d초") % _pvp_clock
 	if game.winner == 2:
 		turn_text = "무승부"
 	elif game.winner >= 0:
@@ -2863,6 +3067,8 @@ func _refresh() -> void:
 	var hand: Array = me["hand"]
 	for index in _card_buttons.size():
 		var button: Button = _card_buttons[index]
+		if _mode == "rank_pvp":
+			button.disabled = not _waiting_for_player
 		if index < hand.size():
 			var card: Dictionary = game.cards[hand[index]]
 			var art = button.get_meta("art")
@@ -2876,7 +3082,10 @@ func _refresh() -> void:
 		else:
 			button.visible = false
 
-	if game.winner >= 0:
+	if _mode == "rank_pvp" and _pvp_result.is_empty() and game.winner >= 0:
+		_set_roll_text("진행\n중...")
+		_roll_button.disabled = true
+	elif game.winner >= 0 or _mode == "rank_pvp" and not _pvp_result.is_empty():
 		_set_roll_text("결과\n보기")
 		_roll_button.disabled = false
 	elif _choosing_path:

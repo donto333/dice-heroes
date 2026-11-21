@@ -2114,5 +2114,17 @@
  "서버 연결: 연결됨": "Server connection: Connected",
  "서버 연결: 연결 안 됨(기기에만 저장)": "Server connection: Offline (saved on this device only)",
  "아직 없음": "None yet",
- "마지막 서버 저장: %s": "Last server save: %s"
+ "마지막 서버 저장: %s": "Last server save: %s",
+ "랭크전에서 다른 플레이어와 실시간 1대1 대전을 할 수 있어요.": "Play live one-on-one matches against other players in Ranked.",
+ "상대 차례": "Opponent’s turn",
+ "동기화 오류로 대전이 무효 처리됐어요.": "A synchronization error voided the match.",
+ "연결이 끊겨 대전이 종료됐어요.": "The match ended after the connection was lost.",
+ "상대가 나갔어요 — 승리": "Your opponent left. You win!",
+ "대전이 종료됐어요.": "The match has ended.",
+ "남은 시간 %d초": "%d sec left",
+ "실시간 대전": "Live match",
+ "실시간 대전 · 서버 연결 안 됨": "Live match · Server offline",
+ "상대를 못 찾았어요. AI와 대전할까요?": "No opponent found. Play against the AI?",
+ "예": "Yes",
+ "아니오": "No"
 }

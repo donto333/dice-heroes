@@ -997,6 +997,16 @@ func _test_rank_team() -> void:
 	_check(profile["trophies"] == 2 * int(payouts["win"]["trophies"]) + int(payouts["lose"]["trophies"]), "공통 트로피 계산 오류")
 	_check(profile["history"][0]["mode"] == "rank_team" and profile["history"][3]["mode"] == "rank", "개인전과 팀전 전적 구분 오류")
 
+	var solo := Profile.new_profile("개인전", eco)
+	var pvp := Profile.new_profile("실시간", eco)
+	solo["trophies"] = 300
+	pvp["trophies"] = 300
+	for outcome in ["win", "lose", "draw"]:
+		var solo_reward := Profile.record_match(solo, eco, "rank", outcome, {})
+		var pvp_reward := Profile.record_match(pvp, eco, "rank_pvp", outcome, {})
+		_check(solo_reward["trophies"] == pvp_reward["trophies"], "실시간 랭크전 트로피 일치")
+	_check(pvp["history"][0]["mode"] == "rank_pvp", "실시간 랭크전 전적 구분")
+
 
 func _test_match_rewards() -> void:
 	var eco: Dictionary = _data["economy"]

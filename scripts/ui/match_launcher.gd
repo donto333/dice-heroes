@@ -16,6 +16,8 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const ArtView := preload("res://scripts/ui/art_view.gd")
 const CardPanels := preload("res://scripts/ui/card_panels.gd")
 const ObservatoryPopups := preload("res://scripts/ui/observatory_popups.gd")
+const Realtime := preload("res://scripts/net/realtime.gd")
+const WaitBackdrop := preload("res://scripts/ui/wait_backdrop.gd")
 const CARD_FAN := preload("res://assets/ui_observatory/card_fan.png")
 
 const MODE_TITLES := {"rank": "랭크전", "ai": "AI 연습전", "local": "친구 대전", "adventure": "모험", "challenge": "오늘의 도전"}
@@ -27,6 +29,8 @@ var params: Dictionary = {}
 var _window: Control
 var _map_window: Control
 var _pending: Dictionary = {}
+var _pvp: Realtime
+var _pvp_wait: Control
 
 
 ## 시작 확인 창을 띄운다. 도우미 노드는 app에 붙고, 할 일을 마치면 스스로 사라진다.
@@ -57,10 +61,28 @@ func _choose_rank() -> void:
 	var body := Kit.vbox(12)
 	body.add_child(Kit.para("개인전과 팀전은 트로피와 티어를 공유해요.", 22, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	body.add_child(Kit.para("개인전은 AI와 1대1, 팀전은 AI 동료와 함께 상대 AI 둘과 겨뤄요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var live := MenuArt.pill_button("실시간 대전", "green", "m")
+	var update_live := func() -> void:
+		var available: bool = not app.instant and not app.online.session_token().is_empty()
+		live.disabled = not available
+		live.text = Lang.t("실시간 대전") if available else Lang.t("실시간 대전 · 서버 연결 안 됨")
+	update_live.call()
+	app.online.status_changed.connect(update_live)
+	live.pressed.connect(_select_live)
+	body.add_child(live)
 	_window = app.dialog("랭크전", body, [
 		["개인전", Kit.PRIMARY, _select_rank.bind(false)],
 		["팀전", Kit.ACCENT, _select_rank.bind(true)],
 		["취소", Kit.PANEL_LIGHT, cancel]], 820)
+	_window.tree_exited.connect(func() -> void:
+		if is_instance_valid(app.online) and app.online.status_changed.is_connected(update_live):
+			app.online.status_changed.disconnect(update_live))
+
+
+func _select_live() -> void:
+	_window.close()
+	params["rank_pvp"] = true
+	_open()
 
 
 func _select_rank(team: bool) -> void:
@@ -76,7 +98,10 @@ func _open() -> void:
 		if not found.is_empty():
 			title = "%s 시작" % str(found["stage"].get("name", "모험"))
 	if mode == "rank":
-		title = "팀전" if bool(params.get("rank_team", false)) else "개인전"
+		if bool(params.get("rank_pvp", false)):
+			title = "실시간 대전"
+		else:
+			title = "팀전" if bool(params.get("rank_team", false)) else "개인전"
 	var action := Kit.PRIMARY if Kit.Observatory.active else Kit.ACCENT
 	var buttons := [["확인", action, confirm], ["취소", Kit.PANEL_LIGHT, cancel]]
 	if Kit.Observatory.active:
@@ -286,6 +311,11 @@ func confirm() -> void:
 		_finish()
 		return
 	app.play("good")
+	if bool(params.get("rank_pvp", false)):
+		var live_party := Profile.battle_party(app.profile, party, str(app.profile["nickname"]))
+		live_party["deck"] = Profile.battle_deck(app.profile, app.data.get("cards", {}), app.eco)
+		_begin_pvp(live_party)
+		return
 	var mine := Profile.battle_party(app.profile, party, "나")
 	if mode == "adventure":
 		var found := Profile.find_stage(app.data.get("adventure", {}), str(params.get("stage", "")))
@@ -365,6 +395,77 @@ func confirm() -> void:
 				start["humans"].append(false)
 	start["map"] = _random_map()
 	_go(start)
+
+
+func _begin_pvp(party: Dictionary) -> void:
+	_pvp_wait = Control.new()
+	app.add_child(_pvp_wait)
+	_pvp_wait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_pvp_wait.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pvp_wait.add_child(WaitBackdrop.new())
+	var bottom := CenterContainer.new()
+	_pvp_wait.add_child(bottom)
+	bottom.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	bottom.offset_top = -210
+	bottom.offset_bottom = -45
+	var labels := Kit.vbox(12)
+	bottom.add_child(labels)
+	var heading := Kit.title("상대를 찾는 중", 38)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	labels.add_child(heading)
+	var button := MenuArt.pill_button("취소", "red", "m")
+	button.pressed.connect(_cancel_pvp)
+	labels.add_child(button)
+	if app.instant:
+		return
+	_pvp = Realtime.new()
+	app.add_child(_pvp)
+	_pvp.match_started.connect(_pvp_started, CONNECT_ONE_SHOT)
+	_pvp.start(app.online.session_token, app.VERSION, party, int(app.profile.get("trophies", 0)))
+	await get_tree().create_timer(Realtime.SEARCH_SECONDS).timeout
+	if not is_instance_valid(_pvp) or not _pvp.searching:
+		return
+	_pvp.close()
+	_pvp_wait.queue_free()
+	app.dialog("실시간 대전", Kit.para("상대를 못 찾았어요. AI와 대전할까요?", 24, Color.WHITE), [
+		["예", Kit.PRIMARY, _pvp_ai_fallback], ["아니오", Kit.PANEL_LIGHT, cancel]])
+
+
+func _cancel_pvp() -> void:
+	if is_instance_valid(_pvp):
+		_pvp.close()
+	if is_instance_valid(_pvp_wait):
+		_pvp_wait.queue_free()
+	cancel()
+
+
+func _pvp_ai_fallback() -> void:
+	params.erase("rank_pvp")
+	params["rank_team"] = false
+	confirm()
+
+
+func _pvp_started(start: Dictionary) -> void:
+	_pvp_wait.queue_free()
+	var parties: Array = start.get("parties", [])
+	if parties.size() != 2:
+		_pvp.close(true)
+		_finish()
+		return
+	for party: Dictionary in parties:
+		for slot in Game.SLOTS:
+			if app.character(str(party.get(slot, ""))).is_empty():
+				_pvp.close(true)
+				_finish()
+				return
+	var seed_value := int(start["seed"])
+	app.tutorial_event("rank")
+	app.go("match", {
+		"mode": "rank_pvp", "parties": parties, "humans": [true, true], "pvp": _pvp,
+		"seat": int(start["player"]), "seed": seed_value, "first": int(start["first_player"]),
+		"map": seed_value % app.data["boards"].size(),
+	})
+	_finish()
 
 
 func _go(start: Dictionary) -> void:

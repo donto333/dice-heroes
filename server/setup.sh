@@ -62,13 +62,23 @@ cat > /usr/local/bin/dice-update <<'EOF'
 #!/bin/bash
 set -e
 cd /opt/dice-heroes
-OLD=$(git rev-parse HEAD)
-git pull --quiet --depth 1 origin main || exit 0
-NEW=$(git rev-parse HEAD)
+STAMP=/var/lib/dice-update-revision
+if [ ! -s "$STAMP" ]; then
+	git rev-parse HEAD > "$STAMP"
+fi
+OLD=$(cat "$STAMP")
+# 깊이 1인 커밋끼리는 병합할 공통 조상이 없다. 새 main을 작업 트리에 체크아웃한다.
+git fetch --quiet --depth 1 origin main
+NEW=$(git rev-parse FETCH_HEAD)
+if [ "$(git rev-parse HEAD)" != "$NEW" ]; then
+	git checkout --quiet --detach "$NEW"
+fi
 if [ "$OLD" != "$NEW" ] && ! git diff --quiet "$OLD" "$NEW" -- server; then
-	cd server && docker compose pull --quiet && docker compose up -d --remove-orphans
+	(cd server && docker compose pull --quiet && docker compose up -d --remove-orphans)
 	echo "$(date) 업데이트 $NEW" >> /var/log/dice-update.log
 fi
+# 배포가 실패하면 성공한 커밋을 유지해 다음 실행에서 다시 배포한다.
+printf '%s\n' "$NEW" > "$STAMP"
 EOF
 chmod +x /usr/local/bin/dice-update
 cat > /etc/systemd/system/dice-update.service <<'EOF'

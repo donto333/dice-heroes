@@ -2114,5 +2114,17 @@
  "서버 연결: 연결됨": "Kết nối máy chủ: Đã kết nối",
  "서버 연결: 연결 안 됨(기기에만 저장)": "Kết nối máy chủ: Mất kết nối (chỉ lưu trên thiết bị)",
  "아직 없음": "Chưa có",
- "마지막 서버 저장: %s": "Lần lưu cuối lên máy chủ: %s"
+ "마지막 서버 저장: %s": "Lần lưu cuối lên máy chủ: %s",
+ "랭크전에서 다른 플레이어와 실시간 1대1 대전을 할 수 있어요.": "Bạn có thể đấu xếp hạng 1 chọi 1 trực tiếp với người chơi khác.",
+ "상대 차례": "Lượt đối thủ",
+ "동기화 오류로 대전이 무효 처리됐어요.": "Trận đấu bị hủy do lỗi đồng bộ.",
+ "연결이 끊겨 대전이 종료됐어요.": "Trận đấu kết thúc do mất kết nối.",
+ "상대가 나갔어요 — 승리": "Đối thủ đã rời trận. Bạn thắng!",
+ "대전이 종료됐어요.": "Trận đấu đã kết thúc.",
+ "남은 시간 %d초": "Còn %d giây",
+ "실시간 대전": "Đấu trực tiếp",
+ "실시간 대전 · 서버 연결 안 됨": "Đấu trực tiếp · Mất kết nối máy chủ",
+ "상대를 못 찾았어요. AI와 대전할까요?": "Không tìm thấy đối thủ. Bạn muốn đấu với AI không?",
+ "예": "Có",
+ "아니오": "Không"
 }

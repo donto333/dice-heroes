@@ -566,7 +566,7 @@ const HISTORY_LIMIT := 10
 
 static func record_match(profile: Dictionary, eco: Dictionary, mode: String, outcome: String, stats: Dictionary) -> Dictionary:
 	var history_mode := mode
-	if mode == "rank_team":
+	if mode in ["rank_team", "rank_pvp"]:
 		mode = "rank"
 	var reward_mode := mode
 	if mode == "challenge":
