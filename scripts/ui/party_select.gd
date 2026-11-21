@@ -61,6 +61,7 @@ var _info_label: Label
 var _synergy_label: Label
 ## 그림 부품(assets/ui_menu)이 있으면 금테 카드·알약으로 그린다(UI 개편 1단계).
 var _art := false
+var _friend_art := false
 ## {"title", "subtitle", "confirm_text", "cancel_text", "levels": {id: 레벨}}
 var _options: Dictionary = {}
 ## 저장 칸(파티 3개까지). options["presets"]가 있을 때만 보인다.
@@ -98,6 +99,7 @@ func setup(main_app, character_list: Array, ability_table: Dictionary, initial: 
 	characters = character_list
 	abilities = ability_table
 	_options = options
+	_friend_art = bool(options.get("friend_art", false))
 	point_limit = int(options.get("point_limit", point_limit))
 	for slot in SLOTS:
 		party[slot] = initial.get(slot, "")
@@ -205,7 +207,7 @@ func _build() -> void:
 	_info_label.custom_minimum_size = Vector2(0, 44 if framed else 56)
 	_info_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var info_style = MenuArt.style("list_row", Vector4(22, 22, 22, 22), Vector4(16, 8, 16, 8))
+	var info_style = MenuArt.style("friend_party/ability" if _friend_art else "list_row", Vector4(22, 22, 22, 22), Vector4(16, 8, 16, 8))
 	_info_label.add_theme_stylebox_override("normal", info_style if info_style != null else KitStyle.plate(Color(0.06, 0.08, 0.3, 0.72), Color("8fa6d8"), 14.0, 10, false))
 	column.add_child(_info_label)
 
@@ -240,7 +242,7 @@ func _build() -> void:
 	scroll.add_child(grid)
 	for character in characters:
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0, 250)
+		button.custom_minimum_size = Vector2(0, 242 if _friend_art else 250)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		button.pressed.connect(_on_character_pressed.bind(character["id"]))
@@ -267,7 +269,10 @@ func _build() -> void:
 	_start_button.size_flags_stretch_ratio = 1.6
 	_start_button.pressed.connect(_on_start_pressed)
 	bottom.add_child(_start_button)
-	if KitStyle.Observatory.active:
+	if _friend_art:
+		for action in bottom.get_children():
+			MenuArt.pill(action, "friend_party/confirm" if action == _start_button else "friend_party/button")
+	elif KitStyle.Observatory.active:
 		MenuArt.pill(_start_button, "gold")
 
 
@@ -294,13 +299,13 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(portrait)
 	var frame := TextureRect.new()
-	frame.texture = MenuArt.tex(SLOT_FRAMES[slot])
+	frame.texture = MenuArt.tex(("friend_party/" if _friend_art else "") + str(SLOT_FRAMES[slot]))
 	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	frame.stretch_mode = TextureRect.STRETCH_SCALE
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(frame)
-	var role := HeroCardView.band_label(SLOT_LABELS[slot], 16, 0.02, 0.19)
+	var role := HeroCardView.band_label(SLOT_LABELS[slot], 16, 0.055 if _friend_art else 0.02, 0.205 if _friend_art else 0.19)
 	button.add_child(role)
 	# 능력 한 줄(2단계): 초상화 아래쪽에 어두운 띠를 깔고 그 위에 또렷하게.
 	var stat := HeroCardView.band_label("", 18, 0.70, 0.81)
@@ -328,7 +333,7 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	var id: String = character["id"]
 	var footer := ("Lv%d" % int(levels[id])) if levels.has(id) else ""
 	var accent: Color = CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
-	var parts := HeroCardView.mount(button, character, accent, footer)
+	var parts := HeroCardView.mount(button, character, accent, footer, _friend_art)
 	var check := KitStyle.icon("m_check", 34.0)
 	check.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	check.offset_left = -46
@@ -443,7 +448,9 @@ func _style_category_filter(button: Button, category: String) -> void:
 
 
 func _style_filter_button(button: Button, selected: bool, pill_color: String, fallback: Color) -> void:
-	if selected:
+	if _friend_art:
+		MenuArt.pill(button, "friend_party/confirm" if selected else "friend_party/button")
+	elif selected:
 		MenuArt.tab(button, true)
 	elif not MenuArt.pill(button, pill_color):
 		for state in ["normal", "hover", "pressed"]:
