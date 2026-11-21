@@ -63,6 +63,10 @@ func start(disabled: bool) -> void:
 	_pump.call_deferred()
 
 
+func session_token() -> String:
+	return _token if _expires_at > int(Time.get_unix_time_from_system()) else ""
+
+
 func queue_save(profile: Dictionary) -> void:
 	if _timer == null:
 		return

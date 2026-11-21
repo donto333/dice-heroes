@@ -8,6 +8,8 @@ const MAIN_SCENE := "res://scenes/main.tscn"
 const SaveStore := preload("res://scripts/save_store.gd")
 const Dialog := preload("res://scripts/ui/dialog.gd")
 const MatchLauncher := preload("res://scripts/ui/match_launcher.gd")
+const Realtime := preload("res://scripts/net/realtime.gd")
+const Profile := preload("res://scripts/rules/profile.gd")
 
 var _app: Node
 var _out_dir := ""
@@ -621,6 +623,26 @@ func _run() -> void:
 		match_screen._show_game_over()
 		await _wait(0.8)
 		await _shot("17_result")
+
+	# 서버에 연결하지 않고 실시간 대전의 매칭 화면과 상대 차례를 찍는다.
+	_app.go("lobby")
+	_close_dialogs()
+	var fake_launcher := MatchLauncher.for_map(_app)
+	fake_launcher._begin_pvp({})
+	await _wait(0.4)
+	await _shot("12b_pvp_waiting")
+	fake_launcher._cancel_pvp()
+	var fake_link := Realtime.new()
+	_app.add_child(fake_link)
+	fake_link.use_fake()
+	var player_party := Profile.battle_party(_app.profile, _app.profile["party"], str(_app.profile["nickname"]))
+	var guest_party := {"name": "도전자", "attack": "lubu", "defense": "athena", "support": "choichiwon"}
+	_app.go("match", {"mode": "rank_pvp", "parties": [player_party, guest_party], "humans": [true, true],
+		"pvp": fake_link, "seat": 0, "seed": 42, "first": 1, "map": 2})
+	await _wait(0.5)
+	_app.current_screen._versus._skipped = true
+	await _wait(0.7)
+	await _shot("16c_pvp_match")
 
 	_app.start_mode("local")
 	await _wait(0.4)

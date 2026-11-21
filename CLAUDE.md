@@ -18,7 +18,7 @@
 
 ## 구조
 
-- 실시간 1대1 대전의 Nakama 권한 매치(`server/nakama/modules/index.js`)가 씨앗·선공·행동 순서를 정하고, 두 기기는 `Game.apply_action`으로 판을 진행해 턴마다 상태 해시를 비교한다. 모듈을 수정하면 Compose의 `MODULES_VERSION`을 올린다.
+- 실시간 1대1 대전의 Nakama 권한 매치(`server/nakama/modules/index.js`)가 씨앗·선공·행동 순서를 정하고, 두 기기는 `Game.apply_action`으로 판을 진행해 턴마다 상태 해시를 비교한다. 클라이언트는 `scripts/net/realtime.gd`에서 매치메이커·재참가를 처리하고 `rank_pvp`를 별도 전적으로 기록한다. 모듈을 수정하면 Compose의 `MODULES_VERSION`을 올린다.
 
 - 랭크전에서 개인전과 팀전을 고른다. 팀전은 4개 파티가 두 팀으로 번갈아 이동하며 팀원이 먼저 수호자를 이기면 승리한다. 전적은 모드를 구별하고 트로피는 공유한다.
 
