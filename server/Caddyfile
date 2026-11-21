@@ -1,0 +1,5 @@
+# https 주소(SITE)로 들어온 요청을 Nakama API로 넘긴다. 인증서(Let's Encrypt)는 Caddy가 알아서 받고 갱신한다.
+{$SITE} {
+	encode gzip
+	reverse_proxy nakama:7350
+}
