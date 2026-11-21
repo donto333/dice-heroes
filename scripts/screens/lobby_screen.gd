@@ -331,14 +331,19 @@ func _add_hero_area() -> void:
 	if spoken != "":
 		lines = [spoken]
 	var bubble := PanelContainer.new()
-	bubble.add_theme_stylebox_override("panel", Kit.box(Kit.Observatory.SURFACE, Kit.Observatory.EDGE, 3, 22, 12) if Kit.Observatory.active else Kit.box(Color(1, 1, 1, 0.96), Color("1a56b0"), 3, 22, 12))
+	# 이름표 위의 자막은 긴 대사가 줄바꿈될 때 위쪽으로 자란다.
+	var speech_style := Kit.box(Color("201935ef"), Color("d9b679"), 1, 12, 8)
+	speech_style.content_margin_left = 16
+	speech_style.content_margin_right = 16
+	speech_style.shadow_color = Color("100d2380")
+	speech_style.shadow_size = 3
+	bubble.add_theme_stylebox_override("panel", speech_style)
 	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if Kit.Observatory.active:
-		_anchor(bubble, 0.50, 0.06, 0.97, 0.06)
-	else:
-		_anchor(bubble, 0.6, 0.06, 0.6, 0.06)
-		bubble.custom_minimum_size = Vector2(210, 0)
-	var said := Kit.para(str(lines[app.rng.randi_range(0, lines.size() - 1)]), 18, Kit.Observatory.TEXT if Kit.Observatory.active else Color("12264d"), HORIZONTAL_ALIGNMENT_CENTER)
+	_anchor(bubble, 0.06, 1.0, 0.94, 1.0)
+	bubble.offset_top = -96
+	bubble.offset_bottom = -96
+	bubble.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	var said := Kit.para(str(lines[app.rng.randi_range(0, lines.size() - 1)]), 18, Color("fff4d9"), HORIZONTAL_ALIGNMENT_CENTER)
 	said.remove_theme_color_override("font_shadow_color")
 	said.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bubble.add_child(said)
@@ -366,11 +371,9 @@ func _edge_fade_shader() -> Shader:
 	shader.code = """
 shader_type canvas_item;
 void fragment() {
-	vec4 c = texture(TEXTURE, UV);
 	float fx = smoothstep(0.0, 0.24, UV.x) * smoothstep(0.0, 0.2, 1.0 - UV.x);
 	float fy = smoothstep(0.0, 0.14, UV.y) * smoothstep(0.0, 0.3, 1.0 - UV.y);
-	c.a *= fx * fy;
-	COLOR = c * COLOR;
+	COLOR.a *= fx * fy;
 }
 """
 	return shader
@@ -407,24 +410,18 @@ func _add_top_bar() -> void:
 	else:
 		_anchor(medal, 0.037, 0.092, 0.196, 0.833)
 	who.add_child(medal)
-	# 닉네임과 등급 줄을 바짝 붙인다(등급 줄이 띠 아래 가장자리에 너무 붙지 않게).
-	var names := Kit.vbox(-7)
-	names.alignment = BoxContainer.ALIGNMENT_CENTER
-	names.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anchor(names, 0.0, 0.0, 1.0, 1.0)
-	names.offset_left = 65 if large else 70
-	names.offset_right = -16
-	names.offset_top = 5
-	names.offset_bottom = -9
-	who.add_child(names)
-	var nickname := _bold(str(profile["nickname"]), 26 if large else 19, Color.WHITE, Color("0b1f4d"), 5)
-	names.add_child(nickname)
+	# 원형 메달 오른쪽의 금테 안에 두 줄을 고정한다.
+	var nickname := _bold(str(profile["nickname"]), 22 if large else 19, Color.WHITE, Color("0b1f4d"), 4)
+	_anchor(nickname, 0.29 if large else 0.25, 0.10, 0.90, 0.49)
+	nickname.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	who.add_child(nickname)
+	_fit_lobby_text(nickname, 13)
 	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
-	var rank := _bold("%s · 리그 %d위" % [tier["name"], Profile.league_rank(profile, app.eco)], 17 if large else 13, Kit.GOLD, Color("0b1f4d"), 4)
-	names.add_child(rank)
-	if large:
-		_fit_lobby_text(nickname, 13)
-		_fit_lobby_text(rank, 13)
+	var rank := _bold("%s · 리그 %d위" % [tier["name"], Profile.league_rank(profile, app.eco)], 15 if large else 13, Kit.GOLD, Color("0b1f4d"), 3)
+	_anchor(rank, nickname.anchor_left, 0.48, 0.90, 0.81)
+	rank.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	who.add_child(rank)
+	_fit_lobby_text(rank, 12)
 
 	# 시스템 버튼: 아이콘 아래에 이름을 적는다(기준 그림처럼). 설정 · 공지 · 우편 · 출석 · 룰렛 · 리그 · 방법
 	var system_buttons := [
@@ -546,6 +543,19 @@ func _add_tiles() -> void:
 		row3.add_child(navy)
 
 
+## 큰 메뉴 두 개는 영문과 한글이 같은 높이에서 시작한다.
+func _tile_heading(tile: Button, english: String, title: String, outline: Color, right: float) -> VBoxContainer:
+	var stack := Kit.vbox(0)
+	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(stack, 0.105, 0.08, right, 0.08)
+	tile.add_child(stack)
+	stack.add_child(_bold(english, 16 if Kit.Observatory.active else 14, Color(1, 1, 1, 0.92), outline, 4))
+	var heading := _bold(title, 50, Color.WHITE, outline, 10)
+	stack.add_child(heading)
+	_fit_lobby_text(heading, 24)
+	return stack
+
+
 func _rank_tile() -> Button:
 	var profile: Dictionary = app.profile
 	var tile := _art_button(_picture("tile_rank"))
@@ -555,13 +565,7 @@ func _rank_tile() -> Button:
 	tile.size_flags_stretch_ratio = 1.6
 	tile.pressed.connect(_on_mode.bind("rank"))
 	Kit.shimmer(tile)
-	# 글자 높이는 기존 글꼴 크기로 결정하고, 왼쪽 여백만 타일에 비례해 잡는다.
-	var stack := Kit.vbox(0)
-	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anchor(stack, 0.105, 0.08, 0.53, 0.08)
-	tile.add_child(stack)
-	stack.add_child(_bold("RANK MATCH", 16 if Kit.Observatory.active else 14, Color(1, 1, 1, 0.92), Color("a3480a"), 4))
-	stack.add_child(_bold("랭크전", 50, Color.WHITE, Color("a3480a"), 10))
+	var stack := _tile_heading(tile, "RANK MATCH", "랭크전", Color("a3480a"), 0.53)
 	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
 	var streak := Profile.streak(profile)
 	var note := "%s · 트로피 %s" % [tier["name"], Kit.comma(int(profile["trophies"]))]
@@ -605,14 +609,7 @@ func _adventure_tile() -> Button:
 		tile.add_child(_slice("", 0, Kit.ACCENT))
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile.pressed.connect(_on_adventure)
-	var inner := _inner(tile, 16, 12, 16, 16)
-	var stack := Kit.vbox(0)
-	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	inner.add_child(stack)
-	stack.add_child(_bold("모험", 44 if Kit.Observatory.active else 40, Color.WHITE, Color("0f5a2c"), 9))
-	stack.add_child(_bold("ADVENTURE", 16 if Kit.Observatory.active else 13, Color.WHITE, Color("0f5a2c"), 4))
-	# 세로로 늘어나는 빈칸: 아래 띠(캡슐)를 타일 바닥에 붙인다. Kit.expand는 가로로만 늘어나 아래가 비어 있었다.
-	stack.add_child(Kit.spacer())
+	_tile_heading(tile, "ADVENTURE", "모험", Color("153854"), 0.94)
 	var stars := Profile.total_stars(app.profile)
 	var most := _max_stars()
 	var ratio := float(stars) / float(max(most, 1))
@@ -623,7 +620,9 @@ func _adventure_tile() -> Button:
 	capsule_style.content_margin_right = 10
 	capsule.add_theme_stylebox_override("panel", capsule_style)
 	capsule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stack.add_child(capsule)
+	_anchor(capsule, 0.05, 0.93, 0.95, 0.93)
+	capsule.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	tile.add_child(capsule)
 	var inside := Kit.vbox(3)
 	inside.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	capsule.add_child(inside)
@@ -648,13 +647,27 @@ func _chevron(parent: Control, color: Color, outline: Color) -> void:
 	parent.add_child(mark)
 
 
+## 아이콘 반대편에 같은 폭을 두어 글자 중심을 타일 중심에 맞춘다.
+## 좁은 화면에서는 오른쪽 여백부터 줄여 글자가 들어갈 자리를 확보한다.
+func _balance_tile_text(row: HBoxContainer, glyph: Control, min_text_width: float) -> void:
+	var space := Control.new()
+	space.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(space)
+	var fit := func() -> void:
+		var icon_width := glyph.get_combined_minimum_size().x
+		var gaps := 2 * row.get_theme_constant("separation")
+		space.custom_minimum_size.x = clampf(row.size.x - icon_width - gaps - min_text_width, 0, icon_width)
+	row.resized.connect(fit)
+	fit.call()
+
+
 ## spec: [이름, 영어, 아이콘, 설명, 알림 항목, 누르면]
 func _white_tile(spec: Array) -> Button:
 	var large := Kit.Observatory.active
 	var tile := _art_button(_slice("tile_white", 40, Color("f2f6ff")))
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile.pressed.connect(spec[5])
-	var inner := _inner(tile, 16 if large else 12, 8, 22 if large else 30, 10)
+	var inner := _inner(tile, 16 if large else 12, 8, 16 if large else 12, 10)
 	var row := Kit.hbox(8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(row)
@@ -668,19 +681,23 @@ func _white_tile(spec: Array) -> Button:
 	var title := Kit.label(str(spec[0]), 32 if large else 25, Kit.Observatory.TEXT if large else Color("12264d"))
 	title.remove_theme_color_override("font_shadow_color")
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text.add_child(title)
 	var english := Kit.label(str(spec[1]), 14 if large else 12, Kit.Observatory.MUTED if large else Color("4a6aa8"))
 	english.remove_theme_color_override("font_shadow_color")
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# 영어 부제는 한국어 화면에서만(다른 언어는 제목과 겹친다).
 	english.visible = Lang.current == "ko"
+	english.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text.add_child(english)
 	var topic := str(spec[4])
 	var has_alert := topic != "" and not _unread_alerts(topic).is_empty()
 	var sub := Kit.label(str(spec[3]), 18 if large else 14, (Kit.Observatory.AMBER if has_alert else Kit.Observatory.MUTED) if large else (Color("c4421f") if has_alert else Color("3d5585")))
 	sub.remove_theme_color_override("font_shadow_color")
 	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text.add_child(sub)
+	_balance_tile_text(row, glyph, 114)
 	if large:
 		for label in [title, english, sub]:
 			_fit_lobby_text(label, 12)
@@ -710,13 +727,16 @@ func _navy_tile(spec: Array) -> Button:
 	var text := Kit.vbox(-2)
 	text.alignment = BoxContainer.ALIGNMENT_CENTER
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(Kit.expand(text) if large else text)
+	row.add_child(Kit.expand(text))
 	var title := _bold(str(spec[0]), 30 if large else 22, Color.WHITE, Color("0b1f4d"), 5)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text.add_child(title)
 	var english := Kit.label(str(spec[1]), 14 if large else 11, Color(1, 1, 1, 0.8))
 	english.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	english.visible = Lang.current == "ko"
+	english.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text.add_child(english)
+	_balance_tile_text(row, glyph, 76)
 	if large:
 		for label in [title, english]:
 			_fit_lobby_text(label, 12)
@@ -1304,6 +1324,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"로비 영웅 초상화와 대사창을 개선하고 프로필과 메뉴 글자를 정렬했어요.",
 	"랭크전에서 개인전 또는 2대2 팀전을 고를 수 있어요.",
 	"로비와 메뉴, 팝업에 파티 편성과 같은 별의 관측소 디자인을 적용했어요.",
 	"친구 대전 파티 편성에 별의 관측소 카드와 버튼 그림을 적용했어요.",
