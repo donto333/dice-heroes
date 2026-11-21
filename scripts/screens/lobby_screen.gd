@@ -14,6 +14,7 @@ const RouletteWheel := preload("res://scripts/ui/roulette_wheel.gd")
 const OddsWindow := preload("res://scripts/ui/odds_window.gd")
 const AdPlayer := preload("res://scripts/ui/ad_player.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
+const AiDifficultyDialog := preload("res://scripts/ui/ai_difficulty_dialog.gd")
 const ObservatoryPopups := preload("res://scripts/ui/observatory_popups.gd")
 const LobbyAlerts := preload("res://scripts/rules/lobby_alerts.gd")
 const Game := preload("res://scripts/rules/game.gd")
@@ -1298,6 +1299,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"AI 연습전 난이도 창에 별의 관측소 디자인을 적용했어요.",
 	"스킬 게이지는 충전량에 따라 색이 바뀌고 가득 차면 빛나요.",
 	"메뉴와 팝업에 원래 컬러 아이콘을 적용했어요.",
 	"대전 화면의 정보판과 버튼에 새 디자인을 적용했어요.",
@@ -1583,13 +1585,18 @@ func _choose_difficulty() -> void:
 		app.start_tutorial_match()
 		return
 	app.play("click")
+	var list: Array = app.eco.get("ai_difficulty", [])
+	if Kit.Observatory.active and list.size() == 3:
+		var window := AiDifficultyDialog.new()
+		app.add_child(window)
+		window.open(list, _start_ai)
+		return
 	var body := Kit.vbox(14)
 	body.add_child(Kit.para("어려울수록 상대 영웅 레벨이 높고 조합을 잘 짜요. 보상도 많아져요.", 20, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var cards := Kit.hbox(18)
 	cards.alignment = BoxContainer.ALIGNMENT_CENTER
 	body.add_child(cards)
 	var looks := [["green", Color("2f8f4e")], ["blue", Color("2f74d6")], ["red", Color("b8323a")]]
-	var list: Array = app.eco.get("ai_difficulty", [])
 	for index in list.size():
 		var look: Array = looks[index % looks.size()]
 		cards.add_child(_difficulty_card(list[index], str(look[0]), look[1]))
