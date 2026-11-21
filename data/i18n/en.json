@@ -2108,5 +2108,11 @@
  "상대 AI 2": "Rival AI 2",
  "로비 영웅 초상화와 대사창을 개선하고 프로필과 메뉴 글자를 정렬했어요.": "Lobby hero portraits and dialogue have been updated, and profile and menu text are now aligned.",
  "로비 재화와 메뉴 아이콘의 간격을 다듬고 버튼 모양에 맞게 빛이 흐르도록 개선했어요.": "Lobby currency and menu icon spacing has been adjusted, and the shine now follows each button’s shape.",
- "금화와 보석 표시를 정렬하고 더하기 버튼을 초록색으로 바꿨어요.": "Gold and gem displays are now aligned, and the plus buttons are green."
+ "금화와 보석 표시를 정렬하고 더하기 버튼을 초록색으로 바꿨어요.": "Gold and gem displays are now aligned, and the plus buttons are green.",
+ "서버에 저장된 기록을 불러왔어요": "Loaded your saved progress from the server",
+ "게스트로 서버에 연결해 게임 기록을 자동으로 저장해요.": "Guest accounts now save game progress to the server automatically.",
+ "서버 연결: 연결됨": "Server connection: Connected",
+ "서버 연결: 연결 안 됨(기기에만 저장)": "Server connection: Offline (saved on this device only)",
+ "아직 없음": "None yet",
+ "마지막 서버 저장: %s": "Last server save: %s"
 }

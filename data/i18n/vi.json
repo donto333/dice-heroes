@@ -2108,5 +2108,11 @@
  "상대 AI 2": "AI đối thủ 2",
  "로비 영웅 초상화와 대사창을 개선하고 프로필과 메뉴 글자를 정렬했어요.": "Đã cải thiện chân dung và khung thoại của anh hùng, đồng thời căn chỉnh chữ trong hồ sơ và menu ở sảnh.",
  "로비 재화와 메뉴 아이콘의 간격을 다듬고 버튼 모양에 맞게 빛이 흐르도록 개선했어요.": "Đã chỉnh khoảng cách biểu tượng tiền, ngọc và menu ở sảnh. Hiệu ứng sáng nay chạy theo hình dáng từng nút.",
- "금화와 보석 표시를 정렬하고 더하기 버튼을 초록색으로 바꿨어요.": "Đã căn chỉnh phần hiển thị vàng và ngọc, đồng thời đổi nút cộng sang màu xanh lá."
+ "금화와 보석 표시를 정렬하고 더하기 버튼을 초록색으로 바꿨어요.": "Đã căn chỉnh phần hiển thị vàng và ngọc, đồng thời đổi nút cộng sang màu xanh lá.",
+ "서버에 저장된 기록을 불러왔어요": "Đã tải tiến trình đã lưu từ máy chủ",
+ "게스트로 서버에 연결해 게임 기록을 자동으로 저장해요.": "Tài khoản khách tự động lưu tiến trình trò chơi lên máy chủ.",
+ "서버 연결: 연결됨": "Kết nối máy chủ: Đã kết nối",
+ "서버 연결: 연결 안 됨(기기에만 저장)": "Kết nối máy chủ: Mất kết nối (chỉ lưu trên thiết bị)",
+ "아직 없음": "Chưa có",
+ "마지막 서버 저장: %s": "Lần lưu cuối lên máy chủ: %s"
 }

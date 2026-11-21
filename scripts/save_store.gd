@@ -1,6 +1,6 @@
 extends RefCounted
 ## 프로필 저장·불러오기. 기기 안(user://)에 JSON 파일 하나로 둔다.
-## 웹 버전에서는 브라우저 저장소에 들어간다. 나중에 서버(Nakama)로 옮길 때 이 파일만 바꾸면 된다.
+## 웹 버전에서는 브라우저 저장소에 들어간다. 서버 연결이 없어도 이 파일에 먼저 저장한다.
 
 const PATH := "user://profile.json"
 
@@ -20,13 +20,17 @@ static func load_profile() -> Dictionary:
 	return parsed
 
 
-static func save_profile(profile: Dictionary) -> void:
+static func save_profile(profile: Dictionary, stamp: bool = true) -> bool:
 	var file := FileAccess.open(PATH, FileAccess.WRITE)
 	if file == null:
 		push_warning("저장하지 못했습니다: %s" % FileAccess.get_open_error())
-		return
+		return false
+	if stamp:
+		profile["saved_at"] = int(Time.get_unix_time_from_system())
 	file.store_string(JSON.stringify(profile, "  "))
+	var written := file.get_error() == OK
 	file.close()
+	return written
 
 
 static func erase() -> void:

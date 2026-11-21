@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "host": "141-164-36-129.sslip.io",
+  "port": 443,
+  "scheme": "https",
+  "server_key": "dicehero-7f3a9c21",
+  "timeout_sec": 8,
+  "upload_delay_sec": 3
+}
