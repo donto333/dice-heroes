@@ -1683,23 +1683,39 @@ func _make_skill_button(slot: String) -> Button:
 	var title := _art_label("", 17, Rect2(0.15, 0.18, 0.70, 0.25) if Kit.Observatory.active else Rect2(0.13, 0.0, 0.74, 0.25))
 	title.clip_text = true
 	button.add_child(title)
-	var body := _art_label("", 16, Rect2(0.39, 0.353, 0.55, 0.22) if Kit.Observatory.active else Rect2(0.38, 0.29, 0.58, 0.46))
+	var body := _art_label("", 16, Rect2(0.39, 0.34, 0.55, 0.22) if Kit.Observatory.active else Rect2(0.38, 0.29, 0.58, 0.46))
 	body.add_theme_constant_override("line_spacing", -4)
 	body.clip_text = true
 	button.add_child(body)
 	if Kit.Observatory.active:
-		var status := _art_label("", 16, Rect2(0.39, 0.475, 0.55, 0.23))
+		var status := _art_label("", 16, Rect2(0.39, 0.485, 0.55, 0.23))
+		# 역할과 충전 상태의 글자 크기를 유지하고 외곽선이 닿지 않도록 한다.
+		body.add_theme_constant_override("outline_size", 2)
+		status.add_theme_constant_override("outline_size", 2)
 		status.clip_text = true
 		button.add_child(status)
 		button.set_meta("gauge_status", status)
 	var portrait := Portrait.new()
 	portrait.border_width = 0.0
-	portrait.anchor_left = 0.1
-	portrait.anchor_right = 0.348
-	portrait.anchor_top = 0.35
-	portrait.anchor_bottom = 0.8
-	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(portrait)
+	if Kit.Observatory.active:
+		# 금테를 덮지 않도록 그림 칸의 안쪽과 둥근 모서리에 맞춘다.
+		var window := Panel.new()
+		window.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		window.anchor_left = 0.076
+		window.anchor_right = 0.293
+		window.anchor_top = 0.285
+		window.anchor_bottom = 0.815
+		window.add_theme_stylebox_override("panel", Kit.box(Color.WHITE, Color.TRANSPARENT, 0, 4, 0))
+		window.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+		button.add_child(window)
+		portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		window.add_child(portrait)
+	else:
+		portrait.anchor_left = 0.1
+		portrait.anchor_right = 0.348
+		portrait.anchor_top = 0.35
+		portrait.anchor_bottom = 0.8
+		button.add_child(portrait)
 	# 어빌리티 아이콘: 초상화 오른쪽 아래 귀퉁이에 작은 메달로 겹친다.
 	var badge := TextureRect.new()
 	badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
