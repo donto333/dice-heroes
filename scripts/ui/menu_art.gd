@@ -422,9 +422,10 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 	# 받기 연출(fly_reward)이 이 칸을 찾아 알갱이를 날리고 숫자를 올린다.
 	capsule.set_meta("money", icon_name)
 	capsule.set_meta("label", label)
-	var plus := tex("plus_btn")
+	# 재화 칸에는 화면 테마와 관계없이 초록색 더하기 그림을 쓴다.
+	var plus_path := ART + "plus_btn.png"
+	var plus: Texture2D = load(plus_path) if ResourceLoader.exists(plus_path) else null
 	if plus != null:
-		# 시안처럼 오른쪽 끝에 초록 더하기(꾸밈).
 		var mark := TextureRect.new()
 		mark.texture = plus
 		mark.custom_minimum_size = Vector2(42, 34)
@@ -433,11 +434,6 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 		mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(mark)
-		# 버튼 원화 가운데의 더하기를 작은 화면에서도 선명한 굵기로 그린다.
-		mark.draw.connect(func() -> void:
-			var center := (mark.size * 0.5).round()
-			mark.draw_rect(Rect2(center - Vector2(8, 2), Vector2(16, 4)), Color.WHITE)
-			mark.draw_rect(Rect2(center - Vector2(2, 8), Vector2(4, 16)), Color.WHITE))
 		if on_plus.is_valid():
 			var press := Button.new()
 			press.flat = true
