@@ -7,6 +7,8 @@ const GameData := preload("res://scripts/game_data.gd")
 const Profile := preload("res://scripts/rules/profile.gd")
 const Game := preload("res://scripts/rules/game.gd")
 const SaveStore := preload("res://scripts/save_store.gd")
+const Online := preload("res://scripts/net/online.gd")
+const SyncRules := preload("res://scripts/rules/sync_rules.gd")
 const Sfx := preload("res://scripts/ui/sfx.gd")
 const Voice := preload("res://scripts/ui/voice.gd")
 const Dialog := preload("res://scripts/ui/dialog.gd")
@@ -66,6 +68,10 @@ var _busy := false
 var _characters_by_id: Dictionary = {}
 ## 안드로이드 앱 새 버전 알림(로비가 show_notice를 부른다)
 var update_check: Node
+var online: Online
+var _screen_params := {}
+var _remote_pending := false
+var _remote_profile := {}
 
 
 func _ready() -> void:
@@ -101,6 +107,10 @@ func _ready() -> void:
 	add_child(update_check)
 	update_check.start(self)
 	go("title")
+	online = Online.new()
+	add_child(online)
+	online.server_profile_received.connect(_on_server_profile)
+	online.start(instant or DisplayServer.get_name() == "headless")
 
 
 ## 전체 화면으로 쓴다. 웹에서는 브라우저 규칙 때문에 화면을 처음 누르는 순간에만 전체 화면이 될 수 있어서,
@@ -228,16 +238,57 @@ func import_profile(text: String) -> bool:
 
 func load_profile() -> void:
 	profile = SaveStore.load_profile()
-	# 소환 포인트 한도가 레벨별로 바뀌면서 한도를 넘게 된 예전 파티는 ★이 낮은 영웅으로 맞춘다.
-	if has_profile() and Profile.fit_party(profile, data["characters"], point_limit()):
-		save()
-	if not profile.is_empty():
-		Profile.repair(profile, eco)
-		Profile.ensure_daily(profile, today())
-		# 카드 등급이 바뀌어 등급별 자리 수를 넘게 된 덱은 넘친 카드만 뺀다(2026-11-19 등급 재설정).
-		if profile.has("deck") and Profile.fit_deck(profile, data.get("cards", {}), eco):
-			save()
+	# 시작 중 저장 형식만 고친 경우 서버와 비교할 기록 시각은 바꾸지 않는다.
+	if has_profile() and _repair_profile():
+		SaveStore.save_profile(profile, false)
 	apply_gfx()
+
+
+func _repair_profile() -> bool:
+	Profile.repair(profile, eco)
+	Profile.ensure_daily(profile, today())
+	# 소환 포인트와 카드 등급별 한도가 바뀐 예전 기록을 맞춘다.
+	var party_changed := Profile.fit_party(profile, data["characters"], point_limit())
+	var deck_changed := Profile.fit_deck(profile, data.get("cards", {}), eco)
+	return party_changed or deck_changed
+
+
+func _on_server_profile(remote: Dictionary) -> void:
+	_remote_pending = true
+	_remote_profile = remote
+
+
+func _sync_profile() -> void:
+	# 진행 중인 판이나 화면 전환을 서버 사본 때문에 중단하지 않는다.
+	if not _remote_pending or _busy or current_name == "match":
+		return
+	_remote_pending = false
+	var remote := _remote_profile
+	_remote_profile = {}
+	var chosen := SyncRules.choose(profile, remote)
+	if not remote.is_empty() and is_same(chosen, remote) and chosen != profile:
+		var restored := remote.duplicate(true)
+		var local := profile
+		profile = restored
+		_repair_profile()
+		if SaveStore.save_profile(profile, false):
+			online.finish_sync({})
+			apply_gfx()
+			for child in get_children():
+				if child.get_script() == Dialog:
+					child.queue_free()
+			var params := _screen_params.duplicate()
+			params.erase("welcome")
+			if current_name == "login":
+				go("lobby")
+			else:
+				go(current_name, params)
+			toast("서버에 저장된 기록을 불러왔어요")
+			return
+		profile = local
+		online.finish_sync({})
+		return
+	online.finish_sync(profile if profile != remote else {})
 
 
 func create_profile(nickname: String) -> void:
@@ -248,6 +299,12 @@ func create_profile(nickname: String) -> void:
 
 
 func reset_profile() -> void:
+	if online != null:
+		online.reset_local()
+		if _remote_pending:
+			_remote_pending = false
+			_remote_profile = {}
+			online.finish_sync({})
 	SaveStore.erase()
 	profile = {}
 
@@ -314,6 +371,7 @@ func to_app(point: Vector2) -> Vector2:
 
 func _process(delta: float) -> void:
 	_fit_orientation()
+	_sync_profile()
 	if instant or GameData.low_gfx or current_name != "match" or not has_profile() or profile.get("settings", {}).has("low_gfx"):
 		_perf_time = 0.0
 		_perf_frames = 0
@@ -331,8 +389,8 @@ func _process(delta: float) -> void:
 
 
 func save() -> void:
-	if has_profile():
-		SaveStore.save_profile(profile)
+	if has_profile() and SaveStore.save_profile(profile) and online != null and not instant:
+		online.queue_save(profile)
 
 
 func today() -> String:
@@ -457,6 +515,7 @@ func go(screen_name: String, params: Dictionary = {}) -> void:
 	Kit.panel_tint = Kit.Observatory.SURFACE if Kit.Observatory.active else SCREEN_MOODS.get(screen_name, Kit.PANEL)
 	var screen = SCREENS[screen_name].new()
 	current_name = screen_name
+	_screen_params = params.duplicate()
 	current_screen = screen
 	_layer.add_child(screen)
 	screen.setup(self, params)

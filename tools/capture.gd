@@ -24,6 +24,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(_out_dir)
 	SaveStore.erase()
 	_app = load(MAIN_SCENE).instantiate()
+	_app.instant = true
 	root.add_child(_app)
 	await _wait(0.5)
 	await _shot("00_title_loading")
@@ -41,9 +42,6 @@ func _run() -> void:
 	if is_instance_valid(opening) and not opening.is_queued_for_deletion():
 		opening.queue_free()
 	await _frames(3)
-	# 여기부터는 기다림·전환 효과 없이 바로바로 넘어가게 한다(사진 순서가 흔들리지 않게).
-	_app.instant = true
-
 	# 진짜로 화면을 눌러서 로그인 화면으로 넘어가는지 확인한다.
 	var tap := InputEventMouseButton.new()
 	tap.button_index = MOUSE_BUTTON_LEFT

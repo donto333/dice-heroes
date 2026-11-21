@@ -19,6 +19,8 @@ var _settings_scroll: ScrollContainer
 var _panels := {}
 var _tab_buttons := {}
 var _tab := "general"
+var _server_connection: Label
+var _server_saved: Label
 
 
 func setup(main_app, _params: Dictionary) -> void:
@@ -148,9 +150,21 @@ func setup(main_app, _params: Dictionary) -> void:
 	if Kit.Observatory.active:
 		body = _panels["support"]
 	var support: Dictionary = app.eco.get("support", {})
+	var had_account := not str(app.profile.get("account_id", "")).is_empty()
 	var account := Profile.ensure_account_id(app.profile, app.rng)
-	app.save()
+	if not had_account:
+		app.save()
 	body.add_child(MenuArt.section("고객 지원", "mail", "문의·약관"))
+	var server_row := MenuArt.row(10)
+	body.add_child(server_row)
+	_server_connection = Kit.para("", 20, Color.WHITE)
+	_server_saved = Kit.para("", 18, Kit.MUTED)
+	var server_info := Kit.vbox(2)
+	server_row.add_child(server_info)
+	server_info.add_child(_server_connection)
+	server_info.add_child(_server_saved)
+	app.online.status_changed.connect(_update_server_status)
+	_update_server_status()
 	var ask := MenuArt.list_row(body, "mail", "문의하기", "계정 번호 %s · 문의할 때 이 번호를 함께 알려 주세요." % account)
 	var ask_row := Kit.hbox(8)
 	ask.add_child(ask_row)
@@ -533,6 +547,16 @@ func _on_mail() -> void:
 	var subject := "[주사위 영웅전] 문의".uri_encode()
 	var text := "계정 번호: %s\n버전: %s\n닉네임: %s\n\n문의 내용:\n" % [Profile.ensure_account_id(app.profile, app.rng), app.VERSION, str(app.profile.get("nickname", ""))]
 	OS.shell_open("mailto:%s?subject=%s&body=%s" % [email, subject, text.uri_encode()])
+
+
+func _update_server_status() -> void:
+	_server_connection.text = Lang.t("서버 연결: 연결됨") if app.online.connected else Lang.t("서버 연결: 연결 안 됨(기기에만 저장)")
+	var saved_at: int = app.online.last_saved_at
+	var time_text := Lang.t("아직 없음")
+	if saved_at > 0:
+		var offset := int(Time.get_time_zone_from_system().get("bias", 0)) * 60
+		time_text = Time.get_datetime_string_from_unix_time(saved_at + offset, true)
+	_server_saved.text = Lang.t("마지막 서버 저장: %s") % time_text
 
 
 func _on_reset() -> void:
