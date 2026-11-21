@@ -161,6 +161,8 @@ def build() -> None:
     names.setName("DiceHeroes-Black-" + str(len(wanted)), 3, 3, 1, 0x409)
     center_metrics(merged)
     merged.save(OUT)
+    from build_hud_font import build_hud_font
+    build_hud_font()
 
     missing = sorted(ch for ch in left if ch.isprintable() and not ch.isspace())
     with open(CHARS_OUT, "w", encoding="utf-8") as f:
