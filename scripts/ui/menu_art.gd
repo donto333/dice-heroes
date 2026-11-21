@@ -80,8 +80,8 @@ static func skin_button(button: Button, name: String, margins: Vector4, content:
 
 
 ## 판 위 왼쪽에 올리는 제목 명판: 동그란 금테 자리에 아이콘, 오른쪽에 제목 글자. 그림이 없으면 null.
-static func title_plate(text: String, icon: Texture2D, friend_art := false) -> Control:
-	var texture := tex("friend_party/title" if friend_art else "title_plate")
+static func title_plate(text: String, icon: Texture2D, sword_plate := false) -> Control:
+	var texture := tex("friend_party/title" if sword_plate else "title_plate")
 	if texture == null:
 		return null
 	var plate := Control.new()
@@ -89,19 +89,19 @@ static func title_plate(text: String, icon: Texture2D, friend_art := false) -> C
 	plate.custom_minimum_size = Vector2(196, 64)
 	var back := NinePatchRect.new()
 	back.texture = texture
-	back.patch_margin_left = 0 if friend_art else 70
-	back.patch_margin_right = 0 if friend_art else 26
+	back.patch_margin_left = 0 if sword_plate else 70
+	back.patch_margin_right = 0 if sword_plate else 26
 	back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.add_child(back)
-	if icon != null and not friend_art:
+	if icon != null and not sword_plate:
 		var picture := TextureRect.new()
 		picture.texture = icon
 		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		# 명판 그림(178×64, 2026-11-19 A 스타일)의 동그란 자리는 가운데 (32, 32), 안쪽 지름 약 48픽셀이다.
 		# 아이콘이 금테를 덮지 않게 안쪽보다 조금 작게(40) 정확히 가운데에 둔다.
-		picture.position = Vector2(32.0 - 20.0, 32.0 - 20.0)
+		picture.position = Vector2(27, 12) if Kit.Observatory.active else Vector2(12, 12)
 		picture.size = Vector2(40, 40)
 		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		plate.add_child(picture)
@@ -112,12 +112,14 @@ static func title_plate(text: String, icon: Texture2D, friend_art := false) -> C
 	TextStyle.menu(label, Color(0, 0.05, 0.2), 7)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.offset_left = 90 if friend_art else 74
+	label.offset_left = 90 if Kit.Observatory.active else 74
 	label.offset_right = -16
 	label.offset_bottom = -2
 	label.clip_text = true
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.add_child(label)
+	if Kit.Observatory.active:
+		Kit.squeeze_text(label, 30, 16)
 	return plate
 
 
@@ -128,14 +130,13 @@ static func title_plate(text: String, icon: Texture2D, friend_art := false) -> C
 ## 아래: 왼쪽 세로 판에 이 화면 안의 항목(tabs: [[id, 글자, 아이콘], ...]), 오른쪽 큰 금테 판.
 ## 큰 판 안쪽 세로 상자를 돌려준다. 항목을 누르면 on_tab(id)를 부른다. 항목이 없으면 세로 판도 없다.
 ## summary: 왼쪽 판 항목 아래 빈 곳에 넣을 요약 카드(summary()로 만든 것). 없으면 null.
-static func frame(screen: Control, app, backdrop_art: String, tabs: Array, active: String, on_tab: Callable, summary_card: Control = null, friend_art := false) -> VBoxContainer:
+static func frame(screen: Control, app, backdrop_art: String, tabs: Array, active: String, on_tab: Callable, summary_card: Control = null) -> VBoxContainer:
 	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	screen.add_child(Kit.sky())
 	if backdrop_art != "":
-		var backdrop := Kit.backdrop(screen, backdrop_art, 1.0)
-		if friend_art:
-			(backdrop as TextureRect).texture = preload("res://assets/ui_observatory/ui_menu/friend_party/sky.jpg")
-			screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		Kit.backdrop(screen, backdrop_art, 1.0)
+	if Kit.Observatory.active:
+		screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var shade := ColorRect.new()
 	# UI 개편 3단계: 배경 그림이 더 보이게 어두운 막을 0.25로.
 	shade.color = Color(0.0, 0.03, 0.14, 0.25)
@@ -162,12 +163,12 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	head.add_theme_constant_override("separation", 10)
 	head.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	top_holder.add_child(head)
-	head.add_child(_home_button(app, friend_art))
+	head.add_child(_home_button(app))
 	var spec: Array = TITLES.get(str(app.current_name), ["", ""])
 	# 한 화면이 여러 메뉴로 쓰일 때(영웅 화면 = 목록·편성·도감) 화면 메타 title_spec으로 제목을 바꾼다.
 	if screen.has_meta("title_spec"):
 		spec = screen.get_meta("title_spec")
-	var plate := title_plate(str(spec[0]), Kit.icon(str(spec[1]), 40.0).texture, friend_art)
+	var plate := title_plate(str(spec[0]), Kit.icon(str(spec[1]), 40.0).texture, Kit.Observatory.active and str(spec[1]) == "swords")
 	if plate != null:
 		# 높이를 그림 원래 높이(64)로 둬서 동그란 자리가 세로로 늘어나 타원이 되지 않게 한다.
 		plate.custom_minimum_size = Vector2(300, 64)
@@ -181,8 +182,8 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 	head.add_child(gap)
 	# 알림 띠(toast.gd)는 이 빈칸(제목 명판과 재화 칸 사이)에 뜬다.
 	screen.set_meta("toast_spot", gap)
-	head.add_child(_money_chip("gold", int(app.profile.get("gold", 0)), Kit.GOLD, Callable(), friend_art))
-	head.add_child(_money_chip("gem", int(app.profile.get("gems", 0)), Kit.GEM, Callable(), friend_art))
+	head.add_child(_money_chip("gold", int(app.profile.get("gold", 0)), Kit.GOLD))
+	head.add_child(_money_chip("gem", int(app.profile.get("gems", 0)), Kit.GEM))
 
 	# 본문: 왼쪽 항목 판 + 오른쪽 큰 판
 	var body := HBoxContainer.new()
@@ -230,7 +231,7 @@ static func frame(screen: Control, app, backdrop_art: String, tabs: Array, activ
 			list.add_child(summary_card)
 	var board := PanelContainer.new()
 	board.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var board_style = style("friend_party/board" if friend_art else "content_panel", Vector4(30, 30, 30, 30), Vector4(24, 22, 24, 22))
+	var board_style = style("content_panel", Vector4(30, 30, 30, 30), Vector4(24, 22, 24, 22))
 	board.add_theme_stylebox_override("panel", board_style if board_style != null else Kit.plate(Color("17357f"), Kit.TRIM, 20.0, 18, true))
 	body.add_child(board)
 	var content := VBoxContainer.new()
@@ -391,12 +392,12 @@ static func money_chip(icon_name: String, amount: int, color: Color, on_plus: Ca
 	return _money_chip(icon_name, amount, color, on_plus)
 
 
-static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: Callable = Callable(), friend_art := false) -> Control:
+static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: Callable = Callable()) -> Control:
 	var capsule := PanelContainer.new()
 	capsule.custom_minimum_size = Vector2(230, 50)
 	capsule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	# 재화 칸 그림(143×46): 왼쪽 동그란 자리(지름 46)에 아이콘(34)이 가운데 오게 안쪽 여백 6
-	var art = style("friend_party/currency" if friend_art else "currency", Vector4(50, 0, 22, 0), Vector4(6, 2, 6, 2))
+	var art = style("currency", Vector4(50, 0, 22, 0), Vector4(6, 2, 6, 2))
 	capsule.add_theme_stylebox_override("panel", art if art != null else Kit.box(Color(0, 0.06, 0.22, 0.72), color.darkened(0.2), 2, 20, 4))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
@@ -447,14 +448,14 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 
 
 ## 위 줄 왼쪽 동그란 홈 버튼(파란 구슬 금테 + 흰 집, home_btn). 그림이 없으면 예전 모양.
-static func _home_button(app, friend_art := false) -> Button:
+static func _home_button(app) -> Button:
 	var home := Button.new()
 	home.custom_minimum_size = Vector2(70, 70)
 	home.tooltip_text = "로비로"
 	home.pressed.connect(func() -> void:
 		app.play("click")
 		app.go("lobby"))
-	var round_tex := tex("friend_party/home" if friend_art else "home_btn")
+	var round_tex := tex("home_btn")
 	if round_tex != null:
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 			home.add_theme_stylebox_override(state, StyleBoxEmpty.new())
