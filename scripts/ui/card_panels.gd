@@ -18,16 +18,21 @@ const UiSkin := preload("res://scripts/ui/skin.gd")
 const GRADE_NAMES := {1: "일반", 2: "희귀", 3: "전설"}
 ## 등급별 카드 바탕색
 const GRADE_FILLS := {1: Color("2a4a7a"), 2: Color("1f5f8f"), 3: Color("6a3fa8")}
-## 카드 편성 칸 크기: 덱 줄의 카드 기준 비율, 보유 카드 칸 높이
+## 처음 그릴 때 쓰는 장착 카드 크기와 보유 카드 칸 높이.
 const DECK_TILE := Vector2(96, 76)
 const OWNED_TILE_HEIGHT := 146.0
 const DECK_CARD_GAP := 6.0
 const DECK_FRAME_PADDING := 4.0
+## 한 줄에 카드 세 장과 다음 카드 일부가 들어올 너비를 기준으로 한다.
+const DECK_VISIBLE_TILES := 3.25
+const DECK_TILE_MAX_ASPECT := 1.65
 ## 세로로 긴 창에서도 옆 장식이 카드 공간을 너무 많이 차지하지 않게 한다.
 const DECK_FRAME_MIN_ASPECT := 4.4
-## 원본 줄 높이 150px에서 잰 양 끝 장식 폭과 가장 두꺼운 위·아래 테두리의 비율.
+## 원본 줄 높이 150px에서 잰 양 끝 장식 폭과 장착판 안쪽 경계.
 const DECK_ROW_CAPS := {1: 44.0 / 150.0, 2: 80.0 / 150.0, 3: 92.0 / 150.0}
-const DECK_FRAME_EDGE := 25.0 / 150.0
+const DECK_LEFT_EDGE := 72.0 / 150.0
+const DECK_CLASSIC_LEFT_EDGE := 80.0 / 150.0
+const DECK_FRAME_EDGE := 18.0 / 150.0
 ## 뽑기 판에 보여 줄 전설 카드
 const SHOWCASE := ["war_god", "silence_bell", "spirit_drain", "iron_will"]
 
@@ -220,11 +225,14 @@ func _fit_deck_rows(area: Control, column: VBoxContainer, rows: Dictionary) -> v
 			available_height -= child.get_combined_minimum_size().y
 	var height := floorf(minf(available_height / rows.size(), area.size.x / DECK_FRAME_MIN_ASPECT))
 	var frame_size := Vector2(area.size.x, maxf(1.0, height))
-	# 가장 넓은 전설 틀의 왼쪽 장식을 피해 세 줄의 첫 카드 위치를 맞춘다.
-	var left_inset := ceilf(frame_size.y * float(DECK_ROW_CAPS[3])) + DECK_FRAME_PADDING
-	# 가장 두꺼운 테두리를 기준으로 장착 카드와 빈 슬롯의 크기를 세 줄에 똑같이 적용한다.
-	var safe_height := frame_size.y * (1.0 - 2.0 * DECK_FRAME_EDGE) - 2.0 * DECK_FRAME_PADDING
-	var tile_size := (DECK_TILE * (safe_height / DECK_TILE.y)).floor().max(Vector2.ONE)
+	# 틀 왼쪽 장식의 안쪽 경계에서 세 줄을 시작하고, 가장 좁은 줄의 가용 폭으로 카드 크기를 정한다.
+	var left_edge := DECK_LEFT_EDGE if Kit.Observatory.active else DECK_CLASSIC_LEFT_EDGE
+	var left_inset := ceilf(frame_size.y * left_edge) + DECK_FRAME_PADDING
+	var widest_end := ceilf(frame_size.y * float(DECK_ROW_CAPS[3])) + DECK_FRAME_PADDING
+	var available_width := frame_size.x - left_inset - widest_end
+	var tile_height := frame_size.y * (1.0 - 2.0 * DECK_FRAME_EDGE) - 2.0 * DECK_FRAME_PADDING
+	var width_per_tile := (available_width + DECK_CARD_GAP) / DECK_VISIBLE_TILES - DECK_CARD_GAP
+	var tile_size := Vector2(minf(width_per_tile, tile_height * DECK_TILE_MAX_ASPECT), tile_height).floor().max(Vector2.ONE)
 	var vertical_inset := (frame_size.y - tile_size.y) * 0.5
 	for grade in rows:
 		var row: HBoxContainer = rows[grade]
