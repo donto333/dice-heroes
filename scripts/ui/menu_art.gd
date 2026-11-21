@@ -387,7 +387,7 @@ static func _rail_button(entry: Array, on: bool, on_tab: Callable, small: bool =
 	return button
 
 
-## 위 줄 재화 캡슐(아이콘 + 오른쪽 정렬 숫자). on_plus가 있으면 오른쪽 초록 더하기를 누를 수 있다(로비에서 상점으로).
+## 위 줄 재화 캡슐. 왼쪽에 아이콘, 가운데에 잔액, 오른쪽에 더하기를 둔다.
 static func money_chip(icon_name: String, amount: int, color: Color, on_plus: Callable = Callable()) -> Control:
 	return _money_chip(icon_name, amount, color, on_plus)
 
@@ -396,18 +396,22 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 	var capsule := PanelContainer.new()
 	capsule.custom_minimum_size = Vector2(230, 50)
 	capsule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	# 왼쪽 38픽셀을 아이콘에 배정하고 금테는 그 오른쪽에서 시작한다.
-	var frame: StyleBox = style("currency", Vector4(50, 0, 22, 0), Vector4(0, 2, 6, 2))
+	# 금테의 양 끝 장식과 아이콘·더하기 사이에 여백을 둔다.
+	var frame: StyleBox = style("currency", Vector4(50, 0, 22, 0), Vector4(38, 2, 20, 2))
 	if frame == null:
 		frame = Kit.box(Color(0, 0.06, 0.22, 0.72), color.darkened(0.2), 2, 20, 4)
-		frame.content_margin_left = 0
-	frame.set("expand_margin_left", -38.0)
+		frame.content_margin_left = 38
+		frame.content_margin_right = 20
+	frame.set("expand_margin_left", -20.0)
 	capsule.add_theme_stylebox_override("panel", frame)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
 	capsule.add_child(row)
-	row.add_child(Kit.icon(icon_name, 34.0))
-	var label: Label = Kit.label(Kit.comma(amount), 26, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
+	var icon := Kit.icon(icon_name, 34.0)
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(icon)
+	var label: Label = Kit.label(Kit.comma(amount), 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	TextStyle.number(label, 5)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
