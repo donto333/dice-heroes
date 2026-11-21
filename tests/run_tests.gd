@@ -78,6 +78,7 @@ func _init() -> void:
 	_test_pass_premium_double()
 	_test_app_update()
 	_test_sync_rules()
+	_test_pvp_determinism()
 	_test_ads()
 	_test_trails()
 	_test_account_id()
@@ -778,6 +779,45 @@ func _test_level_bonus() -> void:
 
 ## 프리미엄 시즌 패스가 있으면 판 보상(골드·경험치)이 광고 없이 배수만큼 늘고, 보석은 그대로인지.
 ## 앱 새 버전 알림: 버전 비교와 받은 글 읽기
+func _test_pvp_determinism() -> void:
+	for map_index in [0, 2, 6]:
+		var data := _data.duplicate()
+		data["board"] = GameData.load_json(GameData.BOARD_PATHS[map_index])
+		for seed in [41, 42, 4337]:
+			var game := Game.new()
+			var replay := Game.new()
+			var timeout_player := Game.new()
+			game.setup(data, PARTIES, seed, seed % 2)
+			replay.setup(data, PARTIES, seed, seed % 2)
+			timeout_player.setup(data, PARTIES, seed, seed % 2)
+			_check(game.state_hash() == replay.state_hash(), "실시간 대전 시작 상태 일치")
+			for turn in 2 * game.max_rounds + 2:
+				if game.winner >= 0:
+					break
+				var player := game.current
+				game.begin_turn()
+				replay.begin_turn()
+				timeout_player.begin_turn()
+				_check(not replay.apply_action(1 - player, {"type": "roll", "args": ["high"]}), "차례가 아닌 플레이어 행동 거절")
+				_check(timeout_player.apply_action(player, {"type": "auto", "args": []}), "시간 초과 자동 진행")
+				var recorded: Array[Dictionary] = []
+				for step in 128:
+					if game.winner >= 0 or game.current != player:
+						break
+					var action := AI.next_action(game)
+					recorded.append(action)
+					if not game.apply_action(player, action):
+						_check(false, "실시간 대전 AI 행동 적용 실패")
+						break
+				for action in recorded:
+					_check(replay.apply_action(player, action), "실시간 대전 행동 재현 실패")
+				# 연출 큐를 한쪽에서만 비워도 판 상태 비교에 영향을 주지 않는다.
+				replay.take_events()
+				_check(game.state_hash() == replay.state_hash(), "실시간 대전 턴 상태 일치")
+				_check(game.state_hash() == timeout_player.state_hash(), "시간 초과 자동 진행 상태 일치")
+			_check(game.winner >= 0 and game.winner == replay.winner, "실시간 대전 승자 일치")
+
+
 func _test_sync_rules() -> void:
 	var local := {"guide_flow": 2, "saved_at": 20}
 	var remote := {"guide_flow": 3, "saved_at": 10}

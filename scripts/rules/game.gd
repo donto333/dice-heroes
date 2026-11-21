@@ -1,4 +1,6 @@
 extends RefCounted
+
+const AI := preload("res://scripts/rules/ai.gd")
 ## 규칙 엔진. 화면과 무관하게 한 판을 진행한다.
 ## 주사위는 roll_dice()에서만 굴린다. 7단계에서 이 파일의 로직을 서버로 옮긴다.
 ##
@@ -123,7 +125,7 @@ var moved := false
 
 ## data: GameData.load_all()의 결과.
 ## parties: [{"name": 이름, "attack": id, "defense": id, "support": id}, ...] 두 개.
-func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
+func setup(data: Dictionary, parties: Array, seed_value: int = -1, starting_player: int = -1) -> void:
 	if seed_value >= 0:
 		rng.seed = seed_value
 	else:
@@ -180,7 +182,7 @@ func setup(data: Dictionary, parties: Array, seed_value: int = -1) -> void:
 			## 장착한 유물의 효과 {atk_bonus, turns, gauge, charm}. 없으면 {}.
 			"relic": (party.get("relic", {}) as Dictionary).duplicate(),
 		})
-	first_player = rng.randi_range(0, 1) if is_team_match() else 0
+	first_player = starting_player if starting_player >= 0 else (rng.randi_range(0, 1) if is_team_match() else 0)
 	current = first_player
 	round_number = 1
 	map_attr = ""
@@ -567,6 +569,49 @@ func _sum(values: Array) -> int:
 # ---------------------------------------------------------------- 턴 진행
 
 ## 턴을 시작한다. 쉬는 턴이면 false를 돌려주며, 이때는 바로 end_turn()을 부른다.
+## 서버가 돌려준 선택을 현재 차례에 한 번 적용한다. 턴 시작은 양쪽에서 같은 시점에 호출한다.
+func apply_action(player: int, action: Dictionary) -> bool:
+	if player != current or winner >= 0:
+		return false
+	var args: Array = action.get("args", [])
+	match str(action.get("type", "")):
+		"roll":
+			if args.size() != 1 or not args[0] in ["", "low", "high"] or not can_act() or awaiting_choice():
+				return false
+			roll_move(str(args[0]))
+			return true
+		"ability":
+			return args.size() == 1 and args[0] in SLOTS and use_ability(str(args[0]))
+		"card":
+			return args.size() == 1 and play_card(int(args[0]))
+		"choice":
+			return args.size() == 1 and choose_path(int(args[0]))
+		"end_turn":
+			if not moved or awaiting_choice() or not args.is_empty():
+				return false
+			end_turn()
+			return true
+		"auto":
+			for step in 128:
+				if current != player or winner >= 0:
+					return true
+				if not apply_action(player, AI.next_action(self)):
+					return false
+	return false
+
+
+## 표시용 알림과 연출 큐는 기기마다 읽는 시점이 달라도 된다.
+func state_hash() -> String:
+	return JSON.stringify({
+		"rng": str(rng.state), "players": players, "current": current, "first_player": first_player,
+		"round": round_number, "winner": winner, "winning_player": winning_player, "map": board_name,
+		"map_attr": map_attr, "revealed": revealed, "fog_open": fog_open,
+		"traps": traps, "wardens": wardens, "gates": gates_cleared, "gate_fails": gate_fails,
+		"choice": pending_choice, "fought": fought_on_move, "moved": moved,
+		"card_played": card_played, "ability_used": ability_used,
+	}, "", true, true).sha256_text()
+
+
 func begin_turn() -> bool:
 	fought_on_move = false
 	card_played = false
