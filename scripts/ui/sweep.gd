@@ -10,6 +10,8 @@ var period := 3.2
 var travel := 0.7
 ## 버튼마다 때가 다르게
 var offset := 0.0
+## 충전 완료 막대의 빛은 저사양 모드에서도 막대 안을 계속 왕복한다.
+var continuous := false
 var _time := 0.0
 
 
@@ -30,11 +32,11 @@ func restart() -> void:
 
 
 func _process(delta: float) -> void:
-	if GameData.low_gfx:
+	if GameData.low_gfx and not continuous:
 		return
 	_time += delta
 	var phase := fposmod(_time + offset, period)
-	if phase <= travel + 0.05:
+	if continuous or phase <= travel + 0.05:
 		queue_redraw()
 
 
@@ -43,13 +45,19 @@ func _draw() -> void:
 	if button != null and button.disabled:
 		return
 	var phase := fposmod(_time + offset, period)
-	if phase > travel:
+	if phase > travel and not continuous:
 		return
 	var t := phase / travel
 	var band := maxf(size.y * 0.5, 26.0)
 	var lean := size.y * 0.6
 	var x := lerpf(-band - lean, size.x + lean, t)
 	var strength := sin(t * PI) * 0.42
+	if continuous:
+		var wave := sin(phase / period * TAU)
+		band = minf(band, size.x * 0.24)
+		var right := maxf(0.0, size.x - lean - band * 1.45)
+		x = lerpf(0.0, right, 0.5 + wave * 0.5)
+		strength = 0.58 + 0.12 * wave
 	var points := PackedVector2Array([
 		Vector2(x + lean, 0), Vector2(x + lean + band, 0), Vector2(x + band, size.y), Vector2(x, size.y)])
 	draw_colored_polygon(points, Color(1, 1, 1, strength))

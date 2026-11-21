@@ -1757,7 +1757,11 @@ func _make_skill_gauge(height: float) -> ProgressBar:
 	gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	gauge.add_theme_stylebox_override("fill", Kit.box(Kit.GOLD, Color.TRANSPARENT, 0, 6, 0))
 	var shine := Sweep.new()
+	shine.continuous = true
+	shine.period = 1.6
 	shine.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shine.offset_left = 4.0
+	shine.offset_right = -4.0
 	shine.hide()
 	shine.process_mode = Node.PROCESS_MODE_DISABLED
 	gauge.add_child(shine)
@@ -2774,7 +2778,7 @@ func _refresh() -> void:
 	_refresh_player_cards()
 	_board_view.active_player = game.current if game.winner < 0 else -1
 
-	var animate_gauges := not MenuArt.calm(app)
+	var animate_gauges := not app.instant
 	for slot in Game.SLOTS:
 		var button: Button = _ability_buttons[slot]
 		var character: Dictionary = game.char_of(viewer, slot)
