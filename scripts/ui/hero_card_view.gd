@@ -73,18 +73,6 @@ static func mount(button: Button, character: Dictionary, accent: Color, footer: 
 	grade.add_theme_color_override("font_color", GOLD)
 	button.add_child(grade)
 	KitStyle.squeeze_text(grade, 22, 13)
-	# 분류 점은 초상화 안쪽 왼쪽 위에 놓는다.
-	var dot := Panel.new()
-	var dot_style := StyleBoxFlat.new()
-	dot_style.bg_color = accent
-	dot_style.border_color = Color.WHITE
-	dot_style.set_border_width_all(2)
-	dot_style.set_corner_radius_all(9)
-	dot.add_theme_stylebox_override("panel", dot_style)
-	dot.position = Vector2(6, 6)
-	dot.size = Vector2(18, 18)
-	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	portrait.add_child(dot)
 	return {"portrait": portrait, "frame": frame}
 
 
