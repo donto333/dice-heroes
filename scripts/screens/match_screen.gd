@@ -19,6 +19,7 @@ const Profile := preload("res://scripts/rules/profile.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
+const Sweep := preload("res://scripts/ui/sweep.gd")
 const ABILITY_PORTRAIT_WIDTH := 76.0
 ## 대전 화면 그림 부품(ChatGPT가 그린 것, 2026-11-16). 없으면 예전 모양으로 그린다.
 const MATCH_ART := "res://assets/ui_match/"
@@ -483,8 +484,7 @@ func _build_ui() -> void:
 			space.content_margin_bottom = 30
 			button.add_theme_stylebox_override(state, space)
 		button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.78))
-		var gauge := Kit.bar(0.0, Color("ffcf4d"), 10)
-		gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var gauge := _make_skill_gauge(10.0)
 		button.add_child(gauge)
 		gauge.anchor_left = 0.0
 		gauge.anchor_right = 1.0
@@ -1729,8 +1729,7 @@ func _make_skill_button(slot: String) -> Button:
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(badge)
 	button.set_meta("badge", badge)
-	var gauge := Kit.bar(0.0, Color("ffcf4d"), 8)
-	gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var gauge := _make_skill_gauge(8.0)
 	gauge.anchor_left = 0.445
 	gauge.anchor_right = 0.9
 	gauge.anchor_top = 0.758
@@ -1751,6 +1750,39 @@ func _make_skill_button(slot: String) -> Button:
 	_ability_gauges[slot] = gauge
 	_ability_portraits[slot] = portrait
 	return button
+
+
+func _make_skill_gauge(height: float) -> ProgressBar:
+	var gauge := Kit.bar(0.0, Kit.GOLD, height)
+	gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	gauge.add_theme_stylebox_override("fill", Kit.box(Kit.GOLD, Color.TRANSPARENT, 0, 6, 0))
+	var shine := Sweep.new()
+	shine.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shine.hide()
+	shine.process_mode = Node.PROCESS_MODE_DISABLED
+	gauge.add_child(shine)
+	return gauge
+
+
+func _refresh_skill_gauge(gauge: ProgressBar, charge: int, animate: bool) -> void:
+	gauge.value = clampf(charge / 100.0, 0.0, 1.0)
+	var fill: StyleBoxFlat = gauge.get_theme_stylebox("fill")
+	if charge >= 100:
+		fill.bg_color = Color("ffdb71")
+	elif charge >= 67:
+		fill.bg_color = Color("56e58c")
+	elif charge >= 34:
+		fill.bg_color = Color("49c8fa")
+	else:
+		fill.bg_color = Color("ff9454")
+	# 사용 가능 여부와 별도로 충전 완료를 막대 안에서 보여 준다.
+	var shine: Sweep = gauge.get_node("Sweep")
+	var show_shine := charge >= 100 and animate
+	if shine.visible != show_shine:
+		shine.visible = show_shine
+		shine.process_mode = Node.PROCESS_MODE_INHERIT if show_shine else Node.PROCESS_MODE_DISABLED
+		if show_shine:
+			shine.restart()
 
 
 # ---------------------------------------------------------------- 진행
@@ -2742,12 +2774,14 @@ func _refresh() -> void:
 	_refresh_player_cards()
 	_board_view.active_player = game.current if game.winner < 0 else -1
 
+	var animate_gauges := not MenuArt.calm(app)
 	for slot in Game.SLOTS:
 		var button: Button = _ability_buttons[slot]
 		var character: Dictionary = game.char_of(viewer, slot)
 		var ability: Dictionary = game.ability_of(viewer, slot)
 		var is_ready: bool = _waiting_for_player and game.can_use_ability(slot)
-		var gauge_text := "[사용 가능]" if is_ready else "%d%%" % int(me["gauge"][slot])
+		var charge := int(me["gauge"][slot])
+		var gauge_text := "[사용 가능]" if is_ready else "%d%%" % charge
 		# 버튼에는 이름과 게이지만. 설명은 버튼을 길게 눌러 보는 대신 쓸 때 알림으로 나온다.
 		if button.has_meta("title"):
 			# 그림 스킬 카드: 위 띠에 스킬 이름, 오른쪽 칸에 자리 이름과 게이지.
@@ -2763,7 +2797,7 @@ func _refresh() -> void:
 			button.text = "%s\n%s\n%s" % [Game.SLOT_LABELS[slot], ability.get("name", "-"), gauge_text]
 		button.tooltip_text = str(ability.get("text", ""))
 		button.disabled = not is_ready
-		_ability_gauges[slot].value = clampf(float(me["gauge"][slot]) / 100.0, 0.0, 1.0)
+		_refresh_skill_gauge(_ability_gauges[slot], charge, animate_gauges)
 		var portrait = _ability_portraits[slot]
 		portrait.show_character(character, SLOT_COLORS[slot])
 		if button.has_meta("badge"):

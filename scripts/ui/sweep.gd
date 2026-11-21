@@ -24,6 +24,11 @@ func _init() -> void:
 	offset_bottom = -11.0
 
 
+func restart() -> void:
+	_time = 0.0
+	queue_redraw()
+
+
 func _process(delta: float) -> void:
 	if GameData.low_gfx:
 		return
