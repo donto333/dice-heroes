@@ -85,7 +85,10 @@ func build_list(column: VBoxContainer) -> void:
 	for id in ids:
 		if _filter != 0 and Profile.card_grade(cards, str(id)) != _filter:
 			continue
-		var tile := card_tile(cards, str(id), Profile.owns_card(app.profile, str(id)), deck.has(id), 220.0)
+		var key := str(id)
+		var is_owned := Profile.owns_card(app.profile, key)
+		var tile := _reference_list_card(cards, key, is_owned, deck.has(id)) if Kit.Observatory.active \
+			else card_tile(cards, key, is_owned, deck.has(id), 220.0)
 		tile.pressed.connect(_on_list_card.bind(str(id)))
 		grid.add_child(tile)
 
@@ -294,6 +297,105 @@ func _scroll_grid(column: VBoxContainer) -> GridContainer:
 	grid.add_theme_constant_override("v_separation", 8)
 	scroll.add_child(grid)
 	return grid
+
+
+## 카드 목록 시안은 카드 비율과 삽화·이름·설명 영역을 그림에 맞춰 함께 늘린다.
+func _reference_list_card(cards: Dictionary, id: String, owned: bool, in_deck: bool) -> Button:
+	var card: Dictionary = cards.get(id, {})
+	var grade := Profile.card_grade(cards, id)
+	var tile := Button.new()
+	tile.flat = true
+	tile.focus_mode = Control.FOCUS_NONE
+	tile.custom_minimum_size.y = 220.0
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.resized.connect(func() -> void: tile.custom_minimum_size.y = roundf(tile.size.x * 398.0 / 340.0))
+	var canvas := Control.new()
+	canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tile.add_child(canvas)
+	var art_back := Panel.new()
+	art_back.add_theme_stylebox_override("panel", Kit.box(GRADE_FILLS[grade], Color.TRANSPARENT, 0, 10, 0))
+	_card_list_place(canvas, art_back, Rect2(0.025, 0.022, 0.95, 0.50))
+	var picture := ArtView.new()
+	picture.focus_y = 0.45
+	picture.corner_radius = 9.0
+	picture.show_art("cards/" + id)
+	if picture.has_art():
+		picture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		art_back.add_child(picture)
+	else:
+		picture.free()
+		var center := CenterContainer.new()
+		center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		center.add_child(Kit.icon("card", 42))
+		art_back.add_child(center)
+
+	_card_list_sprite(canvas, "paper", Rect2(0.020, 0.635, 0.96, 0.34))
+	_card_list_sprite(canvas, "nameplate", Rect2(0.020, 0.50, 0.96, 0.15))
+	_card_list_sprite(canvas, "frame", Rect2(0, 0, 1, 1))
+	var name_label := _card_list_text(canvas, str(card.get("name", id)), 20, Color("fff8ed"), Rect2(0.065, 0.509, 0.87, 0.125))
+	name_label.add_theme_constant_override("outline_size", 3)
+	name_label.add_theme_color_override("font_outline_color", Color("211005"))
+	Kit.squeeze_text(name_label, 20, 10)
+
+	var effect := _card_list_text(canvas, str(card.get("text", "")), 14, Color("32180e"), Rect2(0.078, 0.675, 0.844, 0.262))
+	effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	effect.add_theme_color_override("font_shadow_color", Color.TRANSPARENT)
+	tile.resized.connect(func() -> void:
+		var room := tile.size * Vector2(0.844, 0.262)
+		var font := effect.get_theme_font("font")
+		var point := 14
+		while point > 9 and font.get_multiline_string_size(effect.tr(effect.text), HORIZONTAL_ALIGNMENT_CENTER, room.x, point).y > room.y:
+			point -= 1
+		effect.add_theme_font_size_override("font_size", point))
+
+	var badge_width := 0.14 + 0.072 * float(grade - 1)
+	var badge_area := Rect2(0.035, 0.031, badge_width, 0.121)
+	if grade == 1:
+		var badge := Panel.new()
+		badge.add_theme_stylebox_override("panel", Kit.box(Color("100e19"), Kit.GRADE_COLORS[grade], 1, 9, 0))
+		_card_list_place(canvas, badge, badge_area)
+	else:
+		_card_list_sprite(canvas, "stars_gold" if grade == 3 else "stars_blue", badge_area)
+	var stars := _card_list_text(canvas, "★".repeat(grade), 15, Kit.GRADE_COLORS[grade], badge_area.grow(-0.012))
+	Kit.squeeze_text(stars, 15, 9)
+	if in_deck:
+		var deck_area := Rect2(0.725, 0.029, 0.24, 0.125)
+		_card_list_sprite(canvas, "deck", deck_area)
+		var mark := _card_list_text(canvas, "덱", 15, Color.WHITE, deck_area.grow(-0.015))
+		Kit.squeeze_text(mark, 15, 9)
+	if not owned:
+		canvas.modulate = Color(0.45, 0.45, 0.5)
+		var lock := Kit.icon("m_lock", 44.0)
+		_card_list_place(tile, lock, Rect2(0.36, 0.12, 0.28, 0.31))
+	return tile
+
+
+func _card_list_sprite(parent: Control, name: String, area: Rect2) -> void:
+	var sprite := TextureRect.new()
+	sprite.texture = load("res://assets/ui_observatory/ui_menu/card_list/%s.png" % name)
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sprite.stretch_mode = TextureRect.STRETCH_SCALE
+	_card_list_place(parent, sprite, area)
+
+
+func _card_list_text(parent: Control, value: String, points: int, color: Color, area: Rect2) -> Label:
+	var label := Kit.label(value, points, color, HORIZONTAL_ALIGNMENT_CENTER)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.clip_text = true
+	_card_list_place(parent, label, area)
+	return label
+
+
+func _card_list_place(parent: Control, child: Control, area: Rect2) -> void:
+	child.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	child.anchor_left = area.position.x
+	child.anchor_top = area.position.y
+	child.anchor_right = area.end.x
+	child.anchor_bottom = area.end.y
+	parent.add_child(child)
 
 
 ## 카드 한 장(2026-11-18 사용자 결정 A안 '그림 가득'): 그림이 칸을 가득 채우고, 왼쪽 위에 별 딱지,
