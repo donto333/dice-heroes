@@ -11,7 +11,7 @@ static func pending(profile: Dictionary, eco: Dictionary, data: Dictionary, toda
 			alerts["mail"].append("mail:" + str(entry["id"]))
 	if Profile.can_check_in(profile, today):
 		alerts["attendance"].append("attendance:" + today)
-	if Profile.can_spin_free(profile, eco):
+	if Profile.roulette_spins(profile) == 0 and Profile.can_pay(profile, "gems", int(eco["roulette"]["cost_gems"])):
 		alerts["roulette"].append("roulette:" + today)
 	for id in profile.get("owned", {}):
 		if Profile.can_upgrade(profile, eco, str(id)):

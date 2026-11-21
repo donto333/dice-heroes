@@ -1051,27 +1051,19 @@ static func roulette_spins(profile: Dictionary) -> int:
 	return int(profile.get("daily", {}).get("roulette_spins", 0))
 
 
-## 이번에 돌릴 때 드는 보석. 무료면 0, 오늘 더 못 돌리면 -1.
-static func roulette_cost(profile: Dictionary, eco: Dictionary) -> int:
-	var table: Dictionary = eco.get("roulette", {})
-	var spins := roulette_spins(profile)
-	var free := int(table.get("free_per_day", 1))
-	if spins < free:
-		return 0
-	if spins >= free + int(table.get("max_extra", 0)):
+## 일반 회전은 일일 한도를 적용하고 광고 추가 회전도 같은 보석을 쓴다.
+static func roulette_cost(profile: Dictionary, eco: Dictionary, by_ad: bool = false) -> int:
+	var table: Dictionary = eco["roulette"]
+	if not by_ad and roulette_spins(profile) >= int(table["daily_limit"]):
 		return -1
-	return int(table.get("extra_cost_gems", 30))
-
-
-static func can_spin_free(profile: Dictionary, eco: Dictionary) -> bool:
-	return roulette_cost(profile, eco) == 0
+	return int(table["cost_gems"])
 
 
 ## 룰렛을 돌린다. 못 돌리면 {}. 돌리면 {"index": 걸린 칸, "reward": 보상, "cost": 낸 보석}
-## by_ad: 광고를 보고 돌리는 한 번(보석·하루 횟수와 상관없음, 광고 횟수는 watch_ad로 따로 셈).
+## by_ad: 광고를 보고 돌리는 한 번(일반 회전 횟수와 별도, 광고 횟수는 watch_ad로 따로 셈).
 static func spin_roulette(profile: Dictionary, eco: Dictionary, rng: RandomNumberGenerator, by_ad: bool = false) -> Dictionary:
 	var slots: Array = eco.get("roulette", {}).get("slots", [])
-	var cost := 0 if by_ad else roulette_cost(profile, eco)
+	var cost := roulette_cost(profile, eco, by_ad)
 	if slots.is_empty() or cost < 0:
 		return {}
 	if cost > 0 and not pay(profile, "gems", cost):

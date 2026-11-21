@@ -110,7 +110,7 @@ static func _notes(app, kind: String, table: Dictionary) -> String:
 	var lines: PackedStringArray = []
 	if kind == "roulette":
 		var roulette: Dictionary = app.eco.get("roulette", {})
-		lines.append("· 하루 %d번은 무료, 그 뒤에는 보석 %d개로 %d번 더 돌릴 수 있어요." % [int(roulette.get("free_per_day", 1)), int(roulette.get("extra_cost_gems", 0)), int(roulette.get("max_extra", 0))])
+		lines.append("· 한 번에 보석 %d개, 하루 %d회." % [int(roulette["cost_gems"]), int(roulette["daily_limit"])])
 		lines.append("· 칸마다 나올 확률이 위와 같고, 돌릴 때마다 새로 정해져요.")
 		return "\n".join(lines)
 	lines.append("· 같은 등급 안에서는 모두 같은 확률이에요.")

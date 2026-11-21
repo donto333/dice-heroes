@@ -1132,25 +1132,26 @@ func _test_roulette() -> void:
 	Profile.ensure_daily(profile, "2026-05-01")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	_check(Profile.roulette_cost(profile, eco) == 0, "첫 룰렛이 무료가 아님")
-	var gems := int(profile["gems"])
-	var gold := int(profile["gold"])
-	var first := Profile.spin_roulette(profile, eco, rng)
-	_check(not first.is_empty() and int(first["cost"]) == 0, "무료 룰렛을 못 돌림")
-	_check(int(profile["gems"]) + int(profile["gold"]) > gems + gold, "룰렛 보상이 안 들어옴")
-	_check(Profile.roulette_cost(profile, eco) == int(table["extra_cost_gems"]), "두 번째 룰렛 값이 틀림")
-	for i in int(table["max_extra"]):
-		_check(not Profile.spin_roulette(profile, eco, rng).is_empty(), "보석 룰렛을 못 돌림")
-	_check(Profile.roulette_cost(profile, eco) == -1, "하루 제한이 없음")
-	_check(Profile.spin_roulette(profile, eco, rng).is_empty(), "제한을 넘겨 룰렛을 돌림")
-	profile["gems"] = 0
+	profile["gems"] = 400
+	for i in int(table["daily_limit"]):
+		var gems := int(profile["gems"])
+		var gold := int(profile["gold"])
+		var result := Profile.spin_roulette(profile, eco, rng)
+		_check(int(result.get("cost", -1)) == 100, "룰렛 회전 비용 오류")
+		var reward: Dictionary = result["reward"]
+		_check(int(profile["gems"]) == gems - 100 + int(reward.get("gems", 0)), "룰렛 보석 정산 오류")
+		_check(int(profile["gold"]) == gold + int(reward.get("gold", 0)), "룰렛 골드 정산 오류")
+	_check(Profile.spin_roulette(profile, eco, rng).is_empty(), "일일 한도 초과")
 	Profile.ensure_daily(profile, "2026-05-02")
-	_check(not Profile.spin_roulette(profile, eco, rng).is_empty(), "다음 날 무료 룰렛을 못 돌림")
-	_check(Profile.spin_roulette(profile, eco, rng).is_empty(), "보석 없이 룰렛을 돌림")
+	profile["gems"] = 99
+	_check(Profile.spin_roulette(profile, eco, rng).is_empty(), "일반 회전 잔액 부족")
+	_check(Profile.spin_roulette(profile, eco, rng, true).is_empty(), "광고 회전 잔액 부족")
+	_check(Profile.roulette_spins(profile) == 0 and int(profile["gems"]) == 99, "실패 시 횟수 또는 보석 차감")
 	var counts := {}
 	var sample := Profile.new_profile("확률", eco)
 	for i in 2000:
 		Profile.ensure_daily(sample, "d%d" % i)
+		sample["gems"] = 100
 		var result := Profile.spin_roulette(sample, eco, rng)
 		counts[int(result["index"])] = int(counts.get(int(result["index"]), 0)) + 1
 	_check(int(counts.get(0, 0)) > int(counts.get(7, 0)), "룰렛 확률이 가중치와 다름")
@@ -2371,6 +2372,7 @@ func _test_ads() -> void:
 	var double := Profile.watch_ad(profile, eco, "gold_double", {"gold": 120})
 	_check(int(double.get("gold", 0)) == 120 and int(profile["gold"]) == gold + 120, "골드 2배 광고 보상이 틀림")
 	_check(Profile.watch_ad(profile, eco, "없는자리").is_empty(), "없는 광고 자리가 보상을 줌")
+	profile["gems"] = 100
 	var spins := Profile.roulette_spins(profile)
 	_check(not Profile.spin_roulette(profile, eco, RandomNumberGenerator.new(), true).is_empty(), "광고 룰렛이 돌지 않음")
 	_check(Profile.roulette_spins(profile) == spins, "광고 룰렛이 하루 룰렛 횟수를 씀")
