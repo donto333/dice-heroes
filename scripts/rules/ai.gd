@@ -23,6 +23,21 @@ static func take_turn(game) -> void:
 	game.end_turn()
 
 
+## 이미 시작된 현재 턴에서 AI가 고를 다음 행동. 서버 자동 진행과 재현 검사에서 공유한다.
+static func next_action(game) -> Dictionary:
+	if game.awaiting_choice():
+		return {"type": "choice", "args": [choose(game)]}
+	if game.moved:
+		return {"type": "end_turn", "args": []}
+	var slot := pick_ability(game)
+	if not slot.is_empty():
+		return {"type": "ability", "args": [slot]}
+	var card_index := pick_card(game)
+	if card_index >= 0:
+		return {"type": "card", "args": [card_index]}
+	return {"type": "roll", "args": ["high"]}
+
+
 ## 고르기의 답. 갈림길이면 골에 가까운 길,
 ## 상대를 지나칠 때는 내 공격 주사위가 상대 방어 주사위보다 많으면 싸운다.
 static func choose(game) -> int:
