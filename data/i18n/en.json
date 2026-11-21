@@ -2084,5 +2084,6 @@
  "방 %d": "Def %d",
  "지 %d": "Int %d",
  "충 %d": "Chg %d",
- "로비 랭크전의 제목과 트로피를 버튼 왼쪽에 맞췄어요.": "The ranked match title and trophy count now sit on the left side of the lobby button."
+ "로비 랭크전의 제목과 트로피를 버튼 왼쪽에 맞췄어요.": "The ranked match title and trophy count now sit on the left side of the lobby button.",
+ "파티 편성의 영웅 카드에서 초상화와 능력치 창을 넓히고 이름·성급·레벨 글자를 키웠어요.": "Hero cards in Party Setup have more room for portraits and stats, with larger names, stars, and levels."
 }
