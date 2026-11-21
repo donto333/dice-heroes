@@ -1680,13 +1680,18 @@ func _make_skill_button(slot: String) -> Button:
 		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	_skin_button(button, _stretch(SKILL_ART[slot]))
 	# 글자: 스킬 이름 17, 자리 이름·게이지 숫자 16(넘치면 잘라 낸다).
-	var title := _art_label("", 17, Rect2(0.15, 0.10, 0.70, 0.27) if Kit.Observatory.active else Rect2(0.13, 0.0, 0.74, 0.25))
+	var title := _art_label("", 17, Rect2(0.15, 0.18, 0.70, 0.25) if Kit.Observatory.active else Rect2(0.13, 0.0, 0.74, 0.25))
 	title.clip_text = true
 	button.add_child(title)
-	var body := _art_label("", 16, Rect2(0.39, 0.34, 0.55, 0.43) if Kit.Observatory.active else Rect2(0.38, 0.29, 0.58, 0.46))
+	var body := _art_label("", 16, Rect2(0.39, 0.353, 0.55, 0.22) if Kit.Observatory.active else Rect2(0.38, 0.29, 0.58, 0.46))
 	body.add_theme_constant_override("line_spacing", -4)
 	body.clip_text = true
 	button.add_child(body)
+	if Kit.Observatory.active:
+		var status := _art_label("", 16, Rect2(0.39, 0.475, 0.55, 0.23))
+		status.clip_text = true
+		button.add_child(status)
+		button.set_meta("gauge_status", status)
 	var portrait := Portrait.new()
 	portrait.border_width = 0.0
 	portrait.anchor_left = 0.1
@@ -1716,11 +1721,14 @@ func _make_skill_button(slot: String) -> Button:
 	gauge.anchor_bottom = 0.82
 	if Kit.Observatory.active:
 		gauge.add_theme_stylebox_override("background", StyleBoxEmpty.new())
-		gauge.anchor_left = 0.35
-		gauge.anchor_right = 0.90
-		gauge.anchor_top = 0.76
-		gauge.anchor_bottom = 0.85
+		# 세 스킬 그림에 공통으로 들어 있는 게이지 홈의 안쪽 경계.
+		gauge.anchor_left = 0.345
+		gauge.anchor_right = 0.913
+		gauge.anchor_top = 0.683
+		gauge.anchor_bottom = 0.804
 	button.add_child(gauge)
+	if Kit.Observatory.active:
+		button.move_child(gauge, badge.get_index())
 	Kit.shimmer(button, float(Game.SLOTS.find(slot)) * 0.4)
 	button.set_meta("title", title)
 	button.set_meta("body", body)
@@ -2728,9 +2736,13 @@ func _refresh() -> void:
 		if button.has_meta("title"):
 			# 그림 스킬 카드: 위 띠에 스킬 이름, 오른쪽 칸에 자리 이름과 게이지.
 			button.get_meta("title").text = str(ability.get("name", "-"))
-			button.get_meta("body").text = "%s\n%s" % [Game.SLOT_LABELS[slot], gauge_text]
-			if Kit.Observatory.active:
-				button.get_meta("body").add_theme_color_override("font_color", Color("ffe4a0") if is_ready else Color.WHITE)
+			if button.has_meta("gauge_status"):
+				button.get_meta("body").text = Game.SLOT_LABELS[slot]
+				var status: Label = button.get_meta("gauge_status")
+				status.text = gauge_text
+				status.add_theme_color_override("font_color", Color("ffe4a0") if is_ready else Color.WHITE)
+			else:
+				button.get_meta("body").text = "%s\n%s" % [Game.SLOT_LABELS[slot], gauge_text]
 		else:
 			button.text = "%s\n%s\n%s" % [Game.SLOT_LABELS[slot], ability.get("name", "-"), gauge_text]
 		button.tooltip_text = str(ability.get("text", ""))
