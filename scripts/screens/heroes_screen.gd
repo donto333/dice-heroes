@@ -7,6 +7,7 @@ const Profile := preload("res://scripts/rules/profile.gd")
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const TopBar := preload("res://scripts/ui/top_bar.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
+const HeroCardView := preload("res://scripts/ui/hero_card_view.gd")
 const BottomNav := preload("res://scripts/ui/bottom_nav.gd")
 const CardPanels := preload("res://scripts/ui/card_panels.gd")
 const GameData := preload("res://scripts/game_data.gd")
@@ -150,6 +151,9 @@ func _card(character: Dictionary, owned: bool) -> Control:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(0, 220)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if Kit.Observatory.active and MenuArt.tex("hero_card") != null:
+		_observatory_card(button, character, owned)
+		return button
 	var edge: Color = Kit.GRADE_COLORS[grade] if owned else Kit.LINE
 	button.add_theme_stylebox_override("normal", Kit.box(Color("0f3d85"), edge, 3, 12, 0))
 	button.add_theme_stylebox_override("hover", Kit.box(Color("0f3d85"), Color.WHITE, 3, 12, 0))
@@ -269,6 +273,38 @@ func _card(character: Dictionary, owned: bool) -> Control:
 		up.position = Vector2(6, 6)
 		button.add_child(up)
 	return button
+
+
+## 목록 전용 보유·강화 상태를 편성과 같은 카드 위에 표시한다.
+func _observatory_card(button: Button, character: Dictionary, owned: bool) -> void:
+	var id: String = character["id"]
+	var accent: Color = Kit.CATEGORY_COLORS.get(character["category"], Kit.LINE)
+	var footer := ("Lv%d" % Profile.level_of(app.profile, id)) if owned else "미보유"
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	button.pressed.connect(_on_hero.bind(id))
+	var parts := HeroCardView.mount(button, character, accent, footer)
+	if not owned:
+		parts["portrait"].locked = true
+		parts["frame"].modulate = Color(0.6, 0.62, 0.72)
+		var lock := Kit.icon("m_lock", 36.0)
+		lock.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		lock.anchor_left = 0.35
+		lock.anchor_right = 0.35
+		lock.offset_left = -18
+		lock.offset_right = 18
+		lock.offset_top = 55
+		lock.offset_bottom = 91
+		button.add_child(lock)
+	elif Profile.can_upgrade(app.profile, app.eco, id):
+		var up := Kit.label("강화!", 16, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		up.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		up.add_theme_stylebox_override("normal", Kit.box(Kit.BAD, Color.WHITE, 1, 8, 2))
+		up.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		up.offset_left = -54
+		up.offset_right = -6
+		up.offset_top = 6
+		up.offset_bottom = 30
+		button.add_child(up)
 
 
 func _on_hero(id: String) -> void:
