@@ -359,7 +359,7 @@ static func icon(name: String, pixels: float = 54.0) -> TextureRect:
 	var rect := TextureRect.new()
 	var glossy := "res://assets/ui_icons/%s.png" % name
 	var path := "res://assets/icons/%s.png" % str(ICON_FALLBACK.get(name, name))
-	var themed := Observatory.texture("ui_icons", name)
+	var themed: Texture2D = null if ResourceLoader.exists(glossy) else Observatory.texture("ui_icons", name)
 	if themed != null or ResourceLoader.exists(glossy):
 		rect.texture = themed if themed != null else load(glossy)
 		rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
