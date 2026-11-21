@@ -18,26 +18,11 @@ signal preset_saved(index: int, party: Dictionary)
 
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
+const HeroCardView := preload("res://scripts/ui/hero_card_view.gd")
 ## 분류 → 알약 색(영웅 화면과 같은 탭)
-const CATEGORY_PLATES := {
-	"영웅": "category_plate_hero",
-	"위인": "category_plate_great",
-	"신화": "category_plate_myth",
-	"근현대": "category_plate_modern",
-}
 const CATEGORY_PILLS := {"": "blue", "영웅": "red", "위인": "blue", "신화": "purple", "근현대": "green"}
 ## 자리 → 자리 카드 틀 그림(assets/ui_menu/slot_*.png, 위 띠 빨강·파랑·초록)
 const SLOT_FRAMES := {"attack": "slot_attack", "defense": "slot_defense", "support": "slot_support"}
-## 초상화가 창 너비의 64%를 차지하고 나머지는 능력치가 쓴다.
-const HERO_WINDOW_X := Vector2(0.092, 0.91)
-const HERO_STAT_SPLIT := 0.616
-const HERO_WINDOW_BOTTOM := 0.61
-## 관측소 카드의 위 장식을 줄이고 이름 띠까지 이어지는 창 높이를 늘린다.
-const OBSERVATORY_FRAME_SOURCE_Y := [0.0, 0.177, 0.774, 1.0]
-const OBSERVATORY_FRAME_TARGET_Y := [0.0, 0.084, 0.758, 1.0]
-const OBSERVATORY_HERO_GRADE_BAND := Vector2(0.804, 0.924)
-const CLASSIC_HERO_WINDOW_TOP := 0.15
-
 const SLOTS := ["attack", "defense", "support"]
 const SLOT_LABELS := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
 const SLOT_NAMES := {"attack": "공격", "defense": "방어", "support": "지원"}
@@ -264,7 +249,7 @@ func _build() -> void:
 		var parts := _hero_card(button, character) if _art else _fill_card(button, 138.0, 16)
 		if not _art:
 			parts["text"].text = _card_text(character)
-		parts["portrait"].show_character(character, CATEGORY_COLORS.get(character["category"], Color("8fd0ff")))
+			parts["portrait"].show_character(character, CATEGORY_COLORS.get(character["category"], Color("8fd0ff")))
 		_card_parts[character["id"]] = parts
 
 	var bottom := HBoxContainer.new()
@@ -315,10 +300,10 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(frame)
-	var role := _band_label(SLOT_LABELS[slot], 16, 0.02, 0.19)
+	var role := HeroCardView.band_label(SLOT_LABELS[slot], 16, 0.02, 0.19)
 	button.add_child(role)
 	# 능력 한 줄(2단계): 초상화 아래쪽에 어두운 띠를 깔고 그 위에 또렷하게.
-	var stat := _band_label("", 18, 0.70, 0.81)
+	var stat := HeroCardView.band_label("", 18, 0.70, 0.81)
 	stat.offset_left = 8
 	stat.offset_right = -8
 	stat.add_theme_color_override("font_color", GOLD)
@@ -326,9 +311,9 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	button.add_child(stat)
 	# 아래 남색 띠(그림의 세로 82~97%, 가로 양 끝 보석 안쪽)에 맞춰 ★이름을 놓는다.
 	# 이름이 길면 글자를 줄여서라도 띠 안에 다 들어가게 한다.
-	var plate := _nameplate(Vector2(0.08, 0.82), Vector2(0.92, 0.975))
+	var plate := HeroCardView.nameplate(Vector2(0.08, 0.82), Vector2(0.92, 0.975))
 	button.add_child(plate)
-	var text := _band_label("", 16, 0.82, 0.975)
+	var text := HeroCardView.band_label("", 16, 0.82, 0.975)
 	text.anchor_left = 0.1
 	text.anchor_right = 0.9
 	text.offset_left = 0
@@ -337,147 +322,28 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	return {"portrait": portrait, "text": text, "stat": stat, "frame": frame, "nameplate": plate}
 
 
-## 금테 영웅 카드: 창 안에 왼쪽 초상화·오른쪽 능력치, 아래 두 띠에 이름과 ★·레벨.
+## 편성 전용 선택 표시를 공용 영웅 카드 위에 얹는다.
 func _hero_card(button: Button, character: Dictionary) -> Dictionary:
-	var observatory := KitStyle.Observatory.active
-	var window_top: float = OBSERVATORY_FRAME_TARGET_Y[1] if observatory else CLASSIC_HERO_WINDOW_TOP
-	var name_bottom: float = OBSERVATORY_FRAME_TARGET_Y[2] if observatory else 0.774
-	for state in ["normal", "hover", "pressed", "disabled"]:
-		var fill := StyleBoxFlat.new()
-		fill.bg_color = Color("0f3d85") if state != "hover" else Color("1a4fa0")
-		fill.set_corner_radius_all(10)
-		fill.expand_margin_left = -6
-		fill.expand_margin_right = -6
-		fill.expand_margin_top = -10
-		fill.expand_margin_bottom = -8
-		button.add_theme_stylebox_override(state, fill)
-	var portrait := Portrait.new()
-	portrait.focus_y = 0.0
-	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# 머리가 금테와 위쪽 보석에 가리지 않도록 틀의 투명한 창에서 시작한다.
-	portrait.anchor_left = HERO_WINDOW_X.x
-	portrait.anchor_right = HERO_STAT_SPLIT
-	portrait.anchor_top = window_top
-	portrait.anchor_bottom = HERO_WINDOW_BOTTOM
-	portrait.border_width = 0.0
-	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(portrait)
-	button.add_child(_hero_stats(character, window_top))
-	var frame := _hero_frame(observatory)
-	button.add_child(frame)
-	# 기존 능력치 자리 전체를 이름에 쓰고 긴 번역은 칸 너비에 맞춘다.
-	var plate := _nameplate(Vector2(HERO_WINDOW_X.x, HERO_WINDOW_BOTTOM), Vector2(HERO_WINDOW_X.y, name_bottom))
-	plate.texture = _category_plate(str(character["category"]))
-	button.add_child(plate)
-	var name_label := _band_label(str(character["name"]), 22, HERO_WINDOW_BOTTOM, name_bottom)
-	name_label.offset_left = 0
-	name_label.offset_right = 0
-	name_label.anchor_left = 0.1
-	name_label.anchor_right = 0.9
-	button.add_child(name_label)
-	KitStyle.squeeze_text(name_label, 22, 10)
-	var band := OBSERVATORY_HERO_GRADE_BAND if observatory else MenuArt.HERO_NAME_BAND
 	var levels: Dictionary = _options.get("levels", {})
-	var grade_text := "★".repeat(int(character["grade"]))
-	if levels.has(character["id"]):
-		grade_text += "  Lv%d" % int(levels[character["id"]])
-	var grade := _band_label(grade_text, 22, band.x, band.y)
-	grade.add_theme_color_override("font_color", GOLD)
-	button.add_child(grade)
-	KitStyle.squeeze_text(grade, 22, 13)
-	# 분류는 왼쪽 위 작은 동그란 표식으로만
-	var dot := Panel.new()
-	var dot_style := StyleBoxFlat.new()
-	dot_style.bg_color = CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
-	dot_style.border_color = Color.WHITE
-	dot_style.set_border_width_all(2)
-	dot_style.set_corner_radius_all(9)
-	dot.add_theme_stylebox_override("panel", dot_style)
-	dot.position = Vector2(10, 7) if observatory else Vector2(12, 18)
-	dot.size = Vector2(18, 18)
-	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(dot)
+	var id: String = character["id"]
+	var footer := ("Lv%d" % int(levels[id])) if levels.has(id) else ""
+	var accent: Color = CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
+	var parts := HeroCardView.mount(button, character, accent, footer)
 	var check := KitStyle.icon("m_check", 34.0)
 	check.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	check.offset_left = -46
 	check.offset_right = -10
 	check.offset_top = 14
 	check.offset_bottom = 48
-	if observatory:
+	if KitStyle.Observatory.active:
 		check.offset_left = -36
 		check.offset_right = -6
 		check.offset_top = 1
 		check.offset_bottom = 31
 	check.visible = false
 	button.add_child(check)
-	return {"portrait": portrait, "text": name_label, "frame": frame, "check": check}
-
-
-## 틀 그림은 위 장식·안쪽 창·아래 장식으로 나눠 창의 높이에 맞춘다.
-func _hero_frame(observatory: bool) -> Control:
-	var frame := Control.new()
-	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	var normal := MenuArt.tex("hero_card")
-	var selected := MenuArt.tex("hero_card_selected") if observatory else normal
-	frame.draw.connect(func() -> void:
-		var texture := selected if frame.get_meta("selected", false) and selected != null else normal
-		if not observatory:
-			frame.draw_texture_rect(texture, Rect2(Vector2.ZERO, frame.size), false)
-			return
-		var source := texture.get_size()
-		for row in OBSERVATORY_FRAME_SOURCE_Y.size() - 1:
-			var top: float = OBSERVATORY_FRAME_SOURCE_Y[row]
-			var bottom: float = OBSERVATORY_FRAME_SOURCE_Y[row + 1]
-			var target_top: float = OBSERVATORY_FRAME_TARGET_Y[row]
-			var target_bottom: float = OBSERVATORY_FRAME_TARGET_Y[row + 1]
-			frame.draw_texture_rect_region(texture,
-				Rect2(0, frame.size.y * target_top, frame.size.x, frame.size.y * (target_bottom - target_top)),
-				Rect2(0, source.y * top, source.x, source.y * (bottom - top))))
-	frame.resized.connect(frame.queue_redraw)
-	return frame
-
-
-## 좁은 칸에서도 다섯 능력치가 한 줄씩 읽히도록 오른쪽에 배치한다.
-func _hero_stats(character: Dictionary, window_top: float) -> Control:
-	var panel := Panel.new()
-	panel.name = "HeroStats"
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.anchor_left = HERO_STAT_SPLIT
-	panel.anchor_right = HERO_WINDOW_X.y
-	panel.anchor_top = window_top
-	panel.anchor_bottom = HERO_WINDOW_BOTTOM
-	panel.add_theme_stylebox_override("panel", KitStyle.box(Color("142345"), Color("465984"), 1, 0, 0))
-	var values := ["이동 %d" % int(character["move"]), "공 %d" % int(character["attack"]),
-		"방 %d" % int(character["defense"]), "지 %d" % int(character["intellect"]),
-		"충 %d" % (100 + int(character.get("charge", 0)))]
-	for index in values.size():
-		var label := _band_label(values[index], 17, float(index) / values.size(), float(index + 1) / values.size())
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		label.offset_left = 5
-		label.offset_right = -4
-		panel.add_child(label)
-		KitStyle.squeeze_text(label, 17, 11)
-	return panel
-
-
-## 카드 안 가로 띠 글자(위·아래 비율 사이에 가운데 정렬).
-func _band_label(text: String, font_size: int, top: float, bottom: float) -> Label:
-	var label := _label(text, font_size, Color.WHITE)
-	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	label.clip_text = true
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.anchor_top = top
-	label.anchor_bottom = bottom
-	label.offset_left = 10
-	label.offset_right = -10
-	label.offset_top = 0
-	label.offset_bottom = 0
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	TextStyle.menu(label, Color(0, 0.05, 0.2), 5)
-	return label
+	parts["check"] = check
+	return parts
 
 
 ## 버튼 안을 위쪽 초상화 + 아래쪽 글자로 채운다. 버튼 자체 글자는 쓰지 않는다.
@@ -556,25 +422,8 @@ func _filter_button(text: String, color: Color) -> Button:
 	return button
 
 
-func _category_plate(category: String) -> Texture2D:
-	var asset: String = CATEGORY_PLATES.get(category, "")
-	return MenuArt.tex(asset) if asset != "" else null
-
-
-func _nameplate(start: Vector2, end: Vector2) -> TextureRect:
-	var plate := TextureRect.new()
-	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	plate.stretch_mode = TextureRect.STRETCH_SCALE
-	plate.anchor_left = start.x
-	plate.anchor_top = start.y
-	plate.anchor_right = end.x
-	plate.anchor_bottom = end.y
-	return plate
-
-
 func _style_category_filter(button: Button, category: String) -> void:
-	var plate := _category_plate(category)
+	var plate := HeroCardView.category_plate(category)
 	if plate == null:
 		_style_filter_button(button, category == _filter,
 			CATEGORY_PILLS.get(category, "blue"), CATEGORY_COLORS.get(category, Color("8fd0ff")))
@@ -987,7 +836,7 @@ func _refresh() -> void:
 		var fill: Color = Color("6f86a8") if character.is_empty() else CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
 		parts["portrait"].show_character(character, fill)
 		if parts.has("frame"):
-			parts["nameplate"].texture = _category_plate(str(character.get("category", "")))
+			parts["nameplate"].texture = HeroCardView.category_plate(str(character.get("category", "")))
 			# 금테 자리 카드: 고른 자리는 테가 밝게 빛난다.
 			parts["text"].text = "비어 있음" if character.is_empty() else "%s %s" % ["★".repeat(int(character["grade"])), character["name"]]
 			KitStyle.squeeze_text(parts["text"], 16, 11)
