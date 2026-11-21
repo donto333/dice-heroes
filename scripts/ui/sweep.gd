@@ -1,59 +1,66 @@
 extends Control
-
+## 버튼 몸통을 그리는 픽셀에만 빛을 더한다. 글자와 아이콘은 별도로 그린다.
 const GameData := preload("res://scripts/game_data.gd")
-## 큰 버튼 위를 몇 초마다 비스듬히 훑고 지나가는 흰 빛. "눌러 보세요" 하는 느낌을 준다.
-## 버튼 안쪽에 붙고 입력은 받지 않는다. Kit.shimmer()가 붙인다.
+const SHEEN := preload("res://scripts/ui/sweep.gdshader")
 
-## 몇 초마다 한 번 지나가는지
 var period := 3.2
-## 지나가는 데 걸리는 시간
 var travel := 0.7
-## 버튼마다 때가 다르게
 var offset := 0.0
+var surface: Control
 var _time := 0.0
+var _phase := -1.0
+var _light := ShaderMaterial.new()
 
 
 func _init() -> void:
 	name = "Sweep"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	clip_contents = true
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	offset_left = 5.0
-	offset_top = 5.0
-	offset_right = -5.0
-	offset_bottom = -11.0
+
+
+func _ready() -> void:
+	var host := get_parent() as Control
+	if surface == null and host.has_meta("skin"):
+		surface = host.get_meta("skin")
+	if surface == null:
+		for skin_name in ["Pill", "Gloss"]:
+			var skin := host.get_node_or_null(skin_name) as Control
+			if skin != null and skin.visible:
+				surface = skin
+				break
+	_light.shader = SHEEN
+	# 그림·조각 판·광택 몸통은 자체 알파를 그대로 쓴다. 테마 버튼과 게이지는 같은 스타일 상자를 그린다.
+	var painted := self if surface == null else surface
+	painted.material = _light
+	_light.set_shader_parameter("overlay", surface == null)
+	var resize_light := func() -> void: _light.set_shader_parameter("extent", painted.size)
+	painted.resized.connect(resize_light)
+	resize_light.call()
 
 
 func restart() -> void:
 	_time = 0.0
-	queue_redraw()
 
 
 func _process(delta: float) -> void:
-	if GameData.low_gfx:
-		return
-	_time += delta
-	var phase := fposmod(_time + offset, period)
-	if phase <= travel + 0.05:
-		queue_redraw()
+	var next := -1.0
+	var button := get_parent() as BaseButton
+	if not GameData.low_gfx and (button == null or not button.disabled):
+		_time += delta
+		var elapsed := fposmod(_time + offset, period)
+		if elapsed < travel:
+			next = elapsed / travel
+	if next != _phase:
+		_phase = next
+		_light.set_shader_parameter("phase", next)
 
 
 func _draw() -> void:
-	var button := get_parent() as BaseButton
-	if button != null and button.disabled:
+	if surface != null:
 		return
-	var phase := fposmod(_time + offset, period)
-	if phase > travel:
-		return
-	var t := phase / travel
-	var band := maxf(size.y * 0.5, 26.0)
-	var lean := size.y * 0.6
-	var x := lerpf(-band - lean, size.x + lean, t)
-	var strength := sin(t * PI) * 0.42
-	var points := PackedVector2Array([
-		Vector2(x + lean, 0), Vector2(x + lean + band, 0), Vector2(x + band, size.y), Vector2(x, size.y)])
-	draw_colored_polygon(points, Color(1, 1, 1, strength))
-	var thin := PackedVector2Array([
-		Vector2(x + lean + band * 1.25, 0), Vector2(x + lean + band * 1.45, 0),
-		Vector2(x + band * 1.45, size.y), Vector2(x + band * 1.25, size.y)])
-	draw_colored_polygon(thin, Color(1, 1, 1, strength * 0.6))
+	var host := get_parent() as Control
+	if host is ProgressBar:
+		draw_style_box(host.get_theme_stylebox("fill"), Rect2(Vector2.ZERO, size))
+	elif host is Button:
+		var style_name := "pressed" if host.button_pressed else "normal"
+		draw_style_box(host.get_theme_stylebox(style_name), Rect2(Vector2.ZERO, size))

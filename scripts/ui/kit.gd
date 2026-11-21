@@ -278,11 +278,12 @@ static func backdrop(parent: Control, art_name: String, strength: float = 1.0) -
 
 
 ## 큰 버튼 위를 몇 초마다 훑고 지나가는 빛을 붙인다. 가장 눈에 띄어야 하는 버튼에만 쓴다.
-static func shimmer(target: Button, delay: float = 0.0) -> void:
+static func shimmer(target: Button, delay: float = 0.0, surface: Control = null) -> void:
 	if target.has_node("Sweep"):
 		return
 	var sweep := Sweep.new()
 	sweep.offset = delay
+	sweep.surface = surface
 	target.add_child(sweep)
 
 

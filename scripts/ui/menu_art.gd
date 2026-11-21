@@ -396,9 +396,13 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 	var capsule := PanelContainer.new()
 	capsule.custom_minimum_size = Vector2(230, 50)
 	capsule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	# 재화 칸 그림(143×46): 왼쪽 동그란 자리(지름 46)에 아이콘(34)이 가운데 오게 안쪽 여백 6
-	var art = style("currency", Vector4(50, 0, 22, 0), Vector4(6, 2, 6, 2))
-	capsule.add_theme_stylebox_override("panel", art if art != null else Kit.box(Color(0, 0.06, 0.22, 0.72), color.darkened(0.2), 2, 20, 4))
+	# 왼쪽 38픽셀을 아이콘에 배정하고 금테는 그 오른쪽에서 시작한다.
+	var frame: StyleBox = style("currency", Vector4(50, 0, 22, 0), Vector4(0, 2, 6, 2))
+	if frame == null:
+		frame = Kit.box(Color(0, 0.06, 0.22, 0.72), color.darkened(0.2), 2, 20, 4)
+		frame.content_margin_left = 0
+	frame.set("expand_margin_left", -38.0)
+	capsule.add_theme_stylebox_override("panel", frame)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
 	capsule.add_child(row)
@@ -425,6 +429,11 @@ static func _money_chip(icon_name: String, amount: int, color: Color, on_plus: C
 		mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(mark)
+		# 버튼 원화 가운데의 더하기를 작은 화면에서도 선명한 굵기로 그린다.
+		mark.draw.connect(func() -> void:
+			var center := (mark.size * 0.5).round()
+			mark.draw_rect(Rect2(center - Vector2(8, 2), Vector2(16, 4)), Color.WHITE)
+			mark.draw_rect(Rect2(center - Vector2(2, 8), Vector2(4, 16)), Color.WHITE))
 		if on_plus.is_valid():
 			var press := Button.new()
 			press.flat = true
