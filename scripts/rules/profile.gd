@@ -565,6 +565,9 @@ static func map_record(profile: Dictionary, map_name: String) -> Dictionary:
 const HISTORY_LIMIT := 10
 
 static func record_match(profile: Dictionary, eco: Dictionary, mode: String, outcome: String, stats: Dictionary) -> Dictionary:
+	var history_mode := mode
+	if mode == "rank_team":
+		mode = "rank"
 	var reward_mode := mode
 	if mode == "challenge":
 		# 오늘의 도전 보상은 하루 한 번. 이미 이겼으면 AI 연습전 보상을 준다.
@@ -589,7 +592,7 @@ static func record_match(profile: Dictionary, eco: Dictionary, mode: String, out
 	# 최근 전적(프로필 창에 보인다). 소탕처럼 판을 하지 않은 것은 남기지 않는다.
 	if not bool(stats.get("no_history", false)):
 		var history: Array = profile.get("history", [])
-		history.push_front({"mode": mode, "outcome": outcome, "map": str(stats.get("map", "")), "turns": int(stats.get("turns", 0))})
+		history.push_front({"mode": history_mode, "outcome": outcome, "map": str(stats.get("map", "")), "turns": int(stats.get("turns", 0))})
 		while history.size() > HISTORY_LIMIT:
 			history.pop_back()
 		profile["history"] = history

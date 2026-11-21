@@ -54,7 +54,7 @@ const TILE_LABELS := {
 	"checkpoint": "거점",
 	"goal": "골",
 }
-const PLAYER_COLORS := [Color("4fc3f7"), Color("ff7043")]
+const PLAYER_COLORS := [Color("4fc3f7"), Color("ff7043"), Color("69e2de"), Color("ff9d79")]
 const ICON_NAMES := {
 	"start": "start", "fork": "fork", "treasure": "treasure", "battle": "battle", "ambush": "ambush", "gate": "battle",
 	"forward": "forward", "warp": "warp", "luck": "luck", "curse": "curse",
@@ -252,6 +252,11 @@ func reset_pieces() -> void:
 	_draw_order_for = -1
 	shown_pos = [0, 0]
 	if game != null:
+		shown_pos.resize(game.players.size())
+		_squash.resize(game.players.size())
+		_squash.fill(0.0)
+		_facing.resize(game.players.size())
+		_facing.fill(1.0)
 		for index in game.players.size():
 			shown_pos[index] = int(game.players[index]["pos"])
 	queue_redraw()
@@ -1231,7 +1236,9 @@ func _draw() -> void:
 			lift = sin(t * PI) * cell * (2.4 if flinging else HOP_HEIGHT)
 		# 두 말이 같은 칸에 있을 때만 좌우로 비켜 선다. 혼자면 칸 한가운데에 선다.
 		if _sharing_tile(player_index):
-			center.x += (player_index * 2 - 1) * cell * 0.22
+			center.x += (player_index % 2 * 2 - 1) * cell * 0.22
+			if game.is_team_match():
+				center.y += (-0.16 if player_index < 2 else 0.16) * cell
 		# 발(_draw_standee의 foot = center + 0.1칸)이 칸 윗면 한가운데에 오도록 올린다.
 		# 예전에는 윗면 앞쪽 모서리 근처에 서서 발밑 마법진이 칸 옆면으로 흘러내렸다.
 		center.y -= cell * (BLOCK_DEPTH * 0.5 + 0.1)

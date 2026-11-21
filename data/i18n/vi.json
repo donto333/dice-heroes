@@ -2093,5 +2093,17 @@
  "대전 화면의 정보판과 버튼에 새 디자인을 적용했어요.": "Bảng thông tin và các nút trong trận đã có thiết kế mới.",
  "메뉴와 팝업에 원래 컬러 아이콘을 적용했어요.": "Menu và cửa sổ bật lên nay dùng các biểu tượng màu gốc.",
  "스킬 게이지는 충전량에 따라 색이 바뀌고 가득 차면 빛나요.": "Thanh kỹ năng đổi màu theo mức nạp và lấp lánh khi đầy.",
- "AI 연습전 난이도 창에 별의 관측소 디자인을 적용했어요.": "Cửa sổ độ khó luyện tập AI nay có thiết kế Đài Quan Sát."
+ "AI 연습전 난이도 창에 별의 관측소 디자인을 적용했어요.": "Cửa sổ độ khó luyện tập AI nay có thiết kế Đài Quan Sát.",
+ "랭크전에서 개인전 또는 2대2 팀전을 고를 수 있어요.": "Chọn đấu đơn hoặc đấu đội 2v2 trong đấu hạng.",
+ "우리 팀 승리!": "Đội bạn thắng!",
+ "상대 팀 승리!": "Đội đối thủ thắng!",
+ "우리 팀": "Đội bạn",
+ "상대 팀": "Đội đối thủ",
+ "개인전과 팀전은 트로피와 티어를 공유해요.": "Đấu đơn và đấu đội dùng chung cúp và bậc hạng.",
+ "개인전은 AI와 1대1, 팀전은 AI 동료와 함께 상대 AI 둘과 겨뤄요.": "Đấu đơn với một AI hoặc cùng đồng đội AI đối đầu hai AI.",
+ "개인전": "Đấu đơn",
+ "팀전": "Đấu đội",
+ "상대 AI 1": "AI đối thủ 1",
+ "동료 AI": "Đồng đội AI",
+ "상대 AI 2": "AI đối thủ 2"
 }

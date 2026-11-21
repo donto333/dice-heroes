@@ -38,7 +38,10 @@ static func ask(main_app, start_mode: String, start_params: Dictionary = {}) -> 
 	launcher.params = start_params
 	main_app.set_meta("match_launcher", launcher)
 	if not bool(start_params.get("tutorial", false)):
-		launcher._open()
+		if start_mode == "rank" and not start_params.has("rank_team"):
+			launcher._choose_rank()
+		else:
+			launcher._open()
 	return launcher
 
 
@@ -50,12 +53,30 @@ static func for_map(main_app) -> Node:
 	return launcher
 
 
+func _choose_rank() -> void:
+	var body := Kit.vbox(12)
+	body.add_child(Kit.para("개인전과 팀전은 트로피와 티어를 공유해요.", 22, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	body.add_child(Kit.para("개인전은 AI와 1대1, 팀전은 AI 동료와 함께 상대 AI 둘과 겨뤄요.", 18, Kit.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	_window = app.dialog("랭크전", body, [
+		["개인전", Kit.PRIMARY, _select_rank.bind(false)],
+		["팀전", Kit.ACCENT, _select_rank.bind(true)],
+		["취소", Kit.PANEL_LIGHT, cancel]], 820)
+
+
+func _select_rank(team: bool) -> void:
+	params = params.duplicate()
+	params["rank_team"] = team
+	_open()
+
+
 func _open() -> void:
 	var title := "%s 시작" % MODE_TITLES.get(mode, "대전")
 	if mode == "adventure":
 		var found := Profile.find_stage(app.data.get("adventure", {}), str(params.get("stage", "")))
 		if not found.is_empty():
 			title = "%s 시작" % str(found["stage"].get("name", "모험"))
+	if mode == "rank":
+		title = "팀전" if bool(params.get("rank_team", false)) else "개인전"
 	var action := Kit.PRIMARY if Kit.Observatory.active else Kit.ACCENT
 	var buttons := [["확인", action, confirm], ["취소", Kit.PANEL_LIGHT, cancel]]
 	if Kit.Observatory.active:
@@ -334,6 +355,14 @@ func confirm() -> void:
 		return
 	if mode == "rank":
 		app.tutorial_event("rank")
+		if bool(params.get("rank_team", false)):
+			theirs["name"] = "상대 AI 1"
+			for ai_name in ["동료 AI", "상대 AI 2"]:
+				var party_ai: Dictionary = AI.pick_party(app.data["characters"], limit, app.rng)
+				party_ai["name"] = ai_name
+				party_ai["levels"] = theirs["levels"].duplicate()
+				start["parties"].append(party_ai)
+				start["humans"].append(false)
 	start["map"] = _random_map()
 	_go(start)
 

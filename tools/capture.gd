@@ -474,7 +474,7 @@ func _run() -> void:
 	await _shot("12e_auto_attack")
 	_party_picker()._on_start_pressed()
 	await _wait(0.3)
-	_app.start_mode("rank")
+	_app.start_mode("rank", {"rank_team": false})
 	await _wait(0.3)
 	_app.get_meta("match_launcher").confirm()
 	await _wait(0.6)

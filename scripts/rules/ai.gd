@@ -26,10 +26,13 @@ static func take_turn(game) -> void:
 ## 고르기의 답. 갈림길이면 골에 가까운 길,
 ## 상대를 지나칠 때는 내 공격 주사위가 상대 방어 주사위보다 많으면 싸운다.
 static func choose(game) -> int:
+	if game.choice_kind() == "target":
+		var targets: Array = game.pending_choice["options"]
+		return 0 if int(game.char_of(targets[0], "defense")["defense"]) <= int(game.char_of(targets[1], "defense")["defense"]) else 1
 	if game.choice_kind() == "fight":
 		var me: int = game.current
 		var attack := int(game.char_of(me, "attack")["attack"])
-		var defense := int(game.char_of(1 - me, "defense")["defense"])
+		var defense := int(game.char_of(int(game.enemies_here(me)[0]), "defense")["defense"])
 		return 0 if attack > defense else 1
 	return game.best_option(game.pending_choice["options"])
 
@@ -62,10 +65,10 @@ static func pick_card(game) -> int:
 ## 지금 쓰면 손해이거나 아무 일도 없는 카드를 거른다.
 static func card_useful(game, card: Dictionary) -> bool:
 	var me: int = game.current
-	var other_hand: Array = game.players[1 - me]["hand"]
+	var other_hand: Array = game.players[game.leading_enemy(me)]["hand"]
 	match str(card["effect"].get("type", "")):
 		"swap":
-			return game.distance_of(1 - me) < game.distance_of(me)
+			return game.distance_of(game.leading_enemy(me)) < game.distance_of(me)
 		"comeback":
 			# 쓸 수 있는 조건(10칸 이상 뒤처짐)이면 늘 쓸 만하다.
 			return game.card_condition_met(card)
