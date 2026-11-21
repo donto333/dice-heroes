@@ -94,6 +94,9 @@ var _timer := 0.0
 ## 큰 맵은 화면에 다 안 들어가므로 칸 크기를 MIN_CELL로 두고 카메라로 일부만 보여 준다.
 const MIN_CELL := 148.0
 const CAMERA_SPEED := 6.0
+## 대전 HUD에서 받는 미니맵 표시 영역(화면 비율)과 틀.
+var minimap_area := Rect2()
+var minimap_frame: Texture2D
 const MINIMAP_WIDTH := 110.0
 ## 카메라가 보고 있는 맵 위의 점(맵 좌표, 픽셀)
 var _camera := Vector2.ZERO
@@ -1292,6 +1295,7 @@ func _draw() -> void:
 			draw_circle(center, cell * 0.14, PLAYER_COLORS[player_index])
 	if bool(layout.get("camera", false)):
 		_draw_depth_haze()
+	if bool(layout.get("camera", false)) or minimap_area.has_area():
 		_draw_minimap(layout)
 
 
@@ -1321,10 +1325,19 @@ func _draw_minimap(layout: Dictionary) -> void:
 	var dot: float = min(MINIMAP_WIDTH * 2.6 / grid.x, MINIMAP_WIDTH / grid.y)
 	var map_size := Vector2(grid.x, grid.y) * dot
 	var corner := Vector2(size.x - map_size.x - 10.0, 10.0)
-	var panel := StyleBoxFlat.new()
-	panel.bg_color = Color(0, 0, 0, 0.45)
-	panel.set_corner_radius_all(8)
-	draw_style_box(panel, Rect2(corner - Vector2(6, 6), map_size + Vector2(12, 12)))
+	if minimap_area.has_area():
+		var frame := Rect2(minimap_area.position * size, minimap_area.size * size)
+		var interior := frame.grow(-8.0)
+		dot = minf(interior.size.x / grid.x, interior.size.y / grid.y)
+		map_size = Vector2(grid.x, grid.y) * dot
+		corner = interior.get_center() - map_size * 0.5
+		if minimap_frame != null:
+			draw_texture_rect(minimap_frame, frame, false)
+	else:
+		var panel := StyleBoxFlat.new()
+		panel.bg_color = Color(0, 0, 0, 0.45)
+		panel.set_corner_radius_all(8)
+		draw_style_box(panel, Rect2(corner - Vector2(6, 6), map_size + Vector2(12, 12)))
 	for id in game.nodes:
 		var tile: Dictionary = game.nodes[id]
 		var color: Color = TILE_COLORS.get(tile["type"], Color("3a4466"))
@@ -1344,6 +1357,8 @@ func _draw_minimap(layout: Dictionary) -> void:
 			var center := corner + (Vector2(int(node.get("x", 0)), int(node.get("y", 0))) + Vector2(0.5, 0.5)) * dot
 			draw_circle(center, max(3.0, dot * 0.45), PLAYER_COLORS[player_index])
 			draw_arc(center, max(3.0, dot * 0.45), 0.0, TAU, 12, Color.BLACK, 1.0)
+	if not bool(layout.get("camera", false)):
+		return
 	var cell: float = layout["cell"]
 	var view_origin: Vector2 = layout["origin"]
 	var shown := Rect2(Vector2(-view_origin.x / cell, -view_origin.y / (cell * TILT)) * dot, Vector2(size.x / cell, size.y / (cell * TILT)) * dot)

@@ -22,6 +22,9 @@ const Portrait := preload("res://scripts/ui/portrait.gd")
 const ABILITY_PORTRAIT_WIDTH := 76.0
 ## 대전 화면 그림 부품(ChatGPT가 그린 것, 2026-11-16). 없으면 예전 모양으로 그린다.
 const MATCH_ART := "res://assets/ui_match/"
+const REFERENCE_HUD_ART := "res://assets/ui_observatory/ui_match/reference/"
+const REFERENCE_SIZE := Vector2(1672, 941)
+const REFERENCE_CARD_CELLS := [[0.112, 0.375], [0.399, 0.634], [0.657, 0.901]]
 const SKILL_WIDTH := 181
 const SKILL_ART := {"attack": "skill_red", "defense": "skill_purple", "support": "skill_green"}
 ## 카드 세 칸 틀(card_column.png)에서 칸마다 위·아래 비율.
@@ -199,7 +202,22 @@ func _is_local() -> bool:
 
 # ---------------------------------------------------------------- 화면 구성
 
+## 시안 화면에서 잰 좌표를 실제 화면 크기에 비례해 적용한다.
+func _hud_rect(control: Control, area: Rect2) -> void:
+	var from := area.position / REFERENCE_SIZE
+	var to := area.end / REFERENCE_SIZE
+	control.set_anchor(SIDE_LEFT, from.x)
+	control.set_anchor(SIDE_TOP, from.y)
+	control.set_anchor(SIDE_RIGHT, to.x)
+	control.set_anchor(SIDE_BOTTOM, to.y)
+	control.offset_left = 0
+	control.offset_top = 0
+	control.offset_right = 0
+	control.offset_bottom = 0
+
+
 func _build_ui() -> void:
+	var reference_hud := Kit.Observatory.active
 	var background := ColorRect.new()
 	background.color = Color("1c5cb8")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -213,6 +231,8 @@ func _build_ui() -> void:
 
 	var status_row := HBoxContainer.new()
 	status_row.add_theme_constant_override("separation", 6)
+	if reference_hud:
+		status_row.alignment = BoxContainer.ALIGNMENT_END
 	_status_row = status_row
 	_status_label = _make_label(18)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -220,18 +240,18 @@ func _build_ui() -> void:
 	_status_label.add_theme_constant_override("outline_size", 6)
 	_status_label.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
 	_auto_button = Kit.button("자동 꺼짐", Color("6f9bd6"), 18, 50)
-	_auto_button.custom_minimum_size = Vector2(110, 50)
+	_auto_button.custom_minimum_size = Vector2(106, 44) if reference_hud else Vector2(110, 50)
 	_auto_button.pressed.connect(_on_auto_pressed)
 	_paint_pill(_auto_button, "blue", Color("6f9bd6"))
 	status_row.add_child(_auto_button)
 	_speed_button = Kit.button("", Color("27a35a"), 18, 50)
-	_speed_button.custom_minimum_size = Vector2(124, 50)
+	_speed_button.custom_minimum_size = Vector2(142, 44) if reference_hud else Vector2(124, 50)
 	_speed_button.pressed.connect(_on_speed_pressed)
 	_pill_icon(_speed_button, "ic_fast")
 	status_row.add_child(_speed_button)
 	_apply_speed()
 	var quit_button := Kit.button("나가기", Color("e0532b"), 18, 50)
-	quit_button.custom_minimum_size = Vector2(108, 50)
+	quit_button.custom_minimum_size = Vector2(118, 44) if reference_hud else Vector2(108, 50)
 	quit_button.pressed.connect(_on_quit_pressed)
 	_paint_pill(quit_button, "red", Color("e0532b"))
 	_pill_icon(quit_button, "ic_exit")
@@ -248,6 +268,9 @@ func _build_ui() -> void:
 	_board_view.pad_bottom = 140.0
 	_board_view.pad_left = 132.0 if _match_tex("card_column") != null else 112.0
 	board_area.add_child(_board_view)
+	if reference_hud:
+		_board_view.minimap_area = Rect2(Vector2(1496, 77) / REFERENCE_SIZE, Vector2(167, 99) / REFERENCE_SIZE)
+		_board_view.minimap_frame = _match_tex("minimap_frame")
 	for index in 2:
 		var card: Control = _player_card(index)
 		board_area.add_child(card)
@@ -265,6 +288,8 @@ func _build_ui() -> void:
 			card.offset_bottom = -8
 		card.offset_left = 8
 		card.offset_right = 400
+		if reference_hud:
+			_hud_rect(card, Rect2(8, 8, 506, 105) if index == 1 else Rect2(8, 788, 483, 137))
 		_ignore_mouse(card)
 
 	_big_dice = BigDice.new()
@@ -297,11 +322,16 @@ func _build_ui() -> void:
 	_roll_button.offset_right = -12
 	_roll_button.offset_top = -172
 	_roll_button.offset_bottom = -12
+	if reference_hud:
+		_hud_rect(_roll_button, Rect2(1398, 665, 269, 266))
+		_aim_bar.offset_top = -277
+		_aim_bar.offset_bottom = -213
 
 	# 위 가운데: 턴 정보 한 줄과 반투명 기록 칸. 오른쪽 위: 자동·빠르기·나가기.
 	# 그림이 있으면 월계수 띠(턴 정보)와 그 아래 작은 캡슐(맵 이름·속성)로 나눈다.
-	var banner := _patch("turn_banner", Vector4(64, 0, 64, 0), 50.0 / 81.0)
+	var banner: Control = _stretch("turn_banner") if reference_hud else _patch("turn_banner", Vector4(64, 0, 64, 0), 50.0 / 81.0)
 	if banner != null:
+		banner.show_behind_parent = false
 		board_area.add_child(banner)
 		banner.anchor_left = 0.0
 		banner.anchor_right = 1.0
@@ -312,7 +342,8 @@ func _build_ui() -> void:
 		_top_center.append([banner, 0.0])
 		banner.offset_top = 4
 		banner.offset_bottom = 54
-		var capsule := _patch("map_capsule", Vector4(34, 0, 34, 0), 30.0 / 50.0)
+		var capsule: Control = _stretch("map_capsule") if reference_hud else _patch("map_capsule", Vector4(34, 0, 34, 0), 30.0 / 50.0)
+		capsule.show_behind_parent = false
 		board_area.add_child(capsule)
 		capsule.anchor_left = 0.0
 		capsule.anchor_right = 1.0
@@ -336,6 +367,10 @@ func _build_ui() -> void:
 		_map_label.offset_bottom = -2
 		_map_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		capsule.add_child(_map_label)
+		if reference_hud:
+			_hud_rect(banner, Rect2(579, 3, 514, 67))
+			_hud_rect(capsule, Rect2(642, 68, 392, 46))
+			_map_label.add_theme_font_size_override("font_size", 16)
 		_status_label.add_theme_font_size_override("font_size", 20)
 	board_area.add_child(_status_label)
 	_status_label.anchor_left = 0.0
@@ -356,10 +391,14 @@ func _build_ui() -> void:
 	status_row.offset_right = -8
 	status_row.offset_top = 8
 	status_row.offset_bottom = 58
+	if reference_hud:
+		_hud_rect(_status_label, Rect2(624, 10, 425, 55))
+		_status_label.add_theme_font_size_override("font_size", 24)
+		_hud_rect(status_row, Rect2(1160, 12, 503, 59))
 	var result_panel := PanelContainer.new()
 	# 기록 칸은 작고 반투명하게. 내용이 넘치면 안에서 스크롤된다.
 	result_panel.add_theme_stylebox_override("panel", Kit.plate(Color(0.07, 0.1, 0.34, 0.8), Kit.TRIM, 16.0, 10, false))
-	var frame_tex := _match_tex("minimap_frame")
+	var frame_tex := _match_tex("minimap_frame", not reference_hud)
 	if frame_tex != null:
 		# 금테 남색 판(가운데만 늘어남). 판 아래가 살짝 비치게 조금 투명하게.
 		var framed := StyleBoxTexture.new()
@@ -378,6 +417,8 @@ func _build_ui() -> void:
 	_top_center.append([result_panel, 0.0])
 	result_panel.offset_top = 56 if _map_label == null else 88
 	result_panel.offset_bottom = 140 if _map_label == null else 168
+	if reference_hud:
+		_hud_rect(result_panel, Rect2(579, 118, 514, 96))
 	_result_scroll = ScrollContainer.new()
 	_result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	result_panel.add_child(_result_scroll)
@@ -399,6 +440,9 @@ func _build_ui() -> void:
 	ability_row.offset_right = -190
 	ability_row.offset_top = -112
 	ability_row.offset_bottom = -6
+	if reference_hud:
+		ability_row.add_theme_constant_override("separation", 8)
+		_hud_rect(ability_row, Rect2(499, 786, 897, 138))
 	# 스킬 설명 버튼: 언제든 세 영웅의 스킬 설명을 볼 수 있다.
 	var info_button := Kit.button("스킬\n설명", Color("6f9bd6"), 17, 104)
 	info_button.custom_minimum_size = Vector2(68, 104)
@@ -417,6 +461,9 @@ func _build_ui() -> void:
 			art_button.pressed.connect(_on_ability_pressed.bind(slot))
 			art_button.gui_input.connect(_on_ability_input.bind(slot))
 			art_button.set_meta("guide", "skill_%s" % slot)
+			if reference_hud:
+				art_button.custom_minimum_size = Vector2.ZERO
+				art_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			ability_row.add_child(art_button)
 			_ability_buttons[slot] = art_button
 			continue
@@ -468,13 +515,15 @@ func _build_ui() -> void:
 		frame.offset_right = 4 + 124
 		frame.offset_top = -210
 		frame.offset_bottom = 210
+		if reference_hud:
+			_hud_rect(frame, Rect2(9, 191, 154, 523))
 		column_art.show_behind_parent = false
 		frame.add_child(column_art)
 		for index in Game.HAND_LIMIT:
-			var cell: Array = CARD_CELLS[index]
+			var cell: Array = REFERENCE_CARD_CELLS[index] if reference_hud else CARD_CELLS[index]
 			var button := _make_card_button(true)
-			button.anchor_left = 0.15
-			button.anchor_right = 0.85
+			button.anchor_left = 0.17 if reference_hud else 0.15
+			button.anchor_right = 0.83 if reference_hud else 0.85
 			button.anchor_top = cell[0]
 			button.anchor_bottom = cell[1]
 			button.offset_left = 0
@@ -506,6 +555,13 @@ func _build_ui() -> void:
 		card_column.add_child(button)
 		_card_buttons.append(button)
 
+
+	if reference_hud:
+		var trim := _stretch("bottom_trim")
+		if trim != null:
+			trim.show_behind_parent = false
+			board_area.add_child(trim)
+			_hud_rect(trim, Rect2(7, 922, 1658, 12))
 
 	_log_label = _make_label(17)
 	_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -546,6 +602,8 @@ func _build_ui() -> void:
 ## 오른쪽 위 버튼 줄이 1280 너비 안에 다 들어오게 줄 너비를 재고, 가운데 위 턴 띠·맵 캡슐·기록 칸의
 ## 오른쪽 여백을 그 줄 왼쪽 끝 + 12로 맞춰 서로 겹치지 않게 한다(글이 바뀌면 다시 잰다).
 func _fit_top_row() -> void:
+	if Kit.Observatory.active:
+		return
 	await get_tree().process_frame
 	if not is_instance_valid(_status_row):
 		return
@@ -560,7 +618,8 @@ func _fit_top_row() -> void:
 
 ## 플레이어 정보판 하나. _player_cards[index]에 부품을 담아 _refresh에서 고친다.
 func _player_card(index: int) -> Control:
-	var skin := _patch("player_panel", Vector4(100, 0, 70, 0), 84.0 / 111.0)
+	var skin: Control = _stretch("player_panel" if index == 1 else "my_player_panel") if Kit.Observatory.active \
+		else _patch("player_panel", Vector4(100, 0, 70, 0), 84.0 / 111.0)
 	if skin != null:
 		# 그림 정보판: 왼쪽 금테 칸에 대표 영웅, 오른쪽에 이름·진행 막대·남은 칸.
 		var card := Control.new()
@@ -578,15 +637,30 @@ func _player_card(index: int) -> Control:
 		lines.offset_right = -60
 		lines.offset_top = 8
 		lines.offset_bottom = -10
+		if Kit.Observatory.active:
+			face_art.position = Vector2(15, 15) if index == 1 else Vector2(22, 30)
+			face_art.size = Vector2(54, 54)
+			lines.offset_left = 86 if index == 1 else 91
+			lines.offset_right = -54 if index == 1 else -32
+			lines.offset_top = 14 if index == 0 else 5
 		card.add_child(lines)
 		var art_name := _make_label(20)
-		art_name.add_theme_color_override("font_color", PLAYER_TEXT_COLORS[index])
+		art_name.add_theme_color_override("font_color", Color("fff0b0") if index == 1 and Kit.Observatory.active else PLAYER_TEXT_COLORS[index])
 		art_name.add_theme_constant_override("outline_size", 5)
 		art_name.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.2))
 		art_name.clip_text = true
 		lines.add_child(art_name)
-		var art_bar := Kit.bar(0.0, PLAYER_TEXT_COLORS[index], 10)
-		lines.add_child(art_bar)
+		var bar_color: Color = Color("ffe17a") if index == 1 and Kit.Observatory.active else PLAYER_TEXT_COLORS[index]
+		var art_bar := Kit.bar(0.0, bar_color, 10)
+		if Kit.Observatory.active and index == 1:
+			# 상대 그림에 그려진 홈 안에 채워지는 부분만 얹는다.
+			art_bar.add_theme_stylebox_override("background", StyleBoxEmpty.new())
+			_hud_player_progress(card, art_bar)
+			var gap := Control.new()
+			gap.custom_minimum_size.y = 10
+			lines.add_child(gap)
+		else:
+			lines.add_child(art_bar)
 		var art_detail := _make_label(16)
 		art_detail.add_theme_color_override("font_color", Color(1, 1, 1, 0.88))
 		art_detail.clip_text = true
@@ -620,6 +694,16 @@ func _player_card(index: int) -> Control:
 	return panel
 
 
+## 상대 정보판 그림에 포함된 진행 홈의 안쪽에 막대를 맞춘다.
+func _hud_player_progress(card: Control, progress: ProgressBar) -> void:
+	progress.custom_minimum_size.y = 0
+	progress.anchor_left = 0.22
+	progress.anchor_right = 0.91
+	progress.anchor_top = 0.505
+	progress.anchor_bottom = 0.606
+	card.add_child(progress)
+
+
 func _refresh_player_cards() -> void:
 	for index in _player_cards.size():
 		var parts: Dictionary = _player_cards[index]
@@ -640,7 +724,7 @@ func _refresh_player_cards() -> void:
 		var current: bool = game.current == index and game.winner < 0
 		if parts["panel"] == null:
 			# 그림 정보판은 지금 차례인 쪽만 밝게, 아닌 쪽은 살짝 어둡게.
-			parts["skin"].modulate = Color.WHITE if current else Color(0.66, 0.7, 0.82)
+			parts["skin"].modulate = Color.WHITE if current or Kit.Observatory.active else Color(0.66, 0.7, 0.82)
 			continue
 		var edge: Color = PLAYER_TEXT_COLORS[index] if current else Color("8fd0ff")
 		parts["panel"].add_theme_stylebox_override("panel", Kit.plate(Color("243a9c") if current else Color(0.1, 0.16, 0.42, 0.86), edge if current else Color("8fa6d8"), 16.0, 8, false))
@@ -1170,7 +1254,7 @@ func _build_emotes(board_area: Control) -> void:
 		for state in ["normal", "hover", "pressed", "disabled"]:
 			toggle.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 		_skin_button(toggle, orb)
-		var bubble_icon := _stretch("ic_chat", TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+		var bubble_icon: TextureRect = null if Kit.Observatory.active else _stretch("ic_chat", TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
 		if bubble_icon != null:
 			bubble_icon.show_behind_parent = false
 			bubble_icon.anchor_left = 0.24
@@ -1193,6 +1277,8 @@ func _build_emotes(board_area: Control) -> void:
 	toggle.offset_right = -12
 	toggle.offset_top = -38
 	toggle.offset_bottom = 38
+	if Kit.Observatory.active:
+		_hud_rect(toggle, Rect2(1558, 422, 100, 101))
 	toggle.pressed.connect(_toggle_emotes)
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", Kit.plate(Color(0.12, 0.16, 0.5, 0.96), Kit.TRIM, 18.0, 12))
@@ -1304,7 +1390,7 @@ func _make_round_button() -> Button:
 		_roll_art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		_roll_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_roll_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_roll_art.offset_bottom = -22
+		_roll_art.offset_bottom = 0 if Kit.Observatory.active else -22
 		button.add_child(_roll_art)
 		_roll_caption = _make_label(18)
 		_roll_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1317,6 +1403,12 @@ func _make_round_button() -> Button:
 		_roll_caption.anchor_bottom = 1.0
 		_roll_caption.offset_top = -30
 		_roll_caption.offset_bottom = 0
+		if Kit.Observatory.active:
+			_roll_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			_roll_caption.anchor_top = 0.67
+			_roll_caption.anchor_bottom = 0.84
+			_roll_caption.offset_top = 0
+			_roll_caption.add_theme_font_size_override("font_size", 22)
 		button.add_child(_roll_caption)
 		# 누르거나 꺼지면 수정 그림도 따라 바뀐다.
 		button.draw.connect(func() -> void:
@@ -1445,7 +1537,11 @@ func _make_button(font_size: int, height: float, color: Color) -> Button:
 
 # ---------------------------------------------------------------- 그림 부품
 
-func _match_tex(name: String) -> Texture2D:
+func _match_tex(name: String, use_reference: bool = true) -> Texture2D:
+	if use_reference and Kit.Observatory.active:
+		var reference_path := REFERENCE_HUD_ART + name + ".png"
+		if ResourceLoader.exists(reference_path):
+			return load(reference_path)
 	var themed := Kit.Observatory.texture("ui_match", name)
 	if themed != null:
 		return themed
@@ -1506,7 +1602,7 @@ func _skin_button(button: Button, body: Control) -> void:
 	button.draw.connect(func() -> void:
 		var mode := button.get_draw_mode()
 		var tint := Color.WHITE
-		if button.disabled:
+		if button.disabled and not (Kit.Observatory.active and button.has_meta("title")):
 			tint = Color(0.55, 0.57, 0.68)
 		elif mode == BaseButton.DRAW_PRESSED or mode == BaseButton.DRAW_HOVER_PRESSED:
 			tint = Color(0.82, 0.82, 0.86)
@@ -1542,20 +1638,23 @@ func _paint_pill(button: Button, kind: String, fallback: Color) -> void:
 		Kit.paint(button, fallback)
 		return
 	if not button.has_meta("skin"):
-		var pill := _patch("btn_" + kind, Vector4(52, 0, 52, 0), button.custom_minimum_size.y / 104.0)
+		var pill: Control = _stretch("btn_" + kind) if Kit.Observatory.active else _patch("btn_" + kind, Vector4(52, 0, 52, 0), button.custom_minimum_size.y / 104.0)
 		_skin_button(button, pill)
 		for state in ["normal", "hover", "pressed", "disabled"]:
 			var space := StyleBoxEmpty.new()
 			space.set_content_margin_all(8)
 			# 2026-11-19 새 알약 그림: 양 끝 보석(높이의 약 0.4배)에 글자·아이콘이 닿지 않게 띄운다.
-			var side := maxf(14.0, button.custom_minimum_size.y * 0.42)
+			var side := 9.0 if Kit.Observatory.active else maxf(14.0, button.custom_minimum_size.y * 0.42)
 			space.content_margin_left = side
 			space.content_margin_right = side
 			space.content_margin_bottom = 10 if state != "pressed" else 8
 			button.add_theme_stylebox_override(state, space)
 	var holder: Control = button.get_meta("skin")
-	var patch := holder.get_child(0) as NinePatchRect
-	patch.texture = tex
+	if holder is TextureRect:
+		holder.texture = tex
+	else:
+		var patch := holder.get_child(0) as NinePatchRect
+		patch.texture = tex
 	button.add_theme_constant_override("outline_size", 6)
 	button.add_theme_color_override("font_outline_color", PILL_OUTLINE.get(kind, Color(0, 0, 0)))
 
@@ -1581,10 +1680,10 @@ func _make_skill_button(slot: String) -> Button:
 		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	_skin_button(button, _stretch(SKILL_ART[slot]))
 	# 글자: 스킬 이름 17, 자리 이름·게이지 숫자 16(넘치면 잘라 낸다).
-	var title := _art_label("", 17, Rect2(0.13, 0.0, 0.74, 0.25))
+	var title := _art_label("", 17, Rect2(0.15, 0.10, 0.70, 0.27) if Kit.Observatory.active else Rect2(0.13, 0.0, 0.74, 0.25))
 	title.clip_text = true
 	button.add_child(title)
-	var body := _art_label("", 16, Rect2(0.38, 0.29, 0.58, 0.46))
+	var body := _art_label("", 16, Rect2(0.39, 0.34, 0.55, 0.43) if Kit.Observatory.active else Rect2(0.38, 0.29, 0.58, 0.46))
 	body.add_theme_constant_override("line_spacing", -4)
 	body.clip_text = true
 	button.add_child(body)
@@ -1615,6 +1714,12 @@ func _make_skill_button(slot: String) -> Button:
 	gauge.anchor_right = 0.9
 	gauge.anchor_top = 0.758
 	gauge.anchor_bottom = 0.82
+	if Kit.Observatory.active:
+		gauge.add_theme_stylebox_override("background", StyleBoxEmpty.new())
+		gauge.anchor_left = 0.35
+		gauge.anchor_right = 0.90
+		gauge.anchor_top = 0.76
+		gauge.anchor_bottom = 0.85
 	button.add_child(gauge)
 	Kit.shimmer(button, float(Game.SLOTS.find(slot)) * 0.4)
 	button.set_meta("title", title)
@@ -2624,6 +2729,8 @@ func _refresh() -> void:
 			# 그림 스킬 카드: 위 띠에 스킬 이름, 오른쪽 칸에 자리 이름과 게이지.
 			button.get_meta("title").text = str(ability.get("name", "-"))
 			button.get_meta("body").text = "%s\n%s" % [Game.SLOT_LABELS[slot], gauge_text]
+			if Kit.Observatory.active:
+				button.get_meta("body").add_theme_color_override("font_color", Color("ffe4a0") if is_ready else Color.WHITE)
 		else:
 			button.text = "%s\n%s\n%s" % [Game.SLOT_LABELS[slot], ability.get("name", "-"), gauge_text]
 		button.tooltip_text = str(ability.get("text", ""))
