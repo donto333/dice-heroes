@@ -23,6 +23,7 @@ const Sweep := preload("res://scripts/ui/sweep.gd")
 const ABILITY_PORTRAIT_WIDTH := 76.0
 ## 대전 화면 그림 부품(ChatGPT가 그린 것, 2026-11-16). 없으면 예전 모양으로 그린다.
 const MATCH_ART := "res://assets/ui_match/"
+const FIGHT_CHOICE_ART := ["choice_fight", "choice_pass"]
 const REFERENCE_HUD_ART := "res://assets/ui_observatory/ui_match/reference/"
 const REFERENCE_SIZE := Vector2(1672, 941)
 const REFERENCE_CARD_CELLS := [[0.112, 0.375], [0.399, 0.634], [0.657, 0.901]]
@@ -62,7 +63,7 @@ var _data: Dictionary = {}
 var _waiting_for_player := false
 ## 갈림길에서 내가 길을 골라야 하는 중인지
 var _choosing_path := false
-var _fork_choices: ForkChoices
+var _path_choices: Control
 
 var _status_label: Label
 ## 오른쪽 위 버튼 줄(자동·빠르기·나가기)과, 그 줄 너비에 맞춰 오른쪽 여백을 정하는 가운데 위 부품들 [노드, 더 들일 여백]
@@ -1788,7 +1789,7 @@ func _refresh_skill_gauge(gauge: ProgressBar, charge: int, animate: bool) -> voi
 # ---------------------------------------------------------------- 진행
 
 func _start_game() -> void:
-	_hide_fork_choices()
+	_hide_path_choices()
 	game = Game.new()
 	# 내 파티(0번)에는 장착한 유물의 시작 보너스가 붙는다. 친구 대전은 공평하게 쓰지 않는다.
 	if _mode != "local" and not _parties.is_empty():
@@ -2008,39 +2009,60 @@ func _show_path_choice() -> void:
 		_board_view.highlight = game.pending_choice["options"].duplicate()
 		_board_view.queue_redraw()
 		_result_panel.modulate.a = 0.0
-		_fork_choices = ForkChoices.new()
-		_fork_choices.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-		_fork_choices.offset_left = -340
-		_fork_choices.offset_right = 340
-		_fork_choices.offset_top = 98
-		_fork_choices.chosen.connect(_on_path_chosen)
-		_fork_choices.setup(game)
-		_board_area.add_child(_fork_choices)
+		var choices := ForkChoices.new()
+		choices.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		choices.offset_left = -340
+		choices.offset_right = 340
+		choices.offset_top = 98
+		choices.chosen.connect(_on_path_chosen)
+		choices.setup(game)
+		_board_area.add_child(choices)
+		_path_choices = choices
 		return
 	_hint("fight", "상대 말을 지나칩니다! '싸운다'를 고르면 내 ATTACK과 상대 DEFENSE가 주사위로 겨뤄요. 이기면 상대가 거점으로 돌아가요.")
-	var options: Array = game.pending_choice["options"]
 	_board_view.highlight = [int(game.players[game.current]["pos"])]
 	_add_result_text("상대 말을 지나칩니다! 싸울까요? (남은 이동 %d칸)" % int(game.pending_choice["steps"]), Color("ff8a6a"))
 	_board_view.queue_redraw()
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	for index in options.size():
-		var button := MenuArt.pill_button(game.choice_label(index), "red" if index == 0 else "blue", "m")
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 18)
-		button.clip_text = true
+	_show_fight_choices()
+
+
+## 상대를 만났을 때 두 버튼을 판 위에 배치한다. 글자는 현재 언어로 표시한다.
+func _show_fight_choices() -> void:
+	var row := Kit.hbox(16)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for index in FIGHT_CHOICE_ART.size():
+		var button := _fight_choice_button(game.choice_label(index), index)
 		button.pressed.connect(_on_path_chosen.bind(index))
-		row.add_child(button)
-	_result_box.add_child(row)
-	_trim_results()
-	_flash_log()
+		row.add_child(Kit.expand(button))
+	_board_area.add_child(row)
+	_hud_rect(row, Rect2(514, 204, 714, 122))
+	_path_choices = row
+	_result_panel.hide()
+
+
+func _fight_choice_button(caption: String, index: int) -> Button:
+	var art := _stretch(FIGHT_CHOICE_ART[index])
+	if art == null:
+		return MenuArt.pill_button(caption, "red" if index == 0 else "blue", "l")
+	var button := Button.new()
+	button.accessibility_name = Lang.t(caption)
+	var space := StyleBoxEmpty.new()
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		button.add_theme_stylebox_override(state, space)
+	_skin_button(button, art)
+	var label := _art_label(caption, 29, Rect2(0.43, 0.0, 0.50, 1.0))
+	label.add_theme_color_override("font_color", Color("fff5db"))
+	label.clip_text = true
+	button.add_child(label)
+	Kit.squeeze_text(label, 29, 18)
+	return button
 
 
 func _on_path_chosen(index: int) -> void:
 	if not _choosing_path or not game.awaiting_choice():
 		return
 	_choosing_path = false
-	_hide_fork_choices()
+	_hide_path_choices()
 	_board_view.highlight = []
 	_clear_results()
 	_flash_log()
@@ -2059,11 +2081,12 @@ func _on_path_chosen(index: int) -> void:
 	_after_my_move()
 
 
-func _hide_fork_choices() -> void:
-	if is_instance_valid(_fork_choices):
-		_fork_choices.hide()
-		_fork_choices.queue_free()
-		_fork_choices = null
+func _hide_path_choices() -> void:
+	if is_instance_valid(_path_choices):
+		_path_choices.hide()
+		_path_choices.queue_free()
+		_path_choices = null
+	_result_panel.show()
 
 
 func _on_ability_pressed(slot: String) -> void:

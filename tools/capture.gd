@@ -567,7 +567,7 @@ func _run() -> void:
 		match_screen._show_path_choice()
 		await _wait(0.4)
 		await _shot("14h_fork_choices")
-		match_screen._hide_fork_choices()
+		match_screen._hide_path_choices()
 		match_screen._close_hint()
 		match_screen._choosing_path = false
 		gate_game.pending_choice = {}
