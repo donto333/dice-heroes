@@ -22,6 +22,9 @@ const MenuArt := preload("res://scripts/ui/menu_art.gd")
 const CATEGORY_PILLS := {"": "blue", "영웅": "red", "위인": "blue", "신화": "purple", "근현대": "green"}
 ## 자리 → 자리 카드 틀 그림(assets/ui_menu/slot_*.png, 위 띠 빨강·파랑·초록)
 const SLOT_FRAMES := {"attack": "slot_attack", "defense": "slot_defense", "support": "slot_support"}
+## 영웅 카드 안에서 초상화와 능력치가 함께 쓰는 창과 왼쪽·오른쪽 경계.
+const HERO_WINDOW_Y := Vector2(0.177, 0.61)
+const HERO_STAT_SPLIT := 0.61
 
 const SLOTS := ["attack", "defense", "support"]
 const SLOT_LABELS := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
@@ -320,7 +323,7 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	return {"portrait": portrait, "text": text, "stat": stat, "frame": frame}
 
 
-## 금테 영웅 카드(영웅 화면과 같은 hero_card 틀): 초상화, ★·레벨, 능력 줄, 아래 띠에 이름.
+## 금테 영웅 카드: 창 안에 왼쪽 초상화·오른쪽 능력치, 아래 두 띠에 이름과 ★·레벨.
 func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	for state in ["normal", "hover", "pressed", "disabled"]:
 		var fill := StyleBoxFlat.new()
@@ -336,12 +339,13 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# 머리가 금테와 위쪽 보석에 가리지 않도록 틀의 투명한 창에서 시작한다.
 	portrait.anchor_left = 0.092
-	portrait.anchor_right = 0.898
-	portrait.anchor_top = 0.177
-	portrait.anchor_bottom = 0.6
+	portrait.anchor_right = HERO_STAT_SPLIT
+	portrait.anchor_top = HERO_WINDOW_Y.x
+	portrait.anchor_bottom = HERO_WINDOW_Y.y
 	portrait.border_width = 0.0
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(portrait)
+	button.add_child(_hero_stats(character))
 	var frame := TextureRect.new()
 	frame.texture = MenuArt.tex("hero_card")
 	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -349,27 +353,22 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(frame)
-	var levels: Dictionary = _options.get("levels", {})
-	var grade_text := "★".repeat(int(character["grade"]))
-	if levels.has(character["id"]):
-		grade_text += "  Lv%d" % int(levels[character["id"]])
-	var grade := _band_label(grade_text, 16, 0.6, 0.69)
-	grade.add_theme_color_override("font_color", GOLD)
-	button.add_child(grade)
-	var stats := _band_label("이동%d 공%d 방%d 지%d 충%d" % [int(character["move"]), int(character["attack"]), int(character["defense"]), int(character["intellect"]), 100 + int(character.get("charge", 0))], 15, 0.69, 0.775)
-	stats.offset_left = 4
-	stats.offset_right = -4
-	button.add_child(stats)
-	KitStyle.squeeze_text(stats, 15, 12)
-	# 영웅 목록과 같은 그림의 이름 띠에 맞춘다.
-	var band := MenuArt.OBSERVATORY_HERO_NAME_BAND if KitStyle.Observatory.active else MenuArt.HERO_NAME_BAND
-	var name_label := _band_label(str(character["name"]), 18, band.x, band.y)
+	# 기존 능력치 자리 전체를 이름에 쓰고 긴 번역은 칸 너비에 맞춘다.
+	var name_label := _band_label(str(character["name"]), 18, HERO_WINDOW_Y.y, 0.774)
 	name_label.offset_left = 0
 	name_label.offset_right = 0
 	name_label.anchor_left = 0.1
 	name_label.anchor_right = 0.9
 	button.add_child(name_label)
-	KitStyle.squeeze_text(name_label, 18, 12)
+	KitStyle.squeeze_text(name_label, 18, 10)
+	var band := MenuArt.OBSERVATORY_HERO_NAME_BAND if KitStyle.Observatory.active else MenuArt.HERO_NAME_BAND
+	var levels: Dictionary = _options.get("levels", {})
+	var grade_text := "★".repeat(int(character["grade"]))
+	if levels.has(character["id"]):
+		grade_text += "  Lv%d" % int(levels[character["id"]])
+	var grade := _band_label(grade_text, 16, band.x, band.y)
+	grade.add_theme_color_override("font_color", GOLD)
+	button.add_child(grade)
 	# 분류는 왼쪽 위 작은 동그란 표식으로만
 	var dot := Panel.new()
 	var dot_style := StyleBoxFlat.new()
@@ -391,6 +390,29 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	check.visible = false
 	button.add_child(check)
 	return {"portrait": portrait, "text": name_label, "frame": frame, "check": check}
+
+
+## 좁은 칸에서도 다섯 능력치가 한 줄씩 읽히도록 오른쪽에 배치한다.
+func _hero_stats(character: Dictionary) -> Control:
+	var panel := Panel.new()
+	panel.name = "HeroStats"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.anchor_left = HERO_STAT_SPLIT
+	panel.anchor_right = 0.91
+	panel.anchor_top = HERO_WINDOW_Y.x
+	panel.anchor_bottom = HERO_WINDOW_Y.y
+	panel.add_theme_stylebox_override("panel", KitStyle.box(Color("142345"), Color("465984"), 1, 0, 0))
+	var values := ["이동 %d" % int(character["move"]), "공 %d" % int(character["attack"]),
+		"방 %d" % int(character["defense"]), "지 %d" % int(character["intellect"]),
+		"충 %d" % (100 + int(character.get("charge", 0)))]
+	for index in values.size():
+		var label := _band_label(values[index], 14, float(index) / values.size(), float(index + 1) / values.size())
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.offset_left = 5
+		label.offset_right = -4
+		panel.add_child(label)
+		KitStyle.squeeze_text(label, 14, 10)
+	return panel
 
 
 ## 카드 안 가로 띠 글자(위·아래 비율 사이에 가운데 정렬).
