@@ -564,7 +564,7 @@ func _rank_tile() -> Button:
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile.size_flags_stretch_ratio = 1.6
 	tile.pressed.connect(_on_mode.bind("rank"))
-	Kit.shimmer(tile)
+	Kit.shimmer(tile, 0.0, tile.get_child(0))
 	var stack := _tile_heading(tile, "RANK MATCH", "랭크전", Color("a3480a"), 0.53)
 	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
 	var streak := Profile.streak(profile)
@@ -649,16 +649,35 @@ func _chevron(parent: Control, color: Color, outline: Color) -> void:
 
 ## 아이콘 반대편에 같은 폭을 두어 글자 중심을 타일 중심에 맞춘다.
 ## 좁은 화면에서는 오른쪽 여백부터 줄여 글자가 들어갈 자리를 확보한다.
-func _balance_tile_text(row: HBoxContainer, glyph: Control, min_text_width: float) -> void:
+func _balance_tile_text(row: HBoxContainer, glyph: Control, text: VBoxContainer, min_text_width: float) -> void:
+	var icon_slot := Control.new()
+	icon_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_slot.custom_minimum_size = glyph.custom_minimum_size
+	row.add_child(icon_slot)
+	row.move_child(icon_slot, 0)
+	glyph.reparent(icon_slot, false)
+	glyph.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
+	glyph.offset_top = -glyph.custom_minimum_size.y * 0.5
+	glyph.offset_bottom = glyph.custom_minimum_size.y * 0.5
 	var space := Control.new()
 	space.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(space)
 	var fit := func() -> void:
-		var icon_width := glyph.get_combined_minimum_size().x
-		var gaps := 2 * row.get_theme_constant("separation")
-		space.custom_minimum_size.x = clampf(row.size.x - icon_width - gaps - min_text_width, 0, icon_width)
+		var icon_width := icon_slot.custom_minimum_size.x
+		var gap := row.get_theme_constant("separation")
+		space.custom_minimum_size.x = clampf(row.size.x - icon_width - 2 * gap - min_text_width, 0, icon_width)
+		# 가운데 정렬한 글자 칸에서 실제로 비어 있는 왼쪽 여백만큼 아이콘을 당긴다.
+		var longest := 0.0
+		for label: Label in text.get_children():
+			if label.visible:
+				var font := label.get_theme_font("font")
+				var ink := font.get_string_size(label.tr(label.text), HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x
+				longest = maxf(longest, ink)
+		glyph.offset_left = maxf(0, (text.size.x - longest) * 0.5)
+		glyph.offset_right = glyph.offset_left + icon_width
 	row.resized.connect(fit)
-	fit.call()
+	text.resized.connect(fit)
+	fit.call_deferred()
 
 
 ## spec: [이름, 영어, 아이콘, 설명, 알림 항목, 누르면]
@@ -668,7 +687,7 @@ func _white_tile(spec: Array) -> Button:
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile.pressed.connect(spec[5])
 	var inner := _inner(tile, 16 if large else 12, 8, 16 if large else 12, 10)
-	var row := Kit.hbox(8)
+	var row := Kit.hbox(4)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(row)
 	var glyph := _lobby_icon(str(spec[2]), 62.0)
@@ -697,7 +716,7 @@ func _white_tile(spec: Array) -> Button:
 	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text.add_child(sub)
-	_balance_tile_text(row, glyph, 114)
+	_balance_tile_text(row, glyph, text, 114)
 	if large:
 		for label in [title, english, sub]:
 			_fit_lobby_text(label, 12)
@@ -736,7 +755,7 @@ func _navy_tile(spec: Array) -> Button:
 	english.visible = Lang.current == "ko"
 	english.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text.add_child(english)
-	_balance_tile_text(row, glyph, 76)
+	_balance_tile_text(row, glyph, text, 76)
 	if large:
 		for label in [title, english]:
 			_fit_lobby_text(label, 12)
@@ -1324,6 +1343,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"로비 재화와 메뉴 아이콘의 간격을 다듬고 버튼 모양에 맞게 빛이 흐르도록 개선했어요.",
 	"로비 영웅 초상화와 대사창을 개선하고 프로필과 메뉴 글자를 정렬했어요.",
 	"랭크전에서 개인전 또는 2대2 팀전을 고를 수 있어요.",
 	"로비와 메뉴, 팝업에 파티 편성과 같은 별의 관측소 디자인을 적용했어요.",
