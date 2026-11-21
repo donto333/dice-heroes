@@ -18,14 +18,21 @@ const UiSkin := preload("res://scripts/ui/skin.gd")
 const GRADE_NAMES := {1: "일반", 2: "희귀", 3: "전설"}
 ## 등급별 카드 바탕색
 const GRADE_FILLS := {1: Color("2a4a7a"), 2: Color("1f5f8f"), 3: Color("6a3fa8")}
-## 카드 편성 칸 크기: 덱 줄의 카드 최대 크기, 보유 카드 칸 높이
+## 처음 그릴 때 쓰는 장착 카드 크기와 보유 카드 칸 높이.
 const DECK_TILE := Vector2(96, 76)
 const OWNED_TILE_HEIGHT := 146.0
 const DECK_CARD_GAP := 6.0
-const DECK_FRAME_PADDING := 6.0
-## 원본 줄 높이 150px에서 잰 양 끝 장식 폭과 위·아래 테두리 두께의 비율.
+const DECK_FRAME_PADDING := 4.0
+## 한 줄에 카드 세 장과 다음 카드 일부가 들어올 너비를 기준으로 한다.
+const DECK_VISIBLE_TILES := 3.25
+const DECK_TILE_MAX_ASPECT := 1.65
+## 세로로 긴 창에서도 옆 장식이 카드 공간을 너무 많이 차지하지 않게 한다.
+const DECK_FRAME_MIN_ASPECT := 4.4
+## 원본 줄 높이 150px에서 잰 양 끝 장식 폭과 장착판 안쪽 경계.
 const DECK_ROW_CAPS := {1: 44.0 / 150.0, 2: 80.0 / 150.0, 3: 92.0 / 150.0}
-const DECK_ROW_EDGES := {1: 13.0 / 150.0, 2: 20.0 / 150.0, 3: 25.0 / 150.0}
+const DECK_LEFT_EDGE := 72.0 / 150.0
+const DECK_CLASSIC_LEFT_EDGE := 80.0 / 150.0
+const DECK_FRAME_EDGE := 18.0 / 150.0
 ## 뽑기 판에 보여 줄 전설 카드
 const SHOWCASE := ["war_god", "silence_bell", "spirit_drain", "iron_will"]
 
@@ -95,7 +102,7 @@ func build_deck(column: VBoxContainer) -> void:
 	var head := Kit.hbox(10)
 	column.add_child(head)
 	head.add_child(Kit.label("카드 편성 %d / %d" % [deck.size(), int(rule.get("size", 15))], 28, Kit.GOLD))
-	var hint := Kit.para("보유 카드는 정보를 확인하고 넣어요. 덱에 든 카드를 누르면 빼요.", 15, Kit.MUTED)
+	var hint := Kit.para("보유 카드는 정보를 확인하고 넣어요. 장착한 카드는 누르면 빠지고, 옆으로 끌면 나머지가 보여요.", 15, Kit.MUTED)
 	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(Kit.expand(hint))
 	head.add_child(MenuArt.capsule("최소 %d장" % int(rule.get("min", 6)), "", 18))
@@ -105,10 +112,14 @@ func build_deck(column: VBoxContainer) -> void:
 	column.add_child(body)
 
 	# 왼쪽: 등급별 덱 줄
+	var deck_area := Control.new()
+	deck_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	deck_area.size_flags_stretch_ratio = 1.75
+	body.add_child(deck_area)
 	var left := Kit.vbox(4)
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.size_flags_stretch_ratio = 1.75
-	body.add_child(left)
+	# 이전 줄의 최소 높이가 창을 다시 줄일 때 계산에 영향을 주지 않게 한다.
+	deck_area.add_child(left)
+	left.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	var deck_rows := {}
 	for grade in [3, 2, 1]:
 		var mine: Array = []
@@ -128,8 +139,8 @@ func build_deck(column: VBoxContainer) -> void:
 				row.add_child(tile)
 			else:
 				row.add_child(_empty_slot(grade))
-	left.resized.connect(_fit_deck_rows.bind(left, deck_rows))
-	_fit_deck_rows(left, deck_rows)
+	deck_area.resized.connect(_fit_deck_rows.bind(deck_area, left, deck_rows))
+	_fit_deck_rows.call_deferred(deck_area, left, deck_rows)
 
 	# 오른쪽: 보유 카드
 	var right := Kit.vbox(6)
@@ -194,46 +205,49 @@ func _deck_row(parent: VBoxContainer, grade: int) -> HBoxContainer:
 		frame.resized.connect(frame.queue_redraw)
 	else:
 		frame.add_theme_stylebox_override("panel", Kit.box(Color(0, 0, 0, 0.22), Kit.GRADE_COLORS[grade].darkened(0.35), 2, 12, 6))
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	frame.add_child(scroll)
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var row := Kit.hbox(int(DECK_CARD_GAP))
-	frame.add_child(row)
-	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.add_child(row)
 	return row
 
 
-## 그림 테두리와 양 끝 장식을 피한 카드 여백. 양옆 조각은 줄 높이에 비례해 그려진다.
-func _deck_row_inset(grade: int, tile_height: float) -> Vector2:
-	var edge: float = DECK_ROW_EDGES[grade]
-	var height := (tile_height + 2.0 * DECK_FRAME_PADDING) / (1.0 - 2.0 * edge)
-	return Vector2(height * float(DECK_ROW_CAPS[grade]) + DECK_FRAME_PADDING, (height - tile_height) * 0.5)
-
-
-func _fit_deck_rows(column: Control, rows: Dictionary) -> void:
-	if column.size.x <= 0.0:
+func _fit_deck_rows(area: Control, column: VBoxContainer, rows: Dictionary) -> void:
+	if not is_instance_valid(area) or area.size.x <= 0.0 or area.size.y <= 0.0:
 		return
-	# 가장 넓은 줄도 들어가는 크기를 골라 세 등급의 장착 카드와 빈칸에 똑같이 적용한다.
-	var fit := 1.0
+	var gap := column.get_theme_constant("separation")
+	var available_height := area.size.y - gap * (column.get_child_count() - 1)
+	for child in column.get_children():
+		if child is Label:
+			available_height -= child.get_combined_minimum_size().y
+	var height := floorf(minf(available_height / rows.size(), area.size.x / DECK_FRAME_MIN_ASPECT))
+	var frame_size := Vector2(area.size.x, maxf(1.0, height))
+	# 틀 왼쪽 장식의 안쪽 경계에서 세 줄을 시작하고, 가장 좁은 줄의 가용 폭으로 카드 크기를 정한다.
+	var left_edge := DECK_LEFT_EDGE if Kit.Observatory.active else DECK_CLASSIC_LEFT_EDGE
+	var left_inset := ceilf(frame_size.y * left_edge) + DECK_FRAME_PADDING
+	var widest_end := ceilf(frame_size.y * float(DECK_ROW_CAPS[3])) + DECK_FRAME_PADDING
+	var available_width := frame_size.x - left_inset - widest_end
+	var tile_height := frame_size.y * (1.0 - 2.0 * DECK_FRAME_EDGE) - 2.0 * DECK_FRAME_PADDING
+	var width_per_tile := (available_width + DECK_CARD_GAP) / DECK_VISIBLE_TILES - DECK_CARD_GAP
+	var tile_size := Vector2(minf(width_per_tile, tile_height * DECK_TILE_MAX_ASPECT), tile_height).floor().max(Vector2.ONE)
+	var vertical_inset := (frame_size.y - tile_size.y) * 0.5
 	for grade in rows:
 		var row: HBoxContainer = rows[grade]
-		var count := row.get_child_count()
-		var fixed := maxf(0.0, count - 1) * DECK_CARD_GAP + 2.0 * _deck_row_inset(grade, 0.0).x
-		var full := count * DECK_TILE.x + maxf(0.0, count - 1) * DECK_CARD_GAP + 2.0 * _deck_row_inset(grade, DECK_TILE.y).x
-		fit = minf(fit, (column.size.x - fixed) / (full - fixed))
-	var tile_size := (DECK_TILE * fit).floor().max(Vector2.ONE)
-	for grade in rows:
-		var row: HBoxContainer = rows[grade]
-		var frame := row.get_parent() as Panel
+		var scroll := row.get_parent() as ScrollContainer
+		var frame := scroll.get_parent() as Panel
 		var holder := frame.get_parent() as Control
-		var inset := _deck_row_inset(grade, tile_size.y)
-		var count := row.get_child_count()
+		var right_inset := ceilf(frame_size.y * float(DECK_ROW_CAPS[grade])) + DECK_FRAME_PADDING
 		for tile: Control in row.get_children():
 			tile.custom_minimum_size = tile_size
-		# 빈칸이 있을 때도 정해진 자리 수만큼 감싼다.
-		frame.size = Vector2(count * tile_size.x + maxf(0.0, count - 1) * DECK_CARD_GAP, tile_size.y) + 2.0 * inset
-		holder.custom_minimum_size.y = frame.size.y
-		row.offset_left = inset.x
-		row.offset_right = -inset.x
-		row.offset_top = inset.y
-		row.offset_bottom = -inset.y
+		frame.size = frame_size
+		holder.custom_minimum_size.y = frame_size.y
+		scroll.offset_left = left_inset
+		scroll.offset_right = -right_inset
+		scroll.offset_top = vertical_inset
+		scroll.offset_bottom = -vertical_inset
 
 
 ## 비어 있는 덱 자리(등급색 점선 느낌의 흐린 칸)
