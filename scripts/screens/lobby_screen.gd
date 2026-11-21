@@ -21,17 +21,6 @@ const LOBBY_ART := "res://assets/ui_lobby/"
 ## 로비 그림이 화면보다 몇 배로 저장됐나의 거꾸로(2배 → 0.5)
 const SLICE_SCALE := 0.5
 
-## 별의 관측소 로비 아이콘의 기능별 금속 색.
-const LOBBY_ICON_COLORS := {
-	"settings": Color("7bd9ff"), "ic_notice": Color("ffbb55"), "mail": Color("ffc280"),
-	"attend": Color("8cf0af"), "roulette": Color("ee91ff"), "league": Color("ffca55"),
-	"help": Color("8ee9ff"), "ic_ai": Color("69d7ff"), "ic_friend_match": Color("cf9bff"),
-	"ic_mission_board": Color("a0e99f"), "swords": Color("ff9d86"),
-	"ic_heroes_helmet": Color("7ee2ed"), "album": Color("dc9fff"), "ic_shop_stall": Color("ffb870"),
-	"ic_party": Color("b8a3ff"), "todo": Color("abec97"),
-}
-const LOBBY_ICON_SHADER := preload("res://scripts/ui/lobby_icon_color.gdshader")
-
 const SLOT_NAMES := {"attack": "ATTACK", "defense": "DEFENSE", "support": "SUPPORT"}
 
 var app
@@ -195,14 +184,14 @@ func _lobby_icon(name: String, pixels: float) -> TextureRect:
 	return Kit.icon(str(fallback.get(name, name)), pixels)
 
 
-## 회색 그림의 명암과 투명도를 살려 메뉴 아이콘에 색을 입힌다.
+## 로비 메뉴는 원래 컬러 그림을 우선 사용한다.
 func _lobby_menu_icon(name: String, pixels: float) -> TextureRect:
 	var icon := _lobby_icon(name, pixels)
-	if Kit.Observatory.active and LOBBY_ICON_COLORS.has(name):
-		var paint := ShaderMaterial.new()
-		paint.shader = LOBBY_ICON_SHADER
-		paint.set_shader_parameter("tint", LOBBY_ICON_COLORS[name])
-		icon.material = paint
+	var directory := LOBBY_ART if name.begins_with("ic_") else "res://assets/ui_icons/"
+	var original_path := directory + name + ".png"
+	if ResourceLoader.exists(original_path):
+		icon.texture = load(original_path)
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	return icon
 
 
@@ -1322,7 +1311,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
-	"로비 메뉴 아이콘에 색을 입혔어요.",
+	"로비 메뉴에 원래 컬러 아이콘을 적용했어요.",
 	"파티 편성에서 영웅 분류마다 이름 띠의 모양을 다르게 표시해요.",
 	"로비 랭크전의 제목과 트로피를 버튼 왼쪽에 맞췄어요.",
 	"파티 편성의 영웅 카드에서 초상화와 능력치 창을 넓히고 이름·성급·레벨 글자를 키웠어요.",
