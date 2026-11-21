@@ -25,9 +25,9 @@ const DECK_CARD_GAP := 6.0
 const DECK_FRAME_PADDING := 4.0
 ## 세로로 긴 창에서도 옆 장식이 카드 공간을 너무 많이 차지하지 않게 한다.
 const DECK_FRAME_MIN_ASPECT := 4.4
-## 원본 줄 높이 150px에서 잰 양 끝 장식 폭과 위·아래 테두리 두께의 비율.
+## 원본 줄 높이 150px에서 잰 양 끝 장식 폭과 가장 두꺼운 위·아래 테두리의 비율.
 const DECK_ROW_CAPS := {1: 44.0 / 150.0, 2: 80.0 / 150.0, 3: 92.0 / 150.0}
-const DECK_ROW_EDGES := {1: 13.0 / 150.0, 2: 20.0 / 150.0, 3: 25.0 / 150.0}
+const DECK_FRAME_EDGE := 25.0 / 150.0
 ## 뽑기 판에 보여 줄 전설 카드
 const SHOWCASE := ["war_god", "silence_bell", "spirit_drain", "iron_will"]
 
@@ -222,16 +222,16 @@ func _fit_deck_rows(area: Control, column: VBoxContainer, rows: Dictionary) -> v
 	var frame_size := Vector2(area.size.x, maxf(1.0, height))
 	# 가장 넓은 전설 틀의 왼쪽 장식을 피해 세 줄의 첫 카드 위치를 맞춘다.
 	var left_inset := ceilf(frame_size.y * float(DECK_ROW_CAPS[3])) + DECK_FRAME_PADDING
+	# 가장 두꺼운 테두리를 기준으로 장착 카드와 빈 슬롯의 크기를 세 줄에 똑같이 적용한다.
+	var safe_height := frame_size.y * (1.0 - 2.0 * DECK_FRAME_EDGE) - 2.0 * DECK_FRAME_PADDING
+	var tile_size := (DECK_TILE * (safe_height / DECK_TILE.y)).floor().max(Vector2.ONE)
+	var vertical_inset := (frame_size.y - tile_size.y) * 0.5
 	for grade in rows:
 		var row: HBoxContainer = rows[grade]
 		var scroll := row.get_parent() as ScrollContainer
 		var frame := scroll.get_parent() as Panel
 		var holder := frame.get_parent() as Control
 		var right_inset := ceilf(frame_size.y * float(DECK_ROW_CAPS[grade])) + DECK_FRAME_PADDING
-		var safe_height := frame_size.y * (1.0 - 2.0 * float(DECK_ROW_EDGES[grade])) - 2.0 * DECK_FRAME_PADDING
-		# 한 줄에 맞추려고 카드를 줄이지 않고, 틀 안쪽 높이를 카드 비율에 적용한다.
-		var tile_size := (DECK_TILE * (safe_height / DECK_TILE.y)).floor().max(Vector2.ONE)
-		var vertical_inset := (frame_size.y - tile_size.y) * 0.5
 		for tile: Control in row.get_children():
 			tile.custom_minimum_size = tile_size
 		frame.size = frame_size
