@@ -39,7 +39,8 @@ func setup(main_app, params: Dictionary) -> void:
 		# 로비 '편성' 메뉴(2026-11-18 사용자 결정): 파티 편성 · 카드 편성
 		rail = [["party", "파티 편성", "swords"], ["deck", "카드 편성", "todo"]]
 		set_meta("title_spec", ["편성", "swords"])
-	var holder := MenuArt.frame(self, app, "ui/bg_party", rail, "party", _on_rail)
+	var friend_art := purpose == "match" and mode == "local" and Kit.Observatory.active
+	var holder := MenuArt.frame(self, app, "ui/bg_party", rail, "party", _on_rail, null, friend_art)
 	var select := PartySelect.new()
 	select.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	holder.add_child(select)
@@ -48,7 +49,7 @@ func setup(main_app, params: Dictionary) -> void:
 	_limit = app.point_limit()
 	if mode == "local":
 		_limit = int(app.data["rules"].get("local_point_limit", _limit))
-	var options := {"cancel_text": "뒤로", "levels": app.owned_levels(), "point_limit": _limit, "framed": true, "narrow": purpose == "edit"}
+	var options := {"cancel_text": "뒤로", "levels": app.owned_levels(), "point_limit": _limit, "framed": true, "narrow": purpose == "edit", "friend_art": friend_art}
 	if purpose == "edit":
 		options["title"] = "파티 편성"
 		options["subtitle"] = "가진 영웅 %d명 중에서 골라요. 소환 포인트(★ 합계)는 %d까지.%s" % [characters.size(), _limit, _next_limit_text()]

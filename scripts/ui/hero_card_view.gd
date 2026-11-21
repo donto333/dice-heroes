@@ -25,10 +25,13 @@ const CLASSIC_HERO_WINDOW_TOP := 0.15
 
 
 ## 금테 영웅 카드: 창 안에 왼쪽 초상화·오른쪽 능력치, 아래 두 띠에 이름과 ★·레벨.
-static func mount(button: Button, character: Dictionary, accent: Color, footer: String) -> Dictionary:
+static func mount(button: Button, character: Dictionary, accent: Color, footer: String, friend_art := false) -> Dictionary:
 	var observatory := KitStyle.Observatory.active
 	var window_top: float = OBSERVATORY_FRAME_TARGET_Y[1] if observatory else CLASSIC_HERO_WINDOW_TOP
+	var photo_bottom := 0.64 if friend_art else HERO_WINDOW_BOTTOM
 	var name_bottom: float = OBSERVATORY_FRAME_TARGET_Y[2] if observatory else 0.774
+	if friend_art:
+		name_bottom = 0.792
 	for state in ["normal", "hover", "pressed", "disabled"]:
 		var fill := StyleBoxFlat.new()
 		fill.bg_color = Color("0f3d85") if state != "hover" else Color("1a4fa0")
@@ -37,28 +40,28 @@ static func mount(button: Button, character: Dictionary, accent: Color, footer: 
 		fill.expand_margin_right = -6
 		fill.expand_margin_top = -10
 		fill.expand_margin_bottom = -8
-		button.add_theme_stylebox_override(state, fill)
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new() if friend_art else fill)
 	var portrait := Portrait.new()
 	portrait.focus_y = 0.0
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# 머리가 금테와 위쪽 보석에 가리지 않도록 틀의 투명한 창에서 시작한다.
-	portrait.anchor_left = HERO_WINDOW_X.x
+	portrait.anchor_left = 0.054 if friend_art else HERO_WINDOW_X.x
 	portrait.anchor_right = HERO_STAT_SPLIT
 	portrait.anchor_top = window_top
-	portrait.anchor_bottom = HERO_WINDOW_BOTTOM
+	portrait.anchor_bottom = photo_bottom
 	portrait.border_width = 0.0
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	portrait.show_character(character, accent)
 	button.add_child(portrait)
 	var stat_size := 17 if button.custom_minimum_size.y >= 250.0 else 15
-	button.add_child(_hero_stats(character, window_top, stat_size))
-	var frame := _hero_frame(observatory)
+	button.add_child(_hero_stats(character, window_top, stat_size, photo_bottom, 0.948 if friend_art else HERO_WINDOW_X.y))
+	var frame := _hero_frame(observatory, friend_art)
 	button.add_child(frame)
 	# 기존 능력치 자리 전체를 이름에 쓰고 긴 번역은 칸 너비에 맞춘다.
-	var plate := nameplate(Vector2(HERO_WINDOW_X.x, HERO_WINDOW_BOTTOM), Vector2(HERO_WINDOW_X.y, name_bottom))
+	var plate := nameplate(Vector2(0.044 if friend_art else HERO_WINDOW_X.x, photo_bottom), Vector2(0.956 if friend_art else HERO_WINDOW_X.y, name_bottom))
 	plate.texture = category_plate(str(character["category"]))
 	button.add_child(plate)
-	var name_label := band_label(str(character["name"]), 22, HERO_WINDOW_BOTTOM, name_bottom)
+	var name_label := band_label(str(character["name"]), 22, photo_bottom, name_bottom)
 	name_label.offset_left = 0
 	name_label.offset_right = 0
 	name_label.anchor_left = 0.1
@@ -66,6 +69,8 @@ static func mount(button: Button, character: Dictionary, accent: Color, footer: 
 	button.add_child(name_label)
 	KitStyle.squeeze_text(name_label, 22, 10)
 	var band := OBSERVATORY_HERO_GRADE_BAND if observatory else MenuArt.HERO_NAME_BAND
+	if friend_art:
+		band = Vector2(0.792, 0.918)
 	var grade_text := "★".repeat(int(character["grade"]))
 	if footer != "":
 		grade_text += "  " + footer
@@ -78,17 +83,18 @@ static func mount(button: Button, character: Dictionary, accent: Color, footer: 
 
 
 ## 틀 그림은 위 장식·안쪽 창·아래 장식으로 나눠 창의 높이에 맞춘다.
-static func _hero_frame(observatory: bool) -> Control:
+static func _hero_frame(observatory: bool, friend_art: bool) -> Control:
 	var frame := Control.new()
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	var normal := MenuArt.tex("hero_card")
-	var selected := MenuArt.tex("hero_card_selected") if observatory else normal
+	var normal := MenuArt.tex("friend_party/hero_frame" if friend_art else "hero_card")
+	var selected := MenuArt.tex("hero_card_selected") if observatory and not friend_art else normal
 	frame.draw.connect(func() -> void:
 		var texture := selected if frame.get_meta("selected", false) and selected != null else normal
-		if not observatory:
-			frame.draw_texture_rect(texture, Rect2(Vector2.ZERO, frame.size), false)
+		if not observatory or friend_art:
+			var glow := Color(1.18, 1.1, 1.0) if friend_art and frame.get_meta("selected", false) else Color.WHITE
+			frame.draw_texture_rect(texture, Rect2(Vector2.ZERO, frame.size), false, glow)
 			return
 		var source := texture.get_size()
 		for row in OBSERVATORY_FRAME_SOURCE_Y.size() - 1:
@@ -104,14 +110,14 @@ static func _hero_frame(observatory: bool) -> Control:
 
 
 ## 좁은 칸에서도 다섯 능력치가 한 줄씩 읽히도록 오른쪽에 배치한다.
-static func _hero_stats(character: Dictionary, window_top: float, font_size: int) -> Control:
+static func _hero_stats(character: Dictionary, window_top: float, font_size: int, bottom: float, right: float) -> Control:
 	var panel := Panel.new()
 	panel.name = "HeroStats"
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.anchor_left = HERO_STAT_SPLIT
-	panel.anchor_right = HERO_WINDOW_X.y
+	panel.anchor_right = right
 	panel.anchor_top = window_top
-	panel.anchor_bottom = HERO_WINDOW_BOTTOM
+	panel.anchor_bottom = bottom
 	panel.add_theme_stylebox_override("panel", KitStyle.box(Color("142345"), Color("465984"), 1, 0, 0))
 	var values := ["이동 %d" % int(character["move"]), "공 %d" % int(character["attack"]),
 		"방 %d" % int(character["defense"]), "지 %d" % int(character["intellect"]),
