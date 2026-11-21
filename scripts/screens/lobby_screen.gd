@@ -549,21 +549,28 @@ func _rank_tile() -> Button:
 	tile.size_flags_stretch_ratio = 1.6
 	tile.pressed.connect(_on_mode.bind("rank"))
 	Kit.shimmer(tile)
-	# 기준 그림의 왼쪽 글자 영역과 아래 띠를 타일 크기에 비례해 배치한다.
-	_add_rank_label(tile, _bold("RANK MATCH", 16, Color.WHITE, Color("a3480a"), 4), 0.12, 0.25, 12)
-	_add_rank_label(tile, _bold("랭크전", 36, Color.WHITE, Color("a3480a"), 8), 0.25, 0.51, 24)
+	# 글자 높이는 기존 글꼴 크기로 결정하고, 왼쪽 여백만 타일에 비례해 잡는다.
+	var stack := Kit.vbox(0)
+	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(stack, 0.105, 0.08, 0.53, 0.08)
+	tile.add_child(stack)
+	stack.add_child(_bold("RANK MATCH", 16 if Kit.Observatory.active else 14, Color(1, 1, 1, 0.92), Color("a3480a"), 4))
+	stack.add_child(_bold("랭크전", 50, Color.WHITE, Color("a3480a"), 10))
 	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
 	var streak := Profile.streak(profile)
 	var note := "%s · 트로피 %s" % [tier["name"], Kit.comma(int(profile["trophies"]))]
 	if streak >= 2:
 		note = "%d연승 중! · 트로피 %s" % [streak, Kit.comma(int(profile["trophies"]))]
-	var record := _bold(note, 22, Color("fff3c4"), Color("a3480a"), 5)
-	_add_rank_label(tile, record, 0.55, 0.70, 13)
+	var record := _bold(note, 22 if Kit.Observatory.active else 18, Color("fff3c4"), Color("a3480a"), 5)
+	stack.add_child(record)
+	if Kit.Observatory.active:
+		_fit_lobby_text(record, 16)
 
 	var events: Array = Profile.active_events(app.data.get("events", {}), app.today())
 	var strip := Control.new()
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anchor(strip, 0.075, 0.71, 0.94, 0.89)
+	_anchor(strip, 0.075, 0.93, 0.94, 0.93)
+	strip.offset_top = -40.0
 	tile.add_child(strip)
 	# 띠 그림은 왼쪽 빨간 딱지 자리가 넓어서 조각내지 않고 통째로 늘린다.
 	var strip_art := _picture("strip_event")
@@ -581,15 +588,9 @@ func _rank_tile() -> Button:
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anchor(line, 0.29, 0.0, 0.86, 1.0)
 	strip.add_child(line)
-	_fit_lobby_text(line, 12)
+	if Kit.Observatory.active:
+		_fit_lobby_text(line, 14)
 	return tile
-
-
-func _add_rank_label(tile: Button, label: Label, top: float, bottom: float, min_size: int) -> void:
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_anchor(label, 0.105, top, 0.48, bottom)
-	tile.add_child(label)
-	_fit_lobby_text(label, min_size)
 
 
 func _adventure_tile() -> Button:
