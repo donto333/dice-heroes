@@ -549,32 +549,25 @@ func _rank_tile() -> Button:
 	tile.size_flags_stretch_ratio = 1.6
 	tile.pressed.connect(_on_mode.bind("rank"))
 	Kit.shimmer(tile)
-	var inner := _inner(tile, 22, 14, 22, 18)
-	var stack := Kit.vbox(0)
-	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	inner.add_child(stack)
-	stack.add_child(_bold("RANK MATCH", 16 if Kit.Observatory.active else 14, Color(1, 1, 1, 0.92), Color("a3480a"), 4))
-	stack.add_child(_bold("랭크전", 50, Color.WHITE, Color("a3480a"), 10))
+	# 기준 그림의 왼쪽 글자 영역과 아래 띠를 타일 크기에 비례해 배치한다.
+	_add_rank_label(tile, _bold("RANK MATCH", 16, Color.WHITE, Color("a3480a"), 4), 0.12, 0.25, 12)
+	_add_rank_label(tile, _bold("랭크전", 36, Color.WHITE, Color("a3480a"), 8), 0.25, 0.51, 24)
 	var tier: Dictionary = Profile.tier_of(app.eco, int(profile["trophies"]))
 	var streak := Profile.streak(profile)
 	var note := "%s · 트로피 %s" % [tier["name"], Kit.comma(int(profile["trophies"]))]
 	if streak >= 2:
 		note = "%d연승 중! · 트로피 %s" % [streak, Kit.comma(int(profile["trophies"]))]
-	var record := _bold(note, 22 if Kit.Observatory.active else 18, Color("fff3c4"), Color("a3480a"), 5)
-	stack.add_child(record)
-	if Kit.Observatory.active:
-		_fit_lobby_text(record, 16)
-	# 세로로 늘어나는 빈칸: 아래 띠(캡슐)를 타일 바닥에 붙인다. Kit.expand는 가로로만 늘어나 아래가 비어 있었다.
-	stack.add_child(Kit.spacer())
-	# 진행 중 이벤트 띠(명일방주의 '작전' 버튼처럼 이벤트를 타일 안에 보여 준다)
+	var record := _bold(note, 22, Color("fff3c4"), Color("a3480a"), 5)
+	_add_rank_label(tile, record, 0.55, 0.70, 13)
+
 	var events: Array = Profile.active_events(app.data.get("events", {}), app.today())
 	var strip := Control.new()
-	strip.custom_minimum_size = Vector2(0, 40)
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anchor(strip, 0.075, 0.71, 0.94, 0.89)
+	tile.add_child(strip)
 	# 띠 그림은 왼쪽 빨간 딱지 자리가 넓어서 조각내지 않고 통째로 늘린다.
 	var strip_art := _picture("strip_event")
 	strip.add_child(strip_art if strip_art != null else _slice("", 0, Color("fff4dc")))
-	stack.add_child(strip)
 	var chip := _bold("EVENT" if not events.is_empty() else "GO", 14, Color.WHITE, Color("7a0f0f"), 3, HORIZONTAL_ALIGNMENT_CENTER)
 	chip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# 띠 그림의 빨간 딱지 자리(가로 6.5~26%, 세로 19~76%)에 맞춘다.
@@ -588,9 +581,15 @@ func _rank_tile() -> Button:
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anchor(line, 0.29, 0.0, 0.86, 1.0)
 	strip.add_child(line)
-	if Kit.Observatory.active:
-		_fit_lobby_text(line, 14)
+	_fit_lobby_text(line, 12)
 	return tile
+
+
+func _add_rank_label(tile: Button, label: Label, top: float, bottom: float, min_size: int) -> void:
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_anchor(label, 0.105, top, 0.48, bottom)
+	tile.add_child(label)
+	_fit_lobby_text(label, min_size)
 
 
 func _adventure_tile() -> Button:
@@ -1300,6 +1299,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"로비 랭크전의 제목과 트로피를 버튼 왼쪽에 맞췄어요.",
 	"파티 편성에서 영웅의 능력치는 카드 오른쪽에, 이름·성급·레벨은 아래에 표시해요.",
 	"카드 편성에서 세 등급의 장착 카드와 빈칸을 같은 크기로 키웠어요. 옆으로 끌면 나머지 카드를 볼 수 있어요.",
 	"카드 편성에서 장착 카드와 빈칸의 크기를 맞췄어요. 일반 카드 7장도 한눈에 볼 수 있어요.",
