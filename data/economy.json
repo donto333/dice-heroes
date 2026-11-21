@@ -501,63 +501,62 @@
     }
   },
   "roulette": {
-    "_comment": "행운의 룰렛. 하루 무료 free_per_day번, 그 뒤 extra_cost_gems 보석으로 max_extra번 더. weight가 클수록 잘 나온다.",
-    "free_per_day": 1,
-    "extra_cost_gems": 30,
-    "max_extra": 3,
+    "_comment": "행운의 룰렛. 매회 cost_gems 보석을 내고 하루 daily_limit번 돌린다. 광고 추가 회전도 같은 비용이다. weight가 클수록 잘 나온다.",
+    "cost_gems": 100,
+    "daily_limit": 4,
     "slots": [
       {
         "reward": {
-          "gold": 100
+          "gold": 1000
         },
         "weight": 24,
         "color": "3a6fd8"
       },
       {
         "reward": {
-          "gems": 10
+          "gems": 100
         },
         "weight": 18,
         "color": "8a4fd0"
       },
       {
         "reward": {
-          "gold": 300
+          "gold": 3000
         },
         "weight": 20,
         "color": "2a9d5c"
       },
       {
         "reward": {
-          "gems": 30
+          "gems": 300
         },
         "weight": 10,
         "color": "d0408a"
       },
       {
         "reward": {
-          "gold": 500
+          "gold": 5000
         },
         "weight": 13,
         "color": "d08a1c"
       },
       {
         "reward": {
-          "gems": 50
+          "gems": 500
         },
         "weight": 7,
         "color": "c2413a"
       },
       {
         "reward": {
-          "gold": 1000
+          "gold": 10000
         },
         "weight": 5,
         "color": "1c9aa8"
       },
       {
         "reward": {
-          "gems": 100
+          "gems": 1000
         },
         "weight": 3,
         "color": "e0b81b"
@@ -1216,7 +1215,7 @@
     ]
   },
   "ads": {
-    "_comment": "보상형 광고(2026-11-19, 정식 출시 준비 5번): 광고를 끝까지 보면 보상. 하루 전체 daily_max번, 자리마다 per_day번. gems는 보석(사용자 결정 2026-11-19: 광고 한 번에 보석 100개), gold_double은 판 끝 골드를 한 번 더, roulette은 룰렛 무료 한 번 더, idle_double은 원정 골드를 한 번 더, card_draw는 무료 카드 뽑기 한 번 더. 진짜 광고(AdMob)가 붙기 전에는 시험 광고(test_seconds초)가 나온다. 광고 제거 상품과 상관없이 보상형 광고는 남는다.",
+    "_comment": "보상형 광고(2026-11-19, 정식 출시 준비 5번): 광고를 끝까지 보면 보상. 하루 전체 daily_max번, 자리마다 per_day번. gems는 보석(사용자 결정 2026-11-19: 광고 한 번에 보석 100개), gold_double은 판 끝 골드를 한 번 더, roulette은 보석을 내고 룰렛 한 번 더, idle_double은 원정 골드를 한 번 더, card_draw는 무료 카드 뽑기 한 번 더. 진짜 광고(AdMob)가 붙기 전에는 시험 광고(test_seconds초)가 나온다. 광고 제거 상품과 상관없이 보상형 광고는 남는다.",
     "daily_max": 8,
     "test_seconds": 5,
     "placements": {

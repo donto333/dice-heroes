@@ -902,7 +902,7 @@ func _todo_items() -> Array:
 		["길잡이 과제", str(Profile.guide_current(profile, app.data).get("text", "모두 끝냈어요")), Profile.guide_current(profile, app.data).is_empty(), _on_tab.bind("missions")],
 		["출석 체크", "하루 한 번 출석 보상", not Profile.can_check_in(profile, app.today()), _on_attendance_shortcut],
 		["무료 소환", "오늘 %d번 남음" % Profile.free_summons_left(profile, app.eco), Profile.free_summons_left(profile, app.eco) <= 0, _on_tab.bind("shop")],
-		["행운의 룰렛", "하루 한 번 무료", not Profile.can_spin_free(profile, app.eco), open_roulette],
+		["행운의 룰렛", Kit.money_text("gems", int(app.eco["roulette"]["cost_gems"])), Profile.roulette_spins(profile) > 0, open_roulette],
 		["홀짝 게임", "오늘 %d번 남음" % Profile.odd_even_left(profile, app.eco), Profile.odd_even_left(profile, app.eco) <= 0, open_odd_even],
 		["오늘의 도전", "이기면 보석", Profile.challenge_done(profile), _on_mode.bind("challenge")],
 		["일일 미션", "%d / %d 달성" % [missions_done, missions.size()], missions_done >= missions.size() and Profile.claimable_mission_count(profile, app.eco) == 0, _on_tab.bind("missions")],
@@ -1216,12 +1216,12 @@ func _open_observatory_roulette() -> void:
 func _refresh_roulette() -> void:
 	if is_instance_valid(_ad_spin_button):
 		var ad_left := Profile.ads_left(app.profile, app.eco, "roulette")
-		_ad_spin_button.text = "광고 보고 한 번 더 (오늘 %d회)" % ad_left
-		_ad_spin_button.disabled = ad_left <= 0
+		_ad_spin_button.text = "광고 보고 한 번 더 (오늘 %d회)" % ad_left + "  " + Kit.money_text("gems", Profile.roulette_cost(app.profile, app.eco, true))
+		_ad_spin_button.disabled = ad_left <= 0 or not Profile.can_pay(app.profile, "gems", Profile.roulette_cost(app.profile, app.eco, true))
 	var table: Dictionary = app.eco.get("roulette", {})
 	var cost := Profile.roulette_cost(app.profile, app.eco)
-	var limit := int(table.get("free_per_day", 1)) + int(table.get("max_extra", 0))
-	_spin_info.text = "오늘 %d / %d번 돌렸어요. 하루 한 번은 무료!" % [Profile.roulette_spins(app.profile), limit]
+	var limit := int(table["daily_limit"])
+	_spin_info.text = "오늘 %d / %d번 돌렸어요." % [Profile.roulette_spins(app.profile), limit]
 	if is_instance_valid(_spin_balance):
 		_spin_balance.text = Kit.comma(int(app.profile["gems"]))
 		_spin_price.text = "무료" if cost == 0 else (Kit.money_text("gems", cost) if cost > 0 else "")
@@ -1242,14 +1242,14 @@ func _refresh_roulette() -> void:
 
 ## 보상형 광고를 보고 룰렛 한 번 더(2026-11-19).
 func _on_ad_spin() -> void:
-	if _wheel.is_spinning() or Profile.ads_left(app.profile, app.eco, "roulette") <= 0:
+	if _wheel.is_spinning() or Profile.ads_left(app.profile, app.eco, "roulette") <= 0 or not Profile.can_pay(app.profile, "gems", Profile.roulette_cost(app.profile, app.eco, true)):
 		return
 	app.play("click")
 	var ad := AdPlayer.new()
 	app.add_child(ad)
 	if not await ad.play(app):
 		return
-	if not is_inside_tree() or Profile.ads_left(app.profile, app.eco, "roulette") <= 0:
+	if not is_inside_tree() or Profile.ads_left(app.profile, app.eco, "roulette") <= 0 or not Profile.can_pay(app.profile, "gems", Profile.roulette_cost(app.profile, app.eco, true)):
 		return
 	Profile.watch_ad(app.profile, app.eco, "roulette")
 	_on_spin(true)
