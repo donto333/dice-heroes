@@ -72,7 +72,6 @@ func open(title_text: String, body: Control, buttons: Array, width: float = 640.
 			var title := Kit.ribbon(title_text, 29)
 			if featured:
 				var glyph := Kit.icon(str(DESIGN_ICONS[design]), 38)
-				Kit.Observatory.silver_icon(glyph)
 				title.set_icon(glyph)
 			title_center.add_child(title)
 			heading.add_child(title_center)

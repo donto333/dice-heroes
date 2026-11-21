@@ -104,14 +104,14 @@ func _relayout() -> void:
 
 ## 로비 그림 부품(assets/ui_lobby/이름.png). 없으면 null.
 func _lobby_tex(name: String) -> Texture2D:
-	var themed := Kit.Observatory.texture("ui_lobby", name)
+	var themed: Texture2D = null if name.begins_with("ic_") else Kit.Observatory.texture("ui_lobby", name)
 	if themed != null:
 		return themed
 	for ext in [".png", ".jpg"]:
 		var path: String = LOBBY_ART + name + str(ext)
 		if ResourceLoader.exists(path):
 			return load(path)
-	return null
+	return Kit.Observatory.texture("ui_lobby", name) if name.begins_with("ic_") else null
 
 
 ## 꽉 차게 늘어나는 그림 한 장. 그림이 없으면 null.
@@ -182,17 +182,6 @@ func _lobby_icon(name: String, pixels: float) -> TextureRect:
 		"ic_shop_stall": "shop", "ic_mission_board": "missions", "ic_pass_ticket": "pass", "ic_trophy": "trophy",
 		"ic_notice": "chat", "ic_party": "friend"}
 	return Kit.icon(str(fallback.get(name, name)), pixels)
-
-
-## 로비 메뉴는 원래 컬러 그림을 우선 사용한다.
-func _lobby_menu_icon(name: String, pixels: float) -> TextureRect:
-	var icon := _lobby_icon(name, pixels)
-	var directory := LOBBY_ART if name.begins_with("ic_") else "res://assets/ui_icons/"
-	var original_path := directory + name + ".png"
-	if ResourceLoader.exists(original_path):
-		icon.texture = load(original_path)
-		icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	return icon
 
 
 ## 테두리가 있는 굵은 글자.
@@ -454,7 +443,7 @@ func _add_top_bar() -> void:
 		button.tooltip_text = str(spec[0])
 		button.pressed.connect(spec[3])
 		var icon_size := 38.0 if large else 32.0
-		var glyph := _lobby_menu_icon(str(spec[1]), icon_size)
+		var glyph := _lobby_icon(str(spec[1]), icon_size)
 		_anchor(glyph, 0.5, 0.0, 0.5, 0.0)
 		glyph.offset_left = -icon_size * 0.5
 		glyph.offset_right = icon_size * 0.5
@@ -663,7 +652,7 @@ func _white_tile(spec: Array) -> Button:
 	var row := Kit.hbox(8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(row)
-	var glyph := _lobby_menu_icon(str(spec[2]), 62.0)
+	var glyph := _lobby_icon(str(spec[2]), 62.0)
 	glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(glyph)
 	var text := Kit.vbox(-2)
@@ -709,7 +698,7 @@ func _navy_tile(spec: Array) -> Button:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(row)
-	var glyph := _lobby_menu_icon(str(spec[2]), 50.0 if large else 46.0)
+	var glyph := _lobby_icon(str(spec[2]), 50.0 if large else 46.0)
 	glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(glyph)
 	var text := Kit.vbox(-2)
@@ -765,7 +754,7 @@ func _add_bottom_dock() -> void:
 	party_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	party_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	party_button.add_child(party_row)
-	party_row.add_child(_lobby_menu_icon("ic_party", 40.0))
+	party_row.add_child(_lobby_icon("ic_party", 40.0))
 	var title := Kit.vbox(-2)
 	title.alignment = BoxContainer.ALIGNMENT_CENTER
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -814,7 +803,7 @@ func _add_bottom_dock() -> void:
 	task_row.offset_top = 6
 	task_row.offset_bottom = -6
 	task.add_child(task_row)
-	var todo_icon := _lobby_menu_icon("todo", 36.0)
+	var todo_icon := _lobby_icon("todo", 36.0)
 	todo_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	task_row.add_child(todo_icon)
 	var head := Kit.vbox(-2)
@@ -1045,8 +1034,6 @@ func open_mailbox() -> void:
 		var row := Kit.hbox(12)
 		card.add_child(row)
 		var mail_icon := Kit.icon("m_gift" if Kit.Observatory.active else "mail", 68.0 if Kit.Observatory.active else 52.0)
-		if Kit.Observatory.active:
-			Kit.Observatory.silver_icon(mail_icon)
 		mail_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		if claimed:
 			mail_icon.modulate = Color(0.6, 0.6, 0.7)
@@ -1311,6 +1298,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"메뉴와 팝업에 원래 컬러 아이콘을 적용했어요.",
 	"대전 화면의 정보판과 버튼에 새 디자인을 적용했어요.",
 	"로비 메뉴에 원래 컬러 아이콘을 적용했어요.",
 	"파티 편성에서 영웅 분류마다 이름 띠의 모양을 다르게 표시해요.",

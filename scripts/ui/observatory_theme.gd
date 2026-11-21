@@ -12,7 +12,6 @@ const AMBER := Color("ffd18b")
 const TEAL := Color("82dfdf")
 
 static var active := true
-static var _silver_icon: ShaderMaterial
 static var _textures: Dictionary = {}
 
 
@@ -34,22 +33,3 @@ static func backdrop() -> TextureRect:
 	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return view
-
-
-## 메뉴 이동 아이콘만 은색으로 맞춘다. 골드·보석·카드 그림에는 쓰지 않는다.
-static func silver_icon(icon: TextureRect) -> void:
-	if not active:
-		return
-	if _silver_icon == null:
-		var shader := Shader.new()
-		shader.code = """
-shader_type canvas_item;
-void fragment() {
-	vec4 glyph = COLOR;
-	float light = dot(glyph.rgb, vec3(0.299, 0.587, 0.114));
-	COLOR = vec4(mix(vec3(0.28, 0.27, 0.42), vec3(0.96, 0.94, 1.0), light), glyph.a);
-}
-"""
-		_silver_icon = ShaderMaterial.new()
-		_silver_icon.shader = shader
-	icon.material = _silver_icon
