@@ -385,7 +385,7 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	grade.add_theme_color_override("font_color", GOLD)
 	button.add_child(grade)
 	KitStyle.squeeze_text(grade, 22, 13)
-	# 분류는 왼쪽 위 작은 동그란 표식으로만
+	# 분류 점은 초상화 안쪽 왼쪽 위에 놓는다.
 	var dot := Panel.new()
 	var dot_style := StyleBoxFlat.new()
 	dot_style.bg_color = CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
@@ -393,10 +393,10 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	dot_style.set_border_width_all(2)
 	dot_style.set_corner_radius_all(9)
 	dot.add_theme_stylebox_override("panel", dot_style)
-	dot.position = Vector2(10, 7) if observatory else Vector2(12, 18)
+	dot.position = Vector2(6, 6)
 	dot.size = Vector2(18, 18)
 	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(dot)
+	portrait.add_child(dot)
 	var check := KitStyle.icon("m_check", 34.0)
 	check.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	check.offset_left = -46
