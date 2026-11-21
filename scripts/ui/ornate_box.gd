@@ -17,8 +17,8 @@ var grand := false
 var _rim := StyleBoxFlat.new()
 const UiSkin := preload("res://scripts/ui/skin.gd")
 const Observatory := preload("res://scripts/ui/observatory_theme.gd")
-const DIALOG_GLASS := preload("res://assets/ui_observatory/dialog_glass.png")
-const INSET_GLASS := preload("res://assets/ui_observatory/inset_glass.png")
+const DIALOG_GLASS := preload("res://assets/ui_observatory/ui_menu/friend_party/board.png")
+const INSET_GLASS := preload("res://assets/ui_observatory/ui_menu/friend_party/ability.png")
 
 
 ## 둥근 사각형의 테두리 점들(시계 방향). inset만큼 안쪽으로 들어간다.
@@ -52,8 +52,8 @@ func _draw(item: RID, rect: Rect2) -> void:
 		return
 	if Observatory.active:
 		var glass: Texture2D = DIALOG_GLASS if grand else INSET_GLASS
-		var edge := 76 if grand else 52
-		var factor := minf(0.62 if grand else 0.40, minf(rect.size.x, rect.size.y) / (edge * 2.0))
+		var edge := 32 if grand else 22
+		var factor := minf(1.0 if grand else 0.75, minf(rect.size.x, rect.size.y) / (edge * 2.0))
 		UiSkin.draw_grid(item, glass, rect, [0, edge, glass.get_width() - edge, glass.get_width()], [false, true, false],
 			[0, edge, glass.get_height() - edge, glass.get_height()], [false, true, false], factor, Color(1.0, 1.0, 1.0, fill.a))
 		return

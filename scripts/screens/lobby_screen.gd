@@ -105,6 +105,8 @@ func _relayout() -> void:
 
 ## 로비 그림 부품(assets/ui_lobby/이름.png). 없으면 null.
 func _lobby_tex(name: String) -> Texture2D:
+	if Kit.Observatory.active and name == "plate_profile":
+		return MenuArt.tex("title_plate")
 	var themed: Texture2D = null if name.begins_with("ic_") else Kit.Observatory.texture("ui_lobby", name)
 	if themed != null:
 		return themed
@@ -400,14 +402,17 @@ func _add_top_bar() -> void:
 	var medal := _bold(str(int(profile["level"])), 26 if large else 24, Color.WHITE, Color("12264d"), 6, HORIZONTAL_ALIGNMENT_CENTER)
 	medal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# 메달 안쪽 둥근 판은 그림의 가로 3.7%~19.6%, 세로 9.2%~83.3% 자리에 있다(그림에서 잰 값).
-	_anchor(medal, 0.037, 0.092, 0.196, 0.833)
+	if large:
+		_anchor(medal, 0.07, 0.1, 0.24, 0.9)
+	else:
+		_anchor(medal, 0.037, 0.092, 0.196, 0.833)
 	who.add_child(medal)
 	# 닉네임과 등급 줄을 바짝 붙인다(등급 줄이 띠 아래 가장자리에 너무 붙지 않게).
 	var names := Kit.vbox(-7)
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	names.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anchor(names, 0.0, 0.0, 1.0, 1.0)
-	names.offset_left = 54 if large else 70
+	names.offset_left = 65 if large else 70
 	names.offset_right = -16
 	names.offset_top = 5
 	names.offset_bottom = -9
@@ -1299,6 +1304,7 @@ func _on_attendance_shortcut() -> void:
 
 ## 새 버전을 처음 켰으면 새 소식을 보여 주고, 그다음 출석 창으로 넘어간다.
 const NEWS := [
+	"로비와 메뉴, 팝업에 파티 편성과 같은 별의 관측소 디자인을 적용했어요.",
 	"친구 대전 파티 편성에 별의 관측소 카드와 버튼 그림을 적용했어요.",
 	"AI 연습전 난이도 창에 별의 관측소 디자인을 적용했어요.",
 	"스킬 게이지는 충전량에 따라 색이 바뀌고 가득 차면 빛나요.",
