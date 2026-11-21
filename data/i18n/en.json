@@ -2083,5 +2083,6 @@
  "공 %d": "Atk %d",
  "방 %d": "Def %d",
  "지 %d": "Int %d",
- "충 %d": "Chg %d"
+ "충 %d": "Chg %d",
+ "파티 편성의 영웅 카드에서 초상화와 능력치 창을 넓히고 이름·성급·레벨 글자를 키웠어요.": "Hero cards in Party Setup have more room for portraits and stats, with larger names, stars, and levels."
 }
