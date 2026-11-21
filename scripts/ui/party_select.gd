@@ -19,6 +19,12 @@ signal preset_saved(index: int, party: Dictionary)
 const Portrait := preload("res://scripts/ui/portrait.gd")
 const MenuArt := preload("res://scripts/ui/menu_art.gd")
 ## 분류 → 알약 색(영웅 화면과 같은 탭)
+const CATEGORY_PLATES := {
+	"영웅": "category_plate_hero",
+	"위인": "category_plate_great",
+	"신화": "category_plate_myth",
+	"근현대": "category_plate_modern",
+}
 const CATEGORY_PILLS := {"": "blue", "영웅": "red", "위인": "blue", "신화": "purple", "근현대": "green"}
 ## 자리 → 자리 카드 틀 그림(assets/ui_menu/slot_*.png, 위 띠 빨강·파랑·초록)
 const SLOT_FRAMES := {"attack": "slot_attack", "defense": "slot_defense", "support": "slot_support"}
@@ -320,13 +326,15 @@ func _slot_card(button: Button, slot: String) -> Dictionary:
 	button.add_child(stat)
 	# 아래 남색 띠(그림의 세로 82~97%, 가로 양 끝 보석 안쪽)에 맞춰 ★이름을 놓는다.
 	# 이름이 길면 글자를 줄여서라도 띠 안에 다 들어가게 한다.
+	var plate := _nameplate(Vector2(0.08, 0.82), Vector2(0.92, 0.975))
+	button.add_child(plate)
 	var text := _band_label("", 16, 0.82, 0.975)
 	text.anchor_left = 0.1
 	text.anchor_right = 0.9
 	text.offset_left = 0
 	text.offset_right = 0
 	button.add_child(text)
-	return {"portrait": portrait, "text": text, "stat": stat, "frame": frame}
+	return {"portrait": portrait, "text": text, "stat": stat, "frame": frame, "nameplate": plate}
 
 
 ## 금테 영웅 카드: 창 안에 왼쪽 초상화·오른쪽 능력치, 아래 두 띠에 이름과 ★·레벨.
@@ -358,6 +366,9 @@ func _hero_card(button: Button, character: Dictionary) -> Dictionary:
 	var frame := _hero_frame(observatory)
 	button.add_child(frame)
 	# 기존 능력치 자리 전체를 이름에 쓰고 긴 번역은 칸 너비에 맞춘다.
+	var plate := _nameplate(Vector2(HERO_WINDOW_X.x, HERO_WINDOW_BOTTOM), Vector2(HERO_WINDOW_X.y, name_bottom))
+	plate.texture = _category_plate(str(character["category"]))
+	button.add_child(plate)
 	var name_label := _band_label(str(character["name"]), 22, HERO_WINDOW_BOTTOM, name_bottom)
 	name_label.offset_left = 0
 	name_label.offset_right = 0
@@ -543,6 +554,43 @@ func _filter_button(text: String, color: Color) -> Button:
 	button.custom_minimum_size = Vector2(0, 50)
 	button.add_theme_font_size_override("font_size", 18)
 	return button
+
+
+func _category_plate(category: String) -> Texture2D:
+	var asset: String = CATEGORY_PLATES.get(category, "")
+	return MenuArt.tex(asset) if asset != "" else null
+
+
+func _nameplate(start: Vector2, end: Vector2) -> TextureRect:
+	var plate := TextureRect.new()
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	plate.stretch_mode = TextureRect.STRETCH_SCALE
+	plate.anchor_left = start.x
+	plate.anchor_top = start.y
+	plate.anchor_right = end.x
+	plate.anchor_bottom = end.y
+	return plate
+
+
+func _style_category_filter(button: Button, category: String) -> void:
+	var plate := _category_plate(category)
+	if plate == null:
+		_style_filter_button(button, category == _filter,
+			CATEGORY_PILLS.get(category, "blue"), CATEGORY_COLORS.get(category, Color("8fd0ff")))
+		return
+
+	var style := StyleBoxTexture.new()
+	style.texture = plate
+	style.modulate_color = Color.WHITE if category == _filter else Color(0.76, 0.76, 0.82)
+	style.set_content_margin(SIDE_LEFT, 8)
+	style.set_content_margin(SIDE_RIGHT, 8)
+	var highlight := style.duplicate() as StyleBoxTexture
+	highlight.modulate_color = Color(1.12, 1.12, 1.12)
+	button.add_theme_stylebox_override("normal", style)
+	button.add_theme_stylebox_override("hover", highlight)
+	button.add_theme_stylebox_override("pressed", highlight)
+	button.add_theme_stylebox_override("focus", highlight)
 
 
 func _style_filter_button(button: Button, selected: bool, pill_color: String, fallback: Color) -> void:
@@ -928,8 +976,7 @@ func _refresh() -> void:
 	if _points_label == null:
 		return
 	for category in _filter_buttons:
-		_style_filter_button(_filter_buttons[category], category == _filter,
-				CATEGORY_PILLS.get(category, "blue"), CATEGORY_COLORS.get(category, Color("8fd0ff")))
+		_style_category_filter(_filter_buttons[category], category)
 	for grade in _grade_buttons:
 		_style_filter_button(_grade_buttons[grade], grade == _grade_filter, "blue", KitStyle.PANEL_LIGHT)
 	for slot in SLOTS:
@@ -940,6 +987,7 @@ func _refresh() -> void:
 		var fill: Color = Color("6f86a8") if character.is_empty() else CATEGORY_COLORS.get(character["category"], Color("8fd0ff"))
 		parts["portrait"].show_character(character, fill)
 		if parts.has("frame"):
+			parts["nameplate"].texture = _category_plate(str(character.get("category", "")))
 			# 금테 자리 카드: 고른 자리는 테가 밝게 빛난다.
 			parts["text"].text = "비어 있음" if character.is_empty() else "%s %s" % ["★".repeat(int(character["grade"])), character["name"]]
 			KitStyle.squeeze_text(parts["text"], 16, 11)
